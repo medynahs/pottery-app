@@ -48,3 +48,28 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+src/
+├─ core/                     ← shared UI, theme, navigation, hooks, config, mascot
+│   ├─ components/
+│   ├─ theme/
+│   ├─ navigation/
+│   ├─ hooks/
+│   ├─ config/
+│   └─ mascot/
+├─ features/                 ← each feature owns its own screens/components/tests
+│   ├─ pieces/
+│   │   ├─ screens/PiecesScreen.tsx   ← example screen
+│   │   ├─ components/
+│   │   └─ tests/
+│   ├─ studio/…
+│   ├─ homePractice/…
+│   ├─ learning/…
+│   ├─ community/…
+│   ├─ journal/…
+│   └─ glazes/…
+│   └─ index.ts               ← central exports of feature screens
+├─ services/                 ← API/back‑end helpers
+├─ store/                    ← global state (Redux/Context placeholder)
+├─ types/                    ← shared TypeScript interfaces
+└─ … (existing utils, screens, etc.)
