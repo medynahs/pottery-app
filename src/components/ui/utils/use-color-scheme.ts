@@ -1,8 +1,2 @@
-import { useColorScheme as useNativeColorScheme } from "react-native";
-
-export function useColorScheme() {
-  const colorScheme = useNativeColorScheme();
-  return colorScheme ?? "light";
-}
-
-export type ColorScheme = "light" | "dark";
+export { useColorScheme } from '@/src/hooks/useColorScheme';
+export type { ColorScheme } from '@/src/hooks/useColorScheme';
