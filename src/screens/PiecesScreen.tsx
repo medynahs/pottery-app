@@ -1,17 +1,18 @@
 // src/screens/PiecesScreen.tsx
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
-import { Layers, Plus, Search } from 'lucide-react-native';
+import { Layers, Plus, Search, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
 import { Alert, ScrollView, TouchableOpacity, View } from 'react-native';
 import { AddPieceModal } from './pieces/AddPieceModal';
 import { BatchCard } from './pieces/BatchCard';
 import { CemeteryBanner } from './pieces/CemeteryBanner';
+import { INITIAL_PIECES, STAGES, nextStage } from './pieces/constants';
+import { ActiveFilters, EMPTY_FILTERS, FilterSortSheet, SortKey, countActiveFilters } from './pieces/FilterSortSheet';
 import { PieceActionSheet } from './pieces/PieceActionSheet';
 import { PieceCard } from './pieces/PieceCard';
 import { PieceJournalModal } from './pieces/PieceJournalModal';
-import { INITIAL_PIECES, STAGES, nextStage } from './pieces/constants';
 import type { Piece } from './pieces/types';
 
 function getSetName(name: string) {
@@ -37,16 +38,44 @@ export default function PiecesScreen() {
   const [journalPiece, setJournalPiece] = React.useState<Piece | null>(null);
   const [actionSheetPiece, setActionSheetPiece] = React.useState<Piece | null>(null);
   const [expandedBatches, setExpandedBatches] = React.useState<Set<string>>(new Set());
+  const [sortKey, setSortKey] = React.useState<SortKey>('newest');
+  const [filters, setFilters] = React.useState<ActiveFilters>(EMPTY_FILTERS);
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
   const scrollRef = React.useRef<ScrollViewType>(null);
+
+  const activeFilterCount = countActiveFilters(filters);
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [activeStage]);
 
-  const filteredPieces = React.useMemo(() => pieces.filter(p =>
-    (activeStage === 'all' || p.stage === activeStage) &&
-    (search === '' || p.name.toLowerCase().includes(search.toLowerCase()))
-  ), [pieces, activeStage, search]);
+  const filteredPieces = React.useMemo(() => {
+    const result = pieces.filter(p =>
+      (activeStage === 'all' || p.stage === activeStage) &&
+      (search === '' || p.name.toLowerCase().includes(search.toLowerCase())) &&
+      (filters.clays.length === 0 || filters.clays.includes(p.clay)) &&
+      (filters.forms.length === 0 || (!!p.form && filters.forms.includes(p.form))) &&
+      (filters.formingMethods.length === 0 || (!!p.formingMethod && filters.formingMethods.includes(p.formingMethod))) &&
+      (filters.statuses.length === 0 || (!!p.status && filters.statuses.includes(p.status))) &&
+      (filters.firingTypes.length === 0 || (!!p.firingType && filters.firingTypes.includes(p.firingType)))
+    );
+    switch (sortKey) {
+      case 'oldest':
+        return result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      case 'name-asc':
+        return result.sort((a, b) => a.name.localeCompare(b.name));
+      case 'name-desc':
+        return result.sort((a, b) => b.name.localeCompare(a.name));
+      case 'updated':
+        return result.sort((a, b) => {
+          const aTs = a.timeline[a.timeline.length - 1]?.timestamp ?? a.createdAt;
+          const bTs = b.timeline[b.timeline.length - 1]?.timestamp ?? b.createdAt;
+          return new Date(bTs).getTime() - new Date(aTs).getTime();
+        });
+      default:
+        return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+  }, [pieces, activeStage, search, filters, sortKey]);
 
   // Collapse same-stage batch groups into BatchCards; expand individually on demand
   const displayItems = React.useMemo((): DisplayItem[] => {
@@ -297,16 +326,34 @@ export default function PiecesScreen() {
           </TouchableOpacity>
         </View>
 
-        <View className="relative justify-center">
-          <View className="absolute left-4 z-10">
-            <Search size={16} color="hsl(24 20% 40%)" />
+        <View className="flex-row items-center gap-2">
+          <View className="flex-1 relative justify-center">
+            <View className="absolute left-4 z-10">
+              <Search size={16} color="hsl(24 20% 40%)" />
+            </View>
+            <Input
+              placeholder="Search pieces..."
+              value={search}
+              onChangeText={setSearch}
+              className="pl-11 rounded-2xl bg-card border-border"
+            />
           </View>
-          <Input
-            placeholder="Search pieces..."
-            value={search}
-            onChangeText={setSearch}
-            className="pl-11 rounded-2xl bg-card border-border"
-          />
+          <TouchableOpacity
+            onPress={() => setFiltersOpen(true)}
+            className={`w-11 h-11 rounded-2xl items-center justify-center border ${
+              activeFilterCount > 0 ? 'bg-primary/10 border-primary/30' : 'bg-card border-border'
+            }`}
+          >
+            <SlidersHorizontal
+              size={16}
+              color={activeFilterCount > 0 ? 'hsl(15 50% 50%)' : 'hsl(24 20% 40%)'}
+            />
+            {activeFilterCount > 0 && (
+              <View className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary items-center justify-center">
+                <Text className="text-[9px] font-bold text-primary-foreground">{activeFilterCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -416,6 +463,15 @@ export default function PiecesScreen() {
         onDuplicate={() => actionSheetPiece && handleDuplicate(actionSheetPiece)}
         onDuplicateBatch={actionSheetPiece?.batchId ? () => handleDuplicateBatch(actionSheetPiece!.batchId!) : undefined}
         onDelete={() => actionSheetPiece && handleDelete(actionSheetPiece.id)}
+      />
+      <FilterSortSheet
+        visible={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        sortKey={sortKey}
+        onSortChange={setSortKey}
+        filters={filters}
+        onFiltersChange={setFilters}
+        allPieces={pieces}
       />
     </View>
   );
