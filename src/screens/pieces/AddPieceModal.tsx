@@ -13,14 +13,17 @@ import type { Piece } from './types';
 interface AddPieceModalProps {
   visible: boolean;
   onClose: () => void;
-  onAdd: (piece: Piece) => void;
+  onAdd: (pieces: Piece[]) => void;
+  editPiece?: Piece;
+  onEdit?: (piece: Piece) => void;
 }
 
-export function AddPieceModal({ visible, onClose, onAdd }: AddPieceModalProps) {
+export function AddPieceModal({ visible, onClose, onAdd, editPiece, onEdit }: AddPieceModalProps) {
   const { height: screenHeight } = useWindowDimensions();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
-  const { form, set, handleClose, pickImage, handleAdd } = useAddPieceForm(onClose, onAdd);
+  const { form, set, handleClose, pickImage, handleAdd, handleEdit } = useAddPieceForm(onClose, onAdd, editPiece, onEdit);
+  const isEditing = !!editPiece;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
@@ -39,7 +42,9 @@ export function AddPieceModal({ visible, onClose, onAdd }: AddPieceModalProps) {
 
             {/* Title row */}
             <View className="flex-row justify-between items-center px-6 pb-4 border-b border-border">
-              <Text className="text-2xl font-serif font-bold text-foreground">New Piece</Text>
+              <Text className="text-2xl font-serif font-bold text-foreground">
+                {isEditing ? 'Edit Piece' : (form.quantity ?? 1) > 1 ? 'New Set' : 'New Piece'}
+              </Text>
               <Pressable
                 onPress={handleClose}
                 className="p-1"
@@ -50,16 +55,18 @@ export function AddPieceModal({ visible, onClose, onAdd }: AddPieceModalProps) {
               </Pressable>
             </View>
 
-            <AddPieceForm form={form} set={set} onPickImage={pickImage} colors={colors} />
+            <AddPieceForm form={form} set={set} onPickImage={pickImage} colors={colors} isEditing={isEditing} />
 
             {/* Footer */}
             <View className="px-6 pt-4 pb-10 border-t border-border">
               <Button
-                onPress={handleAdd}
+                onPress={isEditing ? handleEdit : handleAdd}
                 disabled={!form.name.trim() || !form.clay.trim()}
                 className="w-full"
               >
-                <Text className="text-primary-foreground font-semibold">Add Piece</Text>
+                <Text className="text-primary-foreground font-semibold">
+                  {isEditing ? 'Save Changes' : (form.quantity ?? 1) > 1 ? `Add ${form.quantity} Pieces` : 'Add Piece'}
+                </Text>
               </Button>
             </View>
           </View>

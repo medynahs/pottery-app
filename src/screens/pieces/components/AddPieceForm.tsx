@@ -1,16 +1,17 @@
 import { Input } from '@/src/components/ui/input';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
+import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import {
-    BISQUE_TEMPS,
-    FIRING_TYPES,
-    FORMING_METHODS,
-    GLAZE_TEMPS,
-    PIECE_FORMS,
-    PIECE_STAGES,
-    PIECE_STATUSES,
+  BISQUE_TEMPS,
+  FIRING_TYPES,
+  FORMING_METHODS,
+  GLAZE_TEMPS,
+  PIECE_FORMS,
+  PIECE_STAGES,
+  PIECE_STATUSES,
 } from '../constants';
 import type { PieceForm } from '../types';
 import { FieldLabel } from './FieldLabel';
@@ -22,9 +23,12 @@ interface AddPieceFormProps {
   set: <K extends keyof PieceForm>(key: K, value: PieceForm[K]) => void;
   onPickImage: () => void;
   colors: { background: string; mutedForeground: string };
+  isEditing?: boolean;
 }
 
-export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormProps) {
+export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddPieceFormProps) {
+  const isCemetery = form.stage === 'cemetery';
+
   return (
     <ScrollView
       className="px-6"
@@ -52,6 +56,37 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
           onChangeText={v => set('name', v)}
         />
       </View>
+
+      {/* Quantity */}
+      {!isCemetery && !isEditing && (
+        <View className="mt-5">
+          <FieldLabel>Quantity</FieldLabel>
+          <View className="flex-row items-center gap-3">
+            <TouchableOpacity
+              onPress={() => set('quantity', Math.max(1, (form.quantity ?? 1) - 1))}
+              className="w-10 h-10 rounded-xl bg-muted/60 items-center justify-center"
+            >
+              <Minus size={16} color={colors.mutedForeground} />
+            </TouchableOpacity>
+            <Text className="text-lg font-bold text-foreground w-8 text-center">
+              {form.quantity ?? 1}
+            </Text>
+            <TouchableOpacity
+              onPress={() => set('quantity', Math.min(20, (form.quantity ?? 1) + 1))}
+              className="w-10 h-10 rounded-xl bg-muted/60 items-center justify-center"
+            >
+              <Plus size={16} color={colors.mutedForeground} />
+            </TouchableOpacity>
+            {(form.quantity ?? 1) > 1 && (
+              <Text className="text-xs text-muted-foreground flex-1" numberOfLines={1}>
+                {form.name.trim()
+                  ? `"${form.name.trim()} 1" – "${form.name.trim()} ${form.quantity}"`
+                  : `${form.quantity} pieces`}
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* Current Stage */}
       <View className="mt-5">
@@ -88,6 +123,7 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
       </View>
 
       {/* Location */}
+      {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Location</FieldLabel>
         <Input
@@ -96,8 +132,10 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
           onChangeText={v => set('location', v)}
         />
       </View>
+      )}
 
       {/* Forming Method */}
+      {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Forming Method</FieldLabel>
         <OptionPills
@@ -106,12 +144,15 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
           onChange={v => set('formingMethod', v)}
         />
       </View>
+      )}
 
       {/* Form */}
+      {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Form</FieldLabel>
         <OptionPills options={PIECE_FORMS} value={form.form} onChange={v => set('form', v)} />
       </View>
+      )}
 
       {/* Clay Body */}
       <View className="mt-5">
@@ -123,7 +164,34 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
         />
       </View>
 
+      {/* Cemetery fields */}
+      {isCemetery && (
+        <>
+          <View className="mt-5">
+            <FieldLabel>Epitaph</FieldLabel>
+            <Input
+              placeholder="e.g. Cracked but not forgotten 🕯️"
+              value={form.epitaph}
+              onChangeText={v => set('epitaph', v)}
+            />
+          </View>
+          <View className="mt-5">
+            <FieldLabel>Cause of Death</FieldLabel>
+            <Input
+              placeholder="e.g. Thermal shock, too ambitious a handle..."
+              value={form.causeOfDeath}
+              onChangeText={v => set('causeOfDeath', v)}
+              multiline
+              numberOfLines={3}
+              className="min-h-[72px]"
+              style={{ textAlignVertical: 'top' }}
+            />
+          </View>
+        </>
+      )}
+
       {/* Weight + Dimensions */}
+      {!isCemetery && (
       <View className="mt-5 flex-row gap-3">
         <View className="flex-1">
           <FieldLabel>Weight</FieldLabel>
@@ -142,8 +210,10 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
           />
         </View>
       </View>
+      )}
 
       {/* Bisque Firing Temperature */}
+      {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Bisque Firing Temperature</FieldLabel>
         <OptionPills
@@ -152,8 +222,10 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
           onChange={v => set('bisqueTemp', v)}
         />
       </View>
+      )}
 
       {/* Glaze Firing Temperature */}
+      {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Glaze Firing Temperature</FieldLabel>
         <OptionPills
@@ -162,8 +234,10 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
           onChange={v => set('glazeTemp', v)}
         />
       </View>
+      )}
 
       {/* Firing Type */}
+      {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Firing Type</FieldLabel>
         <OptionPills
@@ -172,8 +246,10 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
           onChange={v => set('firingType', v)}
         />
       </View>
+      )}
 
       {/* Decorations */}
+      {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Decorations</FieldLabel>
         <Input
@@ -186,8 +262,10 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
           style={{ textAlignVertical: 'top' }}
         />
       </View>
+      )}
 
       {/* Notes */}
+      {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Notes</FieldLabel>
         <Input
@@ -200,8 +278,10 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
           style={{ textAlignVertical: 'top' }}
         />
       </View>
+      )}
 
       {/* Status */}
+      {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Status</FieldLabel>
         <OptionPills
@@ -210,8 +290,10 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
           onChange={v => set('status', v)}
         />
       </View>
+      )}
 
       {/* Price */}
+      {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Price</FieldLabel>
         <Input
@@ -221,6 +303,7 @@ export function AddPieceForm({ form, set, onPickImage, colors }: AddPieceFormPro
           keyboardType="decimal-pad"
         />
       </View>
+      )}
     </ScrollView>
   );
 }

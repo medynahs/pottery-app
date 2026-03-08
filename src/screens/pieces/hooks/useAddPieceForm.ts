@@ -3,12 +3,42 @@ import React from 'react';
 import { EMPTY_FORM } from '../constants';
 import type { Piece, PieceForm } from '../types';
 
-function formatDate(date: Date) {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+function pieceToForm(piece: Piece): PieceForm {
+  return {
+    name: piece.name,
+    clay: piece.clay,
+    stage: piece.stage,
+    status: piece.status ?? '',
+    photo: piece.photo,
+    location: piece.location ?? '',
+    formingMethod: piece.formingMethod ?? '',
+    form: piece.form ?? '',
+    weight: piece.weight ?? '',
+    dimensions: piece.dimensions ?? '',
+    bisqueTemp: piece.bisqueTemp ?? '',
+    glazeTemp: piece.glazeTemp ?? '',
+    firingType: piece.firingType ?? '',
+    decorations: piece.decorations ?? '',
+    notes: piece.notes ?? '',
+    epitaph: piece.epitaph ?? '',
+    causeOfDeath: piece.causeOfDeath ?? '',
+    price: piece.price ?? '',
+    quantity: 1,
+  };
 }
 
-export function useAddPieceForm(onClose: () => void, onAdd: (piece: Piece) => void) {
-  const [form, setForm] = React.useState<PieceForm>(EMPTY_FORM);
+export function useAddPieceForm(
+  onClose: () => void,
+  onAdd: (pieces: Piece[]) => void,
+  initialPiece?: Piece,
+  onEdit?: (piece: Piece) => void,
+) {
+  const [form, setForm] = React.useState<PieceForm>(initialPiece ? pieceToForm(initialPiece) : EMPTY_FORM);
+
+  // Re-populate whenever the piece to edit changes
+  React.useEffect(() => {
+    setForm(initialPiece ? pieceToForm(initialPiece) : EMPTY_FORM);
+  }, [initialPiece?.id]);
 
   const set = <K extends keyof PieceForm>(key: K, value: PieceForm[K]) =>
     setForm(f => ({ ...f, [key]: value }));
@@ -36,12 +66,19 @@ export function useAddPieceForm(onClose: () => void, onAdd: (piece: Piece) => vo
 
   const handleAdd = React.useCallback(() => {
     if (!form.name.trim() || !form.clay.trim()) return;
-    onAdd({
-      id: Date.now(),
-      name: form.name.trim(),
+    const now = new Date().toISOString();
+    const quantity = Math.max(1, Math.floor(form.quantity ?? 1));
+    const batchId = quantity > 1 ? `batch-${Date.now()}` : undefined;
+
+    const makePiece = (i: number): Piece => ({
+      id: Date.now() + i,
+      name: quantity > 1 ? `${form.name.trim()} ${i + 1}` : form.name.trim(),
       clay: form.clay.trim(),
       stage: form.stage,
-      date: formatDate(new Date()),
+      createdAt: now,
+      timeline: [{ stage: form.stage, timestamp: now }],
+      batchId,
+      batchSize: quantity > 1 ? quantity : undefined,
       photo: form.photo || undefined,
       location: form.location.trim() || undefined,
       formingMethod: form.formingMethod || undefined,
@@ -54,10 +91,40 @@ export function useAddPieceForm(onClose: () => void, onAdd: (piece: Piece) => vo
       decorations: form.decorations.trim() || undefined,
       notes: form.notes.trim() || undefined,
       status: form.status || undefined,
+      epitaph: form.epitaph.trim() || undefined,
+      causeOfDeath: form.causeOfDeath.trim() || undefined,
       price: form.price.trim() || undefined,
     });
+
+    onAdd(Array.from({ length: quantity }, (_, i) => makePiece(i)));
     setForm(EMPTY_FORM);
   }, [form, onAdd]);
 
-  return { form, set, handleClose, pickImage, handleAdd };
+  const handleEdit = React.useCallback(() => {
+    if (!form.name.trim() || !form.clay.trim() || !initialPiece || !onEdit) return;
+    onEdit({
+      ...initialPiece,
+      name: form.name.trim(),
+      clay: form.clay.trim(),
+      stage: form.stage,
+      photo: form.photo || undefined,
+      location: form.location.trim() || undefined,
+      formingMethod: form.formingMethod || undefined,
+      form: form.form || undefined,
+      weight: form.weight.trim() || undefined,
+      dimensions: form.dimensions.trim() || undefined,
+      bisqueTemp: form.bisqueTemp || undefined,
+      glazeTemp: form.glazeTemp || undefined,
+      firingType: form.firingType || undefined,
+      decorations: form.decorations.trim() || undefined,
+      notes: form.notes.trim() || undefined,
+      status: form.status || undefined,
+      epitaph: form.epitaph.trim() || undefined,
+      causeOfDeath: form.causeOfDeath.trim() || undefined,
+      price: form.price.trim() || undefined,
+    });
+    setForm(EMPTY_FORM);
+  }, [form, initialPiece, onEdit]);
+
+  return { form, set, handleClose, pickImage, handleAdd, handleEdit };
 }
