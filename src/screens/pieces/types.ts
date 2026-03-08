@@ -1,0 +1,40 @@
+export type Piece = {
+  id: number;
+  name: string;
+  stage: string;
+  date: string;
+  clay: string;
+  photo?: string;
+  imgUrl?: string;
+  location?: string;
+  formingMethod?: string;
+  form?: string;
+  weight?: string;
+  dimensions?: string;
+  bisqueTemp?: string;
+  glazeTemp?: string;
+  firingType?: string;
+  decorations?: string;
+  notes?: string;
+  status?: string;
+  price?: string;
+};
+
+export type PieceForm = {
+  name: string;
+  clay: string;
+  stage: string;
+  photo?: string;
+  location: string;
+  formingMethod: string;
+  form: string;
+  weight: string;
+  dimensions: string;
+  bisqueTemp: string;
+  glazeTemp: string;
+  firingType: string;
+  decorations: string;
+  notes: string;
+  status: string;
+  price: string;
+};
