@@ -26,6 +26,8 @@
     "build:all": "eas build --platform all"
   },
   "dependencies": {
+    "@expo-google-fonts/dm-sans": "^0.4.2",
+    "@expo-google-fonts/fraunces": "^0.4.1",
     "@expo/vector-icons": "^15.0.3",
     "@gorhom/bottom-sheet": "^5.2.5",
     "@react-native-community/netinfo": "^11.4.1",

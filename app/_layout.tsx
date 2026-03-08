@@ -11,11 +11,24 @@ import '../global.css';
 
 import { ErrorBoundary } from '@/src/components/error-boundary';
 import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
+import {
+    DMSans_400Regular,
+    DMSans_500Medium,
+} from '@expo-google-fonts/dm-sans';
+import {
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
+} from '@expo-google-fonts/fraunces';
+
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded] = useFonts({
+    DMSans_400Regular,
+    DMSans_500Medium,
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
