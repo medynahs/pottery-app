@@ -14,7 +14,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { STAGES, STAGE_LABEL } from './constants';
+import { STAGES, STAGE_LABEL, isConditionStatus } from './constants';
 import type { Piece } from './types';
 
 type EntryDraft = { notes: string; photo?: string };
@@ -37,6 +37,86 @@ function formatDate(iso: string) {
 }
 
 const STAGE_ICON_MAP = Object.fromEntries(STAGES.map(s => [s.id, s.Icon]));
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={{ marginBottom: 10 }}>
+      <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
+        {label}
+      </Text>
+      <Text className="text-sm text-foreground font-medium">{value}</Text>
+    </View>
+  );
+}
+
+type DetailColors = { card: string; foreground: string; mutedForeground: string };
+
+function PieceDetails({ piece, colors }: { piece: Piece; colors: DetailColors }) {
+  const photoUri = piece.photo ?? piece.imgUrl;
+  const isCemetery = piece.stage === 'cemetery';
+  const rows: { label: string; value: string }[] = ([
+    piece.form          ? { label: 'Form', value: piece.form } : null,
+    piece.formingMethod ? { label: 'Forming Method', value: piece.formingMethod } : null,
+    piece.weight        ? { label: 'Weight', value: piece.weight } : null,
+    piece.dimensions    ? { label: 'Dimensions', value: piece.dimensions } : null,
+    piece.location      ? { label: 'Location', value: piece.location } : null,
+    piece.bisqueTemp    ? { label: 'Bisque Temp', value: piece.bisqueTemp } : null,
+    piece.glazeTemp     ? { label: 'Glaze Temp', value: piece.glazeTemp } : null,
+    piece.firingType    ? { label: 'Firing Type', value: piece.firingType } : null,
+    piece.decorations   ? { label: 'Decorations', value: piece.decorations } : null,
+    piece.price         ? { label: 'Price', value: piece.price } : null,
+    piece.notes         ? { label: 'Notes', value: piece.notes } : null,
+  ].filter(Boolean)) as { label: string; value: string }[];
+
+  return (
+    <View style={{ backgroundColor: colors.card, borderRadius: 16, marginBottom: 28, overflow: 'hidden' }}>
+      {photoUri && (
+        <Image source={{ uri: photoUri }} style={{ width: '100%', height: 180 }} resizeMode="cover" />
+      )}
+      <View style={{ padding: 14 }}>
+        {piece.status ? (
+          <View style={{
+            alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3,
+            borderRadius: 99, marginBottom: 12,
+            backgroundColor: isConditionStatus(piece.status)
+              ? 'hsla(0,55%,45%,0.12)' : 'hsla(100,20%,45%,0.12)',
+          }}>
+            <Text style={{
+              fontSize: 11, fontFamily: 'DMSans_500Medium',
+              color: isConditionStatus(piece.status) ? 'hsl(0 55% 45%)' : 'hsl(100 20% 45%)',
+            }}>
+              {piece.status}
+            </Text>
+          </View>
+        ) : null}
+        <DetailRow label="Clay Body" value={piece.clay} />
+        {rows.length > 0 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+            {rows.map(({ label, value }) => (
+              <View key={label} style={{ width: '50%', paddingRight: 8 }}>
+                <DetailRow label={label} value={value} />
+              </View>
+            ))}
+          </View>
+        )}
+        {isCemetery && piece.epitaph ? (
+          <View style={{ marginTop: 4 }}>
+            <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Epitaph</Text>
+            <Text className="font-display italic text-foreground" style={{ fontSize: 14, lineHeight: 20 }}>
+              "{piece.epitaph}"
+            </Text>
+          </View>
+        ) : null}
+        {isCemetery && piece.causeOfDeath ? (
+          <View style={{ marginTop: 10 }}>
+            <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Cause of Death</Text>
+            <Text className="text-sm text-foreground">{piece.causeOfDeath}</Text>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
 
 interface PieceJournalModalProps {
   piece: Piece | null;
@@ -100,14 +180,10 @@ export function PieceJournalModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <View className="bg-background rounded-t-3xl" style={{ maxHeight: '94%' }}>
-          {/* Handle */}
-          <View className="w-9 h-1 bg-muted rounded-full self-center mt-4 mb-3" />
-
+    <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose} statusBarTranslucent>
+      <View className="flex-1 bg-background">
           {/* Header */}
-          <View className="flex-row items-center px-6 pb-4 border-b border-border">
+          <View className="flex-row items-center px-6 pb-4 pt-14 border-b border-border">
             <View className="w-9 h-9 rounded-full bg-primary/15 items-center justify-center">
               <BookOpen size={16} color="hsl(15 50% 50%)" />
             </View>
@@ -134,6 +210,8 @@ export function PieceJournalModal({
               contentContainerStyle={{ paddingTop: 24, paddingBottom: 48 }}
               keyboardShouldPersistTaps="handled"
             >
+              <PieceDetails piece={piece} colors={colors} />
+
               {piece.timeline.map((entry, index) => {
                 const Icon = STAGE_ICON_MAP[entry.stage] ?? BookOpen;
                 const isLast = index === piece.timeline.length - 1;
@@ -248,7 +326,6 @@ export function PieceJournalModal({
               })}
             </ScrollView>
           </KeyboardAvoidingView>
-        </View>
       </View>
     </Modal>
   );
