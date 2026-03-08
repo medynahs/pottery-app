@@ -1,6 +1,6 @@
 import { Colors } from '@/src/constants/theme';
 import { Tabs } from 'expo-router';
-import { BookOpen, Flame, Home, Layers, SquareUser } from 'lucide-react-native';
+import { BookOpen, Flame, Home, Layers, Users } from 'lucide-react-native';
 import React from 'react';
 
 export default function TabLayout() {
@@ -16,9 +16,9 @@ export default function TabLayout() {
         headerShown: false,
       }}>
       <Tabs.Screen
-        name="studio"
+        name="overview"
         options={{
-          title: 'Studio',
+          title: 'Overview',
           tabBarIcon: ({ color }) => <Home size={28} color={color} />,
         }}
       />
@@ -46,8 +46,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <SquareUser size={28} color={color} />,
+          href: null,
+        }}
+      />
+        <Tabs.Screen
+        name="community"
+        options={{
+          title: 'Community',
+          tabBarIcon: ({ color }) => <Users size={28} color={color} />,
         }}
       />
     </Tabs>
