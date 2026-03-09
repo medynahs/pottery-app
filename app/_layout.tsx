@@ -1,4 +1,3 @@
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -12,12 +11,12 @@ import '../global.css';
 import { ErrorBoundary } from '@/src/components/error-boundary';
 import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
 import {
-    DMSans_400Regular,
-    DMSans_500Medium,
+  DMSans_400Regular,
+  DMSans_500Medium,
 } from '@expo-google-fonts/dm-sans';
 import {
-    Fraunces_600SemiBold,
-    Fraunces_700Bold,
+  Fraunces_600SemiBold,
+  Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
 
 // Prevent the splash screen from auto-hiding
@@ -47,16 +46,14 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <BottomSheetModalProvider>
-          <UIThemeProvider>
-            <ThemeProvider value={DefaultTheme}>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              </Stack>
-              <StatusBar style="auto" />
-            </ThemeProvider>
-          </UIThemeProvider>
-        </BottomSheetModalProvider>
+        <UIThemeProvider>
+          <ThemeProvider value={DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            </Stack>
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </UIThemeProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
   );

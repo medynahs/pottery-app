@@ -4,7 +4,7 @@ import { Card } from '@/src/components/ui/card';
 import { IconSymbol } from '@/src/components/ui/IconSymbol';
 import { Text } from '@/src/components/ui/text';
 import { useRouter } from 'expo-router';
-import { Flame, Gift, Heart, Sparkles, TrendingUp, Users } from 'lucide-react-native';
+import { Gift, Heart, Sparkles } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 
@@ -120,61 +120,6 @@ export default function OverviewScreen() {
         </View>
       </View>
 
-      {/* Studio Pulse */}
-      <View className="px-6 mb-6">
-        <View className="flex-row items-center gap-2 mb-4">
-          <Users size={18} color="hsl(15 50% 50%)" />
-          <Text className="font-serif text-xl font-bold text-foreground">Studio Pulse This Week</Text>
-        </View>
-
-        <View className="flex-row gap-4 mb-4">
-          {/* Stat: Most fired temp */}
-          <Card className="flex-1 p-5 items-center justify-center overflow-hidden">
-            <View
-              className="absolute top-0 left-0 right-0 h-1"
-              style={{ backgroundColor: 'hsl(213 94% 68%)', borderRadius: 0 }}
-            />
-            <TrendingUp size={24} color="hsl(213 94% 58%)" style={{ marginBottom: 8 }} />
-            <Text className="text-2xl font-serif font-bold text-foreground">Cone 6</Text>
-            <Text className="text-xs text-muted-foreground mt-1 text-center">Most fired temp</Text>
-          </Card>
-
-          {/* Stat: Kilns loaded */}
-          <Card className="flex-1 p-5 items-center justify-center overflow-hidden">
-            <View
-              className="absolute top-0 left-0 right-0 h-1"
-              style={{ backgroundColor: 'hsl(25 95% 60%)', borderRadius: 0 }}
-            />
-            <Flame size={24} color="hsl(25 95% 53%)" style={{ marginBottom: 8 }} />
-            <Text className="text-2xl font-serif font-bold text-foreground">18</Text>
-            <Text className="text-xs text-muted-foreground mt-1 text-center">Kilns loaded</Text>
-          </Card>
-        </View>
-
-        {/* Moments of Joy */}
-        <Card className="p-5">
-          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-            Moments of Joy
-          </Text>
-          <View className="gap-4">
-            {MOMENTS.map(({ Icon, iconBg, iconColor, text, highlight }, i) => (
-              <View key={i}>
-                {i > 0 && <View className="h-px bg-border mb-4" />}
-                <View className="flex-row items-center gap-3">
-                  <View className={`w-10 h-10 rounded-full ${iconBg} items-center justify-center flex-shrink-0`}>
-                    <Icon size={18} color={iconColor} />
-                  </View>
-                  <Text className="text-sm text-foreground flex-1 leading-relaxed">
-                    <Text className="font-semibold text-foreground">{highlight} </Text>
-                    {text.replace(highlight + ' ', '')}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </Card>
-      </View>
-
       {/* Today's Routine */}
       <View className="px-6 mb-6">
         <View className="flex-row justify-between items-center mb-4">
@@ -204,19 +149,6 @@ export default function OverviewScreen() {
             </TouchableOpacity>
           ))}
         </View>
-      </View>
-
-      {/* Action Buttons */}
-      <View className="px-6 mb-6 flex-row gap-3">
-        <Button className="flex-1 bg-primary rounded-2xl py-3">
-          <View className="flex-row items-center justify-center gap-2">
-            <IconSymbol name="plus.circle" size={20} color="white" />
-            <Text className="text-white font-bold">Log Piece</Text>
-          </View>
-        </Button>
-        <Button variant="outline" className="w-14 h-14 rounded-2xl items-center justify-center">
-          <IconSymbol name="person.2.fill" size={24} color="hsl(15 50% 50%)" />
-        </Button>
       </View>
 
       {/* Kiln Alerts */}

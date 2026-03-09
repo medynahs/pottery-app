@@ -1,10 +1,12 @@
 import { Colors } from '@/src/constants/theme';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Tabs } from 'expo-router';
 import { BookOpen, Flame, Home, Layers, Users } from 'lucide-react-native';
 import React from 'react';
 
 export default function TabLayout() {
   return (
+    <BottomSheetModalProvider>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors.light.primary,
@@ -57,5 +59,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </BottomSheetModalProvider>
   );
 }
