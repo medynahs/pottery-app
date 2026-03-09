@@ -1,6 +1,7 @@
 // src/screens/PiecesScreen.tsx
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
+import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { Layers, Plus, Search, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
@@ -8,11 +9,12 @@ import { Alert, ScrollView, TouchableOpacity, View } from 'react-native';
 import { AddPieceModal } from './pieces/AddPieceModal';
 import { BatchCard } from './pieces/BatchCard';
 import { CemeteryBanner } from './pieces/CemeteryBanner';
-import { INITIAL_PIECES, STAGES, nextStage } from './pieces/constants';
+import { INITIAL_PIECES, nextStage } from './pieces/constants';
 import { ActiveFilters, EMPTY_FILTERS, FilterSortSheet, SortKey, countActiveFilters } from './pieces/FilterSortSheet';
 import { PieceActionSheet } from './pieces/PieceActionSheet';
 import { PieceCard } from './pieces/PieceCard';
 import { PieceJournalModal } from './pieces/PieceJournalModal';
+import { STAGE_ICONS, resolveStageIcon } from './pieces/stageIconUtils';
 import type { Piece } from './pieces/types';
 
 function getSetName(name: string) {
@@ -44,6 +46,19 @@ export default function PiecesScreen() {
   const scrollRef = React.useRef<ScrollViewType>(null);
 
   const activeFilterCount = countActiveFilters(filters);
+
+  const { enabledStages } = useStageConfig();
+  const stageTabs = React.useMemo(() => [
+    { id: 'all', label: 'All', Icon: STAGE_ICONS.all },
+    ...enabledStages.map(s => ({ id: s.id, label: s.label, Icon: resolveStageIcon(s) })),
+  ], [enabledStages]);
+
+  // Reset active stage filter if it gets disabled
+  React.useEffect(() => {
+    if (activeStage !== 'all' && !enabledStages.some(s => s.id === activeStage)) {
+      setActiveStage('all');
+    }
+  }, [enabledStages, activeStage]);
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -364,7 +379,7 @@ export default function PiecesScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerClassName="flex-row gap-2 px-6 py-4"
         >
-          {STAGES.map(({ id, label, Icon }) => {
+          {stageTabs.map(({ id, label, Icon }) => {
             const isActive = activeStage === id;
             return (
               <TouchableOpacity

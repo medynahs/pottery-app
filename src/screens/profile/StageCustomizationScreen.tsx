@@ -1,34 +1,15 @@
 import { Text } from '@/src/components/ui/text';
 import { CEMETERY_ID, type StageConfig, useStageConfig } from '@/src/hooks/useStageConfig';
+import { PICKABLE_ICONS, resolveStageIcon } from '@/src/screens/pieces/stageIconUtils';
 import { useRouter } from 'expo-router';
 import {
-    ArchiveX,
-    Bell,
     ChevronDown,
     ChevronUp,
-    Clock,
-    Database,
-    Droplets,
-    Flame,
-    Globe,
-    Hammer,
-    Layers,
-    Lightbulb,
     Lock,
-    Moon,
-    Palette,
     Pencil,
     Plus,
     RotateCcw,
-    Scissors,
-    Shield,
-    Sparkles,
-    Star,
-    Thermometer,
     Trash2,
-    Trophy,
-    Wind,
-    Zap,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
@@ -39,21 +20,6 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-
-// Icon map so we don't need to pass Icon components through context
-const STAGE_ICONS: Record<string, React.ComponentType<{ size: number; color: string }>> = {
-  idea: Lightbulb,
-  forming: Hammer,
-  'leather-hard': Droplets,
-  trimming: Scissors,
-  drying: Wind,
-  'bone-dry': Wind,
-  bisque: Flame,
-  glazing: Sparkles,
-  'glaze-fired': Zap,
-  finished: Star,
-  cemetery: ArchiveX,
-};
 
 const STAGE_COLORS: Record<string, { icon: string; bg: string }> = {
   idea:           { icon: 'hsl(213 80% 55%)', bg: 'bg-blue-50' },
@@ -68,34 +34,6 @@ const STAGE_COLORS: Record<string, { icon: string; bg: string }> = {
   finished:       { icon: 'hsl(142 60% 40%)', bg: 'bg-green-50' },
   cemetery:       { icon: 'hsl(0 0% 50%)',    bg: 'bg-gray-100' },
 };
-
-// ─── Pickable icon palette (for custom stages) ───────────────────────────────
-
-const PICKABLE_ICONS: Array<{ key: string; Icon: React.ComponentType<{ size: number; color: string }> }> = [
-  { key: 'lightbulb',   Icon: Lightbulb   },
-  { key: 'hammer',      Icon: Hammer      },
-  { key: 'droplets',    Icon: Droplets    },
-  { key: 'scissors',    Icon: Scissors    },
-  { key: 'wind',        Icon: Wind        },
-  { key: 'flame',       Icon: Flame       },
-  { key: 'sparkles',    Icon: Sparkles    },
-  { key: 'zap',         Icon: Zap         },
-  { key: 'star',        Icon: Star        },
-  { key: 'palette',     Icon: Palette     },
-  { key: 'layers',      Icon: Layers      },
-  { key: 'clock',       Icon: Clock       },
-  { key: 'thermometer', Icon: Thermometer },
-  { key: 'trophy',      Icon: Trophy      },
-  { key: 'moon',        Icon: Moon        },
-  { key: 'shield',      Icon: Shield      },
-  { key: 'globe',       Icon: Globe       },
-  { key: 'bell',        Icon: Bell        },
-  { key: 'database',    Icon: Database    },
-  { key: 'archive',     Icon: ArchiveX    },
-];
-
-const PICKABLE_ICONS_MAP: Record<string, React.ComponentType<{ size: number; color: string }>> =
-  Object.fromEntries(PICKABLE_ICONS.map(({ key, Icon }) => [key, Icon]));
 
 // ─── Stage Row ───────────────────────────────────────────────────────────────
 
@@ -128,10 +66,7 @@ function StageRow({
   const [draft, setDraft] = useState(stage.label);
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const resolvedIcon = stage.isCustom && stage.iconKey
-    ? PICKABLE_ICONS_MAP[stage.iconKey]
-    : STAGE_ICONS[stage.id];
-  const Icon = resolvedIcon ?? Lightbulb;
+  const Icon = resolveStageIcon(stage);
   const colors = STAGE_COLORS[stage.id] ?? { icon: 'hsl(15 50% 50%)', bg: 'bg-orange-50' };
   const dim = !stage.enabled;
 

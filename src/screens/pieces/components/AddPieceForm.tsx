@@ -1,6 +1,7 @@
 import { Input } from '@/src/components/ui/input';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
+import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
@@ -10,9 +11,9 @@ import {
   FORMING_METHODS,
   GLAZE_TEMPS,
   PIECE_FORMS,
-  PIECE_STAGES,
   PIECE_STATUSES,
 } from '../constants';
+import { resolveStageIcon } from '../stageIconUtils';
 import type { PieceForm } from '../types';
 import { FieldLabel } from './FieldLabel';
 import { OptionPills } from './OptionPills';
@@ -27,6 +28,7 @@ interface AddPieceFormProps {
 }
 
 export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddPieceFormProps) {
+  const { enabledStages } = useStageConfig();
   const isCemetery = form.stage === 'cemetery';
 
   return (
@@ -96,25 +98,26 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddP
           showsHorizontalScrollIndicator={false}
           contentContainerClassName="flex-row gap-2"
         >
-          {PIECE_STAGES.map(({ id, label, Icon }) => {
-            const isActive = form.stage === id;
+          {enabledStages.map(s => {
+            const StageIcon = resolveStageIcon(s);
+            const isActive = form.stage === s.id;
             return (
               <Pressable
-                key={id}
-                onPress={() => set('stage', id)}
+                key={s.id}
+                onPress={() => set('stage', s.id)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: isActive }}
                 className={`flex-row items-center gap-1.5 px-3 py-2 rounded-full border ${
                   isActive ? 'bg-foreground border-foreground' : 'bg-card border-border'
                 }`}
               >
-                <Icon size={13} color={isActive ? colors.background : colors.mutedForeground} />
+                <StageIcon size={13} color={isActive ? colors.background : colors.mutedForeground} />
                 <Text
                   className={`text-xs font-medium ${
                     isActive ? 'text-background' : 'text-muted-foreground'
                   }`}
                 >
-                  {label}
+                  {s.label}
                 </Text>
               </Pressable>
             );
