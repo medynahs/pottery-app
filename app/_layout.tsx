@@ -10,6 +10,7 @@ import '../global.css';
 
 import { ErrorBoundary } from '@/src/components/error-boundary';
 import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
+import { StageConfigProvider } from '@/src/hooks/useStageConfig';
 import {
   DMSans_400Regular,
   DMSans_500Medium,
@@ -48,9 +49,12 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <UIThemeProvider>
           <ThemeProvider value={DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            </Stack>
+            <StageConfigProvider>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="stage-customization" options={{ headerShown: false, presentation: 'modal' }} />
+              </Stack>
+            </StageConfigProvider>
             <StatusBar style="auto" />
           </ThemeProvider>
         </UIThemeProvider>

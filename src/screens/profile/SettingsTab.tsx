@@ -1,8 +1,10 @@
 import { Text } from '@/src/components/ui/text';
+import { useStageConfig } from '@/src/hooks/useStageConfig';
+import { useRouter } from 'expo-router';
 import {
-  Bell, Clock, Database, Flame, Globe, HelpCircle,
-  Layers, Lock, LogOut, Mail, Moon, Palette,
-  Shield, Skull, Sparkles, Thermometer, Trophy, Zap,
+    Bell, Clock, Database, Flame, Globe, HelpCircle,
+    Layers, Lock, LogOut, Mail, Moon, Palette,
+    Shield, Skull, Sparkles, Thermometer, Trophy, Zap,
 } from 'lucide-react-native';
 import React from 'react';
 import { View } from 'react-native';
@@ -23,11 +25,14 @@ export function SettingsTab({
   notifs: NotifState;
   toggle: (key: keyof NotifState) => void;
 }) {
+  const router = useRouter();
+  const { enabledStages } = useStageConfig();
+
   return (
     <>
       <SectionLabel title="Studio" />
       <SettingsGroup>
-        <SettingsRow icon={Layers}      iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50"   label="Stage Customization" value="6 stages" />
+        <SettingsRow icon={Layers}      iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50"   label="Stage Customization" value={`${enabledStages.length} stages`} onPress={() => router.push('/stage-customization')} />
         <SettingsRow icon={Database}    iconColor="hsl(24 30% 45%)"  iconBg="bg-stone-100" label="Clay Bodies"         value="4 saved" />
         <SettingsRow icon={Sparkles}    iconColor="hsl(270 60% 55%)" iconBg="bg-purple-50" label="Glazes"              value="11 saved" />
         <SettingsRow icon={Thermometer} iconColor="hsl(0 55% 45%)"   iconBg="bg-red-50"    label="Kilns"               value="2 kilns" />
