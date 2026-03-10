@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import '../global.css';
@@ -67,20 +68,20 @@ export default function RootLayout() {
   const hydrated = useStoreHydration();
 
   useEffect(() => {
-    if (loaded) {
+    if (loaded && hydrated) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, hydrated]);
 
   if (!loaded || !hydrated) {
-    return null;
+    return <View style={{ flex: 1, backgroundColor: '#D7682D' }} />;
   }
 
   return (
     <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#D7682D' }}>
         <UIThemeProvider>
-          <ThemeProvider value={DefaultTheme}>
+          <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#D7682D' } }}>
             <StageConfigProvider>
               <AppShell />
             </StageConfigProvider>

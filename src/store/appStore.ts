@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
+import type { Firing, FiringState, Kiln, KilnChecklist } from '../screens/kiln/types';
 import { INITIAL_PIECES, STAGES, nextStage } from '../screens/pieces/constants';
 import type { Piece } from '../screens/pieces/types';
 import { zustandStorage } from './storage';
@@ -100,6 +102,23 @@ interface AppState {
   moveStageUp: (id: string) => void;
   moveStageDown: (id: string) => void;
   resetStagesToDefaults: () => void;
+
+  // ── Kilns ─────────────────────────────────────────────────────
+  kilns: Kiln[];
+  firings: Firing[];
+  kilnChecklist: KilnChecklist[];
+  addKiln: (kiln: Kiln) => void;
+  updateKiln: (kiln: Kiln) => void;
+  deleteKiln: (id: string) => void;
+  addFiring: (firing: Firing) => void;
+  updateFiring: (firing: Firing) => void;
+  deleteFiring: (id: string) => void;
+  updateFiringState: (firingId: string, state: FiringState) => void;
+  assignPiecesToFiring: (firingId: string, pieceIds: number[]) => void;
+  completeFiring: (firingId: string, result: 'success' | 'issues' | 'failure', resultNotes: string) => void;
+  toggleKilnChecklistItem: (id: string) => void;
+  addKilnChecklistItem: (text: string) => void;
+  removeKilnChecklistItem: (id: string) => void;
 
   // ── Offline / Sync ────────────────────────────────────────────
   /** Operations queued while offline, waiting to sync to the server. */
@@ -313,6 +332,83 @@ export const useAppStore = create<AppState>()(
   },
   resetStagesToDefaults: () => set({ stageConfig: buildDefaultStages() }),
 
+  // ── Kilns ─────────────────────────────────────────────────────
+  kilns: [],
+  firings: [],
+  kilnChecklist: DEFAULT_CHECKLIST,
+  addKiln: (kiln) => set((state) => ({ kilns: [kiln, ...state.kilns] })),
+  updateKiln: (kiln) =>
+    set((state) => ({ kilns: state.kilns.map((k) => (k.id === kiln.id ? kiln : k)) })),
+  deleteKiln: (id) =>
+    set((state) => ({
+      kilns: state.kilns.filter((k) => k.id !== id),
+      firings: state.firings.filter((f) => f.kilnId !== id),
+    })),
+  addFiring: (firing) => set((state) => ({ firings: [firing, ...state.firings] })),
+  updateFiring: (firing) =>
+    set((state) => ({ firings: state.firings.map((f) => (f.id === firing.id ? firing : f)) })),
+  deleteFiring: (id) =>
+    set((state) => ({ firings: state.firings.filter((f) => f.id !== id) })),
+  updateFiringState: (firingId, firingState) =>
+    set((state) => ({
+      firings: state.firings.map((f) => {
+        if (f.id !== firingId) return f;
+        const now = new Date().toISOString();
+        return {
+          ...f,
+          state: firingState,
+          startedAt: firingState === 'firing' && !f.startedAt ? now : f.startedAt,
+        };
+      }),
+    })),
+  assignPiecesToFiring: (firingId, pieceIds) =>
+    set((state) => ({
+      firings: state.firings.map((f) =>
+        f.id !== firingId ? f : { ...f, pieceIds: Array.from(new Set([...f.pieceIds, ...pieceIds])) }
+      ),
+    })),
+  completeFiring: (firingId, result, resultNotes) => {
+    const state = get();
+    const firing = state.firings.find((f) => f.id === firingId);
+    if (!firing) return;
+    const now = new Date().toISOString();
+    // Auto-advance assigned pieces to the appropriate next stage
+    const targetStage = FIRING_TARGET_STAGE[firing.type];
+    if (targetStage && firing.pieceIds.length > 0) {
+      const idSet = new Set(firing.pieceIds);
+      set((s) => ({
+        pieces: s.pieces.map((p) => {
+          if (!idSet.has(p.id)) return p;
+          return { ...p, stage: targetStage, timeline: [...p.timeline, { stage: targetStage, timestamp: now }] };
+        }),
+      }));
+    }
+    set((s) => ({
+      firings: s.firings.map((f) =>
+        f.id !== firingId
+          ? f
+          : { ...f, state: 'completed', completedAt: now, result, resultNotes }
+      ),
+    }));
+  },
+  toggleKilnChecklistItem: (id) =>
+    set((state) => ({
+      kilnChecklist: state.kilnChecklist.map((item) =>
+        item.id === id ? { ...item, checked: !item.checked } : item
+      ),
+    })),
+  addKilnChecklistItem: (text) =>
+    set((state) => ({
+      kilnChecklist: [
+        ...state.kilnChecklist,
+        { id: `c-${Date.now()}`, text, checked: false },
+      ],
+    })),
+  removeKilnChecklistItem: (id) =>
+    set((state) => ({
+      kilnChecklist: state.kilnChecklist.filter((item) => item.id !== id),
+    })),
+
   // ── Offline / Sync ────────────────────────────────────────────
   pendingSyncOps: [],
   isSyncing: false,
@@ -344,6 +440,9 @@ export const useAppStore = create<AppState>()(
         tasks: state.tasks,
         pieces: state.pieces,
         stageConfig: state.stageConfig,
+        kilns: state.kilns,
+        firings: state.firings,
+        kilnChecklist: state.kilnChecklist,
         pendingSyncOps: state.pendingSyncOps,
         lastSyncedAt: state.lastSyncedAt,
       }),

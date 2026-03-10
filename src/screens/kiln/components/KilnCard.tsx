@@ -1,0 +1,83 @@
+// src/screens/kiln/components/KilnCard.tsx
+import { Card } from '@/src/components/ui/card';
+import { Text } from '@/src/components/ui/text';
+import { Colors } from '@/src/constants/theme';
+import { useColorScheme } from '@/src/hooks/useColorScheme';
+import { FlameKindling, MoreHorizontal, Trash2 } from 'lucide-react-native';
+import React from 'react';
+import { TouchableOpacity, View } from 'react-native';
+import { KILN_TYPE_LABELS } from '../constants';
+import type { Kiln } from '../types';
+
+interface KilnCardProps {
+  kiln: Kiln;
+  firingCount: number;
+  onEdit: () => void;
+  onDelete: () => void;
+  onStartFiring: () => void;
+}
+
+export function KilnCard({ kiln, firingCount, onEdit, onDelete, onStartFiring }: KilnCardProps) {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme];
+
+  return (
+    <Card className="p-5 mb-3">
+      <View className="flex-row items-start justify-between mb-2">
+        <View className="flex-1 pr-3">
+          <Text className="text-base font-serif font-bold text-foreground">{kiln.name}</Text>
+          <Text className="text-xs text-muted-foreground mt-0.5">
+            {KILN_TYPE_LABELS[kiln.type]}
+            {kiln.coneRange ? `  ·  ${kiln.coneRange}` : ''}
+            {kiln.location ? `  ·  ${kiln.location}` : ''}
+          </Text>
+        </View>
+        <View className="flex-row gap-1">
+          <TouchableOpacity onPress={onEdit} className="p-2">
+            <MoreHorizontal size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onDelete} className="p-2">
+            <Trash2 size={14} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View className="flex-row flex-wrap gap-2 mb-3">
+        {kiln.shelves > 0 && (
+          <View className="bg-muted/40 rounded-xl px-3 py-1.5">
+            <Text className="text-xs text-muted-foreground">{kiln.shelves} shelves</Text>
+          </View>
+        )}
+        {kiln.size ? (
+          <View className="bg-muted/40 rounded-xl px-3 py-1.5">
+            <Text className="text-xs text-muted-foreground">{kiln.size}</Text>
+          </View>
+        ) : null}
+        <View className="bg-muted/40 rounded-xl px-3 py-1.5">
+          <Text className="text-xs text-muted-foreground">
+            {firingCount} firing{firingCount !== 1 ? 's' : ''}
+          </Text>
+        </View>
+      </View>
+
+      {kiln.notes ? (
+        <Text className="text-xs text-muted-foreground italic mb-3" numberOfLines={2}>
+          "{kiln.notes}"
+        </Text>
+      ) : null}
+
+      <TouchableOpacity
+        onPress={onStartFiring}
+        className="flex-row items-center justify-center gap-2 py-2.5 rounded-xl"
+        style={{
+          borderWidth: 1,
+          borderColor: 'hsl(15 50% 50% / 0.3)',
+          backgroundColor: 'hsl(15 50% 50% / 0.06)',
+        }}
+      >
+        <FlameKindling size={14} color="hsl(15 50% 50%)" />
+        <Text className="text-sm font-semibold text-primary">Start Firing</Text>
+      </TouchableOpacity>
+    </Card>
+  );
+}

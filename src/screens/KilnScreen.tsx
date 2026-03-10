@@ -1,124 +1,281 @@
-// src/screens/KilnScreen.tsx
+﻿// src/screens/KilnScreen.tsx
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
-import { Checkbox } from '@/src/components/ui/checkbox';
-import { IconSymbol } from '@/src/components/ui/IconSymbol';
 import { Text } from '@/src/components/ui/text';
+import { useAppStore } from '@/src/store';
+import { Flame, FlameKindling, Layers, Plus, Thermometer, Timer, Zap } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ScrollView, TouchableOpacity, View } from 'react-native';
+import { AddKilnModal } from './kiln/AddKilnModal';
+import { ActiveFiringCard } from './kiln/components/ActiveFiringCard';
+import { FiringHistoryRow, ScheduledFiringRow, WaitingPieceRow } from './kiln/components/FiringRows';
+import { KilnCard } from './kiln/components/KilnCard';
+import { LoadingChecklist } from './kiln/components/LoadingChecklist';
+import { SectionHeader } from './kiln/components/SectionHeader';
+import { FiringDetailModal } from './kiln/FiringDetailModal';
+import { useKilnScreen } from './kiln/hooks/useKilnScreen';
+import { StartFiringModal } from './kiln/StartFiringModal';
+import type { Kiln } from './kiln/types';
 
 export default function KilnScreen() {
-  const [checklist, setChecklist] = React.useState([
-    { text: "Wipe bottoms of all glazed pieces", checked: false },
-    { text: "Check pieces for cracks before loading", checked: false },
-    { text: "Apply kiln wash to shelves if needed", checked: true },
-    { text: "Arrange pieces by height (tallest in back)", checked: false }
-  ]);
+  const {
+    kilns,
+    kilnChecklist,
+    activeFirings,
+    scheduledFirings,
+    completedFirings,
+    waitingForBisque,
+    waitingForGlaze,
+    assignedPieces,
+    kilnFiringCounts,
+    addKilnOpen, setAddKilnOpen,
+    editKiln, setEditKiln,
+    startFiringOpen, setStartFiringOpen,
+    startFiringDefaultKilnId,
+    detailFiring, setDetailFiring,
+    handleSaveKiln,
+    handleStartFiringFromKiln,
+    handleDeleteKiln,
+    addFiring,
+    toggleKilnChecklistItem,
+    addKilnChecklistItem,
+    removeKilnChecklistItem,
+  } = useKilnScreen();
 
-  const toggleChecklist = (index: number) => {
-    const newChecklist = [...checklist];
-    newChecklist[index].checked = !newChecklist[index].checked;
-    setChecklist(newChecklist);
+  const kilnsFromStore = useAppStore((s) => s.kilns);
+  const getKilnName = (kilnId: string) =>
+    kilnsFromStore.find((k) => k.id === kilnId)?.name ?? 'Unknown Kiln';
+
+  const confirmDeleteKiln = (kiln: Kiln) => {
+    Alert.alert(
+      'Delete Kiln',
+      `Delete "${kiln.name}"? All associated firings will also be deleted.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => handleDeleteKiln(kiln) },
+      ]
+    );
   };
 
-  const ProgressBar = ({ value }: { value: number }) => (
-    <View className="w-full h-2 bg-muted rounded-full overflow-hidden">
-      <View
-        className="h-full bg-primary rounded-full"
-        style={{ width: `${value}%` }}
+  return (
+    <View className="flex-1 bg-background">
+      {/* Header */}
+      <View className="px-6 pt-20 pb-4 bg-background border-b border-border">
+        <View className="flex-row justify-between items-center">
+          <View className="flex-row items-center gap-3">
+            <Image
+              source={require('../../assets/animations/kilnPet.gif')}
+              style={{ width: 52, height: 52 }}
+              resizeMode="contain"
+            />
+            <View>
+              <Text className="text-3xl font-serif font-bold text-foreground">Studio Kiln</Text>
+              <Text className="text-sm text-muted-foreground mt-0.5">
+                {kilns.length} kiln{kilns.length !== 1 ? 's' : ''} ·{' '}
+                {activeFirings.length + scheduledFirings.length} active
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            onPress={() => setStartFiringOpen(true)}
+            className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-primary"
+          >
+            <FlameKindling size={16} color="white" />
+            <Text className="text-sm font-semibold text-white">Fire</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="px-6 pt-6 pb-10">
+
+          {/* Active Firings */}
+          {activeFirings.length > 0 && (
+            <View className="mb-8">
+              <SectionHeader title="Active Firings" icon={<Flame size={18} color="hsl(15 80% 52%)" />} />
+              {activeFirings.map((f) => (
+                <ActiveFiringCard key={f.id} firing={f} onPress={() => setDetailFiring(f)} />
+              ))}
+            </View>
+          )}
+
+          {/* Pieces Waiting */}
+          <View className="mb-8">
+            <SectionHeader title="Pieces Waiting" icon={<Layers size={18} color="hsl(24 20% 40%)" />} />
+            <Card className="px-4 pt-2 pb-3">
+              {waitingForBisque.length === 0 && waitingForGlaze.length === 0 && assignedPieces.length === 0 ? (
+                <View className="py-4 items-center">
+                  <Text className="text-sm text-muted-foreground">No pieces waiting for firing</Text>
+                  <Text className="text-xs text-muted-foreground mt-1">Pieces at Bone Dry or Glazing will appear here</Text>
+                </View>
+              ) : (
+                <>
+                  {waitingForBisque.length > 0 && (
+                    <>
+                      <Text className="text-xs font-semibold text-amber-600 mt-2 mb-1">
+                        Bone Dry — Ready for Bisque ({waitingForBisque.length})
+                      </Text>
+                      {waitingForBisque.map((p, i) => (
+                        <WaitingPieceRow
+                          key={p.id}
+                          name={p.name}
+                          sublabel={p.clay || 'Unknown clay'}
+                          dotColor="#d97706"
+                          isLast={i === waitingForBisque.length - 1 && waitingForGlaze.length === 0 && assignedPieces.length === 0}
+                        />
+                      ))}
+                    </>
+                  )}
+                  {waitingForGlaze.length > 0 && (
+                    <>
+                      <Text className="text-xs font-semibold text-orange-600 mt-3 mb-1">
+                        Glazed — Ready for Glaze Fire ({waitingForGlaze.length})
+                      </Text>
+                      {waitingForGlaze.map((p, i) => (
+                        <WaitingPieceRow
+                          key={p.id}
+                          name={p.name}
+                          sublabel={p.clay || 'Unknown clay'}
+                          dotColor="#ea580c"
+                          isLast={i === waitingForGlaze.length - 1 && assignedPieces.length === 0}
+                        />
+                      ))}
+                    </>
+                  )}
+                  {assignedPieces.length > 0 && (
+                    <>
+                      <Text className="text-xs font-semibold text-blue-600 mt-3 mb-1">
+                        Assigned to Firing ({assignedPieces.length})
+                      </Text>
+                      {assignedPieces.map((p, i) => (
+                        <WaitingPieceRow
+                          key={p.id}
+                          name={p.name}
+                          sublabel={p.clay || 'Unknown clay'}
+                          dotColor="#2563eb"
+                          isLast={i === assignedPieces.length - 1}
+                        />
+                      ))}
+                    </>
+                  )}
+                </>
+              )}
+            </Card>
+          </View>
+
+          {/* Scheduled */}
+          {scheduledFirings.length > 0 && (
+            <View className="mb-8">
+              <SectionHeader title="Scheduled" icon={<Timer size={18} color="hsl(220 80% 56%)" />} />
+              {scheduledFirings.map((f) => (
+                <ScheduledFiringRow
+                  key={f.id}
+                  firing={f}
+                  kilnName={getKilnName(f.kilnId)}
+                  onPress={() => setDetailFiring(f)}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* Loading Checklist */}
+          <View className="mb-8">
+            <SectionHeader title="Loading Checklist" />
+            <LoadingChecklist
+              items={kilnChecklist}
+              onToggle={toggleKilnChecklistItem}
+              onRemove={removeKilnChecklistItem}
+              onAdd={addKilnChecklistItem}
+            />
+          </View>
+
+          {/* My Kilns */}
+          <View className="mb-8">
+            <SectionHeader
+              title="My Kilns"
+              icon={<Thermometer size={18} color="hsl(15 50% 50%)" />}
+              action={
+                <TouchableOpacity
+                  onPress={() => setAddKilnOpen(true)}
+                  className="flex-row items-center gap-1 px-3 py-1.5 rounded-xl border border-border bg-card"
+                >
+                  <Plus size={14} color="hsl(15 50% 50%)" />
+                  <Text className="text-xs font-semibold text-primary">Add Kiln</Text>
+                </TouchableOpacity>
+              }
+            />
+            {kilns.length === 0 ? (
+              <Card className="p-6 items-center">
+                <FlameKindling size={32} color="hsl(24 20% 60%)" />
+                <Text className="text-sm font-semibold text-foreground mt-3 mb-1">No kilns yet</Text>
+                <Text className="text-xs text-muted-foreground text-center mb-4">
+                  Add your kiln to start tracking firings, piece history, and quirks.
+                </Text>
+                <Button onPress={() => setAddKilnOpen(true)} variant="outline" className="w-full">
+                  <Text className="text-sm font-semibold">Add Your First Kiln</Text>
+                </Button>
+              </Card>
+            ) : (
+              kilns.map((kiln) => (
+                <KilnCard
+                  key={kiln.id}
+                  kiln={kiln}
+                  firingCount={kilnFiringCounts[kiln.id] ?? 0}
+                  onEdit={() => { setEditKiln(kiln); setAddKilnOpen(true); }}
+                  onDelete={() => confirmDeleteKiln(kiln)}
+                  onStartFiring={() => handleStartFiringFromKiln(kiln.id)}
+                />
+              ))
+            )}
+          </View>
+
+          {/* Firing History */}
+          {completedFirings.length > 0 && (
+            <View className="mb-4">
+              <SectionHeader title="Firing History" icon={<Zap size={18} color="hsl(142 60% 40%)" />} />
+              {completedFirings.map((f) => (
+                <FiringHistoryRow
+                  key={f.id}
+                  firing={f}
+                  kilnName={getKilnName(f.kilnId)}
+                  onPress={() => setDetailFiring(f)}
+                />
+              ))}
+            </View>
+          )}
+
+          {kilns.length > 0 &&
+            completedFirings.length === 0 &&
+            activeFirings.length === 0 &&
+            scheduledFirings.length === 0 && (
+              <View className="items-center py-8">
+                <Text className="text-sm text-muted-foreground">No firings recorded yet.</Text>
+                <Text className="text-xs text-muted-foreground mt-1">
+                  Start a firing to begin your history.
+                </Text>
+              </View>
+            )}
+        </View>
+      </ScrollView>
+
+      {/* Modals */}
+      <AddKilnModal
+        visible={addKilnOpen || !!editKiln}
+        onClose={() => { setAddKilnOpen(false); setEditKiln(undefined); }}
+        onSave={handleSaveKiln}
+        editKiln={editKiln}
+      />
+      <StartFiringModal
+        visible={startFiringOpen}
+        onClose={() => setStartFiringOpen(false)}
+        onStart={addFiring}
+        defaultKilnId={startFiringDefaultKilnId}
+      />
+      <FiringDetailModal
+        firing={detailFiring}
+        visible={detailFiring !== null}
+        onClose={() => setDetailFiring(null)}
       />
     </View>
-  );
-
-  return (
-    <ScrollView className="flex-1 bg-background">
-      <View className="px-6 pt-20 pb-6">
-        <Text className="text-3xl font-serif font-bold text-foreground">Studio Kiln</Text>
-        <Text className="text-muted-foreground mt-1 text-sm">Cone 6 Gas Firing</Text>
-      </View>
-
-      {/* Active Firing Status */}
-      <View className="px-6 mb-8">
-        <Card className="p-6 items-center bg-accent/10 border-accent">
-          <View className="w-20 h-20 mb-4 items-center justify-center">
-            <IconSymbol name="flame.fill" size={60} color="hsl(15 50% 50%)" />
-          </View>
-
-          <Text className="text-xs font-semibold uppercase tracking-wider text-accent mb-2">Firing Active</Text>
-          <Text className="text-2xl font-serif font-bold text-foreground mb-1">Bisque Firing</Text>
-          <Text className="text-sm text-muted-foreground mb-4">Started 4 hours ago by Sarah</Text>
-
-          <View className="w-full mb-4">
-            <View className="flex-row justify-between mb-2">
-              <Text className="text-xs font-semibold text-foreground">Temperature</Text>
-              <Text className="text-xs font-semibold text-foreground">1050°F / 1945°F</Text>
-            </View>
-            <ProgressBar value={54} />
-          </View>
-
-          <View className="w-full flex-row gap-3">
-            <Card className="flex-1 p-3 items-center justify-center bg-card">
-              <IconSymbol name="clock.fill" size={18} color="hsl(15 50% 50%)" />
-              <Text className="text-xs text-foreground font-medium mt-2 text-center">Est. 8h left</Text>
-            </Card>
-            <Card className="flex-1 p-3 items-center justify-center bg-card">
-              <IconSymbol name="thermometer" size={18} color="hsl(15 50% 50%)" />
-              <Text className="text-xs text-foreground font-medium mt-2 text-center">Heating up</Text>
-            </Card>
-          </View>
-        </Card>
-      </View>
-
-      {/* Loading Checklist */}
-      <View className="px-6 mb-8">
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="font-serif text-xl font-bold text-foreground">Next Firing Checklist</Text>
-          <IconSymbol name="info.circle" size={18} color="hsl(34 30% 85%)" />
-        </View>
-
-        <Card className="p-5">
-          <View className="gap-3 mb-4">
-            {checklist.map((item, i) => (
-              <TouchableOpacity key={i} onPress={() => toggleChecklist(i)} className="flex-row items-center gap-3">
-                <Checkbox checked={item.checked} />
-                <Text className={`text-sm flex-1 ${item.checked ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
-                  {item.text}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Button variant="outline" className="w-full">
-            <Text className="text-sm">Add Custom Task</Text>
-          </Button>
-        </Card>
-      </View>
-
-      {/* History */}
-      <View className="px-6 mb-8">
-        <View className="flex-row items-center gap-2 mb-4">
-          <IconSymbol name="clock.arrow.circlepath" size={18} color="hsl(15 50% 50%)" />
-          <Text className="font-serif text-xl font-bold text-foreground">Recent Firings</Text>
-        </View>
-        <View className="gap-3">
-          {[
-            { type: "Glaze Cone 6", date: "Oct 10", by: "Studio Manager", status: "Success" },
-            { type: "Bisque Cone 04", date: "Oct 5", by: "Sarah", status: "Success" },
-            { type: "Luster Firing", date: "Sep 28", by: "Mike", status: "Issues reported" }
-          ].map((fire, i) => (
-            <Card key={i} className="p-4 flex-row justify-between items-center">
-              <View className="flex-1">
-                <Text className="font-semibold text-sm text-foreground">{fire.type}</Text>
-                <Text className="text-xs text-muted-foreground mt-1">{fire.date} • by {fire.by}</Text>
-              </View>
-              <View className={`px-3 py-1 rounded-full ${fire.status === 'Success' ? 'bg-green-100' : 'bg-red-100'}`}>
-                <Text className={`text-xs font-medium ${fire.status === 'Success' ? 'text-green-700' : 'text-red-700'}`}>
-                  {fire.status}
-                </Text>
-              </View>
-            </Card>
-          ))}
-        </View>
-      </View>
-    </ScrollView>
   );
 }
