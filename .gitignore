@@ -32,6 +32,13 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env.local
+
+# env files with secrets (use .env.development / .env.production for non-secret config)
+.env.secrets
+
+# Google Play service account key (contains credentials — never commit)
+google-service-account.json
 
 # typescript
 *.tsbuildinfo

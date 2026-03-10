@@ -1,21 +1,25 @@
 {
   "expo": {
-    "name": "Expo NativeWind Template",
-    "slug": "expo-nativewind-template",
-    "version": "0.1.0",
+    "name": "Pottery Life",
+    "slug": "pottery-life",
+    "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "icon": "./assets/images/logo.png",
+    "scheme": "potterylife",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#5B21B6"
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.ariane.potterylife",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select and save images.",
         "NSPhotoLibraryAddUsageDescription": "This app needs permission to save photos to your photo library.",
         "NSCameraUsageDescription": "This app needs access to your camera to take photos.",
@@ -26,11 +30,11 @@
       }
     },
     "android": {
+      "package": "com.ariane.potterylife",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#5B21B6"
       },
-      "edgeToEdgeEnabled": true,
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
@@ -53,7 +57,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -62,6 +66,16 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9c6bba93-f1c8-4f32-90cc-8d6b1aa9d288"
+      }
+    },
+    "owner": "arinane",
+    "updates": {
+      "url": "https://u.expo.dev/9c6bba93-f1c8-4f32-90cc-8d6b1aa9d288"
     }
   }
 }
