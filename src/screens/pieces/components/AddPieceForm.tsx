@@ -269,7 +269,7 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddP
 
       {/* Notes */}
       {!isCemetery && (
-      <View className="mt-5">
+      <View className="mt-10">
         <FieldLabel>Notes</FieldLabel>
         <Input
           placeholder="Any additional notes..."
@@ -285,7 +285,7 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddP
 
       {/* Status */}
       {!isCemetery && (
-      <View className="mt-5">
+      <View className="mt-10">
         <FieldLabel>Status</FieldLabel>
         <OptionPills
           options={PIECE_STATUSES}
