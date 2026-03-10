@@ -1,6 +1,31 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { INITIAL_PIECES, STAGES, nextStage } from '../screens/pieces/constants';
 import type { Piece } from '../screens/pieces/types';
+import { zustandStorage } from './storage';
+
+// ── Sync queue ────────────────────────────────────────────────────────────────
+export type SyncOperationType =
+  | 'addPieces'
+  | 'updatePiece'
+  | 'deletePiece'
+  | 'advancePiece'
+  | 'advancePieceIds'
+  | 'advanceBatch'
+  | 'sendToCemetery'
+  | 'duplicatePiece'
+  | 'duplicateBatch'
+  | 'updateJournalEntry'
+  | 'updateStageConfig'
+  | 'updateUser'
+  | 'updateTask';
+
+export type SyncOperation = {
+  id: string;
+  type: SyncOperationType;
+  payload: unknown;
+  timestamp: string;
+};
 
 export type PracticeMode = 'home' | 'studio' | 'both';
 export type UserRole = 'owner' | 'member';
@@ -75,9 +100,23 @@ interface AppState {
   moveStageUp: (id: string) => void;
   moveStageDown: (id: string) => void;
   resetStagesToDefaults: () => void;
+
+  // ── Offline / Sync ────────────────────────────────────────────
+  /** Operations queued while offline, waiting to sync to the server. */
+  pendingSyncOps: SyncOperation[];
+  /** True while a sync flush is in progress. Not persisted. */
+  isSyncing: boolean;
+  /** ISO timestamp of the most recent successful sync. */
+  lastSyncedAt: string | null;
+  enqueueSyncOp: (op: Omit<SyncOperation, 'id' | 'timestamp'>) => void;
+  clearSyncQueue: () => void;
+  setIsSyncing: (v: boolean) => void;
+  setLastSyncedAt: (ts: string) => void;
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
   // ── App settings ──────────────────────────────────────────────
   practiceMode: 'both',
   role: 'owner',
@@ -114,48 +153,48 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ── Pieces ────────────────────────────────────────────────────
   pieces: INITIAL_PIECES,
-  addPieces: (newPieces) =>
-    set((state) => ({ pieces: [...newPieces, ...state.pieces] })),
-  updatePiece: (piece) =>
-    set((state) => ({ pieces: state.pieces.map((p) => (p.id === piece.id ? piece : p)) })),
-  deletePiece: (id) =>
-    set((state) => ({ pieces: state.pieces.filter((p) => p.id !== id) })),
+  addPieces: (newPieces) => {
+    set((state) => ({ pieces: [...newPieces, ...state.pieces] }));
+    get().enqueueSyncOp({ type: 'addPieces', payload: newPieces });
+  },
+  updatePiece: (piece) => {
+    set((state) => ({ pieces: state.pieces.map((p) => (p.id === piece.id ? piece : p)) }));
+    get().enqueueSyncOp({ type: 'updatePiece', payload: piece });
+  },
+  deletePiece: (id) => {
+    set((state) => ({ pieces: state.pieces.filter((p) => p.id !== id) }));
+    get().enqueueSyncOp({ type: 'deletePiece', payload: id });
+  },
   duplicatePiece: (piece) => {
     const now = new Date().toISOString();
-    set((state) => ({
-      pieces: [
-        {
-          ...piece,
-          id: Date.now(),
-          name: `${piece.name} (copy)`,
-          createdAt: now,
-          timeline: [{ stage: piece.stage, timestamp: now }],
-          batchId: undefined,
-          batchSize: undefined,
-        },
-        ...state.pieces,
-      ],
-    }));
+    const newPiece = {
+      ...piece,
+      id: Date.now(),
+      name: `${piece.name} (copy)`,
+      createdAt: now,
+      timeline: [{ stage: piece.stage, timestamp: now }],
+      batchId: undefined,
+      batchSize: undefined,
+    };
+    set((state) => ({ pieces: [newPiece, ...state.pieces] }));
+    get().enqueueSyncOp({ type: 'duplicatePiece', payload: newPiece });
   },
   duplicateBatch: (batchId) => {
     const batch = get().pieces.filter((p) => p.batchId === batchId);
     if (!batch.length) return;
     const now = new Date().toISOString();
     const newBatchId = `batch-${Date.now()}`;
-    set((state) => ({
-      pieces: [
-        ...batch.map((p, i) => ({
-          ...p,
-          id: Date.now() + i + 1,
-          createdAt: now,
-          timeline: [{ stage: p.stage, timestamp: now }],
-          batchId: newBatchId,
-        })),
-        ...state.pieces,
-      ],
+    const newPieces = batch.map((p, i) => ({
+      ...p,
+      id: Date.now() + i + 1,
+      createdAt: now,
+      timeline: [{ stage: p.stage, timestamp: now }],
+      batchId: newBatchId,
     }));
+    set((state) => ({ pieces: [...newPieces, ...state.pieces] }));
+    get().enqueueSyncOp({ type: 'duplicateBatch', payload: { batchId, newPieces } });
   },
-  updateJournalEntry: (pieceId, entryIndex, patch) =>
+  updateJournalEntry: (pieceId, entryIndex, patch) => {
     set((state) => ({
       pieces: state.pieces.map((p) => {
         if (p.id !== pieceId) return p;
@@ -164,7 +203,9 @@ export const useAppStore = create<AppState>((set, get) => ({
           timeline: p.timeline.map((entry, i) => (i === entryIndex ? { ...entry, ...patch } : entry)),
         };
       }),
-    })),
+    }));
+    get().enqueueSyncOp({ type: 'updateJournalEntry', payload: { pieceId, entryIndex, patch } });
+  },
   advancePiece: (pieceId) => {
     const timestamp = new Date().toISOString();
     set((state) => ({
@@ -175,6 +216,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
       }),
     }));
+    get().enqueueSyncOp({ type: 'advancePiece', payload: pieceId });
   },
   advancePieceIds: (ids) => {
     const idSet = new Set(ids);
@@ -187,6 +229,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
       }),
     }));
+    get().enqueueSyncOp({ type: 'advancePieceIds', payload: ids });
   },
   advanceBatch: (batchId, fromStage) => {
     const timestamp = new Date().toISOString();
@@ -198,6 +241,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
       }),
     }));
+    get().enqueueSyncOp({ type: 'advanceBatch', payload: { batchId, fromStage } });
   },
   sendToCemetery: (pieceId) => {
     const timestamp = new Date().toISOString();
@@ -208,6 +252,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           : { ...p, stage: 'cemetery', timeline: [...p.timeline, { stage: 'cemetery', timestamp }] }
       ),
     }));
+    get().enqueueSyncOp({ type: 'sendToCemetery', payload: pieceId });
   },
 
   // ── Stage Configuration ───────────────────────────────────────
@@ -267,4 +312,41 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
   resetStagesToDefaults: () => set({ stageConfig: buildDefaultStages() }),
-}));
+
+  // ── Offline / Sync ────────────────────────────────────────────
+  pendingSyncOps: [],
+  isSyncing: false,
+  lastSyncedAt: null,
+  enqueueSyncOp: (op) =>
+    set((state) => ({
+      pendingSyncOps: [
+        ...state.pendingSyncOps,
+        {
+          ...op,
+          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    })),
+  clearSyncQueue: () => set({ pendingSyncOps: [] }),
+  setIsSyncing: (v) => set({ isSyncing: v }),
+  setLastSyncedAt: (ts) => set({ lastSyncedAt: ts }),
+    }),
+    {
+      name: 'pottery-life-store',
+      storage: zustandStorage,
+      // Exclude runtime-only fields from persisted state
+      partialize: (state) => ({
+        practiceMode: state.practiceMode,
+        role: state.role,
+        enabledModules: state.enabledModules,
+        user: state.user,
+        tasks: state.tasks,
+        pieces: state.pieces,
+        stageConfig: state.stageConfig,
+        pendingSyncOps: state.pendingSyncOps,
+        lastSyncedAt: state.lastSyncedAt,
+      }),
+    }
+  )
+);

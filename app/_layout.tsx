@@ -3,14 +3,17 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import '../global.css';
 
 import { ErrorBoundary } from '@/src/components/error-boundary';
 import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
+import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
+import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
+import { useAppStore } from '@/src/store/appStore';
 import {
   DMSans_400Regular,
   DMSans_500Medium,
@@ -23,6 +26,36 @@ import {
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
+/** Waits for the Zustand persist store to finish hydrating from AsyncStorage. */
+function useStoreHydration() {
+  const [hydrated, setHydrated] = useState(
+    () => useAppStore.persist.hasHydrated()
+  );
+  useEffect(() => {
+    if (hydrated) return;
+    const unsub = useAppStore.persist.onFinishHydration(() => setHydrated(true));
+    // Guard: may have hydrated between the useState init and this effect
+    if (useAppStore.persist.hasHydrated()) setHydrated(true);
+    return unsub;
+  }, []);
+  return hydrated;
+}
+
+/** Inner component so hooks run inside providers. */
+function AppShell() {
+  useOfflineSync();
+  return (
+    <>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="stage-customization" options={{ headerShown: false, presentation: 'modal' }} />
+      </Stack>
+      <OfflineBanner />
+      <StatusBar style="auto" />
+    </>
+  );
+}
+
 export default function RootLayout() {
   const [loaded] = useFonts({
     DMSans_400Regular,
@@ -31,16 +64,15 @@ export default function RootLayout() {
     Fraunces_700Bold,
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+  const hydrated = useStoreHydration();
 
   useEffect(() => {
     if (loaded) {
-      // Hide the splash screen after fonts are loaded
       SplashScreen.hideAsync();
     }
   }, [loaded]);
 
-  if (!loaded) {
-    // Keep showing splash screen while loading
+  if (!loaded || !hydrated) {
     return null;
   }
 
@@ -50,12 +82,8 @@ export default function RootLayout() {
         <UIThemeProvider>
           <ThemeProvider value={DefaultTheme}>
             <StageConfigProvider>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="stage-customization" options={{ headerShown: false, presentation: 'modal' }} />
-              </Stack>
+              <AppShell />
             </StageConfigProvider>
-            <StatusBar style="auto" />
           </ThemeProvider>
         </UIThemeProvider>
       </GestureHandlerRootView>
