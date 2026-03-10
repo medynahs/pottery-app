@@ -2,6 +2,7 @@
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
+import { useAppStore } from '@/src/store';
 import { Layers, Plus, Search, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
@@ -9,7 +10,7 @@ import { Alert, ScrollView, TouchableOpacity, View } from 'react-native';
 import { AddPieceModal } from './pieces/AddPieceModal';
 import { BatchCard } from './pieces/BatchCard';
 import { CemeteryBanner } from './pieces/CemeteryBanner';
-import { INITIAL_PIECES, nextStage } from './pieces/constants';
+import { nextStage } from './pieces/constants';
 import { ActiveFilters, EMPTY_FILTERS, FilterSortSheet, SortKey, countActiveFilters } from './pieces/FilterSortSheet';
 import { PieceActionSheet } from './pieces/PieceActionSheet';
 import { PieceCard } from './pieces/PieceCard';
@@ -32,7 +33,18 @@ type GridRow =
   | { type: 'set-header'; batchId: string; name: string; count: number };
 
 export default function PiecesScreen() {
-  const [pieces, setPieces] = React.useState<Piece[]>(INITIAL_PIECES);
+  const pieces = useAppStore((s) => s.pieces);
+  const addPieces = useAppStore((s) => s.addPieces);
+  const updatePiece = useAppStore((s) => s.updatePiece);
+  const deletePiece = useAppStore((s) => s.deletePiece);
+  const duplicatePiece = useAppStore((s) => s.duplicatePiece);
+  const duplicateBatch = useAppStore((s) => s.duplicateBatch);
+  const updateJournalEntry = useAppStore((s) => s.updateJournalEntry);
+  const advancePiece = useAppStore((s) => s.advancePiece);
+  const advancePieceIds = useAppStore((s) => s.advancePieceIds);
+  const advanceBatch = useAppStore((s) => s.advanceBatch);
+  const sendToCemetery = useAppStore((s) => s.sendToCemetery);
+
   const [activeStage, setActiveStage] = React.useState('all');
   const [search, setSearch] = React.useState('');
   const [addOpen, setAddOpen] = React.useState(false);
@@ -158,15 +170,15 @@ export default function PiecesScreen() {
     return rows;
   }, [displayItems]);
 
-  const handleAdd = (pieces: Piece[]) => {
-    setPieces(prev => [...pieces, ...prev]);
+  const handleAdd = (newPieces: Piece[]) => {
+    addPieces(newPieces);
     setAddOpen(false);
   };
 
   const handleEditPiece = React.useCallback((updated: Piece) => {
-    setPieces(prev => prev.map(p => p.id === updated.id ? updated : p));
+    updatePiece(updated);
     setEditPiece(undefined);
-  }, []);
+  }, [updatePiece]);
 
   const handleDelete = React.useCallback((pieceId: number) => {
     const piece = pieces.find(p => p.id === pieceId);
@@ -176,53 +188,23 @@ export default function PiecesScreen() {
       `"${piece.name}" will be permanently removed.`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => setPieces(prev => prev.filter(p => p.id !== pieceId)) },
+        { text: 'Delete', style: 'destructive', onPress: () => deletePiece(pieceId) },
       ]
     );
-  }, [pieces]);
+  }, [pieces, deletePiece]);
 
   const handleDuplicate = React.useCallback((piece: Piece) => {
-    const now = new Date().toISOString();
-    setPieces(prev => [{
-      ...piece,
-      id: Date.now(),
-      name: `${piece.name} (copy)`,
-      createdAt: now,
-      timeline: [{ stage: piece.stage, timestamp: now }],
-      batchId: undefined,
-      batchSize: undefined,
-    }, ...prev]);
-  }, []);
+    duplicatePiece(piece);
+  }, [duplicatePiece]);
 
   const handleDuplicateBatch = React.useCallback((batchId: string) => {
-    const batch = pieces.filter(p => p.batchId === batchId);
-    if (!batch.length) return;
-    const now = new Date().toISOString();
-    const newBatchId = `batch-${Date.now()}`;
-    setPieces(prev => [
-      ...batch.map((p, i) => ({
-        ...p,
-        id: Date.now() + i + 1,
-        createdAt: now,
-        timeline: [{ stage: p.stage, timestamp: now }],
-        batchId: newBatchId,
-      })),
-      ...prev,
-    ]);
-  }, [pieces]);
+    duplicateBatch(batchId);
+  }, [duplicateBatch]);
 
   const handleUpdateJournalEntry = React.useCallback(
     (pieceId: number, entryIndex: number, patch: { notes?: string; photo?: string }) => {
-      setPieces(prev =>
-        prev.map(p => {
-          if (p.id !== pieceId) return p;
-          const timeline = p.timeline.map((entry, i) =>
-            i === entryIndex ? { ...entry, ...patch } : entry
-          );
-          return { ...p, timeline };
-        })
-      );
-      // Keep journalPiece in sync so the modal reflects the save
+      updateJournalEntry(pieceId, entryIndex, patch);
+      // Keep journalPiece in sync so the modal reflects the save immediately
       setJournalPiece(prev =>
         prev?.id === pieceId
           ? {
@@ -234,7 +216,7 @@ export default function PiecesScreen() {
           : prev
       );
     },
-    []
+    [updateJournalEntry]
   );
 
   const toggleExpand = React.useCallback((batchId: string) => {
@@ -246,28 +228,12 @@ export default function PiecesScreen() {
   }, []);
 
   const handleAdvanceBatch = React.useCallback((batchId: string, stage: string) => {
-    const timestamp = new Date().toISOString();
-    setPieces(prev => prev.map(p => {
-      if (p.batchId !== batchId || p.stage !== stage) return p;
-      const next = nextStage(p.stage);
-      if (!next) return p;
-      return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
-    }));
-  }, []);
+    advanceBatch(batchId, stage);
+  }, [advanceBatch]);
 
   const handleAdvance = React.useCallback((pieceId: number) => {
     const piece = pieces.find(p => p.id === pieceId);
     if (!piece) return;
-
-    const doAdvanceSingle = () => {
-      setPieces(prev => prev.map(p => {
-        if (p.id !== pieceId) return p;
-        const next = nextStage(p.stage);
-        if (!next) return p;
-        const timestamp = new Date().toISOString();
-        return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
-      }));
-    };
 
     if (piece.batchId) {
       const batchMates = pieces.filter(
@@ -278,28 +244,16 @@ export default function PiecesScreen() {
           'Advance Piece',
           `Move just "${piece.name}", or all ${batchMates.length} pieces at this stage in the batch?`,
           [
-            { text: 'Just this one', onPress: doAdvanceSingle },
-            {
-              text: `All ${batchMates.length} in batch`,
-              onPress: () => {
-                const ids = new Set(batchMates.map(p => p.id));
-                setPieces(prev => prev.map(p => {
-                  if (!ids.has(p.id)) return p;
-                  const next = nextStage(p.stage);
-                  if (!next) return p;
-                  const timestamp = new Date().toISOString();
-                  return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
-                }));
-              },
-            },
+            { text: 'Just this one', onPress: () => advancePiece(pieceId) },
+            { text: `All ${batchMates.length} in batch`, onPress: () => advancePieceIds(batchMates.map(p => p.id)) },
           ]
         );
         return;
       }
     }
 
-    doAdvanceSingle();
-  }, [pieces]);
+    advancePiece(pieceId);
+  }, [pieces, advancePiece, advancePieceIds]);
 
   const handleSendToCemetery = React.useCallback((pieceId: number) => {
     const piece = pieces.find(p => p.id === pieceId);
@@ -309,23 +263,10 @@ export default function PiecesScreen() {
       `"${piece.name}" will be laid to rest. This cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Rest in clay 🪦',
-          style: 'destructive',
-          onPress: () => {
-            const timestamp = new Date().toISOString();
-            setPieces(prev => prev.map(p =>
-              p.id !== pieceId ? p : {
-                ...p,
-                stage: 'cemetery',
-                timeline: [...p.timeline, { stage: 'cemetery', timestamp }],
-              }
-            ));
-          },
-        },
+        { text: 'Rest in clay 🪦', style: 'destructive', onPress: () => sendToCemetery(pieceId) },
       ]
     );
-  }, [pieces]);
+  }, [pieces, sendToCemetery]);
 
   return (
     <View className="flex-1 bg-background">

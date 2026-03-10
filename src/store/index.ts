@@ -1,14 +1,4 @@
-// redux or context setup for global state
+export { CEMETERY_ID, useAppStore } from './appStore';
+export type { PracticeMode, StageConfig, Task, UserRole } from './appStore';
 
-import { GlobalState } from '../types';
 
-// placeholder store; replace with real implementation (Redux, MobX etc.)
-
-export const initialState: GlobalState = {};
-
-export function createStore() {
-  return {
-    state: initialState,
-    // dispatch, subscribe, etc.
-  };
-}

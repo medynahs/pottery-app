@@ -3,18 +3,17 @@ import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { IconSymbol } from '@/src/components/ui/IconSymbol';
 import { Text } from '@/src/components/ui/text';
+import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Gift, Heart, Sparkles } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 
 export default function OverviewScreen() {
   const router = useRouter();
-  const [tasks, setTasks] = useState([
-    { title: 'Wheel practice: 3 cylinders', time: '1 hr', type: 'practice', status: 'pending' },
-    { title: 'Time to reclaim clay', time: '30 min', type: 'chore', status: 'completed' },
-    { title: 'Clean bottoms before kiln', time: '15 min', type: 'checklist', status: 'completed' },
-  ]);
+  const user = useAppStore((s) => s.user);
+  const tasks = useAppStore((s) => s.tasks);
+  const toggleTask = useAppStore((s) => s.toggleTask);
 
   const MOMENTS = [
     {
@@ -33,26 +32,20 @@ export default function OverviewScreen() {
     },
   ];
 
-  const toggleTask = (index: number) => {
-    const newTasks = [...tasks];
-    newTasks[index].status = newTasks[index].status === 'completed' ? 'pending' : 'completed';
-    setTasks(newTasks);
-  };
-
   return (
     <ScrollView className="flex-1 bg-background">
       {/* Header */}
       <View className="px-6 pt-20 pb-6 flex-row items-center justify-between">
         <View>
           <Text className="text-4xl font-serif font-bold text-foreground">Welcome back,</Text>
-          <Text className="text-lg text-muted-foreground mt-1">Susan</Text>
+          <Text className="text-lg text-muted-foreground mt-1">{user.name}</Text>
         </View>
         <TouchableOpacity
           onPress={() => router.push('/(tabs)/profile')}
           activeOpacity={0.75}
           className="w-12 h-12 rounded-full bg-primary items-center justify-center"
         >
-          <Text className="text-white text-lg font-bold font-serif">S</Text>
+          <Text className="text-white text-lg font-bold font-serif">{user.avatarInitial}</Text>
         </TouchableOpacity>
       </View>
 
