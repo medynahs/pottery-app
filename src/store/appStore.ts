@@ -41,6 +41,18 @@ export interface StageConfig {
   iconKey?: string;
 }
 
+export interface ClayBody {
+  id: string;
+  name: string;
+}
+
+export const DEFAULT_CLAY_BODIES: ClayBody[] = [
+  { id: 'bmix',         name: 'B-Mix' },
+  { id: 'porcelain',    name: 'Porcelain' },
+  { id: 'stoneware',    name: 'Stoneware' },
+  { id: 'speckled-buff', name: 'Speckled Buff' },
+];
+
 export type Task = {
   title: string;
   time: string;
@@ -102,6 +114,14 @@ interface AppState {
   moveStageUp: (id: string) => void;
   moveStageDown: (id: string) => void;
   resetStagesToDefaults: () => void;
+
+  // ── Clay Bodies ───────────────────────────────────────────────
+  clayBodies: ClayBody[];
+  defaultClayBodyId: string | null;
+  addClayBody: (name: string) => void;
+  removeClayBody: (id: string) => void;
+  renameClayBody: (id: string, name: string) => void;
+  setDefaultClayBody: (id: string | null) => void;
 
   // ── Kilns ─────────────────────────────────────────────────────
   kilns: Kiln[];
@@ -331,6 +351,29 @@ export const useAppStore = create<AppState>()(
     });
   },
   resetStagesToDefaults: () => set({ stageConfig: buildDefaultStages() }),
+
+  // ── Clay Bodies ───────────────────────────────────────────────
+  clayBodies: DEFAULT_CLAY_BODIES,
+  defaultClayBodyId: 'stoneware',
+  addClayBody: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const id = `clay-${Date.now()}`;
+    set((state) => ({ clayBodies: [...state.clayBodies, { id, name: trimmed }] }));
+  },
+  removeClayBody: (id) =>
+    set((state) => ({
+      clayBodies: state.clayBodies.filter((c) => c.id !== id),
+      defaultClayBodyId: state.defaultClayBodyId === id ? null : state.defaultClayBodyId,
+    })),
+  renameClayBody: (id, name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    set((state) => ({
+      clayBodies: state.clayBodies.map((c) => (c.id === id ? { ...c, name: trimmed } : c)),
+    }));
+  },
+  setDefaultClayBody: (id) => set({ defaultClayBodyId: id }),
 
   // ── Kilns ─────────────────────────────────────────────────────
   kilns: [],

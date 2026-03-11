@@ -2,6 +2,7 @@ import { Input } from '@/src/components/ui/input';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
+import { useAppStore } from '@/src/store/appStore';
 import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
@@ -29,6 +30,7 @@ interface AddPieceFormProps {
 
 export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddPieceFormProps) {
   const { enabledStages } = useStageConfig();
+  const clayBodies = useAppStore((s) => s.clayBodies);
   const isCemetery = form.stage === 'cemetery';
 
   return (
@@ -160,11 +162,38 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddP
       {/* Clay Body */}
       <View className="mt-5">
         <FieldLabel>Clay Body *</FieldLabel>
-        <Input
-          placeholder="e.g. B-Mix, Porcelain, Stoneware"
-          value={form.clay}
-          onChangeText={v => set('clay', v)}
-        />
+        {clayBodies.length > 0 ? (
+          <View className="flex-row flex-wrap gap-2">
+            {clayBodies.map((cb) => {
+              const isActive = form.clay === cb.name;
+              return (
+                <Pressable
+                  key={cb.id}
+                  onPress={() => set('clay', isActive ? '' : cb.name)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                  className={`px-3 py-1.5 rounded-full border ${
+                    isActive ? 'bg-foreground border-foreground' : 'bg-card border-border'
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-medium ${
+                      isActive ? 'text-background' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {cb.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <Input
+            placeholder="e.g. B-Mix, Porcelain, Stoneware"
+            value={form.clay}
+            onChangeText={v => set('clay', v)}
+          />
+        )}
       </View>
 
       {/* Cemetery fields */}

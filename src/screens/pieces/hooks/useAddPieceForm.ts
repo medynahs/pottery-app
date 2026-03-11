@@ -1,3 +1,4 @@
+import { useAppStore } from '@/src/store/appStore';
 import * as ImagePicker from 'expo-image-picker';
 import React from 'react';
 import { EMPTY_FORM } from '../constants';
@@ -33,18 +34,28 @@ export function useAddPieceForm(
   initialPiece?: Piece,
   onEdit?: (piece: Piece) => void,
 ) {
-  const [form, setForm] = React.useState<PieceForm>(initialPiece ? pieceToForm(initialPiece) : EMPTY_FORM);
+  const clayBodies = useAppStore((s) => s.clayBodies);
+  const defaultClayBodyId = useAppStore((s) => s.defaultClayBodyId);
+
+  function buildEmptyForm(): PieceForm {
+    const defaultClay = defaultClayBodyId
+      ? (clayBodies.find((c) => c.id === defaultClayBodyId)?.name ?? '')
+      : '';
+    return { ...EMPTY_FORM, clay: defaultClay };
+  }
+
+  const [form, setForm] = React.useState<PieceForm>(initialPiece ? pieceToForm(initialPiece) : buildEmptyForm());
 
   // Re-populate whenever the piece to edit changes
   React.useEffect(() => {
-    setForm(initialPiece ? pieceToForm(initialPiece) : EMPTY_FORM);
+    setForm(initialPiece ? pieceToForm(initialPiece) : buildEmptyForm());
   }, [initialPiece?.id]);
 
   const set = <K extends keyof PieceForm>(key: K, value: PieceForm[K]) =>
     setForm(f => ({ ...f, [key]: value }));
 
   const handleClose = React.useCallback(() => {
-    setForm(EMPTY_FORM);
+    setForm(buildEmptyForm());
     onClose();
   }, [onClose]);
 

@@ -1,10 +1,11 @@
 import { Text } from '@/src/components/ui/text';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
+import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import {
-    Bell, Clock, Database, Flame, Globe, HelpCircle,
-    Layers, Lock, LogOut, Mail, Moon, Palette,
-    Shield, Skull, Sparkles, Thermometer, Trophy, Zap,
+  Bell, Clock, Database, Flame, Globe, HelpCircle,
+  Layers, Lock, LogOut, Mail, Moon, Palette,
+  Shield, Skull, Sparkles, Thermometer, Trophy, Zap,
 } from 'lucide-react-native';
 import React from 'react';
 import { View } from 'react-native';
@@ -27,13 +28,14 @@ export function SettingsTab({
 }) {
   const router = useRouter();
   const { enabledStages } = useStageConfig();
+  const clayBodies = useAppStore((s) => s.clayBodies);
 
   return (
     <>
       <SectionLabel title="Studio" />
       <SettingsGroup>
         <SettingsRow icon={Layers}      iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50"   label="Stage Customization" value={`${enabledStages.length} stages`} onPress={() => router.push('/stage-customization')} />
-        <SettingsRow icon={Database}    iconColor="hsl(24 30% 45%)"  iconBg="bg-stone-100" label="Clay Bodies"         value="4 saved" />
+        <SettingsRow icon={Database}    iconColor="hsl(24 30% 45%)"  iconBg="bg-stone-100" label="Clay Bodies"         value={`${clayBodies.length} saved`} onPress={() => router.push('/clay-bodies')} />
         <SettingsRow icon={Sparkles}    iconColor="hsl(270 60% 55%)" iconBg="bg-purple-50" label="Glazes"              value="11 saved" />
         <SettingsRow icon={Thermometer} iconColor="hsl(0 55% 45%)"   iconBg="bg-red-50"    label="Kilns"               value="2 kilns" />
         <SettingsRow icon={Flame}       iconColor="hsl(25 90% 55%)"  iconBg="bg-orange-50" label="Bisque Cone"         value="Cone 06" />

@@ -50,6 +50,7 @@ function AppShell() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="stage-customization" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="clay-bodies" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>
       <OfflineBanner />
       <StatusBar style="auto" />
