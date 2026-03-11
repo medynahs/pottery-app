@@ -118,8 +118,16 @@ interface AppState {
   isModuleEnabled: (module: string) => boolean;
 
   // ── User ──────────────────────────────────────────────────────
-  user: { name: string; avatarInitial: string };
-  setUser: (patch: Partial<{ name: string; avatarInitial: string }>) => void;
+  user: {
+    name: string;
+    avatarInitial: string;
+    studioName?: string;
+    location?: string;
+    bio?: string;
+    coverImageUri?: string;
+    avatarImageUri?: string;
+  };
+  setUser: (patch: Partial<AppState['user']>) => void;
 
   // ── Tasks (Today's Routine) ───────────────────────────────────
   tasks: Task[];
@@ -226,7 +234,7 @@ export const useAppStore = create<AppState>()(
   isModuleEnabled: (module) => get().enabledModules.includes(module),
 
   // ── User ──────────────────────────────────────────────────────
-  user: { name: 'Susan', avatarInitial: 'S' },
+  user: { name: 'Susan Mallory', avatarInitial: 'S', studioName: 'Mallory Clay Studio', location: 'Portland, OR', bio: 'Wheel-thrown stoneware with a love for imperfect forms. Teaching beginners on weekends.' },
   setUser: (patch) => set((state) => ({ user: { ...state.user, ...patch } })),
 
   // ── Tasks ─────────────────────────────────────────────────────

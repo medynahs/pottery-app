@@ -5,7 +5,7 @@ import { IconSymbol } from '@/src/components/ui/IconSymbol';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
-import { Gift, Heart, Sparkles } from 'lucide-react-native';
+import { Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 
@@ -14,23 +14,6 @@ export default function OverviewScreen() {
   const user = useAppStore((s) => s.user);
   const tasks = useAppStore((s) => s.tasks);
   const toggleTask = useAppStore((s) => s.toggleTask);
-
-  const MOMENTS = [
-    {
-      Icon: Heart,
-      iconBg: 'bg-pink-100',
-      iconColor: 'hsl(340 82% 52%)',
-      text: 'Susan is incredibly proud of her first matching mug set.',
-      highlight: 'Susan',
-    },
-    {
-      Icon: Gift,
-      iconBg: 'bg-accent/20',
-      iconColor: 'hsl(38 55% 45%)',
-      text: 'Mike shared a new roadmap template for centering large amounts of clay.',
-      highlight: 'Mike',
-    },
-  ];
 
   return (
     <ScrollView className="flex-1 bg-background">
