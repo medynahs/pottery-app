@@ -3,9 +3,11 @@ import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import {
-  Bell, Clock, Database, Flame, Globe, HelpCircle,
+  Bell, Box, Clock, Database, Flame, Globe,
+  Hammer,
+  HelpCircle,
   Layers, Lock, LogOut, Mail, Moon, Palette,
-  Shield, Skull, Sparkles, Thermometer, Trophy, Zap,
+  Shield, Skull, Sparkles, Trophy, Zap,
 } from 'lucide-react-native';
 import React from 'react';
 import { View } from 'react-native';
@@ -29,6 +31,10 @@ export function SettingsTab({
   const router = useRouter();
   const { enabledStages } = useStageConfig();
   const clayBodies = useAppStore((s) => s.clayBodies);
+  const formingMethods = useAppStore((s) => s.formingMethods);
+  const pieceFormOptions = useAppStore((s) => s.pieceFormOptions);
+  const defaultBisqueTemp = useAppStore((s) => s.defaultBisqueTemp);
+  const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
 
   return (
     <>
@@ -36,15 +42,15 @@ export function SettingsTab({
       <SettingsGroup>
         <SettingsRow icon={Layers}      iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50"   label="Stage Customization" value={`${enabledStages.length} stages`} onPress={() => router.push('/stage-customization')} />
         <SettingsRow icon={Database}    iconColor="hsl(24 30% 45%)"  iconBg="bg-stone-100" label="Clay Bodies"         value={`${clayBodies.length} saved`} onPress={() => router.push('/clay-bodies')} />
+        <SettingsRow icon={Hammer}      iconColor="hsl(24 40% 45%)"  iconBg="bg-stone-100" label="Forming Methods"     value={`${formingMethods.length} methods`} onPress={() => router.push('/forming-methods')} />
+        <SettingsRow icon={Box}         iconColor="hsl(24 40% 45%)"  iconBg="bg-stone-100" label="Piece Forms"          value={`${pieceFormOptions.length} forms`}   onPress={() => router.push('/piece-forms')} />
         <SettingsRow icon={Sparkles}    iconColor="hsl(270 60% 55%)" iconBg="bg-purple-50" label="Glazes"              value="11 saved" />
-        <SettingsRow icon={Thermometer} iconColor="hsl(0 55% 45%)"   iconBg="bg-red-50"    label="Kilns"               value="2 kilns" />
-        <SettingsRow icon={Flame}       iconColor="hsl(25 90% 55%)"  iconBg="bg-orange-50" label="Bisque Cone"         value="Cone 06" />
-        <SettingsRow icon={Zap}         iconColor="hsl(38 80% 50%)"  iconBg="bg-amber-50"  label="Glaze Cone"          value="Cone 6" isLast />
+        <SettingsRow icon={Flame}       iconColor="hsl(25 90% 55%)"  iconBg="bg-orange-50" label="Bisque Cone"         value={defaultBisqueTemp ?? 'None'} onPress={() => router.push('/bisque-cone')} />
+        <SettingsRow icon={Zap}         iconColor="hsl(38 80% 50%)"  iconBg="bg-amber-50"  label="Glaze Cone"          value={defaultGlazeTemp ?? 'None'} onPress={() => router.push('/glaze-cone')} isLast />
       </SettingsGroup>
 
       <SectionLabel title="Preferences" />
       <SettingsGroup>
-        <SettingsRow icon={Database} iconColor="hsl(24 30% 45%)" iconBg="bg-stone-100" label="Default Clay Body" value="Stoneware" />
         <SettingsRow icon={Moon}     iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50"  label="Theme"             value="Light" />
         <SettingsRow icon={Palette}  iconColor="hsl(15 50% 50%)"  iconBg="bg-red-50"   label="Accent Color"      value="Terracotta" isLast />
       </SettingsGroup>

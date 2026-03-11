@@ -1,0 +1,232 @@
+import { Text } from '@/src/components/ui/text';
+import { DEFAULT_PIECE_FORM_OPTIONS, type PieceFormOption, useAppStore } from '@/src/store/appStore';
+import { useRouter } from 'expo-router';
+import {
+  ChevronDown,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react-native';
+import React, { useState } from 'react';
+import {
+  Alert,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+// ─── Form Option Row ──────────────────────────────────────────────────────────
+
+function FormOptionRow({
+  option,
+  isLast,
+  onRename,
+  onRemove,
+}: {
+  option: PieceFormOption;
+  isLast: boolean;
+  onRename: (name: string) => void;
+  onRemove: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(option.name);
+
+  function commitRename() {
+    const trimmed = draft.trim();
+    if (trimmed) {
+      onRename(trimmed);
+      setDraft(trimmed);
+    } else {
+      setDraft(option.name);
+    }
+    setEditing(false);
+  }
+
+  return (
+    <View className={!isLast ? 'border-b border-border' : ''}>
+      <View className="flex-row items-center gap-3 px-4 py-3.5">
+        <View className="w-9 h-9 rounded-xl items-center justify-center bg-stone-100">
+          <Text className="text-base">🫙</Text>
+        </View>
+
+        <View className="flex-1">
+          {editing ? (
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              onBlur={commitRename}
+              onSubmitEditing={commitRename}
+              autoFocus
+              returnKeyType="done"
+              className="text-sm font-medium text-foreground py-0.5 border-b border-primary"
+              style={{ fontFamily: 'DMSans_500Medium' }}
+            />
+          ) : (
+            <Text className="text-sm font-medium text-foreground">{option.name}</Text>
+          )}
+        </View>
+
+        <TouchableOpacity
+          onPress={() => {
+            if (editing) {
+              commitRename();
+            } else {
+              setDraft(option.name);
+              setEditing(true);
+            }
+          }}
+          className="w-7 h-7 items-center justify-center rounded-lg active:bg-muted"
+        >
+          <Pencil size={13} color={editing ? 'hsl(213 80% 55%)' : 'hsl(24 20% 60%)'} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            Alert.alert('Remove Form', `Remove "${option.name}"?`, [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Remove', style: 'destructive', onPress: onRemove },
+            ]);
+          }}
+          className="w-7 h-7 items-center justify-center rounded-lg active:bg-muted"
+        >
+          <Trash2 size={13} color="hsl(0 55% 50%)" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// ─── Add Row ──────────────────────────────────────────────────────────────────
+
+function AddFormOptionRow({ onAdd }: { onAdd: (name: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState('');
+
+  function commit() {
+    const trimmed = value.trim();
+    if (trimmed) {
+      onAdd(trimmed);
+      setValue('');
+      setOpen(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <TouchableOpacity
+        onPress={() => setOpen(true)}
+        activeOpacity={0.7}
+        className="flex-row items-center justify-center gap-2 mx-5 mt-3 py-3.5 rounded-2xl border border-dashed border-border bg-card"
+      >
+        <Plus size={15} color="hsl(24 30% 50%)" />
+        <Text className="text-sm font-medium text-muted-foreground">Add Form</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View className="mx-5 mt-3 bg-card rounded-2xl border border-border px-4 py-3 flex-row items-center gap-3">
+      <View className="w-9 h-9 rounded-xl items-center justify-center bg-stone-100">
+        <Text className="text-base">🫙</Text>
+      </View>
+      <TextInput
+        value={value}
+        onChangeText={setValue}
+        onSubmitEditing={commit}
+        onBlur={() => { if (!value.trim()) setOpen(false); }}
+        autoFocus
+        placeholder="e.g. Teapot, Sculpture"
+        returnKeyType="done"
+        className="flex-1 text-sm text-foreground"
+        style={{ fontFamily: 'DMSans_400Regular' }}
+        placeholderTextColor="hsl(24 20% 65%)"
+      />
+      <TouchableOpacity onPress={commit} className="px-3 py-1.5 rounded-xl bg-foreground">
+        <Text className="text-xs font-semibold text-background">Add</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
+export default function PieceFormsScreen() {
+  const router = useRouter();
+  const pieceFormOptions = useAppStore((s) => s.pieceFormOptions);
+  const addPieceFormOption = useAppStore((s) => s.addPieceFormOption);
+  const removePieceFormOption = useAppStore((s) => s.removePieceFormOption);
+  const renamePieceFormOption = useAppStore((s) => s.renamePieceFormOption);
+
+  function handleReset() {
+    Alert.alert(
+      'Restore Defaults',
+      'This will replace your forms list with the built-in defaults. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Restore',
+          style: 'destructive',
+          onPress: () => useAppStore.setState({ pieceFormOptions: DEFAULT_PIECE_FORM_OPTIONS }),
+        },
+      ],
+    );
+  }
+
+  return (
+    <View className="flex-1 bg-background">
+      <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 items-center justify-center rounded-full bg-muted/60 mr-3"
+        >
+          <ChevronDown size={20} color="hsl(24 30% 40%)" style={{ transform: [{ rotate: '90deg' }] }} />
+        </TouchableOpacity>
+        <View className="flex-1">
+          <Text className="text-lg font-bold text-foreground">Piece Forms</Text>
+          <Text className="text-xs text-muted-foreground mt-0.5">
+            {pieceFormOptions.length} forms
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Text className="text-sm text-muted-foreground px-5 pt-4 pb-2 leading-5">
+          Manage the form types available when adding a piece. Add your own or remove ones
+          you don't use.
+        </Text>
+
+        <View className="mx-5 mt-3 bg-card rounded-2xl border border-border overflow-hidden">
+          {pieceFormOptions.map((opt, idx) => (
+            <FormOptionRow
+              key={opt.id}
+              option={opt}
+              isLast={idx === pieceFormOptions.length - 1}
+              onRename={(name) => renamePieceFormOption(opt.id, name)}
+              onRemove={() => removePieceFormOption(opt.id)}
+            />
+          ))}
+          {pieceFormOptions.length === 0 && (
+            <View className="px-4 py-6 items-center">
+              <Text className="text-sm text-muted-foreground text-center">
+                No forms yet. Add one below.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <AddFormOptionRow onAdd={addPieceFormOption} />
+
+        <TouchableOpacity
+          onPress={handleReset}
+          activeOpacity={0.7}
+          className="flex-row items-center justify-center gap-2 mx-5 mt-4 mb-10 py-3.5 rounded-2xl border border-border bg-card"
+        >
+          <RotateCcw size={15} color="hsl(0 55% 50%)" />
+          <Text className="text-sm font-medium text-destructive">Restore Defaults</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
+}

@@ -51,6 +51,10 @@ function AppShell() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="stage-customization" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="clay-bodies" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="forming-methods" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="piece-forms" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="bisque-cone" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="glaze-cone" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>
       <OfflineBanner />
       <StatusBar style="auto" />

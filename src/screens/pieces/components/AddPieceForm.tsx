@@ -9,10 +9,8 @@ import { ScrollView, TouchableOpacity, View } from 'react-native';
 import {
   BISQUE_TEMPS,
   FIRING_TYPES,
-  FORMING_METHODS,
   GLAZE_TEMPS,
-  PIECE_FORMS,
-  PIECE_STATUSES,
+  PIECE_STATUSES
 } from '../constants';
 import { resolveStageIcon } from '../stageIconUtils';
 import type { PieceForm } from '../types';
@@ -31,6 +29,8 @@ interface AddPieceFormProps {
 export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddPieceFormProps) {
   const { enabledStages } = useStageConfig();
   const clayBodies = useAppStore((s) => s.clayBodies);
+  const formingMethods = useAppStore((s) => s.formingMethods);
+  const pieceFormOptions = useAppStore((s) => s.pieceFormOptions);
   const isCemetery = form.stage === 'cemetery';
 
   return (
@@ -143,11 +143,38 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddP
       {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Forming Method</FieldLabel>
-        <OptionPills
-          options={FORMING_METHODS}
-          value={form.formingMethod}
-          onChange={v => set('formingMethod', v)}
-        />
+        {formingMethods.length > 0 ? (
+          <View className="flex-row flex-wrap gap-2">
+            {formingMethods.map((fm) => {
+              const isActive = form.formingMethod === fm.name;
+              return (
+                <Pressable
+                  key={fm.id}
+                  onPress={() => set('formingMethod', isActive ? '' : fm.name)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                  className={`px-3 py-1.5 rounded-full border ${
+                    isActive ? 'bg-foreground border-foreground' : 'bg-card border-border'
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-medium ${
+                      isActive ? 'text-background' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {fm.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <Input
+            placeholder="e.g. Wheel Thrown, Slab Built"
+            value={form.formingMethod}
+            onChangeText={v => set('formingMethod', v)}
+          />
+        )}
       </View>
       )}
 
@@ -155,7 +182,38 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddP
       {!isCemetery && (
       <View className="mt-5">
         <FieldLabel>Form</FieldLabel>
-        <OptionPills options={PIECE_FORMS} value={form.form} onChange={v => set('form', v)} />
+        {pieceFormOptions.length > 0 ? (
+          <View className="flex-row flex-wrap gap-2">
+            {pieceFormOptions.map((opt) => {
+              const isActive = form.form === opt.name;
+              return (
+                <Pressable
+                  key={opt.id}
+                  onPress={() => set('form', isActive ? '' : opt.name)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                  className={`px-3 py-1.5 rounded-full border ${
+                    isActive ? 'bg-foreground border-foreground' : 'bg-card border-border'
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-medium ${
+                      isActive ? 'text-background' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {opt.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <Input
+            placeholder="e.g. Mug, Bowl, Vase"
+            value={form.form}
+            onChangeText={v => set('form', v)}
+          />
+        )}
       </View>
       )}
 

@@ -53,6 +53,41 @@ export const DEFAULT_CLAY_BODIES: ClayBody[] = [
   { id: 'speckled-buff', name: 'Speckled Buff' },
 ];
 
+export interface FormingMethod {
+  id: string;
+  name: string;
+}
+
+export const DEFAULT_FORMING_METHODS: FormingMethod[] = [
+  { id: 'coiled',              name: 'Coiled' },
+  { id: 'mold-formed',         name: 'Mold Formed' },
+  { id: 'pinched',             name: 'Pinched' },
+  { id: 'slab-built',          name: 'Slab Built' },
+  { id: 'slip-cast',           name: 'Slip Cast' },
+  { id: 'thrown-and-altered',  name: 'Thrown and Altered' },
+  { id: 'wheel-thrown',        name: 'Wheel Thrown' },
+];
+
+export interface PieceFormOption {
+  id: string;
+  name: string;
+}
+
+export const DEFAULT_PIECE_FORM_OPTIONS: PieceFormOption[] = [
+  { id: 'bowl',        name: 'Bowl' },
+  { id: 'coffee-cup',  name: 'Coffee Cup' },
+  { id: 'jar',         name: 'Jar' },
+  { id: 'moon-jar',    name: 'Moon Jar' },
+  { id: 'mug',         name: 'Mug' },
+  { id: 'planter',     name: 'Planter' },
+  { id: 'plate',       name: 'Plate' },
+  { id: 'platter',     name: 'Platter' },
+  { id: 'tea-cup',     name: 'Tea Cup' },
+  { id: 'test-tile',   name: 'Test Tile' },
+  { id: 'urn',         name: 'Urn' },
+  { id: 'vase',        name: 'Vase' },
+];
+
 export type Task = {
   title: string;
   time: string;
@@ -122,6 +157,24 @@ interface AppState {
   removeClayBody: (id: string) => void;
   renameClayBody: (id: string, name: string) => void;
   setDefaultClayBody: (id: string | null) => void;
+
+  // ── Forming Methods ───────────────────────────────────────────
+  formingMethods: FormingMethod[];
+  addFormingMethod: (name: string) => void;
+  removeFormingMethod: (id: string) => void;
+  renameFormingMethod: (id: string, name: string) => void;
+
+  // ── Form Options ──────────────────────────────────────────────
+  pieceFormOptions: PieceFormOption[];
+  addPieceFormOption: (name: string) => void;
+  removePieceFormOption: (id: string) => void;
+  renamePieceFormOption: (id: string, name: string) => void;
+
+  // ── Firing Defaults ──────────────────────────────────────────
+  defaultBisqueTemp: string | null;
+  setDefaultBisqueTemp: (cone: string | null) => void;
+  defaultGlazeTemp: string | null;
+  setDefaultGlazeTemp: (cone: string | null) => void;
 
   // ── Kilns ─────────────────────────────────────────────────────
   kilns: Kiln[];
@@ -374,6 +427,48 @@ export const useAppStore = create<AppState>()(
     }));
   },
   setDefaultClayBody: (id) => set({ defaultClayBodyId: id }),
+
+  // ── Forming Methods ───────────────────────────────────────────
+  formingMethods: DEFAULT_FORMING_METHODS,
+  addFormingMethod: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const id = `forming-${Date.now()}`;
+    set((state) => ({ formingMethods: [...state.formingMethods, { id, name: trimmed }] }));
+  },
+  removeFormingMethod: (id) =>
+    set((state) => ({ formingMethods: state.formingMethods.filter((m) => m.id !== id) })),
+  renameFormingMethod: (id, name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    set((state) => ({
+      formingMethods: state.formingMethods.map((m) => (m.id === id ? { ...m, name: trimmed } : m)),
+    }));
+  },
+
+  // ── Form Options ─────────────────────────────────────────────
+  pieceFormOptions: DEFAULT_PIECE_FORM_OPTIONS,
+  addPieceFormOption: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const id = `form-${Date.now()}`;
+    set((state) => ({ pieceFormOptions: [...state.pieceFormOptions, { id, name: trimmed }] }));
+  },
+  removePieceFormOption: (id) =>
+    set((state) => ({ pieceFormOptions: state.pieceFormOptions.filter((f) => f.id !== id) })),
+  renamePieceFormOption: (id, name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    set((state) => ({
+      pieceFormOptions: state.pieceFormOptions.map((f) => (f.id === id ? { ...f, name: trimmed } : f)),
+    }));
+  },
+
+  // ── Firing Defaults ─────────────────────────────────────────
+  defaultBisqueTemp: 'Cone 06',
+  setDefaultBisqueTemp: (cone) => set({ defaultBisqueTemp: cone }),
+  defaultGlazeTemp: 'Cone 6',
+  setDefaultGlazeTemp: (cone) => set({ defaultGlazeTemp: cone }),
 
   // ── Kilns ─────────────────────────────────────────────────────
   kilns: [],
