@@ -78,14 +78,6 @@ function Reactions({ likes, comments, saveable }: { likes: number; comments: num
 
 const FILTERS = ['All', 'Moments', 'Gallery', 'Tips', 'Events', 'Drops'];
 
-const STORIES = [
-  { avatar: 'Y', name: 'Yuki',  color: 'hsl(213 80% 55%)', hasNew: true  },
-  { avatar: 'T', name: 'Tariq', color: 'hsl(25 90% 55%)',  hasNew: true  },
-  { avatar: 'M', name: 'Mara',  color: 'hsl(340 75% 50%)', hasNew: true  },
-  { avatar: 'C', name: 'Chen',  color: 'hsl(100 40% 45%)', hasNew: false },
-  { avatar: 'A', name: 'Adele', color: 'hsl(270 60% 55%)', hasNew: false },
-];
-
 const POLL_OPTIONS = [
   { label: "Yuki's Soda Matte",    votes: 48 },
   { label: "Tariq's Iron Red",     votes: 35 },

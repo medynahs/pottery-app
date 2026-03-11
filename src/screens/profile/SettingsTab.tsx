@@ -7,7 +7,8 @@ import {
   Hammer,
   HelpCircle,
   Layers, Lock, LogOut, Mail, Moon, Palette,
-  Shield, Skull, Sparkles, Trophy, Zap,
+  Shield, Skull,
+  Trophy, Zap
 } from 'lucide-react-native';
 import React from 'react';
 import { View } from 'react-native';
@@ -44,7 +45,6 @@ export function SettingsTab({
         <SettingsRow icon={Database}    iconColor="hsl(24 30% 45%)"  iconBg="bg-stone-100" label="Clay Bodies"         value={`${clayBodies.length} saved`} onPress={() => router.push('/clay-bodies')} />
         <SettingsRow icon={Hammer}      iconColor="hsl(24 40% 45%)"  iconBg="bg-stone-100" label="Forming Methods"     value={`${formingMethods.length} methods`} onPress={() => router.push('/forming-methods')} />
         <SettingsRow icon={Box}         iconColor="hsl(24 40% 45%)"  iconBg="bg-stone-100" label="Piece Forms"          value={`${pieceFormOptions.length} forms`}   onPress={() => router.push('/piece-forms')} />
-        <SettingsRow icon={Sparkles}    iconColor="hsl(270 60% 55%)" iconBg="bg-purple-50" label="Glazes"              value="11 saved" />
         <SettingsRow icon={Flame}       iconColor="hsl(25 90% 55%)"  iconBg="bg-orange-50" label="Bisque Cone"         value={defaultBisqueTemp ?? 'None'} onPress={() => router.push('/bisque-cone')} />
         <SettingsRow icon={Zap}         iconColor="hsl(38 80% 50%)"  iconBg="bg-amber-50"  label="Glaze Cone"          value={defaultGlazeTemp ?? 'None'} onPress={() => router.push('/glaze-cone')} isLast />
       </SettingsGroup>
