@@ -1,5 +1,5 @@
 import { Text } from '@/src/components/ui/text';
-import { BISQUE_TEMPS } from '@/src/screens/pieces/constants';
+import { BISQUE_TEMPS, CONE_TEMPS_CELSIUS } from '@/src/screens/pieces/constants';
 import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import { Check, Flame } from 'lucide-react-native';
@@ -65,7 +65,10 @@ export default function BisqueConeScreen() {
                 <View className="w-9 h-9 rounded-xl items-center justify-center bg-orange-50 mr-3">
                   <Flame size={16} color="hsl(25 90% 55%)" />
                 </View>
-                <Text className="flex-1 text-sm font-medium text-foreground">{cone}</Text>
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-foreground">{cone}</Text>
+                  <Text className="text-xs text-muted-foreground">{CONE_TEMPS_CELSIUS[cone]}°C</Text>
+                </View>
                 {selected && (
                   <View className="w-6 h-6 rounded-full bg-orange-500 items-center justify-center">
                     <Check size={14} color="#fff" strokeWidth={3} />

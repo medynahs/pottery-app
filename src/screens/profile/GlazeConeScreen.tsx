@@ -1,5 +1,5 @@
 import { Text } from '@/src/components/ui/text';
-import { GLAZE_TEMPS } from '@/src/screens/pieces/constants';
+import { CONE_TEMPS_CELSIUS, GLAZE_TEMPS } from '@/src/screens/pieces/constants';
 import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import { Check, Zap } from 'lucide-react-native';
@@ -64,7 +64,10 @@ export default function GlazeConeScreen() {
                 <View className="w-9 h-9 rounded-xl items-center justify-center bg-amber-50 mr-3">
                   <Zap size={16} color="hsl(38 80% 50%)" />
                 </View>
-                <Text className="flex-1 text-sm font-medium text-foreground">{cone}</Text>
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-foreground">{cone}</Text>
+                  <Text className="text-xs text-muted-foreground">{CONE_TEMPS_CELSIUS[cone]}°C</Text>
+                </View>
                 {selected && (
                   <View className="w-6 h-6 rounded-full bg-amber-500 items-center justify-center">
                     <Check size={14} color="#fff" strokeWidth={3} />

@@ -50,26 +50,42 @@ export function nextFiringState(state: FiringState): FiringState | null {
   return FIRING_STATE_ORDER[idx + 1];
 }
 
-/** Cone options in common use order */
+/** Complete Orton cone options in ascending temperature order */
 export const CONE_OPTIONS = [
   { value: '022', label: 'Cone 022' },
+  { value: '021', label: 'Cone 021' },
+  { value: '020', label: 'Cone 020' },
+  { value: '019', label: 'Cone 019' },
   { value: '018', label: 'Cone 018' },
+  { value: '017', label: 'Cone 017' },
+  { value: '016', label: 'Cone 016' },
+  { value: '015', label: 'Cone 015' },
+  { value: '014', label: 'Cone 014' },
+  { value: '013', label: 'Cone 013' },
+  { value: '012', label: 'Cone 012' },
+  { value: '011', label: 'Cone 011' },
   { value: '010', label: 'Cone 010' },
+  { value: '09', label: 'Cone 09' },
+  { value: '08', label: 'Cone 08' },
+  { value: '07', label: 'Cone 07' },
   { value: '06', label: 'Cone 06' },
   { value: '05', label: 'Cone 05' },
   { value: '04', label: 'Cone 04' },
   { value: '03', label: 'Cone 03' },
   { value: '02', label: 'Cone 02' },
   { value: '01', label: 'Cone 01' },
-  { value: '1', label: 'Cone 1' },
-  { value: '2', label: 'Cone 2' },
-  { value: '4', label: 'Cone 4' },
-  { value: '5', label: 'Cone 5' },
-  { value: '6', label: 'Cone 6' },
-  { value: '8', label: 'Cone 8' },
-  { value: '9', label: 'Cone 9' },
-  { value: '10', label: 'Cone 10' },
-  { value: '12', label: 'Cone 12' },
+  { value: '1',   label: 'Cone 1' },
+  { value: '2',   label: 'Cone 2' },
+  { value: '3',   label: 'Cone 3' },
+  { value: '4',   label: 'Cone 4' },
+  { value: '5',   label: 'Cone 5' },
+  { value: '6',   label: 'Cone 6' },
+  { value: '7',   label: 'Cone 7' },
+  { value: '8',   label: 'Cone 8' },
+  { value: '9',   label: 'Cone 9' },
+  { value: '10',  label: 'Cone 10' },
+  { value: '11',  label: 'Cone 11' },
+  { value: '12',  label: 'Cone 12' },
 ];
 
 /** Returns the piece stage to advance FROM when completing a firing of a given type */
