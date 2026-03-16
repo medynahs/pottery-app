@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
 import type { Firing, FiringState, Kiln, KilnChecklist } from '../screens/kiln/types';
-import { INITIAL_PIECES, STAGES, nextStage } from '../screens/pieces/constants';
+import { INITIAL_PIECES, STAGES } from '../screens/pieces/constants';
+import { getConfiguredNextStage } from '../screens/pieces/stageFlow';
 import type { Piece } from '../screens/pieces/types';
 import { zustandStorage } from './storage';
 
@@ -145,7 +146,7 @@ interface AppState {
   advancePiece: (pieceId: number) => void;
   advancePieceIds: (ids: number[]) => void;
   advanceBatch: (batchId: string, fromStage: string) => void;
-  sendToCemetery: (pieceId: number) => void;
+  sendToCemetery: (pieceId: number, memorial?: { epitaph?: string; causeOfDeath?: string }) => void;
 
   // ── Stage Configuration ───────────────────────────────────────
   stageConfig: StageConfig[];
@@ -311,7 +312,7 @@ export const useAppStore = create<AppState>()(
     set((state) => ({
       pieces: state.pieces.map((p) => {
         if (p.id !== pieceId) return p;
-        const next = nextStage(p.stage);
+        const next = getConfiguredNextStage(p.stage, state.stageConfig);
         if (!next) return p;
         return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
       }),
@@ -324,7 +325,7 @@ export const useAppStore = create<AppState>()(
     set((state) => ({
       pieces: state.pieces.map((p) => {
         if (!idSet.has(p.id)) return p;
-        const next = nextStage(p.stage);
+        const next = getConfiguredNextStage(p.stage, state.stageConfig);
         if (!next) return p;
         return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
       }),
@@ -336,23 +337,32 @@ export const useAppStore = create<AppState>()(
     set((state) => ({
       pieces: state.pieces.map((p) => {
         if (p.batchId !== batchId || p.stage !== fromStage) return p;
-        const next = nextStage(p.stage);
+        const next = getConfiguredNextStage(p.stage, state.stageConfig);
         if (!next) return p;
         return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
       }),
     }));
     get().enqueueSyncOp({ type: 'advanceBatch', payload: { batchId, fromStage } });
   },
-  sendToCemetery: (pieceId) => {
+  sendToCemetery: (pieceId, memorial) => {
     const timestamp = new Date().toISOString();
     set((state) => ({
       pieces: state.pieces.map((p) =>
         p.id !== pieceId
           ? p
-          : { ...p, stage: 'cemetery', timeline: [...p.timeline, { stage: 'cemetery', timestamp }] }
+          : {
+              ...p,
+              stage: 'cemetery',
+              epitaph: memorial?.epitaph,
+              causeOfDeath: memorial?.causeOfDeath,
+              timeline: [...p.timeline, { stage: 'cemetery', timestamp }],
+            }
       ),
     }));
-    get().enqueueSyncOp({ type: 'sendToCemetery', payload: pieceId });
+    get().enqueueSyncOp({
+      type: 'sendToCemetery',
+      payload: { pieceId, epitaph: memorial?.epitaph, causeOfDeath: memorial?.causeOfDeath },
+    });
   },
 
   // ── Stage Configuration ───────────────────────────────────────

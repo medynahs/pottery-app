@@ -1,24 +1,39 @@
 // src/screens/PiecesScreen.tsx
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
-import { Layers, Plus, Search, SlidersHorizontal } from 'lucide-react-native';
+import { ChevronUp, Layers, Plus, Search, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
+import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { AddPieceModal } from './pieces/AddPieceModal';
 import { BatchCard } from './pieces/BatchCard';
 import { CemeteryBanner } from './pieces/CemeteryBanner';
+import { CemeterySacrificeModal } from './pieces/CemeterySacrificeModal';
 import { FilterSortSheet } from './pieces/FilterSortSheet';
 import { usePiecesScreen } from './pieces/hooks/usePiecesScreen';
 import { PieceActionSheet } from './pieces/PieceActionSheet';
 import { PieceCard } from './pieces/PieceCard';
 import { PieceJournalModal } from './pieces/PieceJournalModal';
+import { StageAdvanceCelebrationModal, type StageAdvanceCelebration } from './pieces/StageAdvanceCelebrationModal';
+import { StageAdvanceFlowModal } from './pieces/StageAdvanceFlowModal';
+
+const itemLayout = LinearTransition
+  .duration(420)
+  .easing(Easing.inOut(Easing.cubic));
 
 export default function PiecesScreen() {
+  const [stageTransition, setStageTransition] = React.useState<StageAdvanceCelebration | null>(null);
+
   const {
     pieces,
     filteredPieces,
-    gridRows,
+    displayItems,
     stageTabs,
+    stageLookup,
+    progressStageOrder,
+    getNextStageId,
+    defaultBisqueTemp,
+    defaultGlazeTemp,
     activeFilterCount,
     activeStage, setActiveStage,
     search, setSearch,
@@ -26,6 +41,7 @@ export default function PiecesScreen() {
     editPiece, setEditPiece,
     journalPiece, setJournalPiece,
     actionSheetPiece, setActionSheetPiece,
+    cemeteryPiece, setCemeteryPiece,
     sortKey, setSortKey,
     filters, setFilters,
     filtersOpen, setFiltersOpen,
@@ -37,9 +53,14 @@ export default function PiecesScreen() {
     handleDuplicateBatch,
     handleUpdateJournalEntry,
     toggleExpand,
+    advanceRequest,
     handleAdvanceBatch,
     handleAdvance,
+    dismissAdvanceRequest,
+    commitAdvanceRequest,
+    skipAdvanceRequest,
     handleSendToCemetery,
+    handleConfirmSendToCemetery,
   } = usePiecesScreen();
 
   return (
@@ -118,51 +139,82 @@ export default function PiecesScreen() {
             <CemeteryBanner count={pieces.filter(p => p.stage === 'cemetery').length} />
           )}
 
-          {gridRows.map((row, i) => {
-            if (row.type === 'batch') {
+          <Animated.View layout={itemLayout} className="flex-row flex-wrap justify-between">
+            {displayItems.map((item) => {
+              if (item.type === 'set-header') {
+                return (
+                  <Animated.View
+                    key={`header-${item.batchId}`}
+                    layout={itemLayout}
+                    entering={FadeInDown.duration(300).easing(Easing.out(Easing.cubic))}
+                    exiting={FadeOutUp.duration(260).easing(Easing.in(Easing.cubic))}
+                    className="w-full mb-2 mt-0.5"
+                  >
+                    <TouchableOpacity
+                      onPress={() => toggleExpand(item.batchId)}
+                      activeOpacity={0.8}
+                      className="self-start flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted/40"
+                    >
+                      <Layers size={10} color="hsl(24 20% 40%)" />
+                      <Text className="text-[10px] font-body-medium text-muted-foreground">
+                        {item.name} · {item.count}
+                      </Text>
+                      <Text className="text-[10px] font-body-medium text-primary">Collapse</Text>
+                      <ChevronUp size={11} color="hsl(15 50% 50%)" />
+                    </TouchableOpacity>
+                  </Animated.View>
+                );
+              }
+
+              if (item.type === 'batch') {
+                const representative = item.pieces[0];
+                const nextStageId = representative ? getNextStageId(representative.stage) : null;
+                const nextStageLabel = nextStageId ? (stageLookup[nextStageId]?.label ?? nextStageId) : undefined;
+                const stageLabel = representative ? (stageLookup[representative.stage]?.label ?? representative.stage) : '';
+                return (
+                  <Animated.View
+                    key={`batch-${item.batchId}`}
+                    layout={itemLayout}
+                    entering={FadeInDown.duration(300).easing(Easing.out(Easing.cubic))}
+                    exiting={FadeOutUp.duration(260).easing(Easing.in(Easing.cubic))}
+                    style={{ width: '48%', marginBottom: 16 }}
+                  >
+                    <BatchCard
+                      pieces={item.pieces}
+                      onAdvanceAll={() => handleAdvanceBatch(item.pieces)}
+                      stageLabel={stageLabel}
+                      nextStageLabel={nextStageLabel}
+                      onExpand={() => toggleExpand(item.batchId)}
+                    />
+                  </Animated.View>
+                );
+              }
+
               return (
-                <BatchCard
-                  key={`batch-${row.batchId}-${row.pieces[0].stage}`}
-                  pieces={row.pieces}
-                  onAdvanceAll={() => handleAdvanceBatch(row.batchId, row.pieces[0].stage)}
-                  onExpand={() => toggleExpand(row.batchId)}
-                />
-              );
-            }
-            if (row.type === 'set-header') {
-              return (
-                <TouchableOpacity
-                  key={`header-${row.batchId}`}
-                  onPress={() => toggleExpand(row.batchId)}
-                  activeOpacity={0.7}
-                  className="flex-row items-center justify-between py-2 mb-1"
+                <Animated.View
+                  key={`piece-${item.piece.id}`}
+                  layout={itemLayout}
+                  entering={FadeInDown.duration(300).easing(Easing.out(Easing.cubic))}
+                  exiting={FadeOutUp.duration(260).easing(Easing.in(Easing.cubic))}
+                  style={{ width: '48%', marginBottom: 16 }}
                 >
-                  <View className="flex-row items-center gap-2">
-                    <Layers size={12} color="hsl(24 20% 40%)" />
-                    <Text className="text-xs font-body-medium text-muted-foreground">
-                      {row.name} · Set of {row.count}
-                    </Text>
-                  </View>
-                  <Text className="text-xs text-primary font-body-medium">Collapse ↑</Text>
-                </TouchableOpacity>
-              );
-            }
-            return (
-              <View key={i} className="flex-row gap-4 mb-4">
-                {row.items.map(piece => (
                   <PieceCard
-                    key={piece.id}
-                    piece={piece}
-                    onAdvance={() => handleAdvance(piece.id)}
-                    onSendToCemetery={piece.stage !== 'cemetery' ? () => handleSendToCemetery(piece.id) : undefined}
-                    onJournal={() => setJournalPiece(piece)}
-                    onMore={() => setActionSheetPiece(piece)}
+                    piece={item.piece}
+                    onAdvance={() => handleAdvance(item.piece.id)}
+                    stageLabel={stageLookup[item.piece.stage]?.label}
+                    nextStageLabel={(() => {
+                      const nextStageId = getNextStageId(item.piece.stage);
+                      return nextStageId ? (stageLookup[nextStageId]?.label ?? nextStageId) : undefined;
+                    })()}
+                    progressStageOrder={progressStageOrder}
+                    onSendToCemetery={item.piece.stage !== 'cemetery' ? () => handleSendToCemetery(item.piece.id) : undefined}
+                    onJournal={() => setJournalPiece(item.piece)}
+                    onMore={() => setActionSheetPiece(item.piece)}
                   />
-                ))}
-                {row.items.length === 1 && <View className="flex-1" />}
-              </View>
-            );
-          })}
+                </Animated.View>
+              );
+            })}
+          </Animated.View>
 
           {filteredPieces.length === 0 && (
             <View className="items-center py-16">
@@ -185,6 +237,12 @@ export default function PiecesScreen() {
         onClose={() => setJournalPiece(null)}
         onUpdateEntry={handleUpdateJournalEntry}
       />
+      <CemeterySacrificeModal
+        piece={cemeteryPiece}
+        visible={cemeteryPiece !== null}
+        onClose={() => setCemeteryPiece(null)}
+        onConfirm={handleConfirmSendToCemetery}
+      />
       <PieceActionSheet
         piece={actionSheetPiece}
         visible={actionSheetPiece !== null}
@@ -202,6 +260,20 @@ export default function PiecesScreen() {
         filters={filters}
         onFiltersChange={setFilters}
         allPieces={pieces}
+      />
+      <StageAdvanceCelebrationModal
+        transition={stageTransition}
+        stageLookup={stageLookup}
+        onClose={() => setStageTransition(null)}
+      />
+      <StageAdvanceFlowModal
+        request={advanceRequest}
+        stageLookup={stageLookup}
+        defaultBisqueTemp={defaultBisqueTemp}
+        defaultGlazeTemp={defaultGlazeTemp}
+        onClose={dismissAdvanceRequest}
+        onSkip={() => skipAdvanceRequest(setStageTransition)}
+        onConfirm={(capture) => commitAdvanceRequest(capture, setStageTransition)}
       />
     </View>
   );

@@ -36,14 +36,12 @@ export function useAddPieceForm(
 ) {
   const clayBodies = useAppStore((s) => s.clayBodies);
   const defaultClayBodyId = useAppStore((s) => s.defaultClayBodyId);
-  const defaultBisqueTemp = useAppStore((s) => s.defaultBisqueTemp);
-  const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
 
   function buildEmptyForm(): PieceForm {
     const defaultClay = defaultClayBodyId
       ? (clayBodies.find((c) => c.id === defaultClayBodyId)?.name ?? '')
       : '';
-    return { ...EMPTY_FORM, clay: defaultClay, bisqueTemp: defaultBisqueTemp ?? '', glazeTemp: defaultGlazeTemp ?? '' };
+    return { ...EMPTY_FORM, clay: defaultClay };
   }
 
   const [form, setForm] = React.useState<PieceForm>(initialPiece ? pieceToForm(initialPiece) : buildEmptyForm());

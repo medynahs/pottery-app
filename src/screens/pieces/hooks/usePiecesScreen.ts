@@ -1,10 +1,13 @@
 import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store';
+import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
-import { Alert } from 'react-native';
-import { nextStage } from '../constants';
+import { Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { ActiveFilters, EMPTY_FILTERS, SortKey, countActiveFilters } from '../FilterSortSheet';
+import type { StageAdvanceCelebration } from '../StageAdvanceCelebrationModal';
+import type { StageAdvanceCapture, StageAdvanceRequest } from '../StageAdvanceFlowModal';
+import { FINISHED_STAGE_ID, getAdvanceOrder, getConfiguredNextStage } from '../stageFlow';
 import { STAGE_ICONS, resolveStageIcon } from '../stageIconUtils';
 import type { DisplayItem, GridRow, Piece } from '../types';
 
@@ -22,8 +25,9 @@ export function usePiecesScreen() {
   const updateJournalEntry = useAppStore((s) => s.updateJournalEntry);
   const advancePiece = useAppStore((s) => s.advancePiece);
   const advancePieceIds = useAppStore((s) => s.advancePieceIds);
-  const advanceBatch = useAppStore((s) => s.advanceBatch);
   const sendToCemetery = useAppStore((s) => s.sendToCemetery);
+  const defaultBisqueTemp = useAppStore((s) => s.defaultBisqueTemp);
+  const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
 
   const [activeStage, setActiveStage] = React.useState('all');
   const [search, setSearch] = React.useState('');
@@ -31,19 +35,43 @@ export function usePiecesScreen() {
   const [editPiece, setEditPiece] = React.useState<Piece | undefined>(undefined);
   const [journalPiece, setJournalPiece] = React.useState<Piece | null>(null);
   const [actionSheetPiece, setActionSheetPiece] = React.useState<Piece | null>(null);
+  const [cemeteryPiece, setCemeteryPiece] = React.useState<Piece | null>(null);
   const [expandedBatches, setExpandedBatches] = React.useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = React.useState<SortKey>('newest');
   const [filters, setFilters] = React.useState<ActiveFilters>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [advanceRequest, setAdvanceRequest] = React.useState<StageAdvanceRequest | null>(null);
   const scrollRef = React.useRef<ScrollViewType>(null);
 
   const activeFilterCount = countActiveFilters(filters);
 
-  const { enabledStages } = useStageConfig();
+  const { enabledStages, stages } = useStageConfig();
   const stageTabs = React.useMemo(() => [
     { id: 'all', label: 'All', Icon: STAGE_ICONS.all },
     ...enabledStages.map(s => ({ id: s.id, label: s.label, Icon: resolveStageIcon(s) })),
   ], [enabledStages]);
+
+  const stageLookup = React.useMemo(() => {
+    const lookup: Record<string, { label: string; Icon: LucideIcon }> = {
+      all: { label: 'All', Icon: STAGE_ICONS.all as LucideIcon },
+    };
+
+    for (const stage of stages) {
+      lookup[stage.id] = {
+        label: stage.label,
+        Icon: resolveStageIcon(stage) as LucideIcon,
+      };
+    }
+
+    return lookup;
+  }, [stages]);
+
+  const progressStageOrder = React.useMemo(() => getAdvanceOrder(stages), [stages]);
+
+  const getNextStageId = React.useCallback(
+    (stageId: string) => getConfiguredNextStage(stageId, stages),
+    [stages]
+  );
 
   React.useEffect(() => {
     if (activeStage !== 'all' && !enabledStages.some(s => s.id === activeStage)) {
@@ -54,6 +82,12 @@ export function usePiecesScreen() {
   React.useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [activeStage]);
+
+  React.useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
 
   const filteredPieces = React.useMemo(() => {
     const result = pieces.filter(p =>
@@ -193,59 +227,193 @@ export function usePiecesScreen() {
   );
 
   const toggleExpand = React.useCallback((batchId: string) => {
+    LayoutAnimation.configureNext({
+      duration: 380,
+      create: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+      },
+      delete: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+    });
+
     setExpandedBatches(prev => {
       const next = new Set(prev);
-      next.has(batchId) ? next.delete(batchId) : next.add(batchId);
+      if (next.has(batchId)) next.delete(batchId);
+      else next.add(batchId);
       return next;
     });
   }, []);
 
-  const handleAdvanceBatch = React.useCallback((batchId: string, stage: string) => {
-    advanceBatch(batchId, stage);
-  }, [advanceBatch]);
+  const handleAdvanceBatch = React.useCallback((batchPiecesAtStage: Piece[]) => {
+    const representative = batchPiecesAtStage[0];
+    if (!representative) return;
+
+    const toStage = getNextStageId(representative.stage);
+    if (!toStage) return;
+
+    setAdvanceRequest({
+      pieceIds: batchPiecesAtStage.map((piece) => piece.id),
+      fromStage: representative.stage,
+      toStage,
+      pieceName: getSetName(representative.name),
+      count: batchPiecesAtStage.length,
+      isBatch: true,
+    });
+  }, [getNextStageId]);
 
   const handleAdvance = React.useCallback((pieceId: number) => {
     const piece = pieces.find(p => p.id === pieceId);
     if (!piece) return;
 
+    const toStage = getNextStageId(piece.stage);
+    if (!toStage) return;
+
+    const queueSingle = () => {
+      setAdvanceRequest({
+        pieceIds: [piece.id],
+        fromStage: piece.stage,
+        toStage,
+        pieceName: piece.name,
+        count: 1,
+        isBatch: false,
+      });
+    };
+
     if (piece.batchId) {
       const batchMates = pieces.filter(
-        p => p.batchId === piece.batchId && p.stage === piece.stage && nextStage(p.stage)
+        p => p.batchId === piece.batchId && p.stage === piece.stage && !!getNextStageId(p.stage)
       );
+
       if (batchMates.length > 1) {
         Alert.alert(
           'Advance Piece',
           `Move just "${piece.name}", or all ${batchMates.length} pieces at this stage in the batch?`,
           [
-            { text: 'Just this one', onPress: () => advancePiece(pieceId) },
-            { text: `All ${batchMates.length} in batch`, onPress: () => advancePieceIds(batchMates.map(p => p.id)) },
+            {
+              text: 'Just this one',
+              onPress: queueSingle,
+            },
+            {
+              text: `All ${batchMates.length} in batch`,
+              onPress: () => {
+                setAdvanceRequest({
+                  pieceIds: batchMates.map((p) => p.id),
+                  fromStage: piece.stage,
+                  toStage,
+                  pieceName: getSetName(piece.name),
+                  count: batchMates.length,
+                  isBatch: true,
+                });
+              },
+            },
           ]
         );
         return;
       }
     }
 
-    advancePiece(pieceId);
-  }, [pieces, advancePiece, advancePieceIds]);
+    queueSingle();
+  }, [pieces, getNextStageId]);
+
+  const dismissAdvanceRequest = React.useCallback(() => {
+    setAdvanceRequest(null);
+  }, []);
+
+  const commitAdvanceRequest = React.useCallback((
+    capture: StageAdvanceCapture,
+    onAdvanced?: (transition: StageAdvanceCelebration) => void,
+  ) => {
+    if (!advanceRequest) return;
+
+    const targetPieces = advanceRequest.pieceIds
+      .map((id) => pieces.find((piece) => piece.id === id))
+      .filter((piece): piece is Piece => !!piece);
+
+    if (targetPieces.length === 0) {
+      setAdvanceRequest(null);
+      return;
+    }
+
+    const notes = capture.notes?.trim();
+    const journalPatch = {
+      notes: notes || undefined,
+      photo: capture.photo || undefined,
+    };
+    const hasJournalPatch = !!journalPatch.notes || !!journalPatch.photo;
+
+    const bisqueTemp = advanceRequest.toStage === 'bisque' ? capture.bisqueTemp : undefined;
+    const glazeTemp = advanceRequest.toStage === 'glaze-fired' ? capture.glazeTemp : undefined;
+    const status = advanceRequest.toStage === FINISHED_STAGE_ID ? capture.status : undefined;
+
+    targetPieces.forEach((piece) => {
+      if (!bisqueTemp && !glazeTemp && !status) return;
+
+      updatePiece({
+        ...piece,
+        bisqueTemp: bisqueTemp || piece.bisqueTemp,
+        glazeTemp: glazeTemp || piece.glazeTemp,
+        status: status || piece.status,
+      });
+    });
+
+    if (targetPieces.length === 1) {
+      advancePiece(targetPieces[0].id);
+    } else {
+      advancePieceIds(targetPieces.map((piece) => piece.id));
+    }
+
+    if (hasJournalPatch) {
+      targetPieces.forEach((piece) => {
+        updateJournalEntry(piece.id, piece.timeline.length, journalPatch);
+      });
+    }
+
+    onAdvanced?.({
+      fromStage: advanceRequest.fromStage,
+      toStage: advanceRequest.toStage,
+      pieceName: advanceRequest.pieceName,
+      count: advanceRequest.count,
+      isBatch: advanceRequest.isBatch,
+    });
+
+    setAdvanceRequest(null);
+  }, [advanceRequest, pieces, updatePiece, advancePiece, advancePieceIds, updateJournalEntry]);
+
+  const skipAdvanceRequest = React.useCallback((onAdvanced?: (transition: StageAdvanceCelebration) => void) => {
+    commitAdvanceRequest({}, onAdvanced);
+  }, [commitAdvanceRequest]);
 
   const handleSendToCemetery = React.useCallback((pieceId: number) => {
     const piece = pieces.find(p => p.id === pieceId);
     if (!piece) return;
-    Alert.alert(
-      'Send to Cemetery?',
-      `"${piece.name}" will be laid to rest. This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Rest in clay 🪦', style: 'destructive', onPress: () => sendToCemetery(pieceId) },
-      ]
-    );
-  }, [pieces, sendToCemetery]);
+    setCemeteryPiece(piece);
+  }, [pieces]);
+
+  const handleConfirmSendToCemetery = React.useCallback((
+    pieceId: number,
+    memorial: { epitaph?: string; causeOfDeath?: string }
+  ) => {
+    sendToCemetery(pieceId, memorial);
+    setCemeteryPiece((current) => (current?.id === pieceId ? null : current));
+  }, [sendToCemetery]);
 
   return {
     pieces,
     filteredPieces,
+    displayItems,
     gridRows,
     stageTabs,
+    stageLookup,
+    progressStageOrder,
+    getNextStageId,
+    defaultBisqueTemp,
+    defaultGlazeTemp,
     activeFilterCount,
     activeStage, setActiveStage,
     search, setSearch,
@@ -253,6 +421,7 @@ export function usePiecesScreen() {
     editPiece, setEditPiece,
     journalPiece, setJournalPiece,
     actionSheetPiece, setActionSheetPiece,
+    cemeteryPiece, setCemeteryPiece,
     sortKey, setSortKey,
     filters, setFilters,
     filtersOpen, setFiltersOpen,
@@ -264,8 +433,13 @@ export function usePiecesScreen() {
     handleDuplicateBatch,
     handleUpdateJournalEntry,
     toggleExpand,
+    advanceRequest,
     handleAdvanceBatch,
     handleAdvance,
+    dismissAdvanceRequest,
+    commitAdvanceRequest,
+    skipAdvanceRequest,
     handleSendToCemetery,
+    handleConfirmSendToCemetery,
   };
 }

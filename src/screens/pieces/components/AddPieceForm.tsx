@@ -7,10 +7,7 @@ import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import {
-  BISQUE_TEMPS,
-  FIRING_TYPES,
-  GLAZE_TEMPS,
-  PIECE_STATUSES
+    PIECE_DISPOSITION_STATUSES,
 } from '../constants';
 import { resolveStageIcon } from '../stageIconUtils';
 import type { PieceForm } from '../types';
@@ -32,6 +29,7 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddP
   const formingMethods = useAppStore((s) => s.formingMethods);
   const pieceFormOptions = useAppStore((s) => s.pieceFormOptions);
   const isCemetery = form.stage === 'cemetery';
+  const isFinished = form.stage === 'finished';
 
   return (
     <ScrollView
@@ -302,42 +300,6 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddP
       </View>
       )}
 
-      {/* Bisque Firing Temperature */}
-      {!isCemetery && (
-      <View className="mt-5">
-        <FieldLabel>Bisque Firing Temperature</FieldLabel>
-        <OptionPills
-          options={BISQUE_TEMPS}
-          value={form.bisqueTemp}
-          onChange={v => set('bisqueTemp', v)}
-        />
-      </View>
-      )}
-
-      {/* Glaze Firing Temperature */}
-      {!isCemetery && (
-      <View className="mt-5">
-        <FieldLabel>Glaze Firing Temperature</FieldLabel>
-        <OptionPills
-          options={GLAZE_TEMPS}
-          value={form.glazeTemp}
-          onChange={v => set('glazeTemp', v)}
-        />
-      </View>
-      )}
-
-      {/* Firing Type */}
-      {!isCemetery && (
-      <View className="mt-5">
-        <FieldLabel>Firing Type</FieldLabel>
-        <OptionPills
-          options={FIRING_TYPES}
-          value={form.firingType}
-          onChange={v => set('firingType', v)}
-        />
-      </View>
-      )}
-
       {/* Decorations */}
       {!isCemetery && (
       <View className="mt-5">
@@ -371,11 +333,11 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddP
       )}
 
       {/* Status */}
-      {!isCemetery && (
+      {!isCemetery && isFinished && (
       <View className="mt-10">
         <FieldLabel>Status</FieldLabel>
         <OptionPills
-          options={PIECE_STATUSES}
+          options={PIECE_DISPOSITION_STATUSES}
           value={form.status}
           onChange={v => set('status', v)}
         />
@@ -383,7 +345,7 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddP
       )}
 
       {/* Price */}
-      {!isCemetery && (
+      {!isCemetery && isFinished && (
       <View className="mt-5">
         <FieldLabel>Price</FieldLabel>
         <Input
