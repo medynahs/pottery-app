@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
 import type { Firing, FiringState, Kiln, KilnChecklist } from '../screens/kiln/types';
+import type { StudioRhythmSuggestionType } from '../screens/overview/generateStudioRhythmSuggestions';
+import {
+    DEFAULT_KILNKIN_COMPANION,
+    type KilnkinCompanion,
+} from '../screens/overview/kilnkinCompanion';
+import type { StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRhythm';
 import { INITIAL_PIECES, STAGES } from '../screens/pieces/constants';
 import { getConfiguredNextStage } from '../screens/pieces/stageFlow';
 import type { Piece } from '../screens/pieces/types';
@@ -96,6 +102,37 @@ export type Task = {
   status: 'pending' | 'completed';
 };
 
+export type DailyMissionCompletion = Record<string, StudioRhythmSuggestionType[]>;
+
+const DEFAULT_STUDIO_GOALS: StudioRhythmGoal[] = [
+  {
+    id: 'goal-cylinder-practice',
+    title: 'Train cylinders once a week',
+    type: 'cylinder-practice',
+    frequency: 'weekly',
+    targetCount: 1,
+    active: true,
+  },
+  {
+    id: 'goal-reclaim-session',
+    title: 'Run one reclaim session',
+    type: 'reclaim-session',
+    frequency: 'weekly',
+    targetCount: 1,
+    active: false,
+  },
+  {
+    id: 'goal-finish-piece',
+    title: 'Finish one piece this week',
+    type: 'finish-piece',
+    frequency: 'weekly',
+    targetCount: 1,
+    active: false,
+  },
+];
+
+const DEFAULT_STUDIO_EVENTS: StudioRhythmEvent[] = [];
+
 export const CEMETERY_ID = 'cemetery';
 
 function buildDefaultStages(): StageConfig[] {
@@ -129,11 +166,25 @@ interface AppState {
     avatarImageUri?: string;
   };
   setUser: (patch: Partial<AppState['user']>) => void;
+  kilnkinCompanion: KilnkinCompanion;
+  setKilnkinCompanion: (companion: KilnkinCompanion) => void;
+  renameKilnkinCompanion: (name: string) => void;
 
   // ── Tasks (Today's Routine) ───────────────────────────────────
   tasks: Task[];
   toggleTask: (index: number) => void;
   addTask: (task: Task) => void;
+
+  // ── Studio Rhythm ────────────────────────────────────────────
+  studioRhythmConfig: StudioRhythmConfig;
+  setStudioRhythmConfig: (patch: Partial<StudioRhythmConfig>) => void;
+  addStudioRhythmEvent: (event: Omit<StudioRhythmEvent, 'id'>) => void;
+  removeStudioRhythmEvent: (id: string) => void;
+  updateStudioRhythmEvent: (id: string, patch: Partial<Omit<StudioRhythmEvent, 'id'>>) => void;
+  toggleStudioRhythmGoal: (id: string) => void;
+  setStudioRhythmGoalTarget: (id: string, targetCount: number) => void;
+  dailyMissionCompletion: DailyMissionCompletion;
+  toggleDailyMissionCompletion: (dateKey: string, missionType: StudioRhythmSuggestionType) => void;
 
   // ── Pieces ────────────────────────────────────────────────────
   pieces: Piece[];
@@ -237,6 +288,91 @@ export const useAppStore = create<AppState>()(
   // ── User ──────────────────────────────────────────────────────
   user: { name: 'Susan Mallory', avatarInitial: 'S', studioName: 'Mallory Clay Studio', location: 'Portland, OR', bio: 'Wheel-thrown stoneware with a love for imperfect forms. Teaching beginners on weekends.' },
   setUser: (patch) => set((state) => ({ user: { ...state.user, ...patch } })),
+  kilnkinCompanion: DEFAULT_KILNKIN_COMPANION,
+  setKilnkinCompanion: (companion) => set({ kilnkinCompanion: companion }),
+  renameKilnkinCompanion: (name) =>
+    set((state) => ({
+      kilnkinCompanion: {
+        ...state.kilnkinCompanion,
+        name: name.trim() || state.kilnkinCompanion.name,
+      },
+    })),
+
+  // ── Studio Rhythm ─────────────────────────────────────────────
+  studioRhythmConfig: {
+    wheelPractice: true,
+    reclaimFocus: false,
+    preferredTrimAfterDays: 3,
+    weeklyGoals: DEFAULT_STUDIO_GOALS,
+    scheduledEvents: DEFAULT_STUDIO_EVENTS,
+  },
+  setStudioRhythmConfig: (patch) =>
+    set((state) => ({
+      studioRhythmConfig: {
+        ...state.studioRhythmConfig,
+        ...patch,
+      },
+    })),
+  addStudioRhythmEvent: (event) =>
+    set((state) => ({
+      studioRhythmConfig: {
+        ...state.studioRhythmConfig,
+        scheduledEvents: [
+          ...state.studioRhythmConfig.scheduledEvents,
+          { ...event, id: `rhythm-event-${Date.now()}` },
+        ],
+      },
+    })),
+  removeStudioRhythmEvent: (id) =>
+    set((state) => ({
+      studioRhythmConfig: {
+        ...state.studioRhythmConfig,
+        scheduledEvents: state.studioRhythmConfig.scheduledEvents.filter((event) => event.id !== id),
+      },
+    })),
+  updateStudioRhythmEvent: (id, patch) =>
+    set((state) => ({
+      studioRhythmConfig: {
+        ...state.studioRhythmConfig,
+        scheduledEvents: state.studioRhythmConfig.scheduledEvents.map((event) =>
+          event.id === id ? { ...event, ...patch } : event
+        ),
+      },
+    })),
+  toggleStudioRhythmGoal: (id) =>
+    set((state) => ({
+      studioRhythmConfig: {
+        ...state.studioRhythmConfig,
+        weeklyGoals: state.studioRhythmConfig.weeklyGoals.map((goal) =>
+          goal.id === id ? { ...goal, active: !goal.active } : goal
+        ),
+      },
+    })),
+  setStudioRhythmGoalTarget: (id, targetCount) =>
+    set((state) => ({
+      studioRhythmConfig: {
+        ...state.studioRhythmConfig,
+        weeklyGoals: state.studioRhythmConfig.weeklyGoals.map((goal) =>
+          goal.id === id ? { ...goal, targetCount } : goal
+        ),
+      },
+    })),
+  dailyMissionCompletion: {},
+  toggleDailyMissionCompletion: (dateKey, missionType) =>
+    set((state) => {
+      const existing = state.dailyMissionCompletion[dateKey] ?? [];
+      const hasMission = existing.includes(missionType);
+      const nextForDate = hasMission
+        ? existing.filter((type) => type !== missionType)
+        : [...existing, missionType];
+
+      return {
+        dailyMissionCompletion: {
+          ...state.dailyMissionCompletion,
+          [dateKey]: nextForDate,
+        },
+      };
+    }),
 
   // ── Tasks ─────────────────────────────────────────────────────
   tasks: [
@@ -593,6 +729,9 @@ export const useAppStore = create<AppState>()(
         role: state.role,
         enabledModules: state.enabledModules,
         user: state.user,
+        kilnkinCompanion: state.kilnkinCompanion,
+        studioRhythmConfig: state.studioRhythmConfig,
+        dailyMissionCompletion: state.dailyMissionCompletion,
         tasks: state.tasks,
         pieces: state.pieces,
         stageConfig: state.stageConfig,

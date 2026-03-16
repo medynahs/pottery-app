@@ -3,7 +3,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
@@ -25,7 +25,9 @@ import {
 } from '@expo-google-fonts/fraunces';
 
 // Prevent the splash screen from auto-hiding
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync().catch(() => {
+  // Ignore cases where no native splash screen is currently registered.
+});
 
 /** Waits for the Zustand persist store to finish hydrating from AsyncStorage. */
 function useStoreHydration() {
@@ -55,6 +57,10 @@ function AppShell() {
         <Stack.Screen name="piece-forms" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="bisque-cone" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="glaze-cone" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="profile/studio-rhythm" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="overview-missions" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="overview-analytics" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="kilnkin" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>
       <OfflineBanner />
       <StatusBar style="auto" />
@@ -71,20 +77,23 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
   const hydrated = useStoreHydration();
+  const isAppReady = loaded && hydrated;
 
-  useEffect(() => {
-    if (loaded && hydrated) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded, hydrated]);
+  const onLayoutRootView = useCallback(() => {
+    if (!isAppReady) return;
 
-  if (!loaded || !hydrated) {
+    void SplashScreen.hideAsync().catch(() => {
+      // Ignore cases where the splash screen has already been dismissed.
+    });
+  }, [isAppReady]);
+
+  if (!isAppReady) {
     return <View style={{ flex: 1, backgroundColor: '#D7682D' }} />;
   }
 
   return (
     <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#D7682D' }}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#D7682D' }} onLayout={onLayoutRootView}>
         <UIThemeProvider>
           <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#D7682D' } }}>
             <StageConfigProvider>
