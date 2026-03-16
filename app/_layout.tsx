@@ -59,6 +59,7 @@ function AppShell() {
         <Stack.Screen name="glaze-cone" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="profile/studio-rhythm" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="overview-missions" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="overview-alerts" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="overview-analytics" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="kilnkin" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>

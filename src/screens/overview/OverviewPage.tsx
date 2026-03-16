@@ -1,10 +1,11 @@
 import { Text } from '@/src/components/ui/text';
 import { generateStudioRhythmSuggestions } from '@/src/screens/overview/generateStudioRhythmSuggestions';
+import { getStudioAlerts } from '@/src/screens/overview/getStudioAlerts';
 import { getTodayMissionKey } from '@/src/screens/overview/missionDate';
 import { getDateKey } from '@/src/screens/overview/studioRhythm';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
-import { BarChart3, CalendarDays, ClipboardList } from 'lucide-react-native';
+import { BarChart3, BellRing, CalendarDays, ClipboardList } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -72,6 +73,11 @@ export function OverviewPage() {
     return isDefaultRhythm ? 1 : 0;
   }, [studioRhythmConfig]);
 
+  const studioAlerts = React.useMemo(
+    () => getStudioAlerts({ companion: kilnkinCompanion, pieces, firings, studioRhythmConfig }),
+    [firings, kilnkinCompanion, pieces, studioRhythmConfig]
+  );
+
   return (
     <View
       className="flex-1 bg-background"
@@ -110,6 +116,21 @@ export function OverviewPage() {
           className="absolute right-3 rounded-3xl bg-card/85 border border-border px-2 py-2 gap-2"
           style={{ top: hudRailOffset }}
         >
+          <TouchableOpacity
+            onPress={() => router.push('/overview-alerts')}
+            activeOpacity={0.8}
+            className="relative w-11 h-11 rounded-2xl bg-background border border-border items-center justify-center"
+            accessibilityRole="button"
+            accessibilityLabel="Open studio alerts"
+          >
+            <BellRing size={20} color="hsl(24 20% 35%)" />
+            {studioAlerts.length > 0 ? (
+              <View className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-destructive items-center justify-center px-1">
+                <Text className="text-[10px] text-destructive-foreground font-medium">{studioAlerts.length}</Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+
           <TouchableOpacity
             onPress={() => router.push('/overview-missions')}
             activeOpacity={0.8}
