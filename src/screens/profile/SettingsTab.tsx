@@ -39,6 +39,19 @@ export function SettingsTab({
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
   const pricingSettings = useAppStore((s) => s.pricingSettings);
   const pricingOnboardingCompleted = useAppStore((s) => s.pricingOnboardingCompleted);
+  const backendUsers = useAppStore((s) => s.backendUsers);
+  const backendUsersStatus = useAppStore((s) => s.backendUsersStatus);
+  const backendUsersError = useAppStore((s) => s.backendUsersError);
+  const loadBackendUsers = useAppStore((s) => s.loadBackendUsers);
+
+  const backendStatusLabel =
+    backendUsersStatus === 'loading'
+      ? 'Syncing…'
+      : backendUsersStatus === 'success'
+        ? 'Connected'
+        : backendUsersStatus === 'error'
+          ? 'Error'
+          : 'Idle';
 
   return (
     <>
@@ -66,6 +79,46 @@ export function SettingsTab({
         <ToggleRow icon={Clock}  iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50"   label="Drying Alert"   value={notifs.pieceDrying}   onToggle={() => toggle('pieceDrying')} />
         <ToggleRow icon={Trophy} iconColor="hsl(100 40% 45%)" iconBg="bg-green-50"  label="Achievements"   value={notifs.achievement}   onToggle={() => toggle('achievement')} />
         <ToggleRow icon={Bell}   iconColor="hsl(270 60% 55%)" iconBg="bg-purple-50" label="Weekly Summary" value={notifs.weeklySummary} onToggle={() => toggle('weeklySummary')} isLast />
+      </View>
+
+      <SectionLabel title="Backend" />
+      <SettingsGroup>
+        <SettingsRow
+          icon={Database}
+          iconColor="hsl(24 30% 45%)"
+          iconBg="bg-stone-100"
+          label="Users Endpoint"
+          value={`${backendUsers.length} users`}
+        />
+        <SettingsRow
+          icon={Zap}
+          iconColor="hsl(38 80% 50%)"
+          iconBg="bg-amber-50"
+          label="Sync Users Now"
+          value={backendStatusLabel}
+          onPress={() => {
+            void loadBackendUsers();
+          }}
+          isLast
+        />
+      </SettingsGroup>
+
+      <View className="mx-6 bg-card rounded-2xl border border-border px-4 py-3 mb-4">
+        {backendUsersError ? (
+          <Text className="text-xs text-destructive">{backendUsersError}</Text>
+        ) : backendUsers.length === 0 ? (
+          <Text className="text-xs text-muted-foreground">No backend users loaded yet.</Text>
+        ) : (
+          backendUsers.map((backendUser, index) => (
+            <View
+              key={backendUser.id}
+              className={`py-2 ${index < backendUsers.length - 1 ? 'border-b border-border' : ''}`}
+            >
+              <Text className="text-sm font-medium text-foreground">{backendUser.name}</Text>
+              <Text className="text-xs text-muted-foreground">{backendUser.role}</Text>
+            </View>
+          ))
+        )}
       </View>
 
       <SectionLabel title="Account" />

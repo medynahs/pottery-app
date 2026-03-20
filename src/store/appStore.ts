@@ -6,21 +6,22 @@ import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constant
 import type { Firing, FiringState, Kiln, KilnChecklist, KilnType } from '../screens/kiln/types';
 import type { StudioRhythmSuggestionType } from '../screens/overview/generateStudioRhythmSuggestions';
 import {
-    DEFAULT_KILNKIN_COMPANION,
-    type KilnkinCompanion,
+  DEFAULT_KILNKIN_COMPANION,
+  type KilnkinCompanion,
 } from '../screens/overview/kilnkinCompanion';
 import type { StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRhythm';
 import { INITIAL_PIECES, STAGES } from '../screens/pieces/constants';
 import {
-    applyPricingUserTypePreset,
-    buildDefaultPricingSettings,
-    type PricingFiringMode,
-    type PricingSettings,
-    type PricingTier,
-    type PricingUserType,
+  applyPricingUserTypePreset,
+  buildDefaultPricingSettings,
+  type PricingFiringMode,
+  type PricingSettings,
+  type PricingTier,
+  type PricingUserType,
 } from '../screens/pieces/pricing';
 import { getConfiguredNextStage } from '../screens/pieces/stageFlow';
 import type { Piece } from '../screens/pieces/types';
+import { fetchUsers, type BackendUser } from '../services';
 import { zustandStorage } from './storage';
 
 // ── Sync queue ────────────────────────────────────────────────────────────────
@@ -178,6 +179,20 @@ const DEFAULT_STUDIO_EVENTS: StudioRhythmEvent[] = [];
 
 export const CEMETERY_ID = 'cemetery';
 
+const DEFAULT_ONBOARDING_PROFILE: OnboardingProfile = {
+  userType: 'not-sure',
+  pricingUserType: 'side-business',
+  hasOwnKiln: null,
+  routinesFrequency: 'weekly',
+  routinesFocus: 'wheel',
+  preferredUnits: 'metric',
+  language: 'English',
+  notificationsEnabled: true,
+  quickTourRequested: false,
+  activeModules: ['overview', 'pieces', 'kiln', 'library', 'community'],
+  kilnkinId: DEFAULT_KILNKIN_COMPANION.id,
+};
+
 const KNOWN_APP_MODULES: AppModule[] = ['overview', 'pieces', 'kiln', 'library', 'community'];
 
 function normalizeModuleId(module: string): AppModule | string {
@@ -202,6 +217,15 @@ function normalizeModuleList(modules?: readonly string[]): AppModule[] {
   }
 
   return next;
+}
+
+function normalizeOnboardingProfile(profile?: Partial<OnboardingProfile>): OnboardingProfile {
+  const normalizedModules = normalizeModuleList(profile?.activeModules);
+  return {
+    ...DEFAULT_ONBOARDING_PROFILE,
+    ...profile,
+    activeModules: normalizedModules.length > 0 ? normalizedModules : DEFAULT_ONBOARDING_PROFILE.activeModules,
+  };
 }
 
 function buildDefaultStages(): StageConfig[] {
@@ -240,6 +264,10 @@ interface AppState {
     avatarImageUri?: string;
   };
   setUser: (patch: Partial<AppState['user']>) => void;
+  backendUsers: BackendUser[];
+  backendUsersStatus: 'idle' | 'loading' | 'success' | 'error';
+  backendUsersError: string | null;
+  loadBackendUsers: () => Promise<void>;
   kilnkinCompanion: KilnkinCompanion;
   setKilnkinCompanion: (companion: KilnkinCompanion) => void;
   renameKilnkinCompanion: (name: string) => void;
@@ -364,46 +392,40 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
   // ── App settings ──────────────────────────────────────────────
   generalOnboardingCompleted: false,
-  onboardingProfile: {
-    userType: 'not-sure',
-    pricingUserType: 'side-business',
-    hasOwnKiln: null,
-    routinesFrequency: 'weekly',
-    routinesFocus: 'wheel',
-    preferredUnits: 'metric',
-    language: 'English',
-    notificationsEnabled: true,
-    quickTourRequested: false,
-    activeModules: ['overview', 'pieces', 'kiln', 'library', 'community'],
-    kilnkinId: DEFAULT_KILNKIN_COMPANION.id,
-  },
+  onboardingProfile: DEFAULT_ONBOARDING_PROFILE,
   practiceMode: 'both',
   role: 'owner',
   enabledModules: ['overview', 'pieces', 'kiln', 'library', 'community'],
 
   setOnboardingProfile: (patch) =>
-    set((state) => ({
+    set((state) => {
+      const currentProfile = normalizeOnboardingProfile(state.onboardingProfile);
+      return {
       onboardingProfile: {
-        ...state.onboardingProfile,
+        ...currentProfile,
         ...patch,
         activeModules:
           patch.activeModules === undefined
-            ? state.onboardingProfile.activeModules
+            ? currentProfile.activeModules
             : normalizeModuleList(patch.activeModules),
       },
-    })),
+    };
+    }),
   completeGeneralOnboarding: (profile) =>
-    set((state) => ({
+    set((state) => {
+      const currentProfile = normalizeOnboardingProfile(state.onboardingProfile);
+      return {
       generalOnboardingCompleted: true,
       onboardingProfile: {
-        ...state.onboardingProfile,
+        ...currentProfile,
         ...profile,
         activeModules:
           profile?.activeModules === undefined
-            ? state.onboardingProfile.activeModules
+            ? currentProfile.activeModules
             : normalizeModuleList(profile.activeModules),
       },
-    })),
+    };
+    }),
   reopenGeneralOnboarding: () => set({ generalOnboardingCompleted: false }),
   setPracticeMode: (mode) => set({ practiceMode: mode }),
   setRole: (role) => set({ role }),
@@ -428,8 +450,32 @@ export const useAppStore = create<AppState>()(
     normalizeModuleList(get().enabledModules).includes(normalizeModuleId(module) as AppModule),
 
   // ── User ──────────────────────────────────────────────────────
-  user: { name: 'Susan Mallory', avatarInitial: 'S', studioName: 'Mallory Clay Studio', location: 'Portland, OR', bio: 'Wheel-thrown stoneware with a love for imperfect forms. Teaching beginners on weekends.' },
+  user: { name: 'Ariane Medina', avatarInitial: 'A', studioName: 'Mallory Clay Studio', location: 'Portland, OR', bio: 'Wheel-thrown stoneware with a love for imperfect forms. Teaching beginners on weekends.' },
   setUser: (patch) => set((state) => ({ user: { ...state.user, ...patch } })),
+  backendUsers: [],
+  backendUsersStatus: 'idle',
+  backendUsersError: null,
+  loadBackendUsers: async () => {
+    if (get().backendUsersStatus === 'loading') {
+      return;
+    }
+
+    set({ backendUsersStatus: 'loading', backendUsersError: null });
+
+    try {
+      const users = await fetchUsers();
+      set({
+        backendUsers: users,
+        backendUsersStatus: 'success',
+        backendUsersError: null,
+      });
+    } catch (error) {
+      set({
+        backendUsersStatus: 'error',
+        backendUsersError: error instanceof Error ? error.message : 'Unable to load users',
+      });
+    }
+  },
   kilnkinCompanion: DEFAULT_KILNKIN_COMPANION,
   setKilnkinCompanion: (companion) => set({ kilnkinCompanion: companion }),
   renameKilnkinCompanion: (name) =>
@@ -953,7 +999,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'pottery-life-store',
-      version: 1,
+      version: 2,
       migrate: (persistedState) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
@@ -963,15 +1009,27 @@ export const useAppStore = create<AppState>()(
           onboardingProfile?: Partial<OnboardingProfile>;
         };
 
+        const onboardingProfile = normalizeOnboardingProfile(state.onboardingProfile);
+        const enabledModules = normalizeModuleList(state.enabledModules);
+
         return {
           ...state,
-          onboardingProfile: state.onboardingProfile
-            ? {
-                ...state.onboardingProfile,
-                activeModules: normalizeModuleList(state.onboardingProfile.activeModules),
-              }
-            : state.onboardingProfile,
-          enabledModules: normalizeModuleList(state.enabledModules),
+          onboardingProfile,
+          enabledModules: enabledModules.length > 0 ? enabledModules : onboardingProfile.activeModules,
+        };
+      },
+      merge: (persistedState, currentState) => {
+        const state = (persistedState ?? {}) as Partial<AppState> & {
+          onboardingProfile?: Partial<OnboardingProfile>;
+        };
+        const onboardingProfile = normalizeOnboardingProfile(state.onboardingProfile);
+        const enabledModules = normalizeModuleList(state.enabledModules);
+
+        return {
+          ...currentState,
+          ...state,
+          onboardingProfile,
+          enabledModules: enabledModules.length > 0 ? enabledModules : onboardingProfile.activeModules,
         };
       },
       storage: zustandStorage,

@@ -66,6 +66,17 @@ function AppOnboardingGuard() {
 
 function AppShell() {
   useOfflineSync();
+  const backendUsersStatus = useAppStore((state) => state.backendUsersStatus);
+  const loadBackendUsers = useAppStore((state) => state.loadBackendUsers);
+
+  useEffect(() => {
+    if (backendUsersStatus !== 'idle') {
+      return;
+    }
+
+    void loadBackendUsers();
+  }, [backendUsersStatus, loadBackendUsers]);
+
   return (
     <>
       <AppOnboardingGuard />
