@@ -1,6 +1,7 @@
 import type { Firing } from '@/src/screens/kiln/types';
 import type { StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '@/src/screens/overview/studioRhythm';
 import type { Piece } from '@/src/screens/pieces/types';
+import type { Href } from 'expo-router';
 
 export type StudioRhythmSuggestionType =
   | 'trim'
@@ -13,7 +14,7 @@ export type StudioRhythmSuggestionType =
 export type StudioRhythmSuggestion = {
   type: StudioRhythmSuggestionType;
   text: string;
-  route: string;
+  route: Href;
   actionLabel: string;
 };
 

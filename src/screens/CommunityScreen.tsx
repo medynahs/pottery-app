@@ -2,8 +2,8 @@
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import {
-  Award, Bell, Bookmark, ChevronRight, Flame, Gift, Globe,
-  Heart, MapPin, MessageCircle, Star, ThumbsUp, Trophy, Zap,
+    Award, Bell, Bookmark, ChevronRight, Flame, Gift, Globe,
+    Heart, MapPin, MessageCircle, Star, ThumbsUp, Trophy, Zap,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
@@ -76,7 +76,7 @@ function Reactions({ likes, comments, saveable }: { likes: number; comments: num
 
 // ── Static data ───────────────────────────────────────────────────────────────
 
-const FILTERS = ['All', 'Moments', 'Gallery', 'Tips', 'Events', 'Drops'];
+const FILTERS = ['For You', 'Festivals', 'Missions', 'Hall of Fame', 'Events', 'Drops'];
 
 const POLL_OPTIONS = [
   { label: "Yuki's Soda Matte",    votes: 48 },
@@ -92,10 +92,28 @@ const FOLLOW_CREATORS = [
   { name: 'Adele K.', avatar: 'A', specialty: 'Handbuilding',color:'hsl(270 60% 55%)' },
 ];
 
+const FESTIVAL_TRACKS = [
+  { title: 'Beginner Track', summary: 'Wheel fundamentals and form consistency with guided prompts.', participants: 86 },
+  { title: 'Intermediate Track', summary: 'Refine trimming rhythm and glaze pairing decisions.', participants: 54 },
+  { title: 'Advanced Track', summary: 'Push form language, atmosphere risk, and presentation polish.', participants: 22 },
+];
+
+const GROUP_MISSIONS = [
+  { title: '7-Day Cylinder Sprint', members: 18, status: 'In progress', xp: '+180 XP' },
+  { title: 'Tea Bowl Pairing Week', members: 11, status: 'Recruiting', xp: '+140 XP' },
+  { title: 'Glaze Story Challenge', members: 9, status: 'Starts in 2 days', xp: '+220 XP' },
+];
+
+const WALL_OF_FAME = [
+  { name: 'Mara L.', title: 'Best Surface Story', piece: 'Ash-run Vessel', badge: 'Festival Winner' },
+  { name: 'Chen W.', title: 'Most Improved Form', piece: 'Nest Bowl Set', badge: 'Mission Streak' },
+  { name: 'Yuki R.', title: 'Community Favorite', piece: 'Moon Teapot', badge: 'Top Vote' },
+];
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function CommunityScreen() {
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [activeFilter, setActiveFilter] = useState('For You');
   const [pollVote, setPollVote] = useState<number | undefined>(undefined);
   const [followed, setFollowed] = useState<Record<string, boolean>>({});
   const pollMax = Math.max(...POLL_OPTIONS.map(o => o.votes));
@@ -135,8 +153,169 @@ export default function CommunityScreen() {
         ))}
       </ScrollView>
 
-      {/* ══════════════════════════ FEED ══════════════════════════════════════ */}
-      <View className="px-4 gap-3">
+      {activeFilter !== 'For You' ? (
+        <View className="px-4 gap-3">
+          {activeFilter === 'Festivals' ? (
+            <>
+              <View className="rounded-3xl overflow-hidden border border-green-200" style={{ backgroundColor: 'hsl(100 25% 96%)' }}>
+                <View className="px-5 pt-5 pb-4">
+                  <View className="flex-row items-center gap-2 mb-2">
+                    <Trophy size={14} color="hsl(100 35% 44%)" />
+                    <Text className="text-xs font-bold" style={{ color: 'hsl(100 35% 44%)' }}>Festival Active</Text>
+                  </View>
+                  <Text className="text-2xl font-serif font-bold text-foreground">Underwater Forms Festival</Text>
+                  <Text className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                    Join a track, submit one piece, and enter the community voting round.
+                  </Text>
+                  <View className="flex-row items-center justify-between mt-4">
+                    <Text className="text-xs text-muted-foreground"><Text className="font-bold text-foreground">6</Text> days until submissions close</Text>
+                    <View className="px-4 py-2 rounded-xl" style={{ backgroundColor: 'hsl(100 35% 44%)' }}>
+                      <Text className="text-white text-xs font-bold">Join Festival</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              {FESTIVAL_TRACKS.map((track) => (
+                <Card key={track.title} className="p-4">
+                  <View className="flex-row items-start gap-3">
+                    <View className="w-10 h-10 rounded-2xl bg-green-50 items-center justify-center">
+                      <Trophy size={16} color="hsl(100 35% 44%)" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-sm font-bold text-foreground">{track.title}</Text>
+                      <Text className="text-xs text-muted-foreground mt-1 leading-relaxed">{track.summary}</Text>
+                      <Text className="text-xs font-medium text-primary mt-2">{track.participants} potters joined</Text>
+                    </View>
+                  </View>
+                </Card>
+              ))}
+            </>
+          ) : null}
+
+          {activeFilter === 'Missions' ? (
+            <>
+              <Card className="p-5">
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-base font-serif font-bold text-foreground">Group Missions</Text>
+                  <View className="px-2 py-1 rounded-full bg-blue-50 border border-blue-100">
+                    <Text className="text-[10px] font-bold text-blue-700">Co-op</Text>
+                  </View>
+                </View>
+                <Text className="text-sm text-muted-foreground leading-relaxed">
+                  Pick one mission with your studio circle and earn shared progress plus personal XP.
+                </Text>
+              </Card>
+
+              {GROUP_MISSIONS.map((mission) => (
+                <Card key={mission.title} className="p-4">
+                  <View className="flex-row items-start gap-3">
+                    <View className="w-10 h-10 rounded-2xl bg-amber-50 items-center justify-center">
+                      <Zap size={16} color="hsl(38 80% 50%)" />
+                    </View>
+                    <View className="flex-1">
+                      <View className="flex-row items-center justify-between gap-2">
+                        <Text className="text-sm font-bold text-foreground flex-1">{mission.title}</Text>
+                        <Text className="text-xs font-semibold text-primary">{mission.xp}</Text>
+                      </View>
+                      <Text className="text-xs text-muted-foreground mt-1">{mission.members} members · {mission.status}</Text>
+                    </View>
+                  </View>
+                </Card>
+              ))}
+            </>
+          ) : null}
+
+          {activeFilter === 'Hall of Fame' ? (
+            <>
+              <View className="rounded-3xl border border-orange-200 bg-orange-50 p-5">
+                <View className="flex-row items-center gap-2 mb-2">
+                  <Award size={15} color="hsl(25 90% 55%)" />
+                  <Text className="text-xs font-bold" style={{ color: 'hsl(25 90% 55%)' }}>Season Results</Text>
+                </View>
+                <Text className="text-lg font-serif font-bold text-foreground">Wall of Fame</Text>
+                <Text className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                  Celebrate top form, best improvement, and community-voted favorites from current challenges.
+                </Text>
+              </View>
+
+              {WALL_OF_FAME.map((entry) => (
+                <Card key={entry.name + entry.title} className="p-4">
+                  <View className="flex-row items-start gap-3">
+                    <View className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center">
+                      <Trophy size={14} color="hsl(25 90% 45%)" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-sm font-bold text-foreground">{entry.name}</Text>
+                      <Text className="text-xs text-muted-foreground mt-0.5">{entry.title} · {entry.piece}</Text>
+                      <View className="self-start mt-2 px-2 py-1 rounded-full bg-muted border border-border">
+                        <Text className="text-[10px] font-medium text-muted-foreground">{entry.badge}</Text>
+                      </View>
+                    </View>
+                  </View>
+                </Card>
+              ))}
+            </>
+          ) : null}
+
+          {activeFilter === 'Events' ? (
+            <>
+              <View className="rounded-3xl border border-pink-200 p-5 overflow-hidden" style={{ backgroundColor: 'hsl(340 30% 97%)' }}>
+                <View className="px-2.5 py-0.5 rounded-full bg-pink-100 self-start mb-2">
+                  <Text className="text-xs font-bold" style={{ color: 'hsl(340 75% 50%)' }}>Live Event</Text>
+                </View>
+                <Text className="text-xl font-serif font-bold text-foreground">Secret Santa Pottery 🎁</Text>
+                <Text className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                  Exchange a handmade piece anonymously. Sign-ups close this week.
+                </Text>
+                <View className="flex-row gap-2 mt-4">
+                  <TouchableOpacity className="flex-1 py-2.5 rounded-xl items-center" style={{ backgroundColor: 'hsl(340 75% 50%)' }} activeOpacity={0.8}>
+                    <Text className="text-white text-sm font-bold">Sign me up</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity className="px-5 py-2.5 rounded-xl items-center bg-card border border-border" activeOpacity={0.8}>
+                    <Text className="text-sm font-medium text-foreground">Learn more</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <Card className="p-4">
+                <View className="flex-row items-center gap-2 mb-3">
+                  <MapPin size={13} color="hsl(15 50% 50%)" />
+                  <Text className="text-xs font-bold text-primary">Near You</Text>
+                </View>
+                <Text className="text-sm text-muted-foreground">Studio social and kiln-share meetups this weekend.</Text>
+              </Card>
+            </>
+          ) : null}
+
+          {activeFilter === 'Drops' ? (
+            <>
+              <View className="rounded-2xl border border-orange-200 bg-orange-50 p-4 flex-row items-center gap-3">
+                <View className="w-10 h-10 rounded-xl bg-orange-100 items-center justify-center flex-shrink-0">
+                  <Flame size={18} color="hsl(25 90% 55%)" />
+                </View>
+                <View className="flex-1">
+                  <View className="flex-row items-center gap-2 mb-0.5">
+                    <Text className="text-xs font-bold" style={{ color: 'hsl(25 90% 55%)' }}>Clay & Co.</Text>
+                    <View className="px-2 py-0.5 rounded-full bg-orange-200">
+                      <Text className="text-xs font-bold" style={{ color: 'hsl(25 90% 45%)' }}>🔥 Just dropped</Text>
+                    </View>
+                  </View>
+                  <Text className="text-sm text-foreground font-medium">Limited Raku Vase — Batch of 6</Text>
+                </View>
+              </View>
+
+              <Card className="p-4">
+                <Text className="text-sm font-bold text-foreground">Marketplace Discovery</Text>
+                <Text className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Explore community drops and creator pieces without mixing this into Library prep workflows.
+                </Text>
+              </Card>
+            </>
+          ) : null}
+        </View>
+      ) : (
+        <View className="px-4 gap-3">
 
         {/* 1 ── Featured challenge ── big hero */}
         <TouchableOpacity activeOpacity={0.88}>
@@ -511,7 +690,8 @@ export default function CommunityScreen() {
           </View>
         </TouchableOpacity>
 
-      </View>
+        </View>
+      )}
       <View className="h-12" />
     </ScrollView>
   );

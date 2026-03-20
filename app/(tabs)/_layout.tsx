@@ -45,11 +45,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="journal"
+        name="library"
         options={{
-          title: 'Journal',
+          title: 'Library',
           tabBarIcon: ({ color }) => <BookOpen size={28} color={color} />,
-          href: isModuleEnabled('journal') ? undefined : null,
+          href: isModuleEnabled('library') ? undefined : null,
         }}
       />
       <Tabs.Screen

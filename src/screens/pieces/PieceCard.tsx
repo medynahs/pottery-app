@@ -5,6 +5,7 @@ import { ArrowRight, BookOpen, Heart, Layers, MoreHorizontal, PackageCheck } fro
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import { LIFECYCLE_ORDER, isConditionStatus } from './constants';
+import { parseNumericInput } from './pricing';
 import type { Piece } from './types';
 
 function formatDate(iso: string) {
@@ -113,6 +114,11 @@ export function PieceCard({
   onJournal,
   onMore,
 }: PieceCardProps) {
+  const activeSaleMode = piece.salePriceMode ?? 'retail';
+  const activePrice = activeSaleMode === 'wholesale'
+    ? piece.wholesalePriceTarget ?? piece.wholesalePrice ?? parseNumericInput(piece.price)
+    : piece.retailPriceTarget ?? parseNumericInput(piece.price) ?? piece.suggestedPrice;
+
   return (
     <TouchableOpacity className="flex-1" activeOpacity={0.85} onPress={onPress}>
       <Card className="overflow-hidden flex-1">
@@ -164,6 +170,21 @@ export function PieceCard({
           <Text className="text-[11px] font-medium text-muted-foreground mt-0.5 uppercase tracking-wide">
             {piece.clay}
           </Text>
+          {(piece.totalCost != null || piece.firingFee != null) ? (
+            <Text className="text-[10px] font-medium text-muted-foreground mt-0.5" numberOfLines={1}>
+              {piece.totalCost != null ? `Cost ${piece.totalCost.toFixed(2)}` : 'Cost —'}
+              {piece.firingFeeQuoteRequired
+                ? ' · Firing N.O.T.K'
+                : piece.firingFee != null
+                  ? ` · Firing ${piece.firingFee.toFixed(2)}`
+                  : ''}
+            </Text>
+          ) : null}
+          {piece.stage === 'finished' && activePrice != null ? (
+            <Text className="text-[10px] font-medium text-primary mt-0.5" numberOfLines={1}>
+              {activeSaleMode === 'wholesale' ? 'Wholesale' : 'Retail'} {activePrice.toFixed(2)}
+            </Text>
+          ) : null}
           <ClayBeadProgress
             stage={piece.stage}
             lifecycleOrder={progressStageOrder}

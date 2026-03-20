@@ -183,10 +183,17 @@ export function usePiecesScreen() {
     setAddOpen(false);
   };
 
-  const handleEditPiece = React.useCallback((updated: Piece) => {
+  const handleUpdatePiece = React.useCallback((updated: Piece) => {
     updatePiece(updated);
-    setEditPiece(undefined);
+    setJournalPiece((current) => (current?.id === updated.id ? updated : current));
+    setActionSheetPiece((current) => (current?.id === updated.id ? updated : current));
+    setEditPiece((current) => (current?.id === updated.id ? updated : current));
   }, [updatePiece]);
+
+  const handleEditPiece = React.useCallback((updated: Piece) => {
+    handleUpdatePiece(updated);
+    setEditPiece(undefined);
+  }, [handleUpdatePiece]);
 
   const handleDelete = React.useCallback((pieceId: number) => {
     const piece = pieces.find(p => p.id === pieceId);
@@ -427,6 +434,7 @@ export function usePiecesScreen() {
     filtersOpen, setFiltersOpen,
     scrollRef,
     handleAdd,
+    handleUpdatePiece,
     handleEditPiece,
     handleDelete,
     handleDuplicate,

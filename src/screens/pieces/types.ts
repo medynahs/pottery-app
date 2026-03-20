@@ -1,3 +1,5 @@
+import type { PricingFiringMode, PricingSaleMode, PricingUserType } from './pricing';
+
 export type TimelineEntry = {
   stage: string;
   timestamp: string;
@@ -54,6 +56,41 @@ export type Piece = {
   epitaph?: string;
   causeOfDeath?: string;
   price?: string;
+  heightCm?: number;
+  widthCm?: number;
+  volumeCm3?: number;
+  pricingUserType?: PricingUserType;
+  firingFeeMode?: PricingFiringMode;
+  salePriceMode?: PricingSaleMode;
+  firingFee?: number;
+  firingFeeQuoteRequired?: boolean;
+  weightGrams?: number;
+  workHours?: number;
+  adminHours?: number;
+  workMinutes?: number;
+  adminMinutes?: number;
+  costClay?: number;
+  costGlaze?: number;
+  costEnergy?: number;
+  costOther?: number;
+  costClayOverride?: number;
+  costGlazeOverride?: number;
+  costEnergyOverride?: number;
+  materialCost?: number;
+  laborCost?: number;
+  adminCost?: number;
+  overheadCost?: number;
+  sellingFeePct?: number;
+  taxPct?: number;
+  sellingFeeAmount?: number;
+  taxAmount?: number;
+  profitAmount?: number;
+  totalCost?: number;
+  markupPct?: number;
+  suggestedPrice?: number;
+  wholesalePrice?: number;
+  retailPriceTarget?: number;
+  wholesalePriceTarget?: number;
   batchId?: string;
   batchSize?: number;
 };
@@ -69,6 +106,17 @@ export type PieceForm = {
   form: string;
   weight: string;
   dimensions: string;
+  heightCm: string;
+  widthCm: string;
+  firingFeeMode: PricingFiringMode;
+  salePriceMode: PricingSaleMode;
+  workHours: string;
+  adminHours: string;
+  costClayOverride: string;
+  costGlazeOverride: string;
+  costEnergyOverride: string;
+  costOther: string;
+  markupPct: string;
   bisqueTemp: string;
   glazeTemp: string;
   firingType: string;
@@ -76,7 +124,8 @@ export type PieceForm = {
   notes: string;
   epitaph: string;
   causeOfDeath: string;
-  price: string;
+  retailPriceTarget: string;
+  wholesalePriceTarget: string;
   quantity: number;
 };
 

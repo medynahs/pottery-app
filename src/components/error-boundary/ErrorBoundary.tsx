@@ -35,12 +35,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
   handleReload = () => {
     this.resetError();
-    router.replace("/(tabs)/journal");
+    router.replace("/(tabs)/library");
   };
 
   handleGoHome = () => {
     this.resetError();
-    router.replace("/(tabs)/journal");
+    router.replace("/(tabs)/library");
   };
 
   render() {

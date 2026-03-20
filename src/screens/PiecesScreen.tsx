@@ -47,6 +47,7 @@ export default function PiecesScreen() {
     filtersOpen, setFiltersOpen,
     scrollRef,
     handleAdd,
+    handleUpdatePiece,
     handleEditPiece,
     handleDelete,
     handleDuplicate,
@@ -236,6 +237,7 @@ export default function PiecesScreen() {
         visible={journalPiece !== null}
         onClose={() => setJournalPiece(null)}
         onUpdateEntry={handleUpdateJournalEntry}
+        onUpdatePiece={handleUpdatePiece}
       />
       <CemeterySacrificeModal
         piece={cemeteryPiece}

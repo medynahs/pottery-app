@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { INITIAL_GLAZES, INITIAL_GLAZE_TESTS } from '../screens/glazes/data';
+import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
 import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
-import type { Firing, FiringState, Kiln, KilnChecklist } from '../screens/kiln/types';
+import type { Firing, FiringState, Kiln, KilnChecklist, KilnType } from '../screens/kiln/types';
 import type { StudioRhythmSuggestionType } from '../screens/overview/generateStudioRhythmSuggestions';
 import {
     DEFAULT_KILNKIN_COMPANION,
@@ -9,6 +11,14 @@ import {
 } from '../screens/overview/kilnkinCompanion';
 import type { StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRhythm';
 import { INITIAL_PIECES, STAGES } from '../screens/pieces/constants';
+import {
+    applyPricingUserTypePreset,
+    buildDefaultPricingSettings,
+    type PricingFiringMode,
+    type PricingSettings,
+    type PricingTier,
+    type PricingUserType,
+} from '../screens/pieces/pricing';
 import { getConfiguredNextStage } from '../screens/pieces/stageFlow';
 import type { Piece } from '../screens/pieces/types';
 import { zustandStorage } from './storage';
@@ -38,6 +48,39 @@ export type SyncOperation = {
 
 export type PracticeMode = 'home' | 'studio' | 'both';
 export type UserRole = 'owner' | 'member';
+export type OnboardingUserType =
+  | 'home-potter'
+  | 'studio-potter'
+  | 'hybrid-potter'
+  | 'studio-owner-technician'
+  | 'teacher'
+  | 'business-owner'
+  | 'not-sure';
+export type MeasurementUnit = 'metric' | 'imperial';
+export type OnboardingPracticeFrequency = 'daily' | 'weekly' | 'flexible';
+export type OnboardingPieceFocus = 'wheel' | 'hand-building' | 'glazing' | 'reclaim';
+export type AppModule = 'overview' | 'pieces' | 'kiln' | 'library' | 'community';
+
+export interface OnboardingProfile {
+  userType: OnboardingUserType;
+  pricingUserType: PricingUserType;
+  hasOwnKiln: boolean | null;
+  studioName?: string;
+  kilnCount?: number;
+  kilnName?: string;
+  kilnType?: KilnType;
+  kilnNickname?: string;
+  homeStudioNotes?: string;
+  toolsChecklist?: string;
+  routinesFrequency: OnboardingPracticeFrequency;
+  routinesFocus: OnboardingPieceFocus;
+  preferredUnits: MeasurementUnit;
+  language: string;
+  notificationsEnabled: boolean;
+  quickTourRequested: boolean;
+  activeModules: AppModule[];
+  kilnkinId?: string;
+}
 
 export interface StageConfig {
   id: string;
@@ -135,6 +178,32 @@ const DEFAULT_STUDIO_EVENTS: StudioRhythmEvent[] = [];
 
 export const CEMETERY_ID = 'cemetery';
 
+const KNOWN_APP_MODULES: AppModule[] = ['overview', 'pieces', 'kiln', 'library', 'community'];
+
+function normalizeModuleId(module: string): AppModule | string {
+  return module === 'journal' ? 'library' : module;
+}
+
+function normalizeModuleList(modules?: readonly string[]): AppModule[] {
+  if (!modules?.length) {
+    return [];
+  }
+
+  const next: AppModule[] = [];
+
+  for (const module of modules) {
+    const normalized = normalizeModuleId(module);
+
+    if (!KNOWN_APP_MODULES.includes(normalized as AppModule) || next.includes(normalized as AppModule)) {
+      continue;
+    }
+
+    next.push(normalized as AppModule);
+  }
+
+  return next;
+}
+
 function buildDefaultStages(): StageConfig[] {
   return STAGES.filter((s) => s.id !== 'all').map((s) => ({
     id: s.id,
@@ -146,9 +215,14 @@ function buildDefaultStages(): StageConfig[] {
 
 interface AppState {
   // ── App settings ──────────────────────────────────────────────
+  generalOnboardingCompleted: boolean;
+  onboardingProfile: OnboardingProfile;
   practiceMode: PracticeMode;
   role: UserRole;
-  enabledModules: string[];
+  enabledModules: AppModule[];
+  setOnboardingProfile: (patch: Partial<OnboardingProfile>) => void;
+  completeGeneralOnboarding: (profile?: Partial<OnboardingProfile>) => void;
+  reopenGeneralOnboarding: () => void;
   setPracticeMode: (mode: PracticeMode) => void;
   setRole: (role: UserRole) => void;
   setEnabledModules: (modules: string[]) => void;
@@ -236,6 +310,25 @@ interface AppState {
   defaultGlazeTemp: string | null;
   setDefaultGlazeTemp: (cone: string | null) => void;
 
+  // ── Pricing Rules ───────────────────────────────────────────
+  pricingSettings: PricingSettings;
+  pricingOnboardingCompleted: boolean;
+  setPricingSettings: (patch: Partial<PricingSettings>) => void;
+  completePricingOnboarding: (userType: PricingUserType) => void;
+  reopenPricingOnboarding: () => void;
+  setPricingTier: (mode: PricingFiringMode, index: number, patch: Partial<PricingTier>) => void;
+  resetPricingSettings: () => void;
+
+  // ── Glaze Library ───────────────────────────────────────────
+  glazes: GlazeLibraryItem[];
+  glazeTests: GlazeTestTile[];
+  addGlaze: (glaze: GlazeLibraryItem) => void;
+  updateGlaze: (glaze: GlazeLibraryItem) => void;
+  deleteGlaze: (id: string) => void;
+  toggleFavoriteGlaze: (id: string) => void;
+  addGlazeTest: (test: GlazeTestTile) => void;
+  deleteGlazeTest: (id: string) => void;
+
   // ── Kilns ─────────────────────────────────────────────────────
   kilns: Kiln[];
   firings: Firing[];
@@ -270,20 +363,69 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
   // ── App settings ──────────────────────────────────────────────
+  generalOnboardingCompleted: false,
+  onboardingProfile: {
+    userType: 'not-sure',
+    pricingUserType: 'side-business',
+    hasOwnKiln: null,
+    routinesFrequency: 'weekly',
+    routinesFocus: 'wheel',
+    preferredUnits: 'metric',
+    language: 'English',
+    notificationsEnabled: true,
+    quickTourRequested: false,
+    activeModules: ['overview', 'pieces', 'kiln', 'library', 'community'],
+    kilnkinId: DEFAULT_KILNKIN_COMPANION.id,
+  },
   practiceMode: 'both',
   role: 'owner',
-  enabledModules: ['overview', 'pieces', 'kiln', 'journal', 'community'],
+  enabledModules: ['overview', 'pieces', 'kiln', 'library', 'community'],
 
+  setOnboardingProfile: (patch) =>
+    set((state) => ({
+      onboardingProfile: {
+        ...state.onboardingProfile,
+        ...patch,
+        activeModules:
+          patch.activeModules === undefined
+            ? state.onboardingProfile.activeModules
+            : normalizeModuleList(patch.activeModules),
+      },
+    })),
+  completeGeneralOnboarding: (profile) =>
+    set((state) => ({
+      generalOnboardingCompleted: true,
+      onboardingProfile: {
+        ...state.onboardingProfile,
+        ...profile,
+        activeModules:
+          profile?.activeModules === undefined
+            ? state.onboardingProfile.activeModules
+            : normalizeModuleList(profile.activeModules),
+      },
+    })),
+  reopenGeneralOnboarding: () => set({ generalOnboardingCompleted: false }),
   setPracticeMode: (mode) => set({ practiceMode: mode }),
   setRole: (role) => set({ role }),
-  setEnabledModules: (modules) => set({ enabledModules: modules }),
+  setEnabledModules: (modules) => set({ enabledModules: normalizeModuleList(modules) }),
   toggleModule: (module) =>
-    set((state) => ({
-      enabledModules: state.enabledModules.includes(module)
-        ? state.enabledModules.filter((m) => m !== module)
-        : [...state.enabledModules, module],
-    })),
-  isModuleEnabled: (module) => get().enabledModules.includes(module),
+    set((state) => {
+      const normalizedModule = normalizeModuleId(module);
+
+      if (!KNOWN_APP_MODULES.includes(normalizedModule as AppModule)) {
+        return state;
+      }
+
+      const enabledModules = normalizeModuleList(state.enabledModules);
+
+      return {
+        enabledModules: enabledModules.includes(normalizedModule as AppModule)
+          ? enabledModules.filter((currentModule) => currentModule !== normalizedModule)
+          : [...enabledModules, normalizedModule as AppModule],
+      };
+    }),
+  isModuleEnabled: (module) =>
+    normalizeModuleList(get().enabledModules).includes(normalizeModuleId(module) as AppModule),
 
   // ── User ──────────────────────────────────────────────────────
   user: { name: 'Susan Mallory', avatarInitial: 'S', studioName: 'Mallory Clay Studio', location: 'Portland, OR', bio: 'Wheel-thrown stoneware with a love for imperfect forms. Teaching beginners on weekends.' },
@@ -624,6 +766,95 @@ export const useAppStore = create<AppState>()(
   defaultGlazeTemp: 'Cone 6',
   setDefaultGlazeTemp: (cone) => set({ defaultGlazeTemp: cone }),
 
+  // ── Pricing Rules ───────────────────────────────────────────
+  pricingSettings: buildDefaultPricingSettings(),
+  pricingOnboardingCompleted: false,
+  setPricingSettings: (patch) =>
+    set((state) => ({
+      pricingSettings: {
+        ...state.pricingSettings,
+        ...patch,
+      },
+    })),
+  completePricingOnboarding: (userType) =>
+    set((state) => ({
+      pricingSettings: applyPricingUserTypePreset(state.pricingSettings, userType),
+      pricingOnboardingCompleted: true,
+    })),
+  reopenPricingOnboarding: () => set({ pricingOnboardingCompleted: false }),
+  setPricingTier: (mode, index, patch) =>
+    set((state) => {
+      const tierKey = mode === 'bisque' ? 'bisqueTiers' : 'bisqueGlazeTiers';
+      const currentTiers = state.pricingSettings[tierKey];
+      if (!currentTiers[index]) return state;
+
+      const nextTiers = currentTiers.map((tier, tierIndex) =>
+        tierIndex === index ? { ...tier, ...patch } : tier
+      );
+
+      return {
+        pricingSettings: {
+          ...state.pricingSettings,
+          [tierKey]: nextTiers,
+        },
+      };
+    }),
+  resetPricingSettings: () => set({ pricingSettings: buildDefaultPricingSettings() }),
+
+  // ── Glaze Library ───────────────────────────────────────────
+  glazes: INITIAL_GLAZES,
+  glazeTests: INITIAL_GLAZE_TESTS,
+  addGlaze: (glaze) =>
+    set((state) => ({
+      glazes: [glaze, ...state.glazes],
+    })),
+  updateGlaze: (glaze) =>
+    set((state) => ({
+      glazes: state.glazes.map((item) => (item.id === glaze.id ? glaze : item)),
+    })),
+  deleteGlaze: (id) =>
+    set((state) => ({
+      glazes: state.glazes.filter((glaze) => glaze.id !== id),
+      glazeTests: state.glazeTests.filter((test) => test.glazeId !== id),
+    })),
+  toggleFavoriteGlaze: (id) =>
+    set((state) => ({
+      glazes: state.glazes.map((glaze) => (
+        glaze.id === id ? { ...glaze, favorite: !glaze.favorite } : glaze
+      )),
+    })),
+  addGlazeTest: (test) =>
+    set((state) => ({
+      glazeTests: [test, ...state.glazeTests],
+      glazes: state.glazes.map((glaze) => {
+        if (glaze.id !== test.glazeId) return glaze;
+
+        const clayBodiesUsed = glaze.clayBodiesUsed.includes(test.clayBody)
+          ? glaze.clayBodiesUsed
+          : [test.clayBody, ...glaze.clayBodiesUsed];
+        const kilnLabel = test.kilnName || (test.kilnType ? `${test.kilnType[0].toUpperCase()}${test.kilnType.slice(1)} kiln` : 'Unknown kiln');
+        const kilnTypesUsed = glaze.kilnTypesUsed.includes(kilnLabel)
+          ? glaze.kilnTypesUsed
+          : [kilnLabel, ...glaze.kilnTypesUsed];
+        const conesTested = glaze.conesTested.includes(test.cone)
+          ? glaze.conesTested
+          : [test.cone, ...glaze.conesTested];
+
+        return {
+          ...glaze,
+          lastTestedAt: test.firingDate,
+          clayBodiesUsed,
+          kilnTypesUsed,
+          conesTested,
+          testTilePhotoUris: test.photoUri ? [test.photoUri, ...glaze.testTilePhotoUris] : glaze.testTilePhotoUris,
+        };
+      }),
+    })),
+  deleteGlazeTest: (id) =>
+    set((state) => ({
+      glazeTests: state.glazeTests.filter((test) => test.id !== id),
+    })),
+
   // ── Kilns ─────────────────────────────────────────────────────
   kilns: [],
   firings: [],
@@ -722,9 +953,32 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'pottery-life-store',
+      version: 1,
+      migrate: (persistedState) => {
+        if (!persistedState || typeof persistedState !== 'object') {
+          return persistedState;
+        }
+
+        const state = persistedState as Partial<AppState> & {
+          onboardingProfile?: Partial<OnboardingProfile>;
+        };
+
+        return {
+          ...state,
+          onboardingProfile: state.onboardingProfile
+            ? {
+                ...state.onboardingProfile,
+                activeModules: normalizeModuleList(state.onboardingProfile.activeModules),
+              }
+            : state.onboardingProfile,
+          enabledModules: normalizeModuleList(state.enabledModules),
+        };
+      },
       storage: zustandStorage,
       // Exclude runtime-only fields from persisted state
       partialize: (state) => ({
+        generalOnboardingCompleted: state.generalOnboardingCompleted,
+        onboardingProfile: state.onboardingProfile,
         practiceMode: state.practiceMode,
         role: state.role,
         enabledModules: state.enabledModules,
@@ -738,6 +992,10 @@ export const useAppStore = create<AppState>()(
         kilns: state.kilns,
         firings: state.firings,
         kilnChecklist: state.kilnChecklist,
+        pricingSettings: state.pricingSettings,
+        pricingOnboardingCompleted: state.pricingOnboardingCompleted,
+        glazes: state.glazes,
+        glazeTests: state.glazeTests,
         pendingSyncOps: state.pendingSyncOps,
         lastSyncedAt: state.lastSyncedAt,
       }),

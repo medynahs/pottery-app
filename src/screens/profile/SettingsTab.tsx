@@ -1,14 +1,15 @@
 import { Text } from '@/src/components/ui/text';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
+import { PRICING_USER_TYPE_LABELS } from '@/src/screens/pieces/pricing';
 import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import {
-  Bell, Box, Clock, Database, Flame, Globe,
-  Hammer,
-  HelpCircle,
-  Layers, Lock, LogOut, Mail, Moon, Palette,
-  Shield, Skull,
-  Trophy, Zap
+    Bell, Box, Calculator, Clock, Database, Flame, Globe,
+    Hammer,
+    HelpCircle,
+    Layers, Lock, LogOut, Mail, Moon, Palette,
+    Shield, Skull,
+    Trophy, Zap
 } from 'lucide-react-native';
 import React from 'react';
 import { View } from 'react-native';
@@ -36,6 +37,8 @@ export function SettingsTab({
   const pieceFormOptions = useAppStore((s) => s.pieceFormOptions);
   const defaultBisqueTemp = useAppStore((s) => s.defaultBisqueTemp);
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
+  const pricingSettings = useAppStore((s) => s.pricingSettings);
+  const pricingOnboardingCompleted = useAppStore((s) => s.pricingOnboardingCompleted);
 
   return (
     <>
@@ -46,7 +49,9 @@ export function SettingsTab({
         <SettingsRow icon={Hammer}      iconColor="hsl(24 40% 45%)"  iconBg="bg-stone-100" label="Forming Methods"     value={`${formingMethods.length} methods`} onPress={() => router.push('/forming-methods')} />
         <SettingsRow icon={Box}         iconColor="hsl(24 40% 45%)"  iconBg="bg-stone-100" label="Piece Forms"          value={`${pieceFormOptions.length} forms`}   onPress={() => router.push('/piece-forms')} />
         <SettingsRow icon={Flame}       iconColor="hsl(25 90% 55%)"  iconBg="bg-orange-50" label="Bisque Cone"         value={defaultBisqueTemp ?? 'None'} onPress={() => router.push('/bisque-cone')} />
-        <SettingsRow icon={Zap}         iconColor="hsl(38 80% 50%)"  iconBg="bg-amber-50"  label="Glaze Cone"          value={defaultGlazeTemp ?? 'None'} onPress={() => router.push('/glaze-cone')} isLast />
+        <SettingsRow icon={Zap}         iconColor="hsl(38 80% 50%)"  iconBg="bg-amber-50"  label="Glaze Cone"          value={defaultGlazeTemp ?? 'None'} onPress={() => router.push('/glaze-cone')} />
+        <SettingsRow icon={Calculator}  iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50"   label="Pricing Setup"       value={pricingOnboardingCompleted ? PRICING_USER_TYPE_LABELS[pricingSettings.pricingUserType] : 'Required'} onPress={() => router.push('/pricing-onboarding' as never)} />
+        <SettingsRow icon={Calculator}  iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50"   label="Pricing Rules"       value={pricingSettings.studioLabel} onPress={() => router.push('/pricing-rules' as never)} isLast />
       </SettingsGroup>
 
       <SectionLabel title="Preferences" />

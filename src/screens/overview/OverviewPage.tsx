@@ -5,7 +5,7 @@ import { getTodayMissionKey } from '@/src/screens/overview/missionDate';
 import { getDateKey } from '@/src/screens/overview/studioRhythm';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
-import { BarChart3, BellRing, CalendarDays, ClipboardList } from 'lucide-react-native';
+import { BarChart3, BellRing, CalendarDays, ClipboardList, Trophy } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,15 @@ export function OverviewPage() {
   const todayMissionKey = getTodayMissionKey();
   const topOverlayOffset = insets.top + 8;
   const hudRailOffset = insets.top + 60;
+  const activeCommunityChallenge = React.useMemo(
+    () => ({
+      title: 'Underwater Forms Festival',
+      track: 'Beginner Track',
+      phase: 'Submissions open',
+      daysLeft: 6,
+    }),
+    []
+  );
 
   const missionsCount = React.useMemo(
     () => {
@@ -111,6 +120,29 @@ export function OverviewPage() {
             <Text className="text-sm font-medium text-foreground">{kilnkinCompanion.name}</Text>
           </View>
         </TouchableOpacity>
+
+        {activeCommunityChallenge ? (
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/community')}
+            activeOpacity={0.86}
+            className="absolute left-4 rounded-2xl border border-green-200 bg-card/92 px-3 py-2"
+            style={{ bottom: 78 }}
+            accessibilityRole="button"
+            accessibilityLabel="Open active community challenge"
+          >
+            <View className="flex-row items-center gap-2 mb-1">
+              <Trophy size={12} color="hsl(100 35% 44%)" />
+              <Text className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(100 35% 44%)' }}>
+                Active Challenge
+              </Text>
+            </View>
+            <Text className="text-xs font-semibold text-foreground">{activeCommunityChallenge.title}</Text>
+            <Text className="text-[11px] text-muted-foreground mt-0.5">
+              {activeCommunityChallenge.track} · {activeCommunityChallenge.phase}
+            </Text>
+            <Text className="text-[11px] text-primary mt-1">{activeCommunityChallenge.daysLeft} days left · Open in Community</Text>
+          </TouchableOpacity>
+        ) : null}
 
         <View
           className="absolute right-3 rounded-3xl bg-card/85 border border-border px-2 py-2 gap-2"

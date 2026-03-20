@@ -1,6 +1,6 @@
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
@@ -16,12 +16,12 @@ import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
 import {
-  DMSans_400Regular,
-  DMSans_500Medium,
+    DMSans_400Regular,
+    DMSans_500Medium,
 } from '@expo-google-fonts/dm-sans';
 import {
-  Fraunces_600SemiBold,
-  Fraunces_700Bold,
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
 
 // Prevent the splash screen from auto-hiding
@@ -45,18 +45,46 @@ function useStoreHydration() {
 }
 
 /** Inner component so hooks run inside providers. */
+function AppOnboardingGuard() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const generalOnboardingCompleted = useAppStore((state) => state.generalOnboardingCompleted);
+
+  useEffect(() => {
+    if (!generalOnboardingCompleted && pathname !== '/onboarding') {
+      router.replace('/onboarding');
+      return;
+    }
+
+    if (generalOnboardingCompleted && pathname === '/onboarding') {
+      router.replace('/overview' as never);
+    }
+  }, [pathname, generalOnboardingCompleted, router]);
+
+  return null;
+}
+
 function AppShell() {
   useOfflineSync();
   return (
     <>
+      <AppOnboardingGuard />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="stage-customization" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="clay-bodies" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="forming-methods" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="piece-forms" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="bisque-cone" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="glaze-cone" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="glaze-library" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="library-roadmaps" options={{ headerShown: false }} />
+        <Stack.Screen name="library-glazes" options={{ headerShown: false }} />
+        <Stack.Screen name="library-tools" options={{ headerShown: false }} />
+        <Stack.Screen name="library-templates" options={{ headerShown: false }} />
+        <Stack.Screen name="pricing-rules" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="pricing-onboarding" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="profile/studio-rhythm" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="overview-missions" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="overview-alerts" options={{ headerShown: false, presentation: 'modal' }} />

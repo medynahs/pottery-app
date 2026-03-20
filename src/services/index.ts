@@ -1,8 +1,9 @@
 // API / backend integration helpers
 
-import { API_BASE_URL } from '../core/config';
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/+$/, '');
 
 export async function fetchSomething() {
-  const res = await fetch(`${API_BASE_URL}/something`);
+  const endpoint = API_BASE_URL ? `${API_BASE_URL}/something` : '/something';
+  const res = await fetch(endpoint);
   return res.json();
 }

@@ -140,7 +140,7 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
     height: '16%',
     quickActions: [
       { label: `Meet ${companionName}`, route: '/kilnkin' },
-      { label: 'Open Journal', route: '/(tabs)/journal' },
+      { label: 'Open Library', route: '/(tabs)/library' },
     ],
     popoverLeft: '36%',
     popoverTop: '69%',

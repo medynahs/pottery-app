@@ -20,7 +20,7 @@ export function GeneralError({
   retryText = "Try Again"
 }: GeneralErrorProps) {
     const handleGoHome = () => {
-    router.replace("/(tabs)/journal");  // Changed to a valid route within the (tabs) group
+  router.replace("/(tabs)/library");
   };
 
   return (
