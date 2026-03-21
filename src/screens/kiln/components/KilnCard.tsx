@@ -5,8 +5,9 @@ import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { FlameKindling, MoreHorizontal, Trash2 } from 'lucide-react-native';
 import React from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { Image, TouchableOpacity, View } from 'react-native';
 import { KILN_TYPE_LABELS } from '../constants';
+import { getKilnTimingSummary } from '../firingEstimations';
 import type { Kiln } from '../types';
 
 interface KilnCardProps {
@@ -20,9 +21,23 @@ interface KilnCardProps {
 export function KilnCard({ kiln, firingCount, onEdit, onDelete, onStartFiring }: KilnCardProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
+  const timingSummary = getKilnTimingSummary(kiln);
 
   return (
     <Card className="p-5 mb-3">
+      {kiln.imageUri ? (
+        <Image
+          source={{ uri: kiln.imageUri }}
+          style={{ width: '100%', height: 144, borderRadius: 16, marginBottom: 14 }}
+          resizeMode="cover"
+        />
+      ) : (
+        <View className="w-full h-24 rounded-2xl mb-3 border border-border bg-muted/30 items-center justify-center">
+          <FlameKindling size={18} color={colors.mutedForeground} />
+          <Text className="text-[11px] text-muted-foreground mt-1">No kiln photo</Text>
+        </View>
+      )}
+
       <View className="flex-row items-start justify-between mb-2">
         <View className="flex-1 pr-3">
           <Text className="text-base font-serif font-bold text-foreground">{kiln.name}</Text>
@@ -59,6 +74,18 @@ export function KilnCard({ kiln, firingCount, onEdit, onDelete, onStartFiring }:
           </Text>
         </View>
       </View>
+
+      {timingSummary.length > 0 ? (
+        <View className="flex-row flex-wrap gap-2 mb-3">
+          {timingSummary.map((item) => (
+            <View key={item.label} className="bg-orange-50 rounded-xl px-3 py-1.5 border border-orange-100">
+              <Text className="text-xs text-orange-700">
+                {item.label} {item.value}d
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       {kiln.notes ? (
         <Text className="text-xs text-muted-foreground italic mb-3" numberOfLines={2}>

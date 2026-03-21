@@ -86,14 +86,6 @@ export function BatchCard({ pieces, stageLabel, nextStageLabel, onAdvanceAll, on
           </TouchableOpacity>
 
           <View className="px-3 pb-3 flex-row gap-2">
-            <TouchableOpacity
-              onPress={onExpand}
-              activeOpacity={0.7}
-              className={`${nextStageLabel ? 'flex-1' : 'w-full'} flex-row items-center justify-center gap-1 py-2 rounded-xl bg-muted/60`}
-            >
-              <Text className="text-[11px] font-body-medium text-muted-foreground">View set</Text>
-            </TouchableOpacity>
-
           {nextStageLabel && (
             <TouchableOpacity
               onPress={onAdvanceAll}

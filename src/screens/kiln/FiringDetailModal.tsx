@@ -6,24 +6,28 @@ import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useAppStore } from '@/src/store';
-import { Check, ChevronRight, PackageCheck, Trash2, X } from 'lucide-react-native';
+import { Check, ChevronRight, FlameKindling, PackageCheck, Trash2, X } from 'lucide-react-native';
 import React from 'react';
 import {
-  Alert,
-  Modal,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
+    Alert,
+    Image,
+    Modal,
+    ScrollView,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
 } from 'react-native';
+import { formatMoney } from './components/kilnUtils';
 import {
-  FIRING_STATE_LABELS,
-  FIRING_STATE_ORDER,
-  FIRING_TYPE_LABELS,
-  KILN_TYPE_LABELS,
-  nextFiringState,
+    FIRING_LOCATION_LABELS,
+    FIRING_STATE_LABELS,
+    FIRING_STATE_ORDER,
+    FIRING_TYPE_LABELS,
+    KILN_TYPE_LABELS,
+    nextFiringState,
 } from './constants';
+import { formatReadyDate, getExpectedReadyAt } from './firingEstimations';
 import type { Firing, FiringResult, FiringState } from './types';
 
 const STATE_COLORS: Record<FiringState, string> = {
@@ -88,6 +92,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
 
   const kilns = useAppStore((s) => s.kilns);
   const pieces = useAppStore((s) => s.pieces);
+  const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
   const updateFiringState = useAppStore((s) => s.updateFiringState);
   const assignPiecesToFiring = useAppStore((s) => s.assignPiecesToFiring);
   const completeFiring = useAppStore((s) => s.completeFiring);
@@ -121,6 +126,8 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const next = nextFiringState(liveFiring.state);
   const stateColor = STATE_COLORS[liveFiring.state];
   const isCompleted = liveFiring.state === 'completed';
+  const expectedReadyAt = getExpectedReadyAt(liveFiring, kiln);
+  const formattedExpectedReady = formatReadyDate(expectedReadyAt);
 
   const handleAdvanceState = () => {
     if (!next) return;
@@ -167,6 +174,38 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
     { value: 'issues', label: '⚡ Issues', color: 'hsl(39 80% 50%)' },
     { value: 'failure', label: '✕ Failure', color: 'hsl(0 70% 50%)' },
   ];
+
+  const handleStatusOverride = (override: 'fired' | 'ready' | 'picked-up') => {
+    const now = new Date().toISOString();
+
+    if (override === 'fired') {
+      updateFiring({
+        ...liveFiring,
+        state: 'firing',
+        startedAt: liveFiring.startedAt ?? now,
+        statusOverride: 'fired',
+      });
+      return;
+    }
+
+    if (override === 'ready') {
+      updateFiring({
+        ...liveFiring,
+        state: 'unloading',
+        statusOverride: 'ready',
+      });
+      return;
+    }
+
+    updateFiring({
+      ...liveFiring,
+      state: 'completed',
+      completedAt: now,
+      statusOverride: 'picked-up',
+      result: liveFiring.result ?? 'success',
+      resultNotes: liveFiring.resultNotes ?? 'Marked as picked up',
+    });
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -218,6 +257,18 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
             {/* Kiln info */}
             {kiln && (
               <Card className="p-4 mb-4 bg-card/60">
+                {kiln.imageUri ? (
+                  <Image
+                    source={{ uri: kiln.imageUri }}
+                    style={{ width: '100%', height: 150, borderRadius: 14, marginBottom: 10 }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View className="w-full h-20 rounded-xl mb-3 border border-border bg-muted/30 items-center justify-center">
+                    <FlameKindling size={16} color={colors.mutedForeground} />
+                    <Text className="text-[11px] text-muted-foreground mt-1">No kiln photo</Text>
+                  </View>
+                )}
                 <Text className="text-xs font-semibold text-muted-foreground mb-1">
                   {kiln.name} — {KILN_TYPE_LABELS[kiln.type]}
                   {kiln.location ? `  ·  ${kiln.location}` : ''}
@@ -227,6 +278,47 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
                 ) : null}
               </Card>
             )}
+
+            <Card className="p-4 mb-4 bg-card/60">
+              <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Session Snapshot
+              </Text>
+              <Text className="text-sm text-foreground">
+                {FIRING_TYPE_LABELS[liveFiring.type]} · {FIRING_LOCATION_LABELS[liveFiring.location ?? 'studio']}
+              </Text>
+              <Text className="text-xs text-muted-foreground mt-1">
+                Submitted: {liveFiring.submissionDate ?? liveFiring.createdAt.slice(0, 10)}
+              </Text>
+              <Text className="text-xs text-muted-foreground mt-1">
+                Expected ready: {formattedExpectedReady}
+              </Text>
+              <Text className="text-xs text-muted-foreground mt-1">
+                Est. cost:{' '}
+                {formatMoney(currencySymbol, liveFiring.estimatedTotalCost)}
+                {typeof liveFiring.estimatedCostPerPiece === 'number'
+                  ? ` · ${formatMoney(currencySymbol, liveFiring.estimatedCostPerPiece)} / piece`
+                  : ''}
+              </Text>
+            </Card>
+
+            {!isCompleted ? (
+              <Card className="p-4 mb-4 border-primary/30">
+                <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  Status Override
+                </Text>
+                <View className="flex-row gap-2">
+                  <Button variant="outline" className="flex-1" onPress={() => handleStatusOverride('fired')}>
+                    <Text className="text-xs">Mark Fired</Text>
+                  </Button>
+                  <Button variant="outline" className="flex-1" onPress={() => handleStatusOverride('ready')}>
+                    <Text className="text-xs">Mark Ready</Text>
+                  </Button>
+                  <Button variant="outline" className="flex-1" onPress={() => handleStatusOverride('picked-up')}>
+                    <Text className="text-xs">Picked Up</Text>
+                  </Button>
+                </View>
+              </Card>
+            ) : null}
 
             {/* State timeline */}
             <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">

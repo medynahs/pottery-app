@@ -1,6 +1,6 @@
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store/appStore';
-import { ChevronLeft, Edit3, Share2, Zap } from 'lucide-react-native';
+import { ChevronLeft, Edit3, Settings, Share2, Zap } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Image, Modal, Pressable, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -13,7 +13,13 @@ const LEVEL = 12;
 const TITLE = 'Craft Artisan';
 const NEXT_TITLE = 'Master Potter';
 
-export function ProfileHeader({ onBack }: { onBack: () => void }) {
+export function ProfileHeader({
+  onBack,
+  onOpenAccountSettings,
+}: {
+  onBack: () => void;
+  onOpenAccountSettings: () => void;
+}) {
   const user = useAppStore((s) => s.user);
   const [editVisible, setEditVisible] = useState(false);
   const [xpTooltip, setXpTooltip] = useState(false);
@@ -109,6 +115,13 @@ export function ProfileHeader({ onBack }: { onBack: () => void }) {
             >
               <Edit3 size={14} color="hsl(15 50% 50%)" />
               <Text className="text-sm font-medium text-foreground">Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onOpenAccountSettings}
+              className="w-9 h-9 rounded-xl border border-border bg-card items-center justify-center"
+              activeOpacity={0.75}
+            >
+              <Settings size={15} color="hsl(24 20% 40%)" />
             </TouchableOpacity>
             <TouchableOpacity
               className="w-9 h-9 rounded-xl border border-border bg-card items-center justify-center"

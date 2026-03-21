@@ -7,6 +7,11 @@ export function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+export function formatMoney(currencySymbol: string, value?: number | null) {
+  if (value == null || Number.isNaN(value)) return '—';
+  return `${currencySymbol}${value.toFixed(2)}`;
+}
+
 export const FIRING_STATE_COLOR: Record<FiringState, string> = {
   scheduled: 'hsl(220 80% 56%)',
   loading: 'hsl(39 80% 50%)',

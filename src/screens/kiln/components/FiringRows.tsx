@@ -40,10 +40,18 @@ export function WaitingPieceRow({ name, sublabel, dotColor, isLast }: WaitingPie
 interface ScheduledFiringRowProps {
   firing: Firing;
   kilnName: string;
+  statusLabel?: string;
+  expectedReadyLabel?: string;
   onPress: () => void;
 }
 
-export function ScheduledFiringRow({ firing, kilnName, onPress }: ScheduledFiringRowProps) {
+export function ScheduledFiringRow({
+  firing,
+  kilnName,
+  statusLabel = 'Scheduled',
+  expectedReadyLabel,
+  onPress,
+}: ScheduledFiringRowProps) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
       <Card className="p-4 flex-row items-center justify-between mb-2">
@@ -55,10 +63,13 @@ export function ScheduledFiringRow({ firing, kilnName, onPress }: ScheduledFirin
           <Text className="text-xs text-muted-foreground">
             {firing.pieceIds.length} piece{firing.pieceIds.length !== 1 ? 's' : ''} assigned
           </Text>
+          {expectedReadyLabel ? (
+            <Text className="text-xs text-muted-foreground mt-0.5">Expected ready: {expectedReadyLabel}</Text>
+          ) : null}
         </View>
         <View className="flex-row items-center gap-2">
           <View className="bg-blue-100 px-2.5 py-1 rounded-full">
-            <Text className="text-xs font-semibold text-blue-700">Scheduled</Text>
+            <Text className="text-xs font-semibold text-blue-700">{statusLabel}</Text>
           </View>
           <ChevronRight size={14} color="hsl(24 20% 40%)" />
         </View>

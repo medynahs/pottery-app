@@ -34,7 +34,7 @@ export default function OverviewAlertsScreen() {
       <View className="flex-row items-center justify-between px-6 pt-4 pb-2">
         <View>
           <Text className="text-xl font-bold text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
-            Studio Alerts
+            Notifications
           </Text>
           <Text className="text-sm text-muted-foreground mt-0.5">Latest notifications and gentle studio updates.</Text>
         </View>

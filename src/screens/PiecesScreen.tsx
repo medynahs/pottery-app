@@ -1,9 +1,10 @@
 // src/screens/PiecesScreen.tsx
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronUp, Layers, Plus, Search, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { AddPieceModal } from './pieces/AddPieceModal';
 import { BatchCard } from './pieces/BatchCard';
@@ -22,6 +23,9 @@ const itemLayout = LinearTransition
   .easing(Easing.inOut(Easing.cubic));
 
 export default function PiecesScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ openJournalPieceId?: string | string[] }>();
+  const handledOpenJournalIdRef = React.useRef<string | null>(null);
   const [stageTransition, setStageTransition] = React.useState<StageAdvanceCelebration | null>(null);
 
   const {
@@ -64,12 +68,43 @@ export default function PiecesScreen() {
     handleConfirmSendToCemetery,
   } = usePiecesScreen();
 
+  React.useEffect(() => {
+    const rawId = Array.isArray(params.openJournalPieceId)
+      ? params.openJournalPieceId[0]
+      : params.openJournalPieceId;
+
+    if (!rawId || handledOpenJournalIdRef.current === rawId) return;
+
+    const pieceId = Number(rawId);
+    if (Number.isNaN(pieceId)) return;
+
+    const piece = pieces.find((current) => current.id === pieceId);
+    if (!piece) return;
+
+    setJournalPiece(piece);
+    handledOpenJournalIdRef.current = rawId;
+    router.replace('/(tabs)/pieces');
+  }, [params.openJournalPieceId, pieces, router, setJournalPiece]);
+
   return (
     <View className="flex-1 bg-background">
       {/* Header */}
-      <View className="px-6 pt-20 pb-4 bg-background border-b border-border">
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-3xl font-serif font-bold text-foreground">My Pieces</Text>
+       <View className="px-6 pt-16 pb-4 bg-background border-b border-border">
+        <View className="flex-row justify-between items-center">
+          <View className="flex-row items-center gap-3">
+            <Image
+              source={require('../../assets/images/worktable.png')}
+              style={{ width: 42, height: 42 }}
+              resizeMode="contain"
+            />
+            <View>
+              <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>My Pieces</Text>
+              <Text className="text-sm text-muted-foreground mt-0.5">
+                {pieces.length} piece{pieces.length !== 1 ? 's' : ''} ·{' '}
+                {filteredPieces.length} filtered
+              </Text>
+            </View>
+          </View>
           <TouchableOpacity
             className="w-12 h-12 rounded-2xl bg-primary items-center justify-center shadow-md"
             onPress={() => setAddOpen(true)}
@@ -77,7 +112,10 @@ export default function PiecesScreen() {
             <Plus size={22} color="white" />
           </TouchableOpacity>
         </View>
+        
+      </View>
 
+      <View className="px-6 pt-4 pb-2 bg-background ">
         <View className="flex-row items-center gap-2">
           <View className="flex-1 relative justify-center">
             <View className="absolute left-4 z-10">
@@ -92,9 +130,8 @@ export default function PiecesScreen() {
           </View>
           <TouchableOpacity
             onPress={() => setFiltersOpen(true)}
-            className={`w-11 h-11 rounded-2xl items-center justify-center border ${
-              activeFilterCount > 0 ? 'bg-primary/10 border-primary/30' : 'bg-card border-border'
-            }`}
+            className={`w-11 h-11 rounded-2xl items-center justify-center border ${activeFilterCount > 0 ? 'bg-primary/10 border-primary/30' : 'bg-card border-border'
+              }`}
           >
             <SlidersHorizontal
               size={16}
@@ -122,9 +159,8 @@ export default function PiecesScreen() {
               <TouchableOpacity
                 key={id}
                 onPress={() => setActiveStage(id)}
-                className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full border ${
-                  isActive ? 'bg-foreground border-foreground' : 'bg-card border-border'
-                }`}
+                className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full border ${isActive ? 'bg-foreground border-foreground' : 'bg-card border-border'
+                  }`}
               >
                 <Icon size={14} color={isActive ? 'hsl(34 35% 92%)' : 'hsl(24 20% 40%)'} />
                 <Text className={`text-sm font-medium ${isActive ? 'text-background' : 'text-muted-foreground'}`}>

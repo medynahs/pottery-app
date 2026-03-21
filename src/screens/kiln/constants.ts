@@ -1,6 +1,12 @@
 // src/screens/kiln/constants.ts
 
-import type { FiringState, FiringType, KilnType } from './types';
+import type {
+    FiringLocation,
+    FiringState,
+    FiringType,
+    KilnPricingModel,
+    KilnType,
+} from './types';
 
 export const KILN_TYPE_LABELS: Record<KilnType, string> = {
   electric: 'Electric',
@@ -24,6 +30,32 @@ export const FIRING_TYPE_LABELS: Record<FiringType, string> = {
 export const FIRING_TYPE_OPTIONS = (Object.keys(FIRING_TYPE_LABELS) as FiringType[]).map((k) => ({
   value: k,
   label: FIRING_TYPE_LABELS[k],
+}));
+
+export const CORE_FIRING_TYPE_OPTIONS = FIRING_TYPE_OPTIONS.filter(
+  (option) => option.value === 'bisque' || option.value === 'glaze'
+);
+
+export const FIRING_LOCATION_LABELS: Record<FiringLocation, string> = {
+  studio: 'Studio',
+  'external-kiln': 'External Kiln',
+  home: 'Home',
+};
+
+export const FIRING_LOCATION_OPTIONS = (Object.keys(FIRING_LOCATION_LABELS) as FiringLocation[]).map((location) => ({
+  value: location,
+  label: FIRING_LOCATION_LABELS[location],
+}));
+
+export const KILN_PRICING_MODEL_LABELS: Record<KilnPricingModel, string> = {
+  'per-volume': 'Per Volume',
+  'per-shelf': 'Per Shelf',
+  'per-kiln': 'Per Kiln',
+};
+
+export const KILN_PRICING_MODEL_OPTIONS = (Object.keys(KILN_PRICING_MODEL_LABELS) as KilnPricingModel[]).map((model) => ({
+  value: model,
+  label: KILN_PRICING_MODEL_LABELS[model],
 }));
 
 export const FIRING_STATE_LABELS: Record<FiringState, string> = {

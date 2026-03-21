@@ -3,7 +3,7 @@ import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { BookOpen, ChevronRight, Droplets, Target, Wrench } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
 
 type LibraryCardItem = {
   id: 'roadmaps' | 'glazes' | 'tools' | 'templates';
@@ -89,11 +89,24 @@ export default function JournalScreen() {
   return (
     <View className="flex-1 bg-background">
       <View className="px-6 pt-16 pb-4 bg-background border-b border-border">
-        <Text className="text-3xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>Library</Text>
-        <Text className="text-sm text-muted-foreground mt-1">
-          Pick a card to open each library feature.
-        </Text>
+        <View className="flex-row justify-between items-center">
+          <View className="flex-row items-center gap-3">
+            <Image
+              source={require('../../assets/animations/book.gif')}
+              style={{ width: 42, height: 42 }}
+              resizeMode="contain"
+            />
+            <View>
+
+              <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>Library</Text>
+              <Text className="text-sm text-muted-foreground mt-1">
+                Pick a card to open each library feature.
+              </Text>
+            </View>
+          </View>
+        </View>
       </View>
+
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-6 pt-6 pb-8">

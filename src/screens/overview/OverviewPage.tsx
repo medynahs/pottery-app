@@ -5,11 +5,13 @@ import { getTodayMissionKey } from '@/src/screens/overview/missionDate';
 import { getDateKey } from '@/src/screens/overview/studioRhythm';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
-import { BarChart3, BellRing, CalendarDays, ClipboardList, Trophy } from 'lucide-react-native';
+import { BarChart3, BellRing, CalendarDays, ClipboardList, MessageSquarePlus, SlidersHorizontal, Trophy } from 'lucide-react-native';
 import React from 'react';
-import { Image, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Linking, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StudioScene } from './components/StudioScene';
+
+const FEEDBACK_EMAIL = process.env.EXPO_PUBLIC_FEEDBACK_EMAIL ?? 'support@pottery-life.app';
 
 export function OverviewPage() {
   const router = useRouter();
@@ -86,6 +88,22 @@ export function OverviewPage() {
     () => getStudioAlerts({ companion: kilnkinCompanion, pieces, firings, studioRhythmConfig }),
     [firings, kilnkinCompanion, pieces, studioRhythmConfig]
   );
+
+  const handleFeedbackPress = React.useCallback(async () => {
+    const feedbackUrl = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent('Pottery Life Feedback')}`;
+
+    try {
+      const supported = await Linking.canOpenURL(feedbackUrl);
+      if (!supported) {
+        Alert.alert('Feedback unavailable', 'Email is not available on this device right now.');
+        return;
+      }
+
+      await Linking.openURL(feedbackUrl);
+    } catch {
+      Alert.alert('Feedback unavailable', 'Could not open feedback email right now.');
+    }
+  }, []);
 
   return (
     <View
@@ -207,7 +225,28 @@ export function OverviewPage() {
               </View>
             ) : null}
           </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push('/app-customization')}
+            activeOpacity={0.8}
+            className="relative w-11 h-11 rounded-2xl bg-background border border-border items-center justify-center"
+            accessibilityRole="button"
+            accessibilityLabel="Open app customization"
+          >
+            <SlidersHorizontal size={18} color="hsl(24 20% 35%)" />
+          </TouchableOpacity>
         </View>
+
+        <TouchableOpacity
+          onPress={handleFeedbackPress}
+          activeOpacity={0.86}
+          className="absolute right-4 bottom-4 rounded-2xl border border-border bg-card/92 px-3 py-2 flex-row items-center gap-2"
+          accessibilityRole="button"
+          accessibilityLabel="Leave feedback"
+        >
+          <MessageSquarePlus size={16} color="hsl(24 20% 35%)" />
+          <Text className="text-xs font-medium text-foreground">Feedback</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => router.push('/(tabs)/profile')}

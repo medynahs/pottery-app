@@ -96,6 +96,8 @@ function AppShell() {
         <Stack.Screen name="library-templates" options={{ headerShown: false }} />
         <Stack.Screen name="pricing-rules" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="pricing-onboarding" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="app-customization" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="account-settings" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="profile/studio-rhythm" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="overview-missions" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="overview-alerts" options={{ headerShown: false, presentation: 'modal' }} />

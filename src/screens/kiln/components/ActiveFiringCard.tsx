@@ -7,6 +7,7 @@ import { Layers, Timer } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import { FIRING_STATE_LABELS, FIRING_STATE_ORDER, FIRING_TYPE_LABELS } from '../constants';
+import { formatReadyDate, getExpectedReadyAt } from '../firingEstimations';
 import type { Firing, FiringState } from '../types';
 import { FIRING_STATE_COLOR, formatDate } from './kilnUtils';
 
@@ -81,12 +82,13 @@ export function ActiveFiringCard({ firing, onPress }: ActiveFiringCardProps) {
   const liveFiring = useAppStore((s) => s.firings.find((f) => f.id === firing.id)) ?? firing;
   const stateColor = FIRING_STATE_COLOR[liveFiring.state];
   const gradient = FIRING_GRADIENT[liveFiring.state];
+  const expectedReadyAt = getExpectedReadyAt(liveFiring, kiln);
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.88} className="mb-4">
+    <TouchableOpacity onPress={onPress} activeOpacity={0.88} className="mb-3">
       <Card
         className="overflow-hidden"
-        style={{ borderWidth: 1.5, borderColor: stateColor, padding: 0 }}
+        style={{ borderWidth: 1.25, borderColor: stateColor, padding: 0 }}
       >
         <LinearGradient
           colors={gradient}
@@ -94,61 +96,64 @@ export function ActiveFiringCard({ firing, onPress }: ActiveFiringCardProps) {
           end={{ x: 0.5, y: 1 }}
         >
           {/* Accent top strip */}
-          <View className="h-1.5" style={{ backgroundColor: stateColor }} />
+          <View className="h-1" style={{ backgroundColor: stateColor }} />
 
-          <View className="px-6 pt-6 pb-6 items-center">
-            {/* Animated GIF — large hero */}
+          <View className="px-3.5 pt-3 pb-3 items-center">
             <Image
               source={require('../../../../assets/animations/activeOven.gif')}
-              style={{ width: 240, height: 240, marginBottom: 16 }}
+              style={{ width: 82, height: 82, marginBottom: 6 }}
               resizeMode="contain"
             />
 
             {/* Firing name */}
-            <Text className="text-2xl font-serif font-bold text-foreground mb-1 mt-1 text-center">
+            <Text className="text-lg font-serif font-bold text-foreground mb-0.5 text-center" numberOfLines={1}>
               {liveFiring.name}
             </Text>
 
             {/* Subtitle */}
-            <Text className="text-sm text-muted-foreground mb-5 text-center">
+            <Text className="text-xs text-muted-foreground mb-2 text-center" numberOfLines={1}>
               {FIRING_TYPE_LABELS[liveFiring.type]} · Cone {liveFiring.cone}
               {kiln ? ` · ${kiln.name}` : ''}
             </Text>
 
             {/* Progress bar */}
-            <View className="w-full mb-5">
+            <View className="w-full mb-2">
               <FiringProgressBar state={liveFiring.state} />
             </View>
 
             {/* Stats row */}
-            <View className="flex-row gap-3 w-full">
+            <View className="flex-row gap-2 w-full">
               <View
-                className="flex-1 rounded-2xl p-3 items-center"
+                className="flex-1 rounded-xl p-2 items-center"
                 style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}
               >
-                <Layers size={14} color="hsl(24 20% 40%)" />
+                <Layers size={13} color="hsl(24 20% 40%)" />
                 <Text className="text-xs font-semibold text-foreground mt-1">
                   {liveFiring.pieceIds.length} piece{liveFiring.pieceIds.length !== 1 ? 's' : ''}
                 </Text>
               </View>
               <View
-                className="flex-1 rounded-2xl p-3 items-center"
+                className="flex-1 rounded-xl p-2 items-center"
                 style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}
               >
-                <Timer size={14} color="hsl(24 20% 40%)" />
+                <Timer size={13} color="hsl(24 20% 40%)" />
                 <Text className="text-xs font-semibold text-foreground mt-1">
                   {liveFiring.startedAt ? `Since ${formatDate(liveFiring.startedAt)}` : 'Not started'}
                 </Text>
               </View>
             </View>
 
+            <Text className="text-xs text-muted-foreground mt-2">
+              Expected ready: <Text className="font-semibold text-foreground">{formatReadyDate(expectedReadyAt)}</Text>
+            </Text>
+
             {liveFiring.notes ? (
-              <Text className="text-xs text-muted-foreground mt-4 italic text-center" numberOfLines={2}>
+              <Text className="text-xs text-muted-foreground mt-2 italic text-center" numberOfLines={1}>
                 {liveFiring.notes}
               </Text>
             ) : null}
 
-            <Text className="text-xs font-semibold mt-4" style={{ color: stateColor }}>
+            <Text className="text-xs font-semibold mt-2" style={{ color: stateColor }}>
               Tap to view details ›
             </Text>
           </View>
