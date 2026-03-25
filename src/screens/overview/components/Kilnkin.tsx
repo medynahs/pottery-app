@@ -1,10 +1,9 @@
-import { Text } from '@/src/components/ui/text';
 import type { StudioSignals } from '@/src/screens/overview/getStudioSignals';
 import { getKilnkinVoiceLine, type KilnkinCompanion } from '@/src/screens/overview/kilnkinCompanion';
 import type { Piece } from '@/src/screens/pieces/types';
 import { useAppStore } from '@/src/store';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Image, View } from 'react-native';
+import { Animated, Easing, View } from 'react-native';
 
 type KilnkinProps = {
   pieces: Piece[];
@@ -162,7 +161,7 @@ export function Kilnkin({ pieces, signals }: KilnkinProps) {
 
   return (
     <View pointerEvents="none" className="absolute" style={{ left: '45%', top: '72%' }}>
-      {hintText ? (
+      {/* {hintText ? (
         <Animated.View
           style={{ opacity: hintOpacity }}
           className="absolute -top-16 -left-24 max-w-[180px] rounded-2xl border border-border bg-card/92 px-3 py-2"
@@ -182,7 +181,7 @@ export function Kilnkin({ pieces, signals }: KilnkinProps) {
           resizeMode="contain"
           accessibilityLabel={companion.name}
         />
-      </Animated.View>
+      </Animated.View> */}
     </View>
   );
 }

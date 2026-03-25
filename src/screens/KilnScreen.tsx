@@ -2,6 +2,7 @@
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
+import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Flame, FlameKindling, Layers, Plus, Thermometer, Zap } from 'lucide-react-native';
 import React from 'react';
@@ -10,6 +11,7 @@ import { AddKilnModal } from './kiln/AddKilnModal';
 import { ActiveFiringCard } from './kiln/components/ActiveFiringCard';
 import { FiringHistoryRow, ScheduledFiringRow } from './kiln/components/FiringRows';
 import { KilnCard } from './kiln/components/KilnCard';
+import { ReadyFilterChip, ReadyPieceRow, ReadySortChip } from './kiln/components/ReadyPieces';
 import { SectionHeader } from './kiln/components/SectionHeader';
 import { FiringDetailModal } from './kiln/FiringDetailModal';
 import { formatReadyDate, getAutoFiringStatus, getExpectedReadyAt } from './kiln/firingEstimations';
@@ -17,108 +19,6 @@ import { useKilnScreen } from './kiln/hooks/useKilnScreen';
 import { StartFiringModal } from './kiln/StartFiringModal';
 import type { Kiln } from './kiln/types';
 import type { Piece } from './pieces/types';
-
-function ReadyFilterChip({
-  label,
-  count,
-  active,
-  onPress,
-}: {
-  label: string;
-  count: number;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-xl border ${active ? 'bg-card border-primary' : 'bg-background border-border'}`}
-    >
-      <Text className={`text-xs font-semibold ${active ? 'text-primary' : 'text-muted-foreground'}`}>
-        {label}
-      </Text>
-      <View className={`px-1.5 py-0.5 rounded-full ${active ? 'bg-primary/15' : 'bg-muted'}`}>
-        <Text className={`text-[10px] font-semibold ${active ? 'text-primary' : 'text-muted-foreground'}`}>
-          {count}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-function ReadySortChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      className={`px-2.5 py-1 rounded-lg border ${active ? 'bg-card border-primary' : 'bg-background border-border'}`}
-    >
-      <Text className={`text-[10px] font-semibold ${active ? 'text-primary' : 'text-muted-foreground'}`}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-function ReadyPieceRow({
-  piece,
-  waitingDays,
-  onPreviewPhoto,
-  onOpenInPieces,
-}: {
-  piece: Piece;
-  waitingDays: number;
-  onPreviewPhoto: () => void;
-  onOpenInPieces: () => void;
-}) {
-  const imageUri = piece.photo ?? piece.imgUrl;
-  const primaryDetail = piece.location ?? 'No location';
-
-  return (
-    <View className="rounded-xl border border-border bg-background px-2.5 py-2">
-      <View className="flex-row items-center">
-        <TouchableOpacity
-          onPress={onPreviewPhoto}
-          disabled={!imageUri}
-          activeOpacity={0.8}
-          className="w-12 h-12 rounded-lg overflow-hidden bg-muted/40 items-center justify-center mr-2.5"
-        >
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-          ) : (
-            <Layers size={14} color="hsl(24 12% 48%)" />
-          )}
-        </TouchableOpacity>
-
-        <View className="flex-1 pr-2">
-          <Text className="text-xs font-semibold text-foreground" numberOfLines={1}>
-            {piece.name}
-          </Text>
-          <Text className="text-[11px] text-muted-foreground" numberOfLines={1}>
-            {piece.clay} · {primaryDetail}
-          </Text>
-          <Text className="text-[10px] text-primary mt-0.5" numberOfLines={1}>
-            Waiting {waitingDays} day{waitingDays !== 1 ? 's' : ''}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={onOpenInPieces}
-          className="px-2.5 py-1.5 rounded-lg bg-primary/10 border border-primary/20"
-        >
-          <Text className="text-[11px] font-semibold text-primary">View Piece</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
 
 export default function KilnScreen() {
   const router = useRouter();
@@ -141,10 +41,14 @@ export default function KilnScreen() {
     handleDeleteKiln,
     addFiring,
   } = useKilnScreen();
+  const pieces = useAppStore((s) => s.pieces);
 
-  const getKilnName = (kilnId: string) =>
-    kilns.find((k) => k.id === kilnId)?.name ?? 'Unknown Kiln';
-  const getKilnById = (kilnId: string) => kilns.find((k) => k.id === kilnId);
+  const kilnsById = React.useMemo(() => new Map(kilns.map((kiln) => [kiln.id, kiln] as const)), [kilns]);
+  const getKilnName = React.useCallback(
+    (kilnId: string) => kilnsById.get(kilnId)?.name ?? 'Unknown Kiln',
+    [kilnsById]
+  );
+  const getKilnById = React.useCallback((kilnId: string) => kilnsById.get(kilnId), [kilnsById]);
 
   const featuredActiveFiring = activeFirings[0] ?? null;
   const sessionRows = React.useMemo(() => {
@@ -165,10 +69,14 @@ export default function KilnScreen() {
   const hasOpenSessionContent = featuredActiveFiring !== null || sessionRows.length > 0;
 
   const getQueueEnteredAt = React.useCallback((piece: Piece, queueStage: 'bone-dry' | 'glazing') => {
-    const timelineEntry = [...piece.timeline]
-      .reverse()
-      .find((entry) => entry.stage === queueStage);
-    return timelineEntry?.timestamp ?? piece.createdAt;
+    for (let index = piece.timeline.length - 1; index >= 0; index -= 1) {
+      const timelineEntry = piece.timeline[index];
+      if (timelineEntry.stage === queueStage) {
+        return timelineEntry.timestamp;
+      }
+    }
+
+    return piece.createdAt;
   }, []);
 
   const getWaitingDays = React.useCallback((enteredAt: string) => {
@@ -229,7 +137,56 @@ export default function KilnScreen() {
           new Date(b.firings[0]?.completedAt ?? b.firings[0]?.createdAt ?? 0).getTime() -
           new Date(a.firings[0]?.completedAt ?? a.firings[0]?.createdAt ?? 0).getTime()
       );
-  }, [completedFirings, historyKilnId, kilns]);
+  }, [completedFirings, getKilnName, historyKilnId]);
+
+  const visibleHistoryGroups = React.useMemo(
+    () => historyGroups.filter((group) => group.firings.length > 0),
+    [historyGroups]
+  );
+
+  const firingReceiptSummaryById = React.useMemo(() => {
+    const summaryById: Record<
+      string,
+      {
+        totalPieces: number;
+        survivedCount: number;
+        issueCount: number;
+        issuePreview: string[];
+        remainingIssueCount: number;
+      }
+    > = {};
+
+    const piecesById = new Map(pieces.map((piece) => [piece.id, piece] as const));
+
+    completedFirings.forEach((firing) => {
+      const firingPieces = firing.pieceIds
+        .map((pieceId) => piecesById.get(pieceId))
+        .filter((piece): piece is Piece => Boolean(piece));
+
+      const totalPieces = firing.pieceIds.length;
+      const didNotSurviveCount = firingPieces.filter((piece) => piece.stage === 'cemetery').length;
+      const issuePieces = firingPieces.filter(
+        (piece) => piece.stage === 'cemetery' || piece.status === 'cracked' || piece.status === 'warped'
+      );
+
+      const issuePreview = issuePieces.slice(0, 2).map((piece) => {
+        if (piece.stage === 'cemetery') return `${piece.name} (didn't survive)`;
+        if (piece.status === 'cracked') return `${piece.name} (cracked)`;
+        if (piece.status === 'warped') return `${piece.name} (warped)`;
+        return `${piece.name} (issue)`;
+      });
+
+      summaryById[firing.id] = {
+        totalPieces,
+        survivedCount: Math.max(0, totalPieces - didNotSurviveCount),
+        issueCount: issuePieces.length,
+        issuePreview,
+        remainingIssueCount: Math.max(0, issuePieces.length - issuePreview.length),
+      };
+    });
+
+    return summaryById;
+  }, [completedFirings, pieces]);
 
   React.useEffect(() => {
     if (historyKilnId !== 'all' && !kilns.some((kiln) => kiln.id === historyKilnId)) {
@@ -340,8 +297,9 @@ export default function KilnScreen() {
                 {hasOpenSessionContent ? (
                   <>
                     {visibleSessionRows.map((firing) => {
-                      const status = getAutoFiringStatus(firing, getKilnById(firing.kilnId));
-                      const expectedReady = getExpectedReadyAt(firing, getKilnById(firing.kilnId));
+                      const kiln = getKilnById(firing.kilnId);
+                      const status = getAutoFiringStatus(firing, kiln);
+                      const expectedReady = getExpectedReadyAt(firing, kiln);
                       const statusLabel =
                         status === 'waiting'
                           ? 'Waiting'
@@ -556,10 +514,8 @@ export default function KilnScreen() {
                 </View>
               </ScrollView>
 
-              {historyGroups.filter((group) => group.firings.length > 0).length > 0 ? (
-                historyGroups
-                  .filter((group) => group.firings.length > 0)
-                  .map((group) => (
+              {visibleHistoryGroups.length > 0 ? (
+                visibleHistoryGroups.map((group) => (
                     <View key={group.kilnId} className="mb-2">
                       {historyKilnId === 'all' ? (
                         <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 mt-1">
@@ -571,6 +527,7 @@ export default function KilnScreen() {
                           key={firing.id}
                           firing={firing}
                           kilnName={group.kilnName}
+                          summary={firingReceiptSummaryById[firing.id]}
                           onPress={() => setDetailFiring(firing)}
                         />
                       ))}

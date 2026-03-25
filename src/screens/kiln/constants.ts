@@ -1,11 +1,12 @@
 // src/screens/kiln/constants.ts
 
+import type { Stage } from '../pieces/types';
 import type {
-    FiringLocation,
-    FiringState,
-    FiringType,
-    KilnPricingModel,
-    KilnType,
+  FiringLocation,
+  FiringState,
+  FiringType,
+  KilnPricingModel,
+  KilnType,
 } from './types';
 
 export const KILN_TYPE_LABELS: Record<KilnType, string> = {
@@ -121,13 +122,13 @@ export const CONE_OPTIONS = [
 ];
 
 /** Returns the piece stage to advance FROM when completing a firing of a given type */
-export const FIRING_SOURCE_STAGE: Record<string, string> = {
+export const FIRING_SOURCE_STAGE: Partial<Record<FiringType, Stage>> = {
   bisque: 'bone-dry',
   glaze: 'glazing',
 };
 
 /** Returns the piece stage to advance TO when completing a firing of a given type */
-export const FIRING_TARGET_STAGE: Record<string, string> = {
+export const FIRING_TARGET_STAGE: Partial<Record<FiringType, Stage>> = {
   bisque: 'bisque',
   glaze: 'glaze-fired',
 };

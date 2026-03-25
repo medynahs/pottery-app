@@ -5,7 +5,7 @@ import { getTodayMissionKey } from '@/src/screens/overview/missionDate';
 import { getDateKey } from '@/src/screens/overview/studioRhythm';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
-import { BarChart3, BellRing, CalendarDays, ClipboardList, MessageSquarePlus, SlidersHorizontal, Trophy } from 'lucide-react-native';
+import { BarChart3, BellRing, CalendarDays, ClipboardList, MessageSquarePlus, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
 import { Alert, Image, Linking, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -107,14 +107,15 @@ export function OverviewPage() {
 
   return (
     <View
-      className="flex-1 bg-background"
+      className="flex-1"
+      style={{ backgroundColor: '#EBB23F' }}
       onLayout={(event) => {
         const nextHeight = Math.round(event.nativeEvent.layout.height);
         setSceneHeight((currentHeight) => (currentHeight === nextHeight ? currentHeight : nextHeight));
       }}
     >
       <View className="relative flex-1 overflow-hidden">
-        <StudioScene height={sceneHeight || 1} />
+        <StudioScene height={890}  />
 
         <View
           className="absolute left-4 rounded-2xl border border-border bg-card/85 px-4 py-2"
@@ -139,7 +140,7 @@ export function OverviewPage() {
           </View>
         </TouchableOpacity>
 
-        {activeCommunityChallenge ? (
+        {/* {activeCommunityChallenge ? (
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/community')}
             activeOpacity={0.86}
@@ -160,7 +161,7 @@ export function OverviewPage() {
             </Text>
             <Text className="text-[11px] text-primary mt-1">{activeCommunityChallenge.daysLeft} days left · Open in Community</Text>
           </TouchableOpacity>
-        ) : null}
+        ) : null} */}
 
         <View
           className="absolute right-3 rounded-3xl bg-card/85 border border-border px-2 py-2 gap-2"

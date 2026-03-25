@@ -6,13 +6,93 @@ import type { Piece } from '@/src/screens/pieces/types';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Image, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, Image, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import Svg, { Polygon } from 'react-native-svg';
+import { getStudioLayerManifest, type StudioDeviceVariant } from './studioScene/layerManifest';
+
+const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
 
 type StudioSceneProps = {
   height: number;
 };
 
+type ScenePoint = {
+  x: number;
+  y: number;
+};
+
+type PolygonBounds = {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  width: number;
+  height: number;
+};
+
+function parsePolygonPoints(points: string): ScenePoint[] {
+  return points
+    .trim()
+    .split(/\s+/)
+    .map((pair) => {
+      const [x, y] = pair.split(',').map(Number);
+      return { x, y };
+    })
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+}
+
+function getPolygonBounds(points: ScenePoint[]): PolygonBounds | null {
+  if (points.length === 0) {
+    return null;
+  }
+
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+
+  return {
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+}
+
+function isPointInPolygon(point: ScenePoint, polygon: ScenePoint[]): boolean {
+  let inside = false;
+
+  for (let currentIndex = 0, previousIndex = polygon.length - 1; currentIndex < polygon.length; previousIndex = currentIndex++) {
+    const currentPoint = polygon[currentIndex];
+    const previousPoint = polygon[previousIndex];
+
+    const intersects =
+      currentPoint.y > point.y !== previousPoint.y > point.y &&
+      point.x <
+        ((previousPoint.x - currentPoint.x) * (point.y - currentPoint.y)) /
+          ((previousPoint.y - currentPoint.y) || Number.EPSILON) +
+          currentPoint.x;
+
+    if (intersects) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
+}
+
 type Percent = `${number}%`;
+
+type SceneTarget = {
+  left: Percent;
+  top: Percent;
+  width: Percent;
+  height: Percent;
+};
 
 type SceneQuickAction = {
   label: string;
@@ -150,6 +230,8 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
 
 export function StudioScene({ height }: StudioSceneProps) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const toteHitboxSizeRef = useRef({ width: 1, height: 1 });
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
   const pieces = useAppStore((state) => state.pieces);
@@ -166,6 +248,11 @@ export function StudioScene({ height }: StudioSceneProps) {
   );
   const ambientGlowOpacity = useMemo(
     () => ambientPulse.interpolate({ inputRange: [0, 1], outputRange: [0.08, 0.22] }),
+    [ambientPulse]
+  );
+  // fillOpacity for the tote bag polygon highlight — low enough to be subtle, > 0 so SVG hit-tests it
+  const totePolygonFillOpacity = useMemo(
+    () => ambientPulse.interpolate({ inputRange: [0, 1], outputRange: [0.05, 0.15] }),
     [ambientPulse]
   );
 
@@ -228,38 +315,108 @@ export function StudioScene({ height }: StudioSceneProps) {
     () => studioHotspots.find((zone) => zone.id === activeHotspotId) ?? null,
     [activeHotspotId, studioHotspots]
   );
+  const sceneVariant: StudioDeviceVariant = width >= 768 ? 'tablet' : 'phone';
+  const studioLayers = useMemo(() => getStudioLayerManifest(sceneVariant), [sceneVariant]);
+  const toteHitPolygon = useMemo(() => {
+    const toteLayer = studioLayers.find((layer) => layer.id === 'apron-and-tote-tote-bag');
+
+    if (!toteLayer?.hitPolygon) {
+      return null;
+    }
+
+    return sceneVariant === 'tablet' ? toteLayer.hitPolygon.tablet : toteLayer.hitPolygon.phone;
+  }, [sceneVariant, studioLayers]);
+  const totePolygonPoints = useMemo(() => (toteHitPolygon ? parsePolygonPoints(toteHitPolygon) : []), [toteHitPolygon]);
+  const totePolygonBounds = useMemo(() => getPolygonBounds(totePolygonPoints), [totePolygonPoints]);
+  const sceneHeight = Math.max(height, 1);
 
   return (
-    <View className="w-full overflow-hidden bg-muted" style={{ height }}>
-      <Image
-        source={require('../../../../assets/images/studio-scene.png')}
-        className="absolute inset-0 w-full h-full"
-        resizeMode="cover"
-        accessibilityLabel="Studio scene"
-      />
+    <View className="w-full overflow-hidden bg-muted" style={{ height: sceneHeight }}>
+      <View className="w-full h-full overflow-hidden">
+        {studioLayers.map((layer) => {
+          return (
+            <React.Fragment key={`${sceneVariant}-${layer.id}`}>
+              <Image
+                source={layer.source}
+                className="absolute inset-0 w-full h-full"
+                style={{ opacity: layer.opacity }}
+                resizeMode="cover"
+                accessibilityLabel={`Studio layer ${layer.id}`}
+              />
+            </React.Fragment>
+          );
+        })}
 
-      <Animated.View
-        pointerEvents="none"
-        className="absolute inset-0 bg-amber-100/25"
-        style={{ opacity: ambientVeilOpacity }}
-      />
-      <Animated.View
-        pointerEvents="none"
-        className="absolute -left-20 top-8 h-56 w-56 rounded-full bg-amber-100/40"
-        style={{ opacity: ambientGlowOpacity }}
-      />
-      <Animated.View
-        pointerEvents="none"
-        className="absolute right-8 bottom-12 h-44 w-44 rounded-full bg-orange-100/35"
-        style={{ opacity: ambientGlowOpacity }}
-      />
+        {toteHitPolygon ? (
+          <Svg
+            pointerEvents="none"
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <AnimatedPolygon
+              points={toteHitPolygon}
+              fill="#A07040"
+              fillOpacity={totePolygonFillOpacity}
+              stroke="#A07040"
+              strokeWidth={0.3}
+              strokeOpacity={0.25}
+            />
+          </Svg>
+        ) : null}
 
-      <Kilnkin pieces={pieces} signals={studioSignals} />
+        {totePolygonBounds ? (
+          <TouchableOpacity
+            activeOpacity={0.95}
+            accessibilityRole="button"
+            accessibilityLabel="Open Community from tote bag"
+            className="absolute"
+            style={{
+              left: `${totePolygonBounds.minX}%`,
+              top: `${totePolygonBounds.minY}%`,
+              width: `${totePolygonBounds.width}%`,
+              height: `${totePolygonBounds.height}%`,
+            }}
+            onLayout={(event) => {
+              toteHitboxSizeRef.current = {
+                width: Math.max(event.nativeEvent.layout.width, 1),
+                height: Math.max(event.nativeEvent.layout.height, 1),
+              };
+            }}
+            onPress={(event) => {
+              const { width: hitboxWidth, height: hitboxHeight } = toteHitboxSizeRef.current;
+              const touchX = totePolygonBounds.minX + (event.nativeEvent.locationX / hitboxWidth) * totePolygonBounds.width;
+              const touchY = totePolygonBounds.minY + (event.nativeEvent.locationY / hitboxHeight) * totePolygonBounds.height;
 
-      {activeHotspot ? (
-        <TouchableOpacity className="absolute inset-0" activeOpacity={1} onPress={() => setActiveHotspotId(null)} />
-      ) : null}
+              if (isPointInPolygon({ x: touchX, y: touchY }, totePolygonPoints)) {
+                router.push('/(tabs)/community');
+              }
+            }}
+          />
+        ) : null}
 
+        <Animated.View
+          pointerEvents="none"
+          className="absolute inset-0 bg-amber-100/25"
+          style={{ opacity: ambientVeilOpacity }}
+        />
+        <Animated.View
+          pointerEvents="none"
+          className="absolute -left-20 top-8 h-56 w-56 rounded-full bg-amber-100/40"
+          style={{ opacity: ambientGlowOpacity }}
+        />
+        <Animated.View
+          pointerEvents="none"
+          className="absolute right-8 bottom-12 h-44 w-44 rounded-full bg-orange-100/35"
+          style={{ opacity: ambientGlowOpacity }}
+        />
+
+        <Kilnkin pieces={pieces} signals={studioSignals} />
+
+        {activeHotspot ? (
+          <TouchableOpacity className="absolute inset-0" activeOpacity={1} onPress={() => setActiveHotspotId(null)} />
+        ) : null}
+{/* 
       {studioHotspots.map((zone) => {
         const mappedPieces = zone.pieceSlot ? studioPiecePositions[zone.pieceSlot] : [];
         const previewPieces = mappedPieces.slice(0, 3);
@@ -368,36 +525,37 @@ export function StudioScene({ height }: StudioSceneProps) {
             ) : null}
           </TouchableOpacity>
         );
-      })}
+      })} */}
 
-      {activeHotspot ? (
-        <View
-          className="absolute z-50"
-          style={{
-            left: activeHotspot.popoverLeft ?? activeHotspot.left,
-            top: activeHotspot.popoverTop ?? activeHotspot.top,
-          }}
-        >
-          <View className="rounded-2xl border border-border bg-card/95 p-2">
-            <Text className="text-[11px] font-medium text-foreground px-1 pb-1">{activeHotspot.label}</Text>
-            <View className="flex-row gap-2">
-              {activeHotspot.quickActions.slice(0, 2).map((action) => (
-                <TouchableOpacity
-                  key={`${activeHotspot.id}-${action.label}`}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    setActiveHotspotId(null);
-                    router.push(action.route as never);
-                  }}
-                  className="rounded-xl border border-border bg-background px-3 py-2"
-                >
-                  <Text className="text-[11px] text-foreground font-medium">{action.label}</Text>
-                </TouchableOpacity>
-              ))}
+        {activeHotspot ? (
+          <View
+            className="absolute z-50"
+            style={{
+              left: activeHotspot.popoverLeft ?? activeHotspot.left,
+              top: activeHotspot.popoverTop ?? activeHotspot.top,
+            }}
+          >
+            <View className="rounded-2xl border border-border bg-card/95 p-2">
+              <Text className="text-[11px] font-medium text-foreground px-1 pb-1">{activeHotspot.label}</Text>
+              <View className="flex-row gap-2">
+                {activeHotspot.quickActions.slice(0, 2).map((action) => (
+                  <TouchableOpacity
+                    key={`${activeHotspot.id}-${action.label}`}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setActiveHotspotId(null);
+                      router.push(action.route as never);
+                    }}
+                    className="rounded-xl border border-border bg-background px-3 py-2"
+                  >
+                    <Text className="text-[11px] text-foreground font-medium">{action.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           </View>
-        </View>
-      ) : null}
+        ) : null}
+      </View>
     </View>
   );
 }

@@ -913,7 +913,32 @@ export const useAppStore = create<AppState>()(
       kilns: state.kilns.filter((k) => k.id !== id),
       firings: state.firings.filter((f) => f.kilnId !== id),
     })),
-  addFiring: (firing) => set((state) => ({ firings: [firing, ...state.firings] })),
+  addFiring: (firing) =>
+    set((state) => {
+      const nextPieceIds = Array.from(new Set(firing.pieceIds));
+      const nextPieceIdSet = new Set(nextPieceIds);
+
+      return {
+        firings: [
+          { ...firing, pieceIds: nextPieceIds },
+          ...state.firings.map((existingFiring) => {
+            if (existingFiring.state === 'completed') {
+              return existingFiring;
+            }
+
+            const hasOverlap = existingFiring.pieceIds.some((pieceId) => nextPieceIdSet.has(pieceId));
+            if (!hasOverlap) {
+              return existingFiring;
+            }
+
+            return {
+              ...existingFiring,
+              pieceIds: existingFiring.pieceIds.filter((pieceId) => !nextPieceIdSet.has(pieceId)),
+            };
+          }),
+        ],
+      };
+    }),
   updateFiring: (firing) =>
     set((state) => ({ firings: state.firings.map((f) => (f.id === firing.id ? firing : f)) })),
   deleteFiring: (id) =>
@@ -931,11 +956,31 @@ export const useAppStore = create<AppState>()(
       }),
     })),
   assignPiecesToFiring: (firingId, pieceIds) =>
-    set((state) => ({
-      firings: state.firings.map((f) =>
-        f.id !== firingId ? f : { ...f, pieceIds: Array.from(new Set([...f.pieceIds, ...pieceIds])) }
-      ),
-    })),
+    set((state) => {
+      const incomingPieceIdSet = new Set(pieceIds);
+
+      return {
+        firings: state.firings.map((firing) => {
+          if (firing.id === firingId) {
+            return { ...firing, pieceIds: Array.from(new Set([...firing.pieceIds, ...pieceIds])) };
+          }
+
+          if (firing.state === 'completed') {
+            return firing;
+          }
+
+          const hasOverlap = firing.pieceIds.some((pieceId) => incomingPieceIdSet.has(pieceId));
+          if (!hasOverlap) {
+            return firing;
+          }
+
+          return {
+            ...firing,
+            pieceIds: firing.pieceIds.filter((pieceId) => !incomingPieceIdSet.has(pieceId)),
+          };
+        }),
+      };
+    }),
   completeFiring: (firingId, result, resultNotes) => {
     const state = get();
     const firing = state.firings.find((f) => f.id === firingId);
