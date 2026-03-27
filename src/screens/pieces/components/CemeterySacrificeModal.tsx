@@ -5,18 +5,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Flame, ScrollText, Sparkles, X } from 'lucide-react-native';
 import React from 'react';
 import {
-    Animated,
-    Easing,
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Animated,
+  Easing,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import type { Piece } from './types';
+import type { Piece } from '../../../types/pieces';
 
 interface CemeterySacrificeModalProps {
   piece: Piece | null;

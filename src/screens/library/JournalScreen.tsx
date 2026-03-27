@@ -5,7 +5,7 @@ import LibraryTemplatesScreen from '@/src/screens/library/LibraryTemplatesScreen
 import LibraryToolsScreen from '@/src/screens/library/LibraryToolsScreen';
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import { MainTabHeader } from '../components/MainTabHeader';
+import { MainTabHeader } from '../../components/MainTabHeader';
 
 type JournalTab = 'glazes' | 'roadmaps' | 'tools' | 'templates';
 

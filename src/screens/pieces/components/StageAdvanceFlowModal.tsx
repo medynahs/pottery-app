@@ -9,9 +9,9 @@ import type { LucideIcon } from 'lucide-react-native';
 import { ImagePlus, Sparkles, X } from 'lucide-react-native';
 import React from 'react';
 import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, TouchableOpacity, View } from 'react-native';
-import { OptionPills } from './components/OptionPills';
-import { BISQUE_TEMPS, GLAZE_TEMPS, PIECE_DISPOSITION_STATUSES } from './constants';
-import { FINISHED_STAGE_ID } from './stageFlow';
+import { BISQUE_TEMPS, GLAZE_TEMPS, PIECE_DISPOSITION_STATUSES } from '../utils/constants';
+import { FINISHED_STAGE_ID } from '../utils/stageFlow';
+import { OptionPills } from './OptionPills';
 
 export type StageAdvanceRequest = {
   pieceIds: number[];
@@ -166,13 +166,13 @@ export function StageAdvanceFlowModal({
               </View>
 
               {isFinished && (
-                <View className="mt-4 rounded-2xl overflow-hidden border border-border">
-                  <Image
-                    source={require('../../../assets/images/pottery-studio.png')}
-                    className="w-full h-28"
-                    resizeMode="cover"
-                  />
-                </View>
+                  <View className="mt-4 rounded-2xl overflow-hidden border border-border">
+                    <Image
+                      source={require('../../../../assets/images/pottery-studio.png')}
+                      className="w-full h-28"
+                      resizeMode="cover"
+                    />
+                  </View>
               )}
 
               <View className="mt-5">

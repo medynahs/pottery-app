@@ -1,13 +1,13 @@
 // src/screens/kiln/constants.ts
 
-import type { Stage } from '../pieces/types';
 import type {
   FiringLocation,
   FiringState,
   FiringType,
   KilnPricingModel,
   KilnType,
-} from './types';
+} from '../../types/kiln';
+import type { Stage } from '../../types/pieces';
 
 export const KILN_TYPE_LABELS: Record<KilnType, string> = {
   electric: 'Electric',

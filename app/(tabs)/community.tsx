@@ -1,4 +1,4 @@
-import CommunityScreen from '@/src/screens/CommunityScreen';
+import CommunityScreen from '@/src/screens/community/CommunityScreen';
 import React from 'react';
 
 export default function CommunityTab() {

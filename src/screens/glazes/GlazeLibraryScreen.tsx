@@ -1,6 +1,6 @@
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
-import { GLAZE_TEMPS } from '@/src/screens/pieces/constants';
+import { GLAZE_TEMPS } from '@/src/screens/pieces/utils/constants';
 import { useAppStore } from '@/src/store/appStore';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -44,7 +44,7 @@ import {
   type GlazeLibraryItem,
   type GlazeResultRating,
   type GlazeTestTile,
-} from './glazes/types';
+} from './types';
 
 type SortKey = 'recent' | 'name' | 'tests';
 type ViewMode = 'grid' | 'list';

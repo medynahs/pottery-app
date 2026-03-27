@@ -1,10 +1,10 @@
 import {
     Home,
 } from 'lucide-react-native';
-import { KilnType } from '../screens/kiln/types';
-import { PricingUserType } from "../screens/pieces/pricing";
 import { PracticeMode, UserRole } from "../store";
 import { AppModule, MeasurementUnit, OnboardingPieceFocus, OnboardingPracticeFrequency } from "../store/appStore";
+import { KilnType } from './kiln';
+import { PricingUserType } from "./pricing";
 
 export type OnboardingUserType =
     | 'home-potter'

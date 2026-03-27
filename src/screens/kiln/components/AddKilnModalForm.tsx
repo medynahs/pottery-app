@@ -5,8 +5,8 @@ import { Text } from '@/src/components/ui/text';
 import { Camera, ChevronDown, HelpCircle, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { Image, TextInput, TouchableOpacity, View } from 'react-native';
+import type { KilnPricingModel, KilnType } from '../../../types/kiln';
 import { KILN_PRICING_MODEL_OPTIONS, KILN_TYPE_OPTIONS } from '../constants';
-import type { KilnPricingModel, KilnType } from '../types';
 
 export type AddKilnFormValues = {
   name: string;

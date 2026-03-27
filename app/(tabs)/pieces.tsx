@@ -1,4 +1,4 @@
-import PiecesScreen from '@/src/screens/PiecesScreen';
+import PiecesScreen from '@/src/screens/pieces/PiecesScreen';
 import React from 'react';
 
 export default function PiecesTab() {

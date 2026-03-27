@@ -4,34 +4,34 @@ import { useAppStore } from '@/src/store/appStore';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-    BookOpen,
-    Camera,
-    ChevronLeft,
-    ChevronRight,
-    Clock3,
-    ImagePlus,
-    ScrollText,
-    X,
+  BookOpen,
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  ImagePlus,
+  ScrollText,
+  X,
 } from 'lucide-react-native';
 import React from 'react';
 import {
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    TextInput,
-    TouchableOpacity,
-    View,
-    useWindowDimensions,
-    type ImageSourcePropType,
-    type NativeScrollEvent,
-    type NativeSyntheticEvent,
-    type ScrollView as ScrollViewType,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+  type ImageSourcePropType,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ScrollView as ScrollViewType,
 } from 'react-native';
-import { STAGES, STAGE_LABEL, isConditionStatus } from './constants';
-import { PRICING_USER_TYPE_LABELS, parseNumericInput, type PricingSaleMode } from './pricing';
-import type { Piece, TimelineEntry } from './types';
+import type { Piece, TimelineEntry } from '../../../types/pieces';
+import { PRICING_USER_TYPE_LABELS, parseNumericInput, type PricingSaleMode } from '../../../types/pricing';
+import { STAGES, STAGE_LABEL, isConditionStatus } from '../utils/constants';
 
 type EntryDraft = { notes: string; photo?: string };
 
@@ -63,9 +63,9 @@ const PAGE_ACCENTS = ['#C97752', '#D49F56', '#8FAE70', '#7D99BD', '#C88290', '#9
 
 // Swap these optional images with your own parchment, stamps, or illustrations later.
 const BOOK_ART = {
-  coverIllustration: require('../../../assets/images/pottery-studio.png'),
-  pageWatermark: require('../../../assets/images/pottery-wheel.png'),
-  memorialStamp: require('../../../assets/images/pottery-memorial.png'),
+  coverIllustration: require('../../../../assets/images/pottery-studio.png'),
+  pageWatermark: require('../../../../assets/images/pottery-wheel.png'),
+  memorialStamp: require('../../../../assets/images/pottery-memorial.png'),
 };
 
 function formatDuration(ms: number): string {

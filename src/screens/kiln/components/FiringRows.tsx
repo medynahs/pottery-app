@@ -4,9 +4,9 @@ import { Text } from '@/src/components/ui/text';
 import { ChevronRight } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
+import type { Firing } from '../../../types/kiln';
 import { FIRING_TYPE_LABELS } from '../constants';
-import type { Firing } from '../types';
-import { formatDate } from './kilnUtils';
+import { formatDate } from '../utils/kilnUtils';
 
 // ── WaitingPieceRow ───────────────────────────────────────────────────────────
 

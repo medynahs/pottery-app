@@ -1,7 +1,7 @@
-import type { Firing } from '@/src/screens/kiln/types';
 import { getKilnkinVoiceLine, type KilnkinCompanion } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
 import { getDateKey, type StudioRhythmConfig } from '@/src/screens/overview/studioRythm/studioRhythm';
-import type { Piece } from '@/src/screens/pieces/types';
+import type { Firing } from '@/src/types/kiln';
+import type { Piece } from '@/src/types/pieces';
 
 export type StudioAlert = {
   id: string;

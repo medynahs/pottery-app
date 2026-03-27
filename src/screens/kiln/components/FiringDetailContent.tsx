@@ -4,16 +4,16 @@ import { Text } from '@/src/components/ui/text';
 import { Check, FlameKindling, PackageCheck } from 'lucide-react-native';
 import React from 'react';
 import { Image, TextInput, TouchableOpacity, View } from 'react-native';
-import type { Piece } from '../../pieces/types';
+import type { Firing, FiringResult, FiringState, Kiln } from '../../../types/kiln';
+import type { Piece } from '../../../types/pieces';
 import {
-    FIRING_LOCATION_LABELS,
-    FIRING_STATE_LABELS,
-    FIRING_STATE_ORDER,
-    FIRING_TYPE_LABELS,
-    KILN_TYPE_LABELS,
+  FIRING_LOCATION_LABELS,
+  FIRING_STATE_LABELS,
+  FIRING_STATE_ORDER,
+  FIRING_TYPE_LABELS,
+  KILN_TYPE_LABELS,
 } from '../constants';
-import type { Firing, FiringResult, FiringState, Kiln } from '../types';
-import { formatMoney } from './kilnUtils';
+import { formatMoney } from '../utils/kilnUtils';
 
 const STATE_COLORS: Record<FiringState, string> = {
   scheduled: 'hsl(220 80% 56%)',

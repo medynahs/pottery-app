@@ -1,12 +1,12 @@
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
-import { getTodayMissionKey } from '@/src/screens/overview/missionDate';
 import {
   generateStudioRhythmSuggestions,
   type StudioRhythmSuggestion,
   type StudioRhythmSuggestionType,
 } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
+import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { CalendarDays, Check, Flame, Hammer, Scissors, Sparkles, Trophy } from 'lucide-react-native';

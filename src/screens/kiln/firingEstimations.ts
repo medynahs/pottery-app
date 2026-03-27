@@ -1,5 +1,5 @@
-import type { Piece } from '../pieces/types';
-import type { Firing, FiringLocation, FiringType, Kiln } from './types';
+import type { Firing, FiringLocation, FiringType, Kiln } from '../../types/kiln';
+import type { Piece } from '../../types/pieces';
 
 const DEFAULT_QUEUE_DELAY_DAYS: Record<FiringLocation, number> = {
   studio: 21,

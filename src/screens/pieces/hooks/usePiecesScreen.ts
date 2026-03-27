@@ -4,12 +4,12 @@ import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
 import { Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { ActiveFilters, EMPTY_FILTERS, SortKey, countActiveFilters } from '../FilterSortSheet';
-import type { StageAdvanceCelebration } from '../StageAdvanceCelebrationModal';
-import type { StageAdvanceCapture, StageAdvanceRequest } from '../StageAdvanceFlowModal';
-import { FINISHED_STAGE_ID, getAdvanceOrder, getConfiguredNextStage } from '../stageFlow';
-import { STAGE_ICONS, resolveStageIcon } from '../stageIconUtils';
-import type { DisplayItem, GridRow, Piece } from '../types';
+import type { DisplayItem, GridRow, Piece } from '../../../types/pieces';
+import { ActiveFilters, EMPTY_FILTERS, SortKey, countActiveFilters } from '../components/FilterSortSheet';
+import type { StageAdvanceCelebration } from '../components/StageAdvanceCelebrationModal';
+import type { StageAdvanceCapture, StageAdvanceRequest } from '../components/StageAdvanceFlowModal';
+import { FINISHED_STAGE_ID, getAdvanceOrder, getConfiguredNextStage } from '../utils/stageFlow';
+import { STAGE_ICONS, resolveStageIcon } from '../utils/stageIconUtils';
 
 function getSetName(name: string) {
   return name.replace(/\s+\d+$/, '');

@@ -1,8 +1,8 @@
 import { Text } from '@/src/components/ui/text';
-import { getTodayMissionKey } from '@/src/screens/overview/missionDate';
 import { getStudioAlerts } from '@/src/screens/overview/notifications/getStudioAlerts';
 import { generateStudioRhythmSuggestions } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import { getDateKey } from '@/src/screens/overview/studioRythm/studioRhythm';
+import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { BarChart3, BellRing, CalendarDays, ClipboardList, MessageSquarePlus, SlidersHorizontal, Trophy } from 'lucide-react-native';

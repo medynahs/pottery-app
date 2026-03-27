@@ -7,16 +7,16 @@ import { Flame, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { Image, Modal, View } from 'react-native';
 import Animated, {
-    Easing,
-    FadeIn,
-    FadeInDown,
-    FadeOut,
-    FadeOutDown,
-    useAnimatedStyle,
-    useSharedValue,
-    withRepeat,
-    withSequence,
-    withTiming,
+  Easing,
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  FadeOutDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
 } from 'react-native-reanimated';
 
 export type StageAdvanceCelebration = {
@@ -134,8 +134,8 @@ export function StageAdvanceCelebrationModal({
                 <Image
                   source={
                     isFiring
-                      ? require('../../../assets/animations/activeOven.gif')
-                      : require('../../../assets/animations/kilnPet.gif')
+                      ? require('../../../../assets/animations/activeOven.gif')
+                      : require('../../../../assets/animations/kilnPet.gif')
                   }
                   className="w-full h-full"
                   resizeMode="cover"

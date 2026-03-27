@@ -6,10 +6,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Layers, Timer } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
+import type { Firing, FiringState } from '../../../types/kiln';
 import { FIRING_STATE_LABELS, FIRING_STATE_ORDER, FIRING_TYPE_LABELS } from '../constants';
 import { formatReadyDate, getExpectedReadyAt } from '../firingEstimations';
-import type { Firing, FiringState } from '../types';
-import { FIRING_STATE_COLOR, formatDate } from './kilnUtils';
+import { FIRING_STATE_COLOR, formatDate } from '../utils/kilnUtils';
 
 /** Per-state gradient: warm at top fading to card background at bottom */
 const FIRING_GRADIENT: Record<FiringState, [string, string, string]> = {

@@ -1,5 +1,5 @@
 import { Text } from '@/src/components/ui/text';
-import { BISQUE_TEMPS, CONE_TEMPS_CELSIUS } from '@/src/screens/pieces/constants';
+import { BISQUE_TEMPS, CONE_TEMPS_CELSIUS } from '@/src/screens/pieces/utils/constants';
 import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import { Check, Flame } from 'lucide-react-native';

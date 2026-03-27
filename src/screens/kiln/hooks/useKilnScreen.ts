@@ -1,7 +1,7 @@
 // src/screens/kiln/hooks/useKilnScreen.ts
 import { useAppStore } from '@/src/store';
 import React from 'react';
-import type { Firing, Kiln } from '../types';
+import type { Firing, Kiln } from '../../../types/kiln';
 
 export function useKilnScreen() {
   const kilns = useAppStore((s) => s.kilns);

@@ -4,8 +4,8 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { Check, SlidersHorizontal, X } from 'lucide-react-native';
 import React from 'react';
 import { Modal, Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
-import { FIRING_TYPES, FORMING_METHODS, PIECE_FORMS, PIECE_STATUSES } from './constants';
-import type { Piece } from './types';
+import type { Piece } from '../../../types/pieces';
+import { FIRING_TYPES, FORMING_METHODS, PIECE_FORMS, PIECE_STATUSES } from '../utils/constants';
 
 export type SortKey = 'newest' | 'oldest' | 'name-asc' | 'name-desc' | 'updated';
 

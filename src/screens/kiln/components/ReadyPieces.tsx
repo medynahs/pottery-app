@@ -1,5 +1,5 @@
 import { Text } from '@/src/components/ui/text';
-import type { Piece } from '@/src/screens/pieces/types';
+import type { Piece } from '@/src/types/pieces';
 import { Layers } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';

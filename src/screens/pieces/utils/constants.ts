@@ -1,5 +1,5 @@
 import { ArchiveX, Droplets, Flame, Hammer, Lightbulb, PackageCheck, Scissors, Sparkles, Star, Wind, Zap } from 'lucide-react-native';
-import type { Piece } from './types';
+import type { Piece } from '../../../types/pieces';
 
 export const LIFECYCLE_ORDER = [
   'idea',

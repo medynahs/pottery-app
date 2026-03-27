@@ -2,7 +2,7 @@
 import { Text } from '@/src/components/ui/text';
 import React from 'react';
 import { View } from 'react-native';
-import { buildDefaultPricingSettings, PRICING_USER_TYPE_LABELS, PricingUserType } from '../../pieces/pricing';
+import { buildDefaultPricingSettings, PRICING_USER_TYPE_LABELS, PricingUserType } from '../../../types/pricing';
 
 interface PricingStepProps {
   draft: { pricingUserType: PricingUserType };

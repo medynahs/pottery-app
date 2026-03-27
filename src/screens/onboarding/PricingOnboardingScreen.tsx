@@ -1,10 +1,10 @@
 import { Text } from '@/src/components/ui/text';
-import {
-    buildDefaultPricingSettings,
-    PRICING_USER_TYPE_LABELS,
-    type PricingUserType,
-} from '@/src/screens/pieces/pricing';
 import { useAppStore } from '@/src/store/appStore';
+import {
+  buildDefaultPricingSettings,
+  PRICING_USER_TYPE_LABELS,
+  type PricingUserType,
+} from '@/src/types/pricing';
 import { useRouter } from 'expo-router';
 import { BriefcaseBusiness, Home, Shapes } from 'lucide-react-native';
 import React from 'react';

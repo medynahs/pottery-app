@@ -3,14 +3,17 @@ import { persist } from 'zustand/middleware';
 import { INITIAL_GLAZES, INITIAL_GLAZE_TESTS } from '../screens/glazes/data';
 import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
 import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
-import type { Firing, FiringState, Kiln, KilnChecklist, KilnType } from '../screens/kiln/types';
 import {
   DEFAULT_KILNKIN_COMPANION,
   type KilnkinCompanion,
 } from '../screens/overview/kilnkin/kilnkinCompanion';
 import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import type { StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRythm/studioRhythm';
-import { INITIAL_PIECES, STAGES } from '../screens/pieces/constants';
+import { INITIAL_PIECES, STAGES } from '../screens/pieces/utils/constants';
+import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
+import { fetchUsers, type BackendUser } from '../services';
+import type { Firing, FiringState, Kiln, KilnChecklist, KilnType } from '../types/kiln';
+import type { Piece } from '../types/pieces';
 import {
   applyPricingUserTypePreset,
   buildDefaultPricingSettings,
@@ -18,10 +21,7 @@ import {
   type PricingSettings,
   type PricingTier,
   type PricingUserType,
-} from '../screens/pieces/pricing';
-import { getConfiguredNextStage } from '../screens/pieces/stageFlow';
-import type { Piece } from '../screens/pieces/types';
-import { fetchUsers, type BackendUser } from '../services';
+} from '../types/pricing';
 import { zustandStorage } from './storage';
 
 // ── Sync queue ────────────────────────────────────────────────────────────────

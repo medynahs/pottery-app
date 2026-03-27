@@ -1,5 +1,6 @@
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store/appStore';
+import { Piece } from '@/src/types/pieces';
 import { DollarSign, ImageIcon, Package, Sparkles, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
@@ -11,7 +12,6 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import type { Piece } from '../../pieces/types';
 
 // Tile accent colours cycling for pieces without photos
 const TILE_PALETTES = [

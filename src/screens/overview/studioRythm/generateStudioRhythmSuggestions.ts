@@ -1,6 +1,6 @@
-import type { Firing } from '@/src/screens/kiln/types';
 import type { StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '@/src/screens/overview/studioRythm/studioRhythm';
-import type { Piece } from '@/src/screens/pieces/types';
+import type { Firing } from '@/src/types/kiln';
+import type { Piece } from '@/src/types/pieces';
 import type { Href } from 'expo-router';
 
 export type StudioRhythmSuggestionType =

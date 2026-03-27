@@ -8,10 +8,10 @@ import { useAppStore } from '@/src/store';
 import { ChevronRight, Trash2, X } from 'lucide-react-native';
 import React from 'react';
 import { Alert, Modal, ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import { FiringDetailContent } from './components/FiringDetailContent';
-import { FIRING_STATE_LABELS, FIRING_TYPE_LABELS, nextFiringState } from './constants';
-import { formatReadyDate, getExpectedReadyAt } from './firingEstimations';
-import type { Firing, FiringResult } from './types';
+import type { Firing, FiringResult } from '../../../types/kiln';
+import { FIRING_STATE_LABELS, FIRING_TYPE_LABELS, nextFiringState } from '../constants';
+import { formatReadyDate, getExpectedReadyAt } from '../firingEstimations';
+import { FiringDetailContent } from './FiringDetailContent';
 
 interface FiringDetailModalProps {
   firing: Firing | null;

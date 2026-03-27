@@ -1,5 +1,5 @@
 import { Text } from '@/src/components/ui/text';
-import { CONE_TEMPS_CELSIUS, GLAZE_TEMPS } from '@/src/screens/pieces/constants';
+import { CONE_TEMPS_CELSIUS, GLAZE_TEMPS } from '@/src/screens/pieces/utils/constants';
 import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import { Check, Zap } from 'lucide-react-native';

@@ -6,18 +6,18 @@ import { ChevronUp, Layers, Plus, Search, SlidersHorizontal } from 'lucide-react
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
-import { MainTabHeader } from '../components/MainTabHeader';
-import { AddPieceModal } from './pieces/AddPieceModal';
-import { BatchCard } from './pieces/BatchCard';
-import { CemeteryBanner } from './pieces/CemeteryBanner';
-import { CemeterySacrificeModal } from './pieces/CemeterySacrificeModal';
-import { FilterSortSheet } from './pieces/FilterSortSheet';
-import { usePiecesScreen } from './pieces/hooks/usePiecesScreen';
-import { PieceActionSheet } from './pieces/PieceActionSheet';
-import { PieceCard } from './pieces/PieceCard';
-import { PieceJournalModal } from './pieces/PieceJournalModal';
-import { StageAdvanceCelebrationModal, type StageAdvanceCelebration } from './pieces/StageAdvanceCelebrationModal';
-import { StageAdvanceFlowModal } from './pieces/StageAdvanceFlowModal';
+import { MainTabHeader } from '../../components/MainTabHeader';
+import { AddPieceModal } from './components/AddPieceModal';
+import { BatchCard } from './components/BatchCard';
+import { CemeteryBanner } from './components/CemeteryBanner';
+import { CemeterySacrificeModal } from './components/CemeterySacrificeModal';
+import { FilterSortSheet } from './components/FilterSortSheet';
+import { PieceActionSheet } from './components/PieceActionSheet';
+import { PieceCard } from './components/PieceCard';
+import { PieceJournalModal } from './components/PieceJournalModal';
+import { StageAdvanceCelebrationModal, type StageAdvanceCelebration } from './components/StageAdvanceCelebrationModal';
+import { StageAdvanceFlowModal } from './components/StageAdvanceFlowModal';
+import { usePiecesScreen } from './hooks/usePiecesScreen';
 
 const itemLayout = LinearTransition
   .duration(420)

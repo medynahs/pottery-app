@@ -5,19 +5,19 @@ import { Text } from '@/src/components/ui/text';
 import { Check } from 'lucide-react-native';
 import React from 'react';
 import {
-    Image,
-    ScrollView,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import type { Piece, Stage } from '../../pieces/types';
+import type { FiringType, Kiln } from '../../../types/kiln';
+import type { Piece, Stage } from '../../../types/pieces';
 import {
-    CONE_OPTIONS,
-    CORE_FIRING_TYPE_OPTIONS
+  CONE_OPTIONS,
+  CORE_FIRING_TYPE_OPTIONS
 } from '../constants';
 import { formatReadyDate } from '../firingEstimations';
-import type { FiringType, Kiln } from '../types';
 
 // ─── Exported types ──────────────────────────────────────────────────────────
 

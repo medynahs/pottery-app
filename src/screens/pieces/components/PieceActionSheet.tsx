@@ -4,8 +4,8 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { Copy, Edit3, Layers, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { Modal, TouchableOpacity, View } from 'react-native';
-import { STAGE_LABEL } from './constants';
-import type { Piece } from './types';
+import type { Piece } from '../../../types/pieces';
+import { STAGE_LABEL } from '../utils/constants';
 
 interface PieceActionSheetProps {
   piece: Piece | null;

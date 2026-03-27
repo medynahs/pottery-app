@@ -9,13 +9,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { X } from 'lucide-react-native';
 import React from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
+import type { Kiln } from '../../../types/kiln';
 import {
   AddKilnModalForm,
   EMPTY_ADD_KILN_FORM,
   type AddKilnFormValues,
   type AddKilnHelpField,
-} from './components/AddKilnModalForm';
-import type { Kiln } from './types';
+} from './AddKilnModalForm';
 
 interface AddKilnModalProps {
   visible: boolean;

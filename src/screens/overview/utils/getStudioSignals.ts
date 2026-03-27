@@ -1,5 +1,5 @@
-import type { Firing } from '@/src/screens/kiln/types';
-import type { Piece } from '@/src/screens/pieces/types';
+import type { Firing } from '@/src/types/kiln';
+import type { Piece } from '@/src/types/pieces';
 
 export type StudioSignals = {
   dryingTooLong: boolean;

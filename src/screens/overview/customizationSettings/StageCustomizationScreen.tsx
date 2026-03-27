@@ -1,24 +1,24 @@
 import { Text } from '@/src/components/ui/text';
 import { CEMETERY_ID, type StageConfig, useStageConfig } from '@/src/hooks/useStageConfig';
-import { PICKABLE_ICONS, resolveStageIcon } from '@/src/screens/pieces/stageIconUtils';
+import { PICKABLE_ICONS, resolveStageIcon } from '@/src/screens/pieces/utils/stageIconUtils';
 import { useRouter } from 'expo-router';
 import {
-    ChevronDown,
-    ChevronUp,
-    Lock,
-    Pencil,
-    Plus,
-    RotateCcw,
-    Trash2,
+  ChevronDown,
+  ChevronUp,
+  Lock,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    Switch,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  Switch,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const STAGE_COLORS: Record<string, { icon: string; bg: string }> = {

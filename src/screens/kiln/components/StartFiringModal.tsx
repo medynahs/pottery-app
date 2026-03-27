@@ -15,14 +15,14 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import type { StartFiringFormValues } from './components/StartFiringModalContent';
+import type { Firing } from '../../../types/kiln';
+import { FIRING_SOURCE_STAGE, KILN_TYPE_LABELS } from '../constants';
+import { estimateFiringCost, estimateReadyDateIso } from '../firingEstimations';
+import type { StartFiringFormValues } from './StartFiringModalContent';
 import {
   EMPTY_START_FIRING_FORM,
   StartFiringModalContent,
-} from './components/StartFiringModalContent';
-import { FIRING_SOURCE_STAGE, KILN_TYPE_LABELS } from './constants';
-import { estimateFiringCost, estimateReadyDateIso } from './firingEstimations';
-import type { Firing } from './types';
+} from './StartFiringModalContent';
 
 interface StartFiringModalProps {
   visible: boolean;

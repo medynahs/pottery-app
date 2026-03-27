@@ -4,8 +4,8 @@ import { SettingsRow } from '@/src/components/SettingsRow';
 import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
-import { PRICING_USER_TYPE_LABELS } from '@/src/screens/pieces/pricing';
 import { useAppStore } from '@/src/store/appStore';
+import { PRICING_USER_TYPE_LABELS } from '@/src/types/pricing';
 import { useRouter } from 'expo-router';
 import {
   Bell,

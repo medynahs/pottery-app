@@ -4,9 +4,9 @@ import { Text } from '@/src/components/ui/text';
 import { ArrowRight, BookOpen, Heart, Layers, MoreHorizontal, PackageCheck } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
-import { LIFECYCLE_ORDER, isConditionStatus } from './constants';
-import { parseNumericInput } from './pricing';
-import type { Piece } from './types';
+import type { Piece } from '../../../types/pieces';
+import { parseNumericInput } from '../../../types/pricing';
+import { LIFECYCLE_ORDER, isConditionStatus } from '../utils/constants';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });

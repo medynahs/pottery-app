@@ -8,7 +8,7 @@ import {
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
-import { MainTabHeader } from '../components/MainTabHeader';
+import { MainTabHeader } from '../../components/MainTabHeader';
 
 // ── Shared atoms ──────────────────────────────────────────────────────────────
 

@@ -3,12 +3,12 @@ import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
+import { Piece } from '@/src/types/pieces';
 import { X } from 'lucide-react-native';
 import React from 'react';
 import { KeyboardAvoidingView, Modal, Platform, useWindowDimensions, View } from 'react-native';
-import { AddPieceForm } from './components/AddPieceForm';
-import { useAddPieceForm } from './hooks/useAddPieceForm';
-import type { Piece } from './types';
+import { useAddPieceForm } from '../hooks/useAddPieceForm';
+import { AddPieceForm } from './AddPieceForm';
 
 interface AddPieceModalProps {
   visible: boolean;

@@ -3,7 +3,7 @@ import { Text } from '@/src/components/ui/text';
 import React from 'react';
 import { View } from 'react-native';
 import { Pill } from '../../../components/Pill';
-import { KilnType } from '../../kiln/types';
+import { KilnType } from '../../../types/kiln';
 
 interface KilnStepProps {
   draft: any;

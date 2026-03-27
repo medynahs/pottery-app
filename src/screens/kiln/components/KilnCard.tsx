@@ -6,9 +6,9 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { FlameKindling, MoreHorizontal, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
+import type { Kiln } from '../../../types/kiln';
 import { KILN_TYPE_LABELS } from '../constants';
 import { getKilnTimingSummary } from '../firingEstimations';
-import type { Kiln } from '../types';
 
 interface KilnCardProps {
   kiln: Kiln;

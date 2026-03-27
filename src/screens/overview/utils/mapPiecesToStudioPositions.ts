@@ -1,4 +1,4 @@
-import type { Piece } from '@/src/screens/pieces/types';
+import type { Piece } from '@/src/types/pieces';
 
 export type StudioPiecePositions = {
   workTable: Piece[];

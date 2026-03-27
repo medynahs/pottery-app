@@ -1,9 +1,9 @@
 import { Text } from '@/src/components/ui/text';
 import { Kilnkin } from '@/src/screens/overview/components/Kilnkin';
-import { getStudioSignals } from '@/src/screens/overview/getStudioSignals';
-import { mapPiecesToStudioPositions, type StudioPiecePositions } from '@/src/screens/overview/mapPiecesToStudioPositions';
-import type { Piece } from '@/src/screens/pieces/types';
+import { getStudioSignals } from '@/src/screens/overview/utils/getStudioSignals';
+import { mapPiecesToStudioPositions, type StudioPiecePositions } from '@/src/screens/overview/utils/mapPiecesToStudioPositions';
 import { useAppStore } from '@/src/store';
+import type { Piece } from '@/src/types/pieces';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Image, TouchableOpacity, useWindowDimensions, View } from 'react-native';

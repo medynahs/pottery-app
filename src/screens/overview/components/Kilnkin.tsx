@@ -1,7 +1,7 @@
-import type { StudioSignals } from '@/src/screens/overview/getStudioSignals';
 import { getKilnkinVoiceLine, type KilnkinCompanion } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
-import type { Piece } from '@/src/screens/pieces/types';
+import type { StudioSignals } from '@/src/screens/overview/utils/getStudioSignals';
 import { useAppStore } from '@/src/store';
+import type { Piece } from '@/src/types/pieces';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, View } from 'react-native';
 
