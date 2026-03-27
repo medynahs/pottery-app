@@ -1,10 +1,10 @@
 import { Text } from '@/src/components/ui/text';
-import { getKilnkinVoiceLine } from '@/src/screens/overview/kilnkinCompanion';
+import { getKilnkinVoiceLine } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { BellRing, FlaskConical, MoonStar, PawPrint, Scroll, Soup } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ── Palette ────────────────────────────────────────────────────────────────
@@ -96,7 +96,7 @@ export default function KilnkinProfileScreen() {
 
       {/* ── Portrait panel ── */}
       <View style={{ marginHorizontal: 20, marginTop: 4, borderWidth: 1, borderColor: BORDER, borderRadius: 20, overflow: 'hidden', height: 280 }}>
-        <Image source={require('../../../assets/animations/cinder.gif')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+        {/* <Image source={require('../../../assets/animations/pet.gif')} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> */}
         {/* Mood overlay */}
         <View style={{ position: 'absolute', bottom: 12, alignSelf: 'center', backgroundColor: 'rgba(28,18,8,0.72)', borderWidth: 1, borderColor: BORDER, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }}>
           <Text style={{ color: TEXT_GOLD, fontSize: 12 }}>{mood}</Text>

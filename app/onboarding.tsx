@@ -1,4 +1,4 @@
-import GeneralOnboardingScreen from '@/src/screens/profile/GeneralOnboardingScreen';
+import GeneralOnboardingScreen from '@/src/screens/onboarding/GeneralOnboardingScreen';
 import React from 'react';
 
 export default function OnboardingRoute() {

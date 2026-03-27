@@ -2,11 +2,11 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import type { Tab } from './profile/data';
-import { JourneyTab } from './profile/JourneyTab';
-import { PortfolioTab } from './profile/PortfolioTab';
-import { ProfileHeader } from './profile/ProfileHeader';
-import { TabBar } from './profile/TabBar';
+import { TabBar } from '../config/TabBar';
+import { ProfileHeader } from './overview/profile/components/ProfileHeader';
+import type { Tab } from './overview/profile/mockedData/data';
+import { JourneyTab } from './overview/profile/tabs/JourneyTab';
+import { PortfolioTab } from './overview/profile/tabs/PortfolioTab';
 
 export default function ProfileScreen() {
   const router = useRouter();

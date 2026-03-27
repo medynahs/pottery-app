@@ -5,45 +5,45 @@ import { useAppStore } from '@/src/store/appStore';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import {
-    Droplets,
-    ImagePlus,
-    Plus,
-    Search,
-    Sparkles,
-    Star,
-    X
+  Droplets,
+  ImagePlus,
+  Plus,
+  Search,
+  Sparkles,
+  Star,
+  X
 } from 'lucide-react-native';
 import React from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-    GLAZE_APPLICATION_METHOD_LABELS,
-    GLAZE_APPLICATION_METHOD_OPTIONS,
-    GLAZE_DEFECT_LABELS,
-    GLAZE_DEFECT_OPTIONS,
-    GLAZE_FINISH_LABELS,
-    GLAZE_FINISH_OPTIONS,
-    GLAZE_KILN_TYPE_LABELS,
-    GLAZE_KILN_TYPE_OPTIONS,
-    GLAZE_RESULT_LABELS,
-    GLAZE_RESULT_OPTIONS,
-    GLAZE_SOURCE_LABELS,
-    GLAZE_SOURCE_OPTIONS,
-    GLAZE_THICKNESS_LABELS,
-    GLAZE_THICKNESS_OPTIONS,
-    type GlazeDefect,
-    type GlazeFinish,
-    type GlazeLibraryItem,
-    type GlazeResultRating,
-    type GlazeTestTile,
+  GLAZE_APPLICATION_METHOD_LABELS,
+  GLAZE_APPLICATION_METHOD_OPTIONS,
+  GLAZE_DEFECT_LABELS,
+  GLAZE_DEFECT_OPTIONS,
+  GLAZE_FINISH_LABELS,
+  GLAZE_FINISH_OPTIONS,
+  GLAZE_KILN_TYPE_LABELS,
+  GLAZE_KILN_TYPE_OPTIONS,
+  GLAZE_RESULT_LABELS,
+  GLAZE_RESULT_OPTIONS,
+  GLAZE_SOURCE_LABELS,
+  GLAZE_SOURCE_OPTIONS,
+  GLAZE_THICKNESS_LABELS,
+  GLAZE_THICKNESS_OPTIONS,
+  type GlazeDefect,
+  type GlazeFinish,
+  type GlazeLibraryItem,
+  type GlazeResultRating,
+  type GlazeTestTile,
 } from './glazes/types';
 
 type SortKey = 'recent' | 'name' | 'tests';

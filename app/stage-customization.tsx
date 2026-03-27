@@ -1,3 +1,3 @@
-import StageCustomizationScreen from '@/src/screens/profile/StageCustomizationScreen';
+import StageCustomizationScreen from '@/src/screens/overview/customizationSettings/StageCustomizationScreen';
 
 export default StageCustomizationScreen;

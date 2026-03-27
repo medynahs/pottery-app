@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import type { Piece } from '../pieces/types';
+import type { Piece } from '../../pieces/types';
 
 // Tile accent colours cycling for pieces without photos
 const TILE_PALETTES = [

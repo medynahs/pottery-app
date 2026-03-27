@@ -1,3 +1,3 @@
-import BisqueConeScreen from '@/src/screens/profile/BisqueConeScreen';
+import BisqueConeScreen from '@/src/screens/overview/customizationSettings/BisqueConeScreen';
 
 export default BisqueConeScreen;

@@ -1,3 +1,3 @@
-import StudioRhythmScreen from '@/src/screens/profile/StudioRhythmScreen';
+import StudioRhythmScreen from '@/src/screens/overview/studioRythm/StudioRhythmScreen';
 
 export default StudioRhythmScreen;

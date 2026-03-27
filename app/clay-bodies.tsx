@@ -1,3 +1,3 @@
-import ClayBodiesScreen from '@/src/screens/profile/ClayBodiesScreen';
+import ClayBodiesScreen from '@/src/screens/overview/customizationSettings/ClayBodiesScreen';
 
 export default ClayBodiesScreen;

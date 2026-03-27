@@ -1,11 +1,11 @@
 import { Text } from '@/src/components/ui/text';
-import { generateStudioRhythmSuggestions } from '@/src/screens/overview/generateStudioRhythmSuggestions';
-import { getStudioAlerts } from '@/src/screens/overview/getStudioAlerts';
 import { getTodayMissionKey } from '@/src/screens/overview/missionDate';
-import { getDateKey } from '@/src/screens/overview/studioRhythm';
+import { getStudioAlerts } from '@/src/screens/overview/notifications/getStudioAlerts';
+import { generateStudioRhythmSuggestions } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
+import { getDateKey } from '@/src/screens/overview/studioRythm/studioRhythm';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
-import { BarChart3, BellRing, CalendarDays, ClipboardList, MessageSquarePlus, SlidersHorizontal } from 'lucide-react-native';
+import { BarChart3, BellRing, CalendarDays, ClipboardList, MessageSquarePlus, SlidersHorizontal, Trophy } from 'lucide-react-native';
 import React from 'react';
 import { Alert, Image, Linking, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -140,11 +140,11 @@ export function OverviewPage() {
           </View>
         </TouchableOpacity>
 
-        {/* {activeCommunityChallenge ? (
+        {activeCommunityChallenge ? (
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/community')}
             activeOpacity={0.86}
-            className="absolute left-4 rounded-2xl border border-green-200 bg-card/92 px-3 py-2"
+            className="absolute left-4 rounded-2xl border border-green-200 bg-card px-3 py-2"
             style={{ bottom: 78 }}
             accessibilityRole="button"
             accessibilityLabel="Open active community challenge"
@@ -161,7 +161,7 @@ export function OverviewPage() {
             </Text>
             <Text className="text-[11px] text-primary mt-1">{activeCommunityChallenge.daysLeft} days left · Open in Community</Text>
           </TouchableOpacity>
-        ) : null} */}
+        ) : null}
 
         <View
           className="absolute right-3 rounded-3xl bg-card/85 border border-border px-2 py-2 gap-2"

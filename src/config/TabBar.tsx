@@ -1,7 +1,7 @@
 import { Text } from '@/src/components/ui/text';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
-import type { Tab } from './data';
+import type { Tab } from '../screens/overview/profile/mockedData/data';
 
 export function TabBar({ active, onSelect }: { active: Tab; onSelect: (t: Tab) => void }) {
   const tabs: { key: Tab; label: string }[] = [

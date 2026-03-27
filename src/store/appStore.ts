@@ -4,12 +4,12 @@ import { INITIAL_GLAZES, INITIAL_GLAZE_TESTS } from '../screens/glazes/data';
 import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
 import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
 import type { Firing, FiringState, Kiln, KilnChecklist, KilnType } from '../screens/kiln/types';
-import type { StudioRhythmSuggestionType } from '../screens/overview/generateStudioRhythmSuggestions';
 import {
   DEFAULT_KILNKIN_COMPANION,
   type KilnkinCompanion,
-} from '../screens/overview/kilnkinCompanion';
-import type { StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRhythm';
+} from '../screens/overview/kilnkin/kilnkinCompanion';
+import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
+import type { StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRythm/studioRhythm';
 import { INITIAL_PIECES, STAGES } from '../screens/pieces/constants';
 import {
   applyPricingUserTypePreset,

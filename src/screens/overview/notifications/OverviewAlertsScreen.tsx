@@ -1,7 +1,7 @@
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
-import { getStudioAlerts } from '@/src/screens/overview/getStudioAlerts';
+import { getStudioAlerts } from '@/src/screens/overview/notifications/getStudioAlerts';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { BellRing, CalendarDays, Flame, Gift, PackageOpen } from 'lucide-react-native';

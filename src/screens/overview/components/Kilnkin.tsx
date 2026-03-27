@@ -1,5 +1,5 @@
 import type { StudioSignals } from '@/src/screens/overview/getStudioSignals';
-import { getKilnkinVoiceLine, type KilnkinCompanion } from '@/src/screens/overview/kilnkinCompanion';
+import { getKilnkinVoiceLine, type KilnkinCompanion } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
 import type { Piece } from '@/src/screens/pieces/types';
 import { useAppStore } from '@/src/store';
 import React, { useEffect, useMemo, useRef, useState } from 'react';

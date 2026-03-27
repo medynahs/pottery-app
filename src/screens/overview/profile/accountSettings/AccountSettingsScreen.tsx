@@ -1,18 +1,20 @@
+import { SectionLabel } from '@/src/components/SectionLabel';
+import { SettingsGroup } from '@/src/components/SettingsGroup';
+import { SettingsRow } from '@/src/components/SettingsRow';
 import { Text } from '@/src/components/ui/text';
 import { useRouter } from 'expo-router';
 import {
-    ChevronDown,
-    Globe,
-    HelpCircle,
-    Lock,
-    LogOut,
-    Mail,
-    Shield,
-    Skull,
+  ChevronDown,
+  Globe,
+  HelpCircle,
+  Lock,
+  LogOut,
+  Mail,
+  Shield,
+  Skull,
 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
-import { SectionLabel, SettingsGroup, SettingsRow } from './shared';
 
 export default function AccountSettingsScreen() {
   const router = useRouter();

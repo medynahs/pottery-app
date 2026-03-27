@@ -1,26 +1,29 @@
+import { SectionLabel } from '@/src/components/SectionLabel';
+import { SettingsGroup } from '@/src/components/SettingsGroup';
+import { SettingsRow } from '@/src/components/SettingsRow';
+import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { PRICING_USER_TYPE_LABELS } from '@/src/screens/pieces/pricing';
 import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import {
-    Bell,
-    Box,
-    Calculator,
-    ChevronDown,
-    Clock,
-    Database,
-    Flame,
-    Hammer,
-    Layers,
-    Moon,
-    Palette,
-    Trophy,
-    Zap,
+  Bell,
+  Box,
+  Calculator,
+  Clock,
+  Database,
+  Flame,
+  Hammer,
+  Layers,
+  Moon,
+  Palette,
+  Trophy,
+  Zap
 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
-import { SectionLabel, SettingsGroup, SettingsRow, ToggleRow } from './shared';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type CustomizationNotifState = {
   kilnFinished: boolean;
@@ -31,6 +34,7 @@ export type CustomizationNotifState = {
 
 export default function AppCustomizationScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { enabledStages } = useStageConfig();
   const clayBodies = useAppStore((s) => s.clayBodies);
   const formingMethods = useAppStore((s) => s.formingMethods);
@@ -65,18 +69,18 @@ export default function AppCustomizationScreen() {
           : 'Idle';
 
   return (
-    <View className="flex-1 bg-background">
-      <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="w-10 h-10 items-center justify-center rounded-full bg-muted/60 mr-3"
-        >
-          <ChevronDown size={20} color="hsl(24 30% 40%)" style={{ transform: [{ rotate: '90deg' }] }} />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-lg font-bold text-foreground">App Customization</Text>
-          <Text className="text-xs text-muted-foreground mt-0.5">Studio setup, defaults, and app behavior</Text>
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+
+      <View className="flex-row items-center justify-between px-6 pt-4 pb-2">
+        <View>
+          <Text className="text-xl font-bold text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
+            App Customization
+          </Text>
+          <Text className="text-sm text-muted-foreground mt-0.5">Studio setup, defaults, and app behavior</Text>
         </View>
+        <TouchableOpacity onPress={() => router.back()} className="bg-muted px-4 py-2 rounded-full">
+          <Text className="text-sm font-medium text-foreground">Done</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView className="flex-1 mt-6" showsVerticalScrollIndicator={false}>
@@ -99,51 +103,11 @@ export default function AppCustomizationScreen() {
         </SettingsGroup>
 
         <SectionLabel title="Notifications" />
-        <View className="mx-6 bg-card rounded-2xl border border-border px-4 mb-4">
+        <View className="mx-6 bg-card rounded-2xl border border-border px-4 mb-10">
           <ToggleRow icon={Flame} iconColor="hsl(25 90% 55%)" iconBg="bg-orange-50" label="Kiln Finished" value={notifs.kilnFinished} onToggle={() => toggleNotif('kilnFinished')} />
           <ToggleRow icon={Clock} iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50" label="Drying Alert" value={notifs.pieceDrying} onToggle={() => toggleNotif('pieceDrying')} />
           <ToggleRow icon={Trophy} iconColor="hsl(100 40% 45%)" iconBg="bg-green-50" label="Achievements" value={notifs.achievement} onToggle={() => toggleNotif('achievement')} />
           <ToggleRow icon={Bell} iconColor="hsl(270 60% 55%)" iconBg="bg-purple-50" label="Weekly Summary" value={notifs.weeklySummary} onToggle={() => toggleNotif('weeklySummary')} isLast />
-        </View>
-
-        <SectionLabel title="Backend" />
-        <SettingsGroup>
-          <SettingsRow
-            icon={Database}
-            iconColor="hsl(24 30% 45%)"
-            iconBg="bg-stone-100"
-            label="Users Endpoint"
-            value={`${backendUsers.length} users`}
-          />
-          <SettingsRow
-            icon={Zap}
-            iconColor="hsl(38 80% 50%)"
-            iconBg="bg-amber-50"
-            label="Sync Users Now"
-            value={backendStatusLabel}
-            onPress={() => {
-              void loadBackendUsers();
-            }}
-            isLast
-          />
-        </SettingsGroup>
-
-        <View className="mx-6 bg-card rounded-2xl border border-border px-4 py-3 mb-6">
-          {backendUsersError ? (
-            <Text className="text-xs text-destructive">{backendUsersError}</Text>
-          ) : backendUsers.length === 0 ? (
-            <Text className="text-xs text-muted-foreground">No backend users loaded yet.</Text>
-          ) : (
-            backendUsers.map((backendUser, index) => (
-              <View
-                key={backendUser.id}
-                className={`py-2 ${index < backendUsers.length - 1 ? 'border-b border-border' : ''}`}
-              >
-                <Text className="text-sm font-medium text-foreground">{backendUser.name}</Text>
-                <Text className="text-xs text-muted-foreground">{backendUser.role}</Text>
-              </View>
-            ))
-          )}
         </View>
       </ScrollView>
     </View>

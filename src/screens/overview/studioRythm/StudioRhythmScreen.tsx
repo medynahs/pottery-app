@@ -2,7 +2,7 @@ import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Switch } from '@/src/components/ui/switch';
 import { Text } from '@/src/components/ui/text';
-import { getDateKey, getUpcomingRhythmDates } from '@/src/screens/overview/studioRhythm';
+import { getDateKey, getUpcomingRhythmDates } from '@/src/screens/overview/studioRythm/studioRhythm';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { BellDot, CalendarDays, Plus, Target, Trash2 } from 'lucide-react-native';

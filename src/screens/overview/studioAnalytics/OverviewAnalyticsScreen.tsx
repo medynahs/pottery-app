@@ -14,10 +14,22 @@ export default function OverviewAnalyticsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const pieces = useAppStore((state) => state.pieces);
+  const glazes = useAppStore((state) => state.glazes);
+  const glazeTests = useAppStore((state) => state.glazeTests);
 
   const inProgress = pieces.filter((piece) => ['idea', 'forming', 'leather-hard', 'trimming'].includes(piece.stage)).length;
   const finished = pieces.filter((piece) => piece.stage === 'finished').length;
   const glazeReady = pieces.filter((piece) => piece.stage === 'glaze-fired' || piece.stage === 'bone-dry').length;
+
+  const totalGlazes = glazes.length;
+  const totalGlazeTests = glazeTests.length;
+  const favoriteGlazes = glazes.filter((g) => g.favorite).length;
+  const mostTestedGlaze = glazes
+    .map((g) => ({
+      ...g,
+      testCount: glazeTests.filter((t) => t.glazeId === g.id).length,
+    }))
+    .sort((a, b) => b.testCount - a.testCount)[0];
 
   const badges = [
     { id: 'steady-hands', title: 'Steady Hands', current: inProgress, target: 8 },
@@ -48,6 +60,30 @@ export default function OverviewAnalyticsScreen() {
           <Card className="rounded-2xl border-border bg-card p-4 flex-1 min-w-[45%]">
             <Text className="text-xs text-muted-foreground">Finished</Text>
             <Text className="text-2xl font-serif font-bold text-foreground mt-1">{finished}</Text>
+          </Card>
+        </View>
+
+        {/* Glaze Analytics */}
+        <View className="flex-row flex-wrap gap-3 mb-4">
+          <Card className="rounded-2xl border-border bg-card p-4 flex-1 min-w-[45%]">
+            <Text className="text-xs text-blue-700">Glazes</Text>
+            <Text className="text-2xl font-serif font-bold text-foreground mt-1">{totalGlazes}</Text>
+          </Card>
+          <Card className="rounded-2xl border-border bg-card p-4 flex-1 min-w-[45%]">
+            <Text className="text-xs text-blue-700">Glaze Tests</Text>
+            <Text className="text-2xl font-serif font-bold text-foreground mt-1">{totalGlazeTests}</Text>
+          </Card>
+        </View>
+        <View className="flex-row flex-wrap gap-3 mb-4">
+          <Card className="rounded-2xl border-border bg-card p-4 flex-1 min-w-[45%]">
+            <Text className="text-xs text-blue-700">Favorite Glazes</Text>
+            <Text className="text-2xl font-serif font-bold text-foreground mt-1">{favoriteGlazes}</Text>
+          </Card>
+          <Card className="rounded-2xl border-border bg-card p-4 flex-1 min-w-[45%]">
+            <Text className="text-xs text-blue-700">Most Tested</Text>
+            <Text className="text-base font-serif font-bold text-foreground mt-1">
+              {mostTestedGlaze ? `${mostTestedGlaze.name} (${mostTestedGlaze.testCount})` : '—'}
+            </Text>
           </Card>
         </View>
 

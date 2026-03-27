@@ -1,3 +1,3 @@
-import FormingMethodsScreen from '@/src/screens/profile/FormingMethodsScreen';
+import FormingMethodsScreen from '@/src/screens/overview/customizationSettings/FormingMethodsScreen';
 
 export default FormingMethodsScreen;

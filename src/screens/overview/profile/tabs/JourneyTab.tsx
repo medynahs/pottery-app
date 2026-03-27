@@ -3,7 +3,7 @@ import { Text } from '@/src/components/ui/text';
 import { RefreshCw, Sparkles, Trophy } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
-import { ACHIEVEMENTS, KEY_STATS, TIMELINE } from './data';
+import { ACHIEVEMENTS, KEY_STATS, TIMELINE } from '../mockedData/data';
 
 export function JourneyTab() {
   return (

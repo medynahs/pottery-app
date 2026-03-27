@@ -1,129 +1,62 @@
 import { Text } from '@/src/components/ui/text';
-import { useAppStore } from '@/src/store';
-import { useRouter } from 'expo-router';
-import { BookOpen, ChevronRight, Droplets, Target, Wrench } from 'lucide-react-native';
-import React from 'react';
-import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
+import LibraryGlazesScreen from '@/src/screens/library/LibraryGlazesScreen';
+import LibraryRoadmapsScreen from '@/src/screens/library/LibraryRoadmapsScreen';
+import LibraryTemplatesScreen from '@/src/screens/library/LibraryTemplatesScreen';
+import LibraryToolsScreen from '@/src/screens/library/LibraryToolsScreen';
+import React, { useState } from 'react';
+import { Image, View } from 'react-native';
 
-type LibraryCardItem = {
-  id: 'roadmaps' | 'glazes' | 'tools' | 'templates';
-  title: string;
-  subtitle: string;
-  count: string;
-  route: '/library-roadmaps' | '/library-glazes' | '/library-tools' | '/library-templates';
-  icon: React.ReactNode;
-};
+type JournalTab = 'glazes' | 'roadmaps' | 'tools' | 'templates';
 
-function FeatureCard({
-  item,
-  onPress,
-}: {
-  item: LibraryCardItem;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.84}
-      className="w-[48%] rounded-3xl border border-border bg-card p-4"
-    >
-      <View className="w-10 h-10 rounded-2xl bg-muted items-center justify-center mb-3">
-        {item.icon}
-      </View>
-      <Text className="text-base text-foreground" style={{ fontFamily: 'Fraunces_600SemiBold' }}>
-        {item.title}
-      </Text>
-      <Text className="text-xs text-muted-foreground mt-1" numberOfLines={2}>
-        {item.subtitle}
-      </Text>
-      <View className="flex-row items-center justify-between mt-3">
-        <Text className="text-xs font-semibold text-primary">{item.count}</Text>
-        <ChevronRight size={14} color="hsl(24 20% 40%)" />
-      </View>
-    </TouchableOpacity>
-  );
-}
+const TABS: { key: JournalTab; label: string }[] = [
+  { key: 'glazes', label: 'Glaze Atlas' },
+  { key: 'roadmaps', label: 'Roadmaps' },
+  { key: 'tools', label: 'Tool Guide' },
+  { key: 'templates', label: 'Templates' },
+];
 
 export default function JournalScreen() {
-  const router = useRouter();
-  const glazes = useAppStore((state) => state.glazes);
-
-  const cards = React.useMemo<LibraryCardItem[]>(
-    () => [
-      {
-        id: 'roadmaps',
-        title: 'Roadmaps',
-        subtitle: 'Skill paths and progress',
-        count: '2 paths',
-        route: '/library-roadmaps',
-        icon: <Target size={18} color="hsl(38 80% 50%)" />,
-      },
-      {
-        id: 'glazes',
-        title: 'Glazes',
-        subtitle: 'Recipes, tests, and saves',
-        count: `${glazes.length} glazes`,
-        route: '/library-glazes',
-        icon: <Droplets size={18} color="hsl(213 80% 55%)" />,
-      },
-      {
-        id: 'tools',
-        title: 'Tool Guide',
-        subtitle: 'Essential gear references',
-        count: '2 guides',
-        route: '/library-tools',
-        icon: <Wrench size={18} color="hsl(24 20% 40%)" />,
-      },
-      {
-        id: 'templates',
-        title: 'Templates',
-        subtitle: 'Owned and saved assets',
-        count: '4 assets',
-        route: '/library-templates',
-        icon: <BookOpen size={18} color="hsl(24 20% 40%)" />,
-      },
-    ],
-    [glazes.length],
-  );
+  const [activeTab, setActiveTab] = useState<JournalTab>('glazes');
 
   return (
     <View className="flex-1 bg-background">
       <View className="px-6 pt-16 pb-4 bg-background border-b border-border">
-        <View className="flex-row justify-between items-center">
-          <View className="flex-row items-center gap-3">
-            <Image
-              source={require('../../assets/animations/book.gif')}
-              style={{ width: 42, height: 42 }}
-              resizeMode="contain"
-            />
-            <View>
-
-              <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>Library</Text>
-              <Text className="text-sm text-muted-foreground mt-1">
-                Pick a card to open each library feature.
-              </Text>
-            </View>
+        <View className="flex-row items-center gap-3">
+          <Image
+            source={require('../../assets/animations/book.gif')}
+            style={{ width: 42, height: 42 }}
+            resizeMode="contain"
+          />
+          <View>
+            <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>Library</Text>
+            <Text className="text-sm text-muted-foreground mt-1">
+              Switch between your reference collections.
+            </Text>
           </View>
         </View>
       </View>
 
-
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="px-6 pt-6 pb-8">
-          <Text className="text-xl font-bold text-foreground mb-4" style={{ fontFamily: 'Fraunces_600SemiBold' }}>
-            Collections
-          </Text>
-          <View className="flex-row flex-wrap justify-between gap-y-3">
-            {cards.map((card) => (
-              <FeatureCard
-                key={card.id}
-                item={card}
-                onPress={() => router.push(card.route as never)}
-              />
-            ))}
+      {/* Top Tab Bar */}
+      <View className="mx-6 mt-6 mb-2 flex-row bg-muted rounded-2xl p-1">
+        {TABS.map(({ key, label }) => (
+          <View key={key} style={{ flex: 1 }}>
+            <Text
+              onPress={() => setActiveTab(key)}
+              className={`py-2.5 rounded-xl text-center font-semibold text-sm ${activeTab === key ? 'bg-card text-foreground' : 'text-muted-foreground'}`}
+              style={activeTab === key ? { fontFamily: 'Fraunces_600SemiBold' } : {}}
+            >
+              {label}
+            </Text>
           </View>
-        </View>
-      </ScrollView>
+        ))}
+      </View>
+
+      <View className="flex-1">
+        {activeTab === 'glazes' && <LibraryGlazesScreen />}
+        {activeTab === 'roadmaps' && <LibraryRoadmapsScreen />}
+        {activeTab === 'tools' && <LibraryToolsScreen />}
+        {activeTab === 'templates' && <LibraryTemplatesScreen />}
+      </View>
     </View>
   );
 }
