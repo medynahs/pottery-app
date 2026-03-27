@@ -4,8 +4,9 @@ import { Text } from '@/src/components/ui/text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronUp, Layers, Plus, Search, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
-import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
+import { MainTabHeader } from '../components/MainTabHeader';
 import { AddPieceModal } from './pieces/AddPieceModal';
 import { BatchCard } from './pieces/BatchCard';
 import { CemeteryBanner } from './pieces/CemeteryBanner';
@@ -88,32 +89,8 @@ export default function PiecesScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      {/* Header */}
-       <View className="px-6 pt-16 pb-4 bg-background border-b border-border">
-        <View className="flex-row justify-between items-center">
-          <View className="flex-row items-center gap-3">
-            <Image
-              source={require('../../assets/images/worktable.png')}
-              style={{ width: 42, height: 42 }}
-              resizeMode="contain"
-            />
-            <View>
-              <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>My Pieces</Text>
-              <Text className="text-sm text-muted-foreground mt-0.5">
-                {pieces.length} piece{pieces.length !== 1 ? 's' : ''} ·{' '}
-                {filteredPieces.length} filtered
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            className="w-12 h-12 rounded-2xl bg-primary items-center justify-center shadow-md"
-            onPress={() => setAddOpen(true)}
-          >
-            <Plus size={22} color="white" />
-          </TouchableOpacity>
-        </View>
-        
-      </View>
+      
+      <MainTabHeader title='My Pieces' description={`${pieces.length} piece${pieces.length !== 1 ? 's' : ''} · ${filteredPieces.length} filtered`} pressIcon={<Plus size={16} color="white" />} onPress={() => setAddOpen(true)}  actionText='Add' />
 
       <View className="px-6 pt-4 pb-2 bg-background ">
         <View className="flex-row items-center gap-2">

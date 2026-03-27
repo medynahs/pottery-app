@@ -4,7 +4,8 @@ import LibraryRoadmapsScreen from '@/src/screens/library/LibraryRoadmapsScreen';
 import LibraryTemplatesScreen from '@/src/screens/library/LibraryTemplatesScreen';
 import LibraryToolsScreen from '@/src/screens/library/LibraryToolsScreen';
 import React, { useState } from 'react';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
+import { MainTabHeader } from '../components/MainTabHeader';
 
 type JournalTab = 'glazes' | 'roadmaps' | 'tools' | 'templates';
 
@@ -20,24 +21,11 @@ export default function JournalScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <View className="px-6 pt-16 pb-4 bg-background border-b border-border">
-        <View className="flex-row items-center gap-3">
-          <Image
-            source={require('../../assets/animations/book.gif')}
-            style={{ width: 42, height: 42 }}
-            resizeMode="contain"
-          />
-          <View>
-            <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>Library</Text>
-            <Text className="text-sm text-muted-foreground mt-1">
-              Switch between your reference collections.
-            </Text>
-          </View>
-        </View>
-      </View>
+
+      <MainTabHeader title='My Library' description='Your personal collection of references and resources' />
 
       {/* Top Tab Bar */}
-      <View className="mx-6 mt-6 mb-2 flex-row bg-muted rounded-2xl p-1">
+      <View className="mx-6 mt-4 mb-2 flex-row bg-muted rounded-2xl p-1">
         {TABS.map(({ key, label }) => (
           <View key={key} style={{ flex: 1 }}>
             <Text

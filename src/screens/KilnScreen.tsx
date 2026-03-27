@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { Flame, FlameKindling, Layers, Plus, Thermometer, Zap } from 'lucide-react-native';
 import React from 'react';
 import { Alert, Image, Modal, Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
+import { MainTabHeader } from '../components/MainTabHeader';
 import { AddKilnModal } from './kiln/AddKilnModal';
 import { ActiveFiringCard } from './kiln/components/ActiveFiringCard';
 import { FiringHistoryRow, ScheduledFiringRow } from './kiln/components/FiringRows';
@@ -227,35 +228,11 @@ export default function KilnScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      {/* Header */}
-      <View className="px-6 pt-16 pb-4 bg-background border-b border-border">
-        <View className="flex-row justify-between items-center">
-          <View className="flex-row items-center gap-3">
-            <Image
-              source={require('../../assets/animations/kilnPet.gif')}
-              style={{ width: 42, height: 42 }}
-              resizeMode="contain"
-            />
-            <View>
-              <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>Kiln</Text>
-              <Text className="text-sm text-muted-foreground mt-0.5">
-                {kilns.length} profile{kilns.length !== 1 ? 's' : ''} ·{' '}
-                {activeFirings.length + scheduledFirings.length} open sessions
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            onPress={() => setStartFiringOpen(true)}
-            className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-primary"
-          >
-            <FlameKindling size={16} color="white" />
-            <Text className="text-sm font-semibold text-white">Fire</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+
+      <MainTabHeader title='Kiln' description={`${kilns.length} profile${kilns.length !== 1 ? 's' : ''} · ${activeFirings.length + scheduledFirings.length} open sessions`} actionText='Fire' pressIcon={<FlameKindling size={16} color="white" />} onPress={() => setStartFiringOpen(true)} />
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="px-6 pt-6 pb-10">
+        <View className="px-6 pt-4 pb-10">
           <View className="mb-6">
             <View className="flex-row bg-muted rounded-2xl p-1">
               <TouchableOpacity
@@ -516,23 +493,23 @@ export default function KilnScreen() {
 
               {visibleHistoryGroups.length > 0 ? (
                 visibleHistoryGroups.map((group) => (
-                    <View key={group.kilnId} className="mb-2">
-                      {historyKilnId === 'all' ? (
-                        <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 mt-1">
-                          {group.kilnName}
-                        </Text>
-                      ) : null}
-                      {group.firings.map((firing) => (
-                        <FiringHistoryRow
-                          key={firing.id}
-                          firing={firing}
-                          kilnName={group.kilnName}
-                          summary={firingReceiptSummaryById[firing.id]}
-                          onPress={() => setDetailFiring(firing)}
-                        />
-                      ))}
-                    </View>
-                  ))
+                  <View key={group.kilnId} className="mb-2">
+                    {historyKilnId === 'all' ? (
+                      <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 mt-1">
+                        {group.kilnName}
+                      </Text>
+                    ) : null}
+                    {group.firings.map((firing) => (
+                      <FiringHistoryRow
+                        key={firing.id}
+                        firing={firing}
+                        kilnName={group.kilnName}
+                        summary={firingReceiptSummaryById[firing.id]}
+                        onPress={() => setDetailFiring(firing)}
+                      />
+                    ))}
+                  </View>
+                ))
               ) : (
                 <View className="items-center py-8">
                   <Text className="text-sm text-muted-foreground">No completed firings for this kiln yet.</Text>
