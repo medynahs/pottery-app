@@ -159,27 +159,27 @@ export const CONE_TEMPS_CELSIUS: Record<string, number> = {
   'Cone 012': 861,
   'Cone 011': 875,
   'Cone 010': 893,
-  'Cone 09':  955,
-  'Cone 08':  983,
-  'Cone 07':  1008,
-  'Cone 06':  1023,
-  'Cone 05':  1046,
-  'Cone 04':  1063,
-  'Cone 03':  1101,
-  'Cone 02':  1120,
-  'Cone 01':  1137,
-  'Cone 1':   1154,
-  'Cone 2':   1162,
-  'Cone 3':   1168,
-  'Cone 4':   1186,
-  'Cone 5':   1196,
-  'Cone 6':   1222,
-  'Cone 7':   1240,
-  'Cone 8':   1263,
-  'Cone 9':   1280,
-  'Cone 10':  1305,
-  'Cone 11':  1315,
-  'Cone 12':  1326,
+  'Cone 09': 955,
+  'Cone 08': 983,
+  'Cone 07': 1008,
+  'Cone 06': 1023,
+  'Cone 05': 1046,
+  'Cone 04': 1063,
+  'Cone 03': 1101,
+  'Cone 02': 1120,
+  'Cone 01': 1137,
+  'Cone 1': 1154,
+  'Cone 2': 1162,
+  'Cone 3': 1168,
+  'Cone 4': 1186,
+  'Cone 5': 1196,
+  'Cone 6': 1222,
+  'Cone 7': 1240,
+  'Cone 8': 1263,
+  'Cone 9': 1280,
+  'Cone 10': 1305,
+  'Cone 11': 1315,
+  'Cone 12': 1326,
 };
 
 export const FIRING_TYPES = [
@@ -234,3 +234,13 @@ export const INITIAL_PIECES: Piece[] = [
   { id: 5, name: 'Yunomi Cup', stage: 'glazing', createdAt: '2025-10-20T09:00:00.000Z', timeline: [{ stage: 'forming', timestamp: '2025-10-20T09:00:00.000Z' }, { stage: 'leather-hard', timestamp: '2025-10-21T09:00:00.000Z' }, { stage: 'trimming', timestamp: '2025-10-21T14:00:00.000Z' }, { stage: 'drying', timestamp: '2025-10-22T10:00:00.000Z' }, { stage: 'bone-dry', timestamp: '2025-10-23T09:00:00.000Z' }, { stage: 'bisque', timestamp: '2025-10-25T11:00:00.000Z' }, { stage: 'glazing', timestamp: '2025-10-27T14:00:00.000Z' }], clay: 'B-Mix', weight: '210g', dimensions: '8cm × 9cm', location: 'Glazing Station', imgUrl: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?q=80&w=400&auto=format&fit=crop' },
   { id: 6, name: 'Serving Bowl', stage: 'finished', status: 'Available', createdAt: '2025-10-08T11:00:00.000Z', timeline: [{ stage: 'forming', timestamp: '2025-10-08T11:00:00.000Z' }, { stage: 'leather-hard', timestamp: '2025-10-09T09:00:00.000Z' }, { stage: 'trimming', timestamp: '2025-10-09T15:00:00.000Z' }, { stage: 'drying', timestamp: '2025-10-11T08:00:00.000Z' }, { stage: 'bone-dry', timestamp: '2025-10-12T09:00:00.000Z' }, { stage: 'bisque', timestamp: '2025-10-14T13:00:00.000Z' }, { stage: 'glazing', timestamp: '2025-10-16T10:00:00.000Z' }, { stage: 'glaze-fired', timestamp: '2025-10-18T14:00:00.000Z' }, { stage: 'finished', timestamp: '2025-10-19T10:00:00.000Z' }], clay: 'Porcelain', weight: '480g', dimensions: '28cm × 8cm', price: '85', imgUrl: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?q=80&w=400&auto=format&fit=crop' },
 ];
+
+
+export const STAGE_ICON_MAP = Object.fromEntries(STAGES.map(s => [s.id, s.Icon]));
+export const PAGE_ACCENTS = ['#C97752', '#D49F56', '#8FAE70', '#7D99BD', '#C88290', '#9A846B'];
+
+export const BOOK_ART = {
+  coverIllustration: require('../../../../assets/images/pottery-studio.png'),
+  pageWatermark: require('../../../../assets/images/pottery-wheel.png'),
+  memorialStamp: require('../../../../assets/images/pottery-memorial.png'),
+};

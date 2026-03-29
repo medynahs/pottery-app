@@ -1,0 +1,267 @@
+import { useStageConfig } from '@/src/hooks/useStageConfig';
+import { useAppStore } from '@/src/store/appStore';
+import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
+import {
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react-native';
+import React, { useMemo } from 'react';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ScrollView as ScrollViewType
+} from 'react-native';
+import type { Piece } from '../../../types/pieces';
+import { parseNumericInput, type PricingSaleMode } from '../../../types/pricing';
+import { BinderSpine } from '../components/BinderSpine';
+import { JournalBook } from '../components/JournalBook';
+import { JournalHeader } from '../components/JournalHeader';
+import { JournalNavigation } from '../components/JournalNavigation';
+import { useJournalDrafts } from '../hooks/useJournalDrafts';
+import { useJournalSpreads } from '../hooks/useJournalSpreads';
+import { PAGE_ACCENTS } from '../utils/constants';
+import { formatDuration } from '../utils/journal';
+
+// Memoize stageLabelById outside the component since it only depends on stages
+let memoizedStageLabelById: Record<string, string> | null = null;
+let memoizedStages: any[] | null = null;
+function getStageLabelById(stages: any[]) {
+  if (memoizedStages === stages && memoizedStageLabelById) {
+    return memoizedStageLabelById;
+  }
+  const labels: Record<string, string> = {};
+  for (const stage of stages) {
+    labels[stage.id] = stage.label;
+  }
+  memoizedStages = stages;
+  memoizedStageLabelById = labels;
+  return labels;
+}
+
+interface PieceJournalModalProps {
+  piece: Piece | null;
+  visible: boolean;
+  onClose: () => void;
+  onUpdatePiece: (piece: Piece) => void;
+  onUpdateEntry: (
+    pieceId: number,
+    entryIndex: number,
+    patch: { notes?: string; photo?: string }
+  ) => void;
+}
+
+export function PieceJournalModal({
+  piece,
+  visible,
+  onClose,
+  onUpdatePiece,
+  onUpdateEntry,
+}: PieceJournalModalProps) {
+  const { stages } = useStageConfig();
+  const currencySymbol = useAppStore((state) => state.pricingSettings.currencySymbol);
+  const { width, height } = useWindowDimensions();
+  const isCompact = width < 430;
+  const shellPadding = isCompact ? 10 : 14;
+  const pageInset = isCompact ? 20 : 28;
+  const [activePage, setActivePage] = React.useState(0);
+  const pageScrollRef = React.useRef<ScrollViewType>(null);
+
+  // Custom hook for drafts
+  const { drafts, setDrafts, updateNotes, updatePhoto } = useJournalDrafts(piece, visible);
+
+  React.useEffect(() => {
+    if (visible && piece) {
+      setActivePage(0);
+      requestAnimationFrame(() => pageScrollRef.current?.scrollTo({ x: 0, animated: false }));
+    }
+  }, [piece, visible]);
+
+  const totalMs = useMemo(() => piece ? Date.now() - new Date(piece.createdAt).getTime() : 0, [piece]);
+  const bookWidth = useMemo(() => Math.min(width - (isCompact ? 10 : 18), 940), [width, isCompact]);
+  const bookHeight = useMemo(() => Math.min(height * (isCompact ? 0.84 : 0.8), 760), [height, isCompact]);
+  const pageWidth = useMemo(() => bookWidth - pageInset, [bookWidth, pageInset]);
+
+  // Memoized stageLabelById outside the component
+  const stageLabelById = getStageLabelById(stages);
+
+  // Custom hook for spreads
+  const spreads = useJournalSpreads(piece, drafts, stageLabelById, totalMs);
+
+  const activeSpread = spreads[activePage] ?? spreads[0];
+  const activeSubtitle = activeSpread?.kind === 'cover'
+    ? activeSpread.subtitle
+    : piece
+      ? `${piece.clay} · ${formatDuration(totalMs)} in the making`
+      : '';
+
+  // Update notes using hook and call onUpdateEntry
+  const handleUpdateNotes = React.useCallback((index: number, notes: string) => {
+    if (!piece) return;
+    updateNotes(index, notes);
+    onUpdateEntry(piece.id, index, { notes });
+  }, [piece, updateNotes, onUpdateEntry]);
+
+  // Update photo using hook and call onUpdateEntry
+  const pickPhoto = React.useCallback(async (index: number) => {
+    if (!piece) return;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+      if (!result.canceled) {
+        const uri = result.assets[0].uri;
+        updatePhoto(index, uri);
+        onUpdateEntry(piece.id, index, { photo: uri });
+      }
+    } catch { }
+  }, [piece, updatePhoto, onUpdateEntry]);
+
+  const goToPage = (index: number) => {
+    const clamped = Math.max(0, Math.min(index, spreads.length - 1));
+    setActivePage(clamped);
+    pageScrollRef.current?.scrollTo({ x: clamped * pageWidth, animated: true });
+  };
+
+  const handleMomentumEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const nextPage = Math.round(event.nativeEvent.contentOffset.x / pageWidth);
+    setActivePage(nextPage);
+  };
+
+  const handleChangeSaleMode = React.useCallback((mode: PricingSaleMode) => {
+    if (!piece) return;
+    const retailTarget = piece.retailPriceTarget ?? parseNumericInput(piece.price) ?? piece.suggestedPrice ?? 0;
+    const wholesaleTarget = piece.wholesalePriceTarget ?? piece.wholesalePrice ?? 0;
+    const nextPrice = mode === 'wholesale' ? wholesaleTarget : retailTarget;
+
+    onUpdatePiece({
+      ...piece,
+      salePriceMode: mode,
+      retailPriceTarget: retailTarget || undefined,
+      wholesalePriceTarget: wholesaleTarget || undefined,
+      price: nextPrice > 0 ? String(nextPrice) : undefined,
+    });
+  }, [onUpdatePiece, piece]);
+
+  if (!piece) return null;
+
+  return (
+    <Modal visible={visible} animationType="fade" transparent={false} onRequestClose={onClose} statusBarTranslucent>
+      <LinearGradient
+        colors={['#2D221C', '#4C3226', '#6C4433']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ flex: 1 }}
+      >
+        <View style={{ flex: 1, paddingTop: isCompact ? 48 : 54, paddingHorizontal: isCompact ? 10 : 14, paddingBottom: 18 }}>
+          <JournalHeader piece={piece} isCompact={isCompact} activeSubtitle={activeSubtitle} onClose={onClose} />
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+            <View
+              style={{
+                width: bookWidth,
+                height: bookHeight,
+                alignSelf: 'center',
+                borderRadius: isCompact ? 28 : 34,
+                backgroundColor: '#7B5039',
+                padding: shellPadding,
+                shadowColor: '#160E0A',
+                shadowOpacity: 0.28,
+                shadowRadius: 22,
+                shadowOffset: { width: 0, height: 16 },
+              }}
+            >
+              <LinearGradient
+                colors={['#8F5E44', '#6F4431']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: isCompact ? 28 : 34 }}
+              />
+
+              <View
+                style={{
+                  flex: 1,
+                  overflow: 'hidden',
+                  borderRadius: isCompact ? 22 : 26,
+                  backgroundColor: '#F3E4CB',
+                  borderWidth: 1,
+                  borderColor: '#B78262',
+                }}
+              >
+                <JournalBook
+                  spreads={spreads}
+                  pageWidth={pageWidth}
+                  piece={piece}
+                  totalMs={totalMs}
+                  isCompact={isCompact}
+                  currencySymbol={currencySymbol}
+                  handleChangeSaleMode={handleChangeSaleMode}
+                  pickPhoto={pickPhoto}
+                  handleUpdateNotes={handleUpdateNotes}
+                  pageScrollRef={pageScrollRef}
+                  handleMomentumEnd={handleMomentumEnd}
+                />
+
+                <BinderSpine height={bookHeight} compact={isCompact} />
+
+                <View style={isCompact ? { position: 'absolute', left: 12, bottom: 14 } : { position: 'absolute', left: 12, top: '50%', marginTop: -22 }}>
+                  <TouchableOpacity
+                    onPress={() => goToPage(activePage - 1)}
+                    disabled={activePage === 0}
+                    activeOpacity={0.8}
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 999,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: activePage === 0 ? 'rgba(120, 95, 76, 0.2)' : 'rgba(92, 60, 43, 0.82)',
+                    }}
+                  >
+                    <ChevronLeft size={isCompact ? 16 : 18} color={activePage === 0 ? '#B89A82' : '#FFF5E7'} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={isCompact ? { position: 'absolute', right: 12, bottom: 14 } : { position: 'absolute', right: 12, top: '50%', marginTop: -22 }}>
+                  <TouchableOpacity
+                    onPress={() => goToPage(activePage + 1)}
+                    disabled={activePage === spreads.length - 1}
+                    activeOpacity={0.8}
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 999,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: activePage === spreads.length - 1 ? 'rgba(120, 95, 76, 0.2)' : 'rgba(92, 60, 43, 0.82)',
+                    }}
+                  >
+                    <ChevronRight size={isCompact ? 16 : 18} color={activePage === spreads.length - 1 ? '#B89A82' : '#FFF5E7'} />
+                  </TouchableOpacity>
+                </View>
+
+                <JournalNavigation
+                  activePage={activePage}
+                  totalPages={spreads.length}
+                  goToPage={goToPage}
+                  isCompact={isCompact}
+                  bookHeight={bookHeight}
+                  spreads={spreads}
+                  accent={activeSpread?.accent ?? PAGE_ACCENTS[0]}
+                />
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </LinearGradient>
+    </Modal>
+  );
+}

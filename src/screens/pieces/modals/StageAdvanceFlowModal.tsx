@@ -9,9 +9,9 @@ import type { LucideIcon } from 'lucide-react-native';
 import { ImagePlus, Sparkles, X } from 'lucide-react-native';
 import React from 'react';
 import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, TouchableOpacity, View } from 'react-native';
+import { OptionPills } from '../components/OptionPills';
 import { BISQUE_TEMPS, GLAZE_TEMPS, PIECE_DISPOSITION_STATUSES } from '../utils/constants';
 import { FINISHED_STAGE_ID } from '../utils/stageFlow';
-import { OptionPills } from './OptionPills';
 
 export type StageAdvanceRequest = {
   pieceIds: number[];

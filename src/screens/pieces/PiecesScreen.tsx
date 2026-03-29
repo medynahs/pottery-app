@@ -7,17 +7,17 @@ import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { MainTabHeader } from '../../components/MainTabHeader';
-import { AddPieceModal } from './components/AddPieceModal';
 import { BatchCard } from './components/BatchCard';
 import { CemeteryBanner } from './components/CemeteryBanner';
-import { CemeterySacrificeModal } from './components/CemeterySacrificeModal';
 import { FilterSortSheet } from './components/FilterSortSheet';
 import { PieceActionSheet } from './components/PieceActionSheet';
 import { PieceCard } from './components/PieceCard';
-import { PieceJournalModal } from './components/PieceJournalModal';
-import { StageAdvanceCelebrationModal, type StageAdvanceCelebration } from './components/StageAdvanceCelebrationModal';
-import { StageAdvanceFlowModal } from './components/StageAdvanceFlowModal';
 import { usePiecesScreen } from './hooks/usePiecesScreen';
+import { AddPieceModal } from './modals/AddPieceModal';
+import { CemeterySacrificeModal } from './modals/CemeterySacrificeModal';
+import { PieceJournalModal } from './modals/PieceJournalModal';
+import { StageAdvanceCelebrationModal, type StageAdvanceCelebration } from './modals/StageAdvanceCelebrationModal';
+import { StageAdvanceFlowModal } from './modals/StageAdvanceFlowModal';
 
 const itemLayout = LinearTransition
   .duration(420)

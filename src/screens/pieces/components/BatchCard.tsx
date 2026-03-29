@@ -1,10 +1,10 @@
 import { Badge } from '@/src/components/ui/badge';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
+import { Piece } from '@/src/types/pieces';
 import { ArrowRight, Layers, PackageCheck } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
-import type { Piece } from '../../types/pieces';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
