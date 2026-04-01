@@ -7,7 +7,7 @@ import type { Piece } from '@/src/types/pieces';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Image, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import Svg, { Polygon } from 'react-native-svg';
+import { Polygon } from 'react-native-svg';
 import { getStudioLayerManifest, type StudioDeviceVariant } from './studioScene/layerManifest';
 
 const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
@@ -347,7 +347,7 @@ export function StudioScene({ height }: StudioSceneProps) {
           );
         })}
 
-        {toteHitPolygon ? (
+        {/* {toteHitPolygon ? (
           <Svg
             pointerEvents="none"
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
@@ -363,9 +363,9 @@ export function StudioScene({ height }: StudioSceneProps) {
               strokeOpacity={0.25}
             />
           </Svg>
-        ) : null}
+        ) : null} */}
 
-        {totePolygonBounds ? (
+        {/* {totePolygonBounds ? (
           <TouchableOpacity
             activeOpacity={0.95}
             accessibilityRole="button"
@@ -393,7 +393,7 @@ export function StudioScene({ height }: StudioSceneProps) {
               }
             }}
           />
-        ) : null}
+        ) : null} */}
 
         <Animated.View
           pointerEvents="none"

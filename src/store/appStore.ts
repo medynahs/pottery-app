@@ -4,23 +4,24 @@ import { INITIAL_GLAZES, INITIAL_GLAZE_TESTS } from '../screens/glazes/data';
 import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
 import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
 import {
-  DEFAULT_KILNKIN_COMPANION,
-  type KilnkinCompanion,
+    DEFAULT_KILNKIN_COMPANION,
+    type KilnkinCompanion,
 } from '../screens/overview/kilnkin/kilnkinCompanion';
 import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
-import type { StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRythm/studioRhythm';
+import type { DryingTimers, Ritual, StageDay, StudioEvent, StudioRhythm, StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRythm/studioRhythm';
+import { DEFAULT_STUDIO_RHYTHM, getDateKey } from '../screens/overview/studioRythm/studioRhythm';
 import { INITIAL_PIECES, STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
 import { fetchUsers, type BackendUser } from '../services';
 import type { Firing, FiringState, Kiln, KilnChecklist, KilnType } from '../types/kiln';
 import type { Piece } from '../types/pieces';
 import {
-  applyPricingUserTypePreset,
-  buildDefaultPricingSettings,
-  type PricingFiringMode,
-  type PricingSettings,
-  type PricingTier,
-  type PricingUserType,
+    applyPricingUserTypePreset,
+    buildDefaultPricingSettings,
+    type PricingFiringMode,
+    type PricingSettings,
+    type PricingTier,
+    type PricingUserType,
 } from '../types/pricing';
 import { zustandStorage } from './storage';
 
@@ -277,7 +278,7 @@ interface AppState {
   toggleTask: (index: number) => void;
   addTask: (task: Task) => void;
 
-  // ── Studio Rhythm ────────────────────────────────────────────
+  // ── Studio Rhythm (legacy) ────────────────────────────────────
   studioRhythmConfig: StudioRhythmConfig;
   setStudioRhythmConfig: (patch: Partial<StudioRhythmConfig>) => void;
   addStudioRhythmEvent: (event: Omit<StudioRhythmEvent, 'id'>) => void;
@@ -287,6 +288,20 @@ interface AppState {
   setStudioRhythmGoalTarget: (id: string, targetCount: number) => void;
   dailyMissionCompletion: DailyMissionCompletion;
   toggleDailyMissionCompletion: (dateKey: string, missionType: StudioRhythmSuggestionType) => void;
+
+  // ── Studio Rhythm v2 ──────────────────────────────────────────
+  studioRhythm: StudioRhythm;
+  setStudioRhythmType: (type: StudioRhythm['type']) => void;
+  setStudioRhythmStageDays: (stageDays: StageDay[]) => void;
+  toggleStageDayDay: (stage: StageDay['stage'], day: number) => void;
+  setStudioRhythmDryingTimers: (patch: Partial<DryingTimers>) => void;
+  addStudioEvent: (event: Omit<StudioEvent, 'id'>) => void;
+  removeStudioEvent: (id: string) => void;
+  updateStudioEvent: (id: string, patch: Partial<Omit<StudioEvent, 'id'>>) => void;
+  toggleStudioRitual: (id: string) => void;
+  updateStudioRitual: (id: string, patch: Partial<Omit<Ritual, 'id'>>) => void;
+  setSprintLength: (weeks: number) => void;
+  setSprintGoalPieces: (count: number) => void;
 
   // ── Pieces ────────────────────────────────────────────────────
   pieces: Piece[];
@@ -486,7 +501,7 @@ export const useAppStore = create<AppState>()(
       },
     })),
 
-  // ── Studio Rhythm ─────────────────────────────────────────────
+  // ── Studio Rhythm (legacy) ────────────────────────────────────
   studioRhythmConfig: {
     wheelPractice: true,
     reclaimFocus: false,
@@ -561,6 +576,79 @@ export const useAppStore = create<AppState>()(
         },
       };
     }),
+
+  // ── Studio Rhythm v2 ──────────────────────────────────────────
+  studioRhythm: DEFAULT_STUDIO_RHYTHM,
+  setStudioRhythmType: (type) =>
+    set((state) => ({
+      studioRhythm: {
+        ...state.studioRhythm,
+        type,
+        sprintStartDate:
+          type === 'sprint'
+            ? (state.studioRhythm.sprintStartDate ?? getDateKey())
+            : state.studioRhythm.sprintStartDate,
+      },
+    })),
+  setStudioRhythmStageDays: (stageDays) =>
+    set((state) => ({ studioRhythm: { ...state.studioRhythm, stageDays } })),
+  toggleStageDayDay: (stage, day) =>
+    set((state) => ({
+      studioRhythm: {
+        ...state.studioRhythm,
+        stageDays: state.studioRhythm.stageDays.map((sd) =>
+          sd.stage !== stage
+            ? sd
+            : { ...sd, days: sd.days.includes(day) ? sd.days.filter((d) => d !== day) : [...sd.days, day] }
+        ),
+      },
+    })),
+  setStudioRhythmDryingTimers: (patch) =>
+    set((state) => ({
+      studioRhythm: {
+        ...state.studioRhythm,
+        dryingTimers: { ...state.studioRhythm.dryingTimers, ...patch },
+      },
+    })),
+  addStudioEvent: (event) =>
+    set((state) => ({
+      studioRhythm: {
+        ...state.studioRhythm,
+        events: [...state.studioRhythm.events, { ...event, id: `studio-event-${Date.now()}` }],
+      },
+    })),
+  removeStudioEvent: (id) =>
+    set((state) => ({
+      studioRhythm: {
+        ...state.studioRhythm,
+        events: state.studioRhythm.events.filter((e) => e.id !== id),
+      },
+    })),
+  updateStudioEvent: (id, patch) =>
+    set((state) => ({
+      studioRhythm: {
+        ...state.studioRhythm,
+        events: state.studioRhythm.events.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+      },
+    })),
+  toggleStudioRitual: (id) =>
+    set((state) => ({
+      studioRhythm: {
+        ...state.studioRhythm,
+        rituals: state.studioRhythm.rituals.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r)),
+      },
+    })),
+  updateStudioRitual: (id, patch) =>
+    set((state) => ({
+      studioRhythm: {
+        ...state.studioRhythm,
+        rituals: state.studioRhythm.rituals.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+      },
+    })),
+  setSprintLength: (weeks) =>
+    set((state) => ({ studioRhythm: { ...state.studioRhythm, sprintLengthWeeks: weeks } })),
+  setSprintGoalPieces: (count) =>
+    set((state) => ({ studioRhythm: { ...state.studioRhythm, sprintGoalPieces: count } })),
 
   // ── Tasks ─────────────────────────────────────────────────────
   tasks: [

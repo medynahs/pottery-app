@@ -31,7 +31,7 @@ export function ProfileHeader({
   return (
     <>
       {/* Cover Strip */}
-      <View className="w-full h-40" style={{ backgroundColor: 'hsl(260 15% 48%)' }}>
+      <View className="w-full h-60" style={{ backgroundColor: 'hsl(260 15% 48%)' }}>
         {user.coverImageUri ? (
           <Image source={{ uri: user.coverImageUri }} className="absolute inset-0 w-full h-full" resizeMode="cover" />
         ) : (

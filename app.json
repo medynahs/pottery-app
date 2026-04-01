@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "Pottery Life",
+    "name": "Pottery Nook",
     "slug": "pottery-life",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/logoa.png",
     "scheme": "potterylife",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/logo.png",
-      "resizeMode": "contain",
+      "image": "./assets/images/logoa.png",
+      "resizeMode": "cover",
       "backgroundColor": "#D7682D"
     },
     "ios": {
@@ -32,7 +32,7 @@
     "android": {
       "package": "com.ariane.potterylife",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
+        "foregroundImage": "./assets/images/logoa.png",
         "backgroundColor": "#D7682D"
       },
       "permissions": [
@@ -50,15 +50,15 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/logoa.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/logo.png",
-          "imageWidth": 200,
+          "image": "../assets/images/logoa.png",
+          "imageWidth": 400,
           "resizeMode": "contain",
           "backgroundColor": "#D7682D"
         }

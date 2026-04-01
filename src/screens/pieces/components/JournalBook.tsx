@@ -51,6 +51,7 @@ export function JournalBook({
               compact={isCompact}
               currencySymbol={currencySymbol}
               onChangeSaleMode={handleChangeSaleMode}
+              onPickPhoto={() => pickPhoto(spread.index)}
             />
           ) : (
             <EntrySpread

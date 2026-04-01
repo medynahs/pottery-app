@@ -1,7 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
-import { BookTabs } from '../components/BookTabs';
 import { CompactPageIndicator } from '../components/CompactPageIndicator';
 
 interface JournalNavigationProps {
@@ -23,6 +22,7 @@ export function JournalNavigation({
   spreads,
   accent,
 }: JournalNavigationProps) {
+  
   return (
     <>
       <View style={isCompact ? { position: 'absolute', left: 12, bottom: 14 } : { position: 'absolute', left: 12, top: '50%', marginTop: -22 }}>
@@ -65,7 +65,8 @@ export function JournalNavigation({
         </TouchableOpacity>
       </View>
 
-      <BookTabs spreads={spreads} activePage={activePage} onPress={goToPage} compact={isCompact} />
+      {/* <BookTabs icons={}  spreads={spreads} activePage={activePage} onPress={goToPage} /> */}
+
       {isCompact && spreads.length > 0 ? (
         <CompactPageIndicator
           activePage={activePage}

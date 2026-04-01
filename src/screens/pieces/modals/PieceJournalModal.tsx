@@ -21,6 +21,7 @@ import {
 import type { Piece } from '../../../types/pieces';
 import { parseNumericInput, type PricingSaleMode } from '../../../types/pricing';
 import { BinderSpine } from '../components/BinderSpine';
+import { BookTabs } from '../components/BookTabs';
 import { JournalBook } from '../components/JournalBook';
 import { JournalHeader } from '../components/JournalHeader';
 import { JournalNavigation } from '../components/JournalNavigation';
@@ -28,6 +29,7 @@ import { useJournalDrafts } from '../hooks/useJournalDrafts';
 import { useJournalSpreads } from '../hooks/useJournalSpreads';
 import { PAGE_ACCENTS } from '../utils/constants';
 import { formatDuration } from '../utils/journal';
+import { resolveStageIcon } from '../utils/stageIconUtils';
 
 // Memoize stageLabelById outside the component since it only depends on stages
 let memoizedStageLabelById: Record<string, string> | null = null;
@@ -67,6 +69,7 @@ export function PieceJournalModal({
   const { stages } = useStageConfig();
   const currencySymbol = useAppStore((state) => state.pricingSettings.currencySymbol);
   const { width, height } = useWindowDimensions();
+  const isTablet = width >= 700;
   const isCompact = width < 430;
   const shellPadding = isCompact ? 10 : 14;
   const pageInset = isCompact ? 20 : 28;
@@ -86,13 +89,23 @@ export function PieceJournalModal({
   const totalMs = useMemo(() => piece ? Date.now() - new Date(piece.createdAt).getTime() : 0, [piece]);
   const bookWidth = useMemo(() => Math.min(width - (isCompact ? 10 : 18), 940), [width, isCompact]);
   const bookHeight = useMemo(() => Math.min(height * (isCompact ? 0.84 : 0.8), 760), [height, isCompact]);
-  const pageWidth = useMemo(() => bookWidth - pageInset, [bookWidth, pageInset]);
+  // For tablet, each page is half the book minus insets; for mobile, full width minus insets
+  const pageWidth = useMemo(() => isTablet ? (bookWidth - pageInset * 2) / 2 : bookWidth - pageInset, [bookWidth, pageInset, isTablet]);
 
   // Memoized stageLabelById outside the component
   const stageLabelById = getStageLabelById(stages);
 
   // Custom hook for spreads
   const spreads = useJournalSpreads(piece, drafts, stageLabelById, totalMs);
+
+  // Generate icons for BookTabs: cover gets a default icon, entries get their stage icon
+  const coverIcon = require('lucide-react-native').PackageCheck;
+  const icons = spreads.map((spread) => {
+    if (spread.kind === 'cover') return coverIcon;
+    // Find the stage config for this entry's stage
+    const stageConfig = stages.find((s) => s.id === spread.entry.stage);
+    return stageConfig ? resolveStageIcon(stageConfig) : coverIcon;
+  });
 
   const activeSpread = spreads[activePage] ?? spreads[0];
   const activeSubtitle = activeSpread?.kind === 'cover'
@@ -163,29 +176,24 @@ export function PieceJournalModal({
         style={{ flex: 1 }}
       >
         <View style={{ flex: 1, paddingTop: isCompact ? 48 : 54, paddingHorizontal: isCompact ? 10 : 14, paddingBottom: 18 }}>
-          <JournalHeader piece={piece} isCompact={isCompact} activeSubtitle={activeSubtitle} onClose={onClose} />
+          <JournalHeader piece={piece} isCompact={isCompact} onClose={onClose} />
+          {/* BookTabs on top as book markers */}
+          <BookTabs
+            spreads={spreads}
+            activePage={activePage}
+            onPress={goToPage}
+            icons={icons}
+          />
+
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
             <View
               style={{
                 width: bookWidth,
                 height: bookHeight,
                 alignSelf: 'center',
-                borderRadius: isCompact ? 28 : 34,
-                backgroundColor: '#7B5039',
                 padding: shellPadding,
-                shadowColor: '#160E0A',
-                shadowOpacity: 0.28,
-                shadowRadius: 22,
-                shadowOffset: { width: 0, height: 16 },
               }}
             >
-              <LinearGradient
-                colors={['#8F5E44', '#6F4431']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: isCompact ? 28 : 34 }}
-              />
-
               <View
                 style={{
                   flex: 1,

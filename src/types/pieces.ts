@@ -39,6 +39,7 @@ export type Piece = {
   stage: string;          // physical state (Stage)
   status?: string;        // outcome / condition (PieceStatus)
   createdAt: string;
+  description?: string;
   timeline: TimelineEntry[];
   clay: string;
   photo?: string;
@@ -93,6 +94,7 @@ export type Piece = {
   wholesalePriceTarget?: number;
   batchId?: string;
   batchSize?: number;
+  updatedAt?: string;
 };
 
 export type PieceForm = {
