@@ -28,6 +28,7 @@ export const ACHIEVEMENTS = [
   { icon: Heart,    name: 'Resilient',      desc: '50 failures',   bg: 'bg-pink-50',   border: 'border-pink-200',   iconColor: 'hsl(340 75% 50%)', unlocked: true  },
   { icon: BookOpen, name: 'Record Keeper',  desc: '1 yr journal',  bg: 'bg-green-50',  border: 'border-green-200',  iconColor: 'hsl(145 50% 45%)', unlocked: false },
   { icon: Sparkles, name: 'Perfectionist',  desc: '10 to gallery', bg: 'bg-purple-50', border: 'border-purple-200', iconColor: 'hsl(270 60% 55%)', unlocked: false },
+  { icon: Sparkles, name: 'Giver',  desc: '15 pieces gifted', bg: 'bg-purple-50', border: 'border-purple-200', iconColor: 'hsl(270 60% 55%)', unlocked: false },
 ];
 
 export const TIMELINE = [

@@ -8,7 +8,7 @@
     },
     "orientation": "portrait",
     "icon": "./assets/images/logoa.png",
-    "scheme": "potterylife",
+    "scheme": "potterynook",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/logoa.png",
@@ -62,7 +62,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#D7682D"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

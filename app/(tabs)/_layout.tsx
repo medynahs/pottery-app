@@ -47,7 +47,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="library"
         options={{
-          title: 'Library',
+          title: 'Glaze Atlas',
           tabBarIcon: ({ color }) => <BookOpen size={28} color={color} />,
           href: isModuleEnabled('library') ? undefined : null,
         }}

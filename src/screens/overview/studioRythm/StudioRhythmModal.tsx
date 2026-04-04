@@ -280,6 +280,24 @@ export function StudioRhythmModal({ visible, onClose }: Props) {
                 max={14}
                 onChange={(v) => setDrying({ boneDryDays: v })}
               />
+              <TimerStepper
+                label="Glaze drying"
+                description="Hours after glazing before kiln-ready"
+                value={studioRhythm.dryingTimers.glazeDryingHours}
+                min={1}
+                max={48}
+                unit="h"
+                onChange={(v) => setDrying({ glazeDryingHours: v })}
+              />
+              <TimerStepper
+                label="Post-bisque cooling"
+                description="Hours after bisque firing before safe to glaze"
+                value={studioRhythm.dryingTimers.postBisqueCoolingHours}
+                min={1}
+                max={48}
+                unit="h"
+                onChange={(v) => setDrying({ postBisqueCoolingHours: v })}
+              />
             </ScrollView>
 
             {/* Footer */}
@@ -305,6 +323,7 @@ function TimerStepper({
   value,
   min,
   max,
+  unit = 'd',
   onChange,
 }: {
   label: string;
@@ -312,6 +331,7 @@ function TimerStepper({
   value: number;
   min: number;
   max: number;
+  unit?: string;
   onChange: (v: number) => void;
 }) {
   return (
@@ -331,7 +351,7 @@ function TimerStepper({
             <ChevronDown size={14} color={value <= min ? 'hsl(24 10% 70%)' : 'hsl(24 15% 25%)'} />
           </TouchableOpacity>
           <Text className="text-sm font-semibold text-foreground w-8 text-center">
-            {value}d
+            {value}{unit}
           </Text>
           <TouchableOpacity
             onPress={() => onChange(Math.min(max, value + 1))}

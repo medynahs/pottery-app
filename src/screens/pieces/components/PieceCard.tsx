@@ -6,89 +6,10 @@ import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
 import { parseNumericInput } from '../../../types/pricing';
-import { LIFECYCLE_ORDER, isConditionStatus } from '../utils/constants';
+import { isConditionStatus } from '../utils/constants';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function ClayBeadProgress({
-  stage,
-  lifecycleOrder,
-}: {
-  stage: string;
-  lifecycleOrder?: string[];
-}) {
-  const order = lifecycleOrder && lifecycleOrder.length > 0 ? lifecycleOrder : [...LIFECYCLE_ORDER];
-  const isCemetery = stage === 'cemetery';
-  const stageIndex = order.indexOf(stage);
-  const totalStages = order.length;
-  const beadCount = totalStages;
-  const currentBeadIndex = stageIndex >= 0 ? stageIndex : 0;
-
-  return (
-    <View
-      className="mt-2 flex-row items-center gap-1.5 self-start"
-      accessibilityLabel={isCemetery ? 'Honored piece progress' : `Stage ${stageIndex + 1} of ${totalStages}`}
-    >
-      {Array.from({ length: beadCount }, (_, i) => {
-        const beadState = isCemetery
-          ? 'cemetery'
-          : i < currentBeadIndex
-          ? 'complete'
-          : i === currentBeadIndex
-          ? 'current'
-          : 'upcoming';
-
-        const beadSize = beadState === 'current' ? 12 : 9;
-        const beadColor = beadState === 'complete'
-          ? 'hsl(15 55% 56%)'
-          : beadState === 'current'
-          ? 'hsl(15 50% 50%)'
-          : beadState === 'cemetery'
-          ? 'hsl(24 22% 74%)'
-          : 'hsl(34 28% 82%)';
-        const borderColor = beadState === 'current'
-          ? 'hsl(34 40% 92%)'
-          : beadState === 'upcoming'
-          ? 'hsl(34 24% 78%)'
-          : beadState === 'cemetery'
-          ? 'hsl(24 20% 70%)'
-          : 'transparent';
-
-        return (
-          <View
-            key={i}
-            style={{
-              width: beadSize,
-              height: beadSize,
-              borderRadius: 999,
-              backgroundColor: beadColor,
-              borderWidth: beadState === 'current' || beadState === 'upcoming' || beadState === 'cemetery' ? 1.25 : 0,
-              borderColor,
-              position: 'relative',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <View
-              style={{
-                position: 'absolute',
-                top: beadState === 'current' ? 2.25 : 1.5,
-                left: beadState === 'current' ? 2.25 : 1.5,
-                width: beadState === 'current' ? 3.5 : 2.5,
-                height: beadState === 'current' ? 3.5 : 2.5,
-                borderRadius: 999,
-                backgroundColor: beadState === 'upcoming'
-                  ? 'rgba(255,255,255,0.35)'
-                  : 'rgba(255,255,255,0.55)',
-              }}
-            />
-          </View>
-        );
-      })}
-    </View>
-  );
 }
 
 interface PieceCardProps {
@@ -170,7 +91,7 @@ export function PieceCard({
           <Text className="text-[11px] font-medium text-muted-foreground mt-0.5 uppercase tracking-wide">
             {piece.clay}
           </Text>
-          {(piece.totalCost != null || piece.firingFee != null) ? (
+          {/* {(piece.totalCost != null || piece.firingFee != null) ? (
             <Text className="text-[10px] font-medium text-muted-foreground mt-0.5" numberOfLines={1}>
               {piece.totalCost != null ? `Cost ${piece.totalCost.toFixed(2)}` : 'Cost —'}
               {piece.firingFeeQuoteRequired
@@ -184,11 +105,8 @@ export function PieceCard({
             <Text className="text-[10px] font-medium text-primary mt-0.5" numberOfLines={1}>
               {activeSaleMode === 'wholesale' ? 'Wholesale' : 'Retail'} {activePrice.toFixed(2)}
             </Text>
-          ) : null}
-          <ClayBeadProgress
-            stage={piece.stage}
-            lifecycleOrder={progressStageOrder}
-          />
+          ) : null} */}
+         
           {piece.status ? (
             <View className={`self-start mt-1.5 px-2 py-0.5 rounded-full ${
               isConditionStatus(piece.status)

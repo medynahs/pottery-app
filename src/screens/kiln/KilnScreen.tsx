@@ -1,4 +1,5 @@
 ﻿// src/screens/KilnScreen.tsx
+import { ConfirmSheet } from '@/src/components/AppSheets';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
@@ -6,7 +7,7 @@ import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Flame, FlameKindling, Layers, Plus, Thermometer, Zap } from 'lucide-react-native';
 import React from 'react';
-import { Alert, Image, Modal, Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
 import { MainTabHeader } from '../../components/MainTabHeader';
 import type { Kiln } from '../../types/kiln';
 import type { Piece } from '../../types/pieces';
@@ -66,6 +67,7 @@ export default function KilnScreen() {
   const [showAllReadyPieces, setShowAllReadyPieces] = React.useState(false);
   const [photoPreview, setPhotoPreview] = React.useState<{ uri: string; name: string } | null>(null);
   const [historyKilnId, setHistoryKilnId] = React.useState<string>('all');
+  const [pendingDeleteKiln, setPendingDeleteKiln] = React.useState<Kiln | null>(null);
   const visibleSessionRows = sessionRows.slice(0, 2);
   const hasOpenSessionContent = featuredActiveFiring !== null || sessionRows.length > 0;
 
@@ -216,18 +218,20 @@ export default function KilnScreen() {
   };
 
   const confirmDeleteKiln = (kiln: Kiln) => {
-    Alert.alert(
-      'Delete Kiln',
-      `Delete "${kiln.name}"? All associated firings will also be deleted.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => handleDeleteKiln(kiln) },
-      ]
-    );
+    setPendingDeleteKiln(kiln);
   };
 
   return (
     <View className="flex-1 bg-background">
+      <ConfirmSheet
+        visible={!!pendingDeleteKiln}
+        title="Delete Kiln?"
+        body={pendingDeleteKiln ? `Delete "${pendingDeleteKiln.name}"? All associated firings will also be deleted.` : ''}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => { if (pendingDeleteKiln) handleDeleteKiln(pendingDeleteKiln); setPendingDeleteKiln(null); }}
+        onCancel={() => setPendingDeleteKiln(null)}
+      />
 
       <MainTabHeader title='Kiln' description={`${kilns.length} profile${kilns.length !== 1 ? 's' : ''} · ${activeFirings.length + scheduledFirings.length} open sessions`} actionText='Fire' pressIcon={<FlameKindling size={16} color="white" />} onPress={() => setStartFiringOpen(true)} />
 

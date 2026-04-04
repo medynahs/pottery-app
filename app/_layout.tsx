@@ -16,12 +16,12 @@ import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
 import {
-    DMSans_400Regular,
-    DMSans_500Medium,
+  DMSans_400Regular,
+  DMSans_500Medium,
 } from '@expo-google-fonts/dm-sans';
 import {
-    Fraunces_600SemiBold,
-    Fraunces_700Bold,
+  Fraunces_600SemiBold,
+  Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
 
 // Prevent the splash screen from auto-hiding
@@ -89,7 +89,7 @@ function AppShell() {
         <Stack.Screen name="piece-forms" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="bisque-cone" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="glaze-cone" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="glaze-library" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="glaze-library" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="library-roadmaps" options={{ headerShown: false }} />
         <Stack.Screen name="library-glazes" options={{ headerShown: false }} />
         <Stack.Screen name="library-tools" options={{ headerShown: false }} />
@@ -98,11 +98,12 @@ function AppShell() {
         <Stack.Screen name="pricing-onboarding" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="app-customization" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="account-settings" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="privacy-settings" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="profile/studio-rhythm" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="overview-missions" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="overview-alerts" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="overview-analytics" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="kilnkin" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="login" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="register" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>
       <OfflineBanner />
       <StatusBar style="auto" />

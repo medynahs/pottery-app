@@ -1,17 +1,26 @@
 import { Text } from '@/src/components/ui/text';
-import { getStudioAlerts } from '@/src/screens/overview/notifications/getStudioAlerts';
 import { generateStudioRhythmSuggestions } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
-import { getDateKey } from '@/src/screens/overview/studioRythm/studioRhythm';
+import { EVENT_CATEGORIES, STAGE_CONFIG, getDateKey } from '@/src/screens/overview/studioRythm/studioRhythm';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
-import { BarChart3, BellRing, CalendarDays, ClipboardList, MessageSquarePlus, SlidersHorizontal, Trophy } from 'lucide-react-native';
+import { CalendarDays, Check, Flame, Hammer, MessageSquarePlus, Scissors, Sparkles, Trophy } from 'lucide-react-native';
 import React from 'react';
-import { Alert, Image, Linking, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FeedbackModal } from './components/FeedbackModal';
 import { StudioScene } from './components/StudioScene';
 
-const FEEDBACK_EMAIL = process.env.EXPO_PUBLIC_FEEDBACK_EMAIL ?? 'support@pottery-life.app';
+
+type MissionIcon = React.ComponentType<{ size?: number; color?: string }>;
+const MISSION_META: Record<string, { title: string; Icon: MissionIcon; iconColor: string; chipClassName: string }> = {
+  trim: { title: 'Trim Watch', Icon: Scissors, iconColor: 'hsl(24 75% 45%)', chipClassName: 'bg-orange-50' },
+  reclaim: { title: 'Reclaim Loop', Icon: Hammer, iconColor: 'hsl(35 65% 42%)', chipClassName: 'bg-amber-50' },
+  'wheel-practice': { title: 'Wheel Focus', Icon: Sparkles, iconColor: 'hsl(270 55% 52%)', chipClassName: 'bg-purple-50' },
+  'kiln-check': { title: 'Kiln Check', Icon: Flame, iconColor: 'hsl(16 78% 52%)', chipClassName: 'bg-red-50' },
+  'upcoming-event': { title: 'Calendar Nudge', Icon: CalendarDays, iconColor: 'hsl(213 70% 45%)', chipClassName: 'bg-blue-50' },
+  'goal-focus': { title: 'Weekly Goal', Icon: Trophy, iconColor: 'hsl(44 70% 45%)', chipClassName: 'bg-yellow-50' },
+};
 
 export function OverviewPage() {
   const router = useRouter();
@@ -20,12 +29,13 @@ export function OverviewPage() {
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
   const pieces = useAppStore((state) => state.pieces);
   const firings = useAppStore((state) => state.firings);
-  const studioRhythmConfig = useAppStore((state) => state.studioRhythmConfig);
+  const rhythm = useAppStore((state) => state.studioRhythm);
   const dailyMissionCompletion = useAppStore((state) => state.dailyMissionCompletion);
-  const [sceneHeight, setSceneHeight] = React.useState(0);
+  const toggleDailyMissionCompletion = useAppStore((state) => state.toggleDailyMissionCompletion);
   const todayMissionKey = getTodayMissionKey();
+  const [feedbackOpen, setFeedbackOpen] = React.useState(false);
   const topOverlayOffset = insets.top + 8;
-  const hudRailOffset = insets.top + 60;
+  const missionsTop = insets.top + 60;
   const activeCommunityChallenge = React.useMemo(
     () => ({
       title: 'Underwater Forms Festival',
@@ -36,83 +46,28 @@ export function OverviewPage() {
     []
   );
 
-  const missionsCount = React.useMemo(
-    () => {
-      const suggestions = generateStudioRhythmSuggestions({
-        pieces,
-        firings,
-        routineConfiguration: studioRhythmConfig,
-        upcomingEvents: studioRhythmConfig.scheduledEvents,
-      });
-      const completed = dailyMissionCompletion[todayMissionKey] ?? [];
+  const missionsSummary = React.useMemo(() => {
+    const suggestions = generateStudioRhythmSuggestions({ pieces, firings, rhythm });
+    const completed = dailyMissionCompletion[todayMissionKey] ?? [];
+    const total = suggestions.length;
+    const completedCount = completed.filter((t) => suggestions.some((s) => s.type === t)).length;
+    const all = suggestions.map((s) => ({ ...s, completed: completed.includes(s.type) }));
+    const remaining = all.filter((s) => !s.completed);
+    return { total, completedCount, all, remaining, topMission: remaining[0] ?? null };
+  }, [pieces, firings, rhythm, dailyMissionCompletion, todayMissionKey]);
 
-      return suggestions.filter((suggestion) => !completed.includes(suggestion.type)).length;
-    },
-    [dailyMissionCompletion, firings, pieces, studioRhythmConfig, todayMissionKey]
-  );
-
-  const analyticsAlerts = React.useMemo(() => {
-    const inProgress = pieces.filter((piece) => ['idea', 'forming', 'leather-hard', 'trimming'].includes(piece.stage)).length;
-    const finished = pieces.filter((piece) => piece.stage === 'finished').length;
-    const glazeReady = pieces.filter((piece) => piece.stage === 'glaze-fired' || piece.stage === 'bone-dry').length;
-
-    const completedBadges = [
-      { current: inProgress, target: 8 },
-      { current: glazeReady, target: 5 },
-      { current: finished, target: 12 },
-    ].filter((badge) => badge.current >= badge.target).length;
-
-    return completedBadges;
-  }, [pieces]);
-
-  const calendarNudge = React.useMemo(() => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowKey = getDateKey(tomorrow);
-    const plannedTomorrow = studioRhythmConfig.scheduledEvents.filter((event) => getDateKey(event.date) === tomorrowKey).length;
-    const isDefaultRhythm =
-      studioRhythmConfig.wheelPractice &&
-      !studioRhythmConfig.reclaimFocus &&
-      studioRhythmConfig.preferredTrimAfterDays === 3 &&
-      studioRhythmConfig.weeklyGoals.filter((goal) => goal.active).length <= 1 &&
-      studioRhythmConfig.scheduledEvents.length === 0;
-
-    if (plannedTomorrow > 0) {
-      return plannedTomorrow;
-    }
-
-    return isDefaultRhythm ? 1 : 0;
-  }, [studioRhythmConfig]);
-
-  const studioAlerts = React.useMemo(
-    () => getStudioAlerts({ companion: kilnkinCompanion, pieces, firings, studioRhythmConfig }),
-    [firings, kilnkinCompanion, pieces, studioRhythmConfig]
-  );
-
-  const handleFeedbackPress = React.useCallback(async () => {
-    const feedbackUrl = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent('Pottery Life Feedback')}`;
-
-    try {
-      const supported = await Linking.canOpenURL(feedbackUrl);
-      if (!supported) {
-        Alert.alert('Feedback unavailable', 'Email is not available on this device right now.');
-        return;
-      }
-
-      await Linking.openURL(feedbackUrl);
-    } catch {
-      Alert.alert('Feedback unavailable', 'Could not open feedback email right now.');
-    }
-  }, []);
+  const todayRhythm = React.useMemo(() => {
+    const dow = (new Date().getDay() + 6) % 7;
+    const todayKey = getDateKey();
+    const stages = rhythm.stageDays.filter((sd) => sd.days.includes(dow)).map((sd) => sd.stage);
+    const events = rhythm.events.filter((e) => e.date.slice(0, 10) === todayKey);
+    return { stages, events, isEmpty: stages.length === 0 && events.length === 0 };
+  }, [rhythm]);
 
   return (
     <View
       className="flex-1"
       style={{ backgroundColor: '#EBB23F' }}
-      onLayout={(event) => {
-        const nextHeight = Math.round(event.nativeEvent.layout.height);
-        setSceneHeight((currentHeight) => (currentHeight === nextHeight ? currentHeight : nextHeight));
-      }}
     >
       <View className="relative flex-1 overflow-hidden">
         <StudioScene height={890}  />
@@ -144,7 +99,7 @@ export function OverviewPage() {
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/community')}
             activeOpacity={0.86}
-            className="absolute left-4 rounded-2xl border border-green-200 bg-card px-3 py-2"
+            className="absolute left-4 rounded-2xl border border-green-200 bg-green-50 px-3 py-2"
             style={{ bottom: 78 }}
             accessibilityRole="button"
             accessibilityLabel="Open active community challenge"
@@ -163,83 +118,165 @@ export function OverviewPage() {
           </TouchableOpacity>
         ) : null}
 
-        <View
-          className="absolute right-3 rounded-3xl bg-card/85 border border-border px-2 py-2 gap-2"
-          style={{ top: hudRailOffset }}
-        >
-          <TouchableOpacity
-            onPress={() => router.push('/overview-alerts')}
-            activeOpacity={0.8}
-            className="relative w-11 h-11 rounded-2xl bg-background border border-border items-center justify-center"
-            accessibilityRole="button"
-            accessibilityLabel="Open studio alerts"
-          >
-            <BellRing size={20} color="hsl(24 20% 35%)" />
-            {studioAlerts.length > 0 ? (
-              <View className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-destructive items-center justify-center px-1">
-                <Text className="text-[10px] text-destructive-foreground font-medium">{studioAlerts.length}</Text>
-              </View>
-            ) : null}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push('/overview-missions')}
-            activeOpacity={0.8}
-            className="relative w-11 h-11 rounded-2xl bg-background border border-border items-center justify-center"
-            accessibilityRole="button"
-            accessibilityLabel="Open today missions"
-          >
-            <ClipboardList size={20} color="hsl(24 20% 35%)" />
-            {missionsCount > 0 ? (
-              <View className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-destructive items-center justify-center px-1">
-                <Text className="text-[10px] text-destructive-foreground font-medium">{missionsCount}</Text>
-              </View>
-            ) : null}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push('/overview-analytics')}
-            activeOpacity={0.8}
-            className="relative w-11 h-11 rounded-2xl bg-background border border-border items-center justify-center"
-            accessibilityRole="button"
-            accessibilityLabel="Open studio analytics and badges"
-          >
-            <BarChart3 size={20} color="hsl(24 20% 35%)" />
-            {analyticsAlerts > 0 ? (
-              <View className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-destructive items-center justify-center px-1">
-                <Text className="text-[10px] text-destructive-foreground font-medium">{analyticsAlerts}</Text>
-              </View>
-            ) : null}
-          </TouchableOpacity>
-
+        {/* Missions widget — top-left, full interactive quest board */}
+        {missionsSummary.total === 0 ? (
           <TouchableOpacity
             onPress={() => router.push('/profile/studio-rhythm')}
-            activeOpacity={0.8}
-            className="relative w-11 h-11 rounded-2xl bg-background border border-border items-center justify-center"
+            activeOpacity={0.86}
+            className="absolute left-4 rounded-2xl border border-dashed border-primary/40 bg-card/92 px-4 py-4"
+            style={{ top: missionsTop, right: 16 }}
             accessibilityRole="button"
-            accessibilityLabel="Open routine calendar"
+            accessibilityLabel="Set up Studio Rhythm to get daily missions"
           >
-            <CalendarDays size={20} color="hsl(24 20% 35%)" />
-            {calendarNudge > 0 ? (
-              <View className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-destructive items-center justify-center px-1">
-                <Text className="text-[10px] text-destructive-foreground font-medium">{calendarNudge}</Text>
+            <View className="flex-row items-center gap-2 mb-1.5">
+              <Trophy size={14} color="hsl(36 70% 48%)" />
+              <Text className="text-sm font-serif font-bold text-foreground">Daily Quest Board</Text>
+            </View>
+            <Text className="text-xs text-muted-foreground leading-5 mb-3">
+              No missions yet. Set up your Studio Rhythm to get a daily checklist shaped around your pottery practice.
+            </Text>
+            <View className="flex-row items-center gap-1.5 self-start bg-primary/10 border border-primary/20 rounded-xl px-3 py-1.5">
+              <CalendarDays size={12} color="hsl(38 80% 45%)" />
+              <Text className="text-xs font-semibold text-primary">Set up Studio Rhythm →</Text>
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View
+            className="absolute left-4 rounded-2xl border border-border bg-card/95 overflow-hidden"
+            style={{ top: missionsTop, right: 16, maxHeight: 480 }}
+          >
+            {/* Header */}
+            <View className="flex-row items-center justify-between px-4 pt-3 pb-2">
+              <View className="flex-row items-center gap-2">
+                <Trophy size={14} color="hsl(36 70% 48%)" />
+                <Text className="text-sm font-serif font-bold text-foreground">Daily Quest Board</Text>
               </View>
-            ) : null}
-          </TouchableOpacity>
+              <Text className="text-xs font-semibold text-primary">
+                {missionsSummary.completedCount}/{missionsSummary.total}
+              </Text>
+            </View>
 
-          <TouchableOpacity
-            onPress={() => router.push('/app-customization')}
-            activeOpacity={0.8}
-            className="relative w-11 h-11 rounded-2xl bg-background border border-border items-center justify-center"
-            accessibilityRole="button"
-            accessibilityLabel="Open app customization"
-          >
-            <SlidersHorizontal size={18} color="hsl(24 20% 35%)" />
-          </TouchableOpacity>
-        </View>
+            {/* Progress bar */}
+            <View className="h-1 rounded-full bg-muted mx-4 mb-3 overflow-hidden">
+              <View
+                className="h-full rounded-full bg-primary"
+                style={{
+                  width: `${missionsSummary.total > 0
+                    ? Math.round((missionsSummary.completedCount / missionsSummary.total) * 100)
+                    : 0}%`,
+                }}
+              />
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12 }}
+              nestedScrollEnabled
+            >
+              {missionsSummary.all.map((mission) => {
+                const meta = MISSION_META[mission.type];
+                if (!meta) return null;
+                const Icon = meta.Icon;
+                return (
+                  <View
+                    key={mission.type}
+                    className={`rounded-2xl p-3 mb-2.5 border ${
+                      mission.completed ? 'border-primary/35 bg-primary/5' : 'border-border bg-card'
+                    }`}
+                  >
+                    <View className="flex-row items-start gap-2.5 mb-2">
+                      <View className={`w-9 h-9 rounded-xl items-center justify-center border border-border ${meta.chipClassName}`}>
+                        <Icon size={16} color={meta.iconColor} />
+                      </View>
+                      <View className="flex-1">
+                        <Text className={`text-xs font-semibold ${mission.completed ? 'text-muted-foreground' : 'text-foreground'}`}>
+                          {meta.title}
+                        </Text>
+                        <Text
+                          className={`text-[11px] mt-0.5 leading-4 ${
+                            mission.completed ? 'text-muted-foreground line-through' : 'text-muted-foreground'
+                          }`}
+                        >
+                          {mission.text}
+                        </Text>
+                      </View>
+                      <View
+                        className={`rounded-full px-2 py-0.5 self-start border ${
+                          mission.completed ? 'bg-green-50 border-green-200' : 'bg-muted border-border'
+                        }`}
+                      >
+                        <Text className={`text-[9px] font-medium ${mission.completed ? 'text-green-700' : 'text-muted-foreground'}`}>
+                          {mission.completed ? 'Done' : 'Active'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="flex-row gap-2">
+                      <TouchableOpacity
+                        onPress={() => router.push(mission.route as never)}
+                        activeOpacity={0.8}
+                        className="flex-1 rounded-xl border border-border bg-background py-1.5 items-center justify-center"
+                      >
+                        <Text className="text-[11px] font-medium text-foreground">{mission.actionLabel}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => toggleDailyMissionCompletion(todayMissionKey, mission.type)}
+                        activeOpacity={0.8}
+                        className={`flex-1 rounded-xl py-1.5 items-center justify-center flex-row gap-1 ${
+                          mission.completed ? 'bg-muted border border-border' : 'bg-primary'
+                        }`}
+                      >
+                        <Check size={12} color={mission.completed ? 'hsl(24 20% 35%)' : 'white'} />
+                        <Text className={`text-[11px] font-medium ${mission.completed ? 'text-foreground' : 'text-white'}`}>
+                          {mission.completed ? 'Reopen' : 'Conclude'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Today's Rhythm widget — always visible */}
+        <TouchableOpacity
+          onPress={() => router.push('/profile/studio-rhythm')}
+          activeOpacity={0.86}
+          className="absolute right-4 rounded-2xl border border-border bg-card/92 px-3 py-2.5"
+          style={{ bottom: 60 }}
+          accessibilityRole="button"
+          accessibilityLabel="Open Studio Rhythm planner"
+        >
+          <Text className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Today</Text>
+          {todayRhythm.isEmpty ? (
+            <View className="flex-row items-center gap-1.5">
+              <Text style={{ fontSize: 14 }}>☕</Text>
+              <Text className="text-xs text-muted-foreground">Rest day</Text>
+            </View>
+          ) : (
+            <>
+              {todayRhythm.stages.map((stage) => (
+                <View key={stage} className="flex-row items-center gap-1.5 mb-1">
+                  <Text style={{ fontSize: 14 }}>{STAGE_CONFIG[stage].emoji}</Text>
+                  <Text className="text-xs text-foreground font-medium">{STAGE_CONFIG[stage].label}</Text>
+                </View>
+              ))}
+              {todayRhythm.events.map((event) => {
+                const cat = EVENT_CATEGORIES.find((c) => c.id === event.categoryId);
+                return (
+                  <View key={event.id} className="flex-row items-center gap-1.5 mb-1">
+                    <Text style={{ fontSize: 14 }}>{cat?.emoji ?? '📅'}</Text>
+                    <Text className="text-xs text-foreground font-medium" numberOfLines={1}>{event.name}</Text>
+                  </View>
+                );
+              })}
+            </>
+          )}
+        </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={handleFeedbackPress}
+          onPress={() => setFeedbackOpen(true)}
           activeOpacity={0.86}
           className="absolute right-4 bottom-4 rounded-2xl border border-border bg-card/92 px-3 py-2 flex-row items-center gap-2"
           accessibilityRole="button"
@@ -267,6 +304,7 @@ export function OverviewPage() {
           )}
         </TouchableOpacity>
       </View>
+      <FeedbackModal visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </View>
   );
 }

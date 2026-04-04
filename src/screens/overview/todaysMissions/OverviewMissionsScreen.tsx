@@ -6,7 +6,6 @@ import {
   type StudioRhythmSuggestion,
   type StudioRhythmSuggestionType,
 } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
-import { EVENT_CATEGORIES, STAGE_CONFIG, getDateKey } from '@/src/screens/overview/studioRythm/studioRhythm';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
@@ -72,51 +71,19 @@ export default function OverviewMissionsScreen() {
   const insets = useSafeAreaInsets();
   const pieces = useAppStore((state) => state.pieces);
   const firings = useAppStore((state) => state.firings);
-  const studioRhythmConfig = useAppStore((state) => state.studioRhythmConfig);
   const rhythm = useAppStore((state) => state.studioRhythm);
   const dailyMissionCompletion = useAppStore((state) => state.dailyMissionCompletion);
   const toggleDailyMissionCompletion = useAppStore((state) => state.toggleDailyMissionCompletion);
   const todayMissionKey = getTodayMissionKey();
-
-  // Today's focus banner: derive stage(s) for today + first event today or next upcoming
-  const todayFocus = React.useMemo(() => {
-    const todayKey  = getDateKey();
-    const todayDow  = (new Date().getDay() + 6) % 7; // 0 = Mon
-
-    const todayStages = rhythm.stageDays
-      .filter((sd) => sd.days.includes(todayDow))
-      .map((sd) => STAGE_CONFIG[sd.stage]);
-
-    const sorted = [...rhythm.events].sort((a, b) => a.date.localeCompare(b.date));
-    const todayEvents    = sorted.filter((e) => e.date.slice(0, 10) === todayKey);
-    const upcomingEvents = sorted.filter((e) => e.date.slice(0, 10) > todayKey);
-    const focusEvent     = todayEvents[0] ?? upcomingEvents[0] ?? null;
-    const focusCat       = focusEvent ? EVENT_CATEGORIES.find((c) => c.id === focusEvent.categoryId) : null;
-
-    const isEventToday = !!todayEvents[0];
-
-    // Format event time context
-    let eventLabel: string | null = null;
-    if (focusEvent) {
-      const [y, m, d] = focusEvent.date.slice(0, 10).split('-').map(Number);
-      const dateLabel = isEventToday
-        ? 'Today'
-        : new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      eventLabel = `${focusCat?.emoji ?? '📅'} ${focusEvent.name} · ${dateLabel}`;
-    }
-
-    return { todayStages, eventLabel, hasContent: todayStages.length > 0 || eventLabel !== null };
-  }, [rhythm]);
 
   const suggestions = React.useMemo<StudioRhythmSuggestion[]>(
     () =>
       generateStudioRhythmSuggestions({
         pieces,
         firings,
-        routineConfiguration: studioRhythmConfig,
-        upcomingEvents: studioRhythmConfig.scheduledEvents,
+        rhythm,
       }),
-    [firings, pieces, studioRhythmConfig]
+    [firings, pieces, rhythm]
   );
 
   const completedTypes = dailyMissionCompletion[todayMissionKey] ?? [];
@@ -147,37 +114,6 @@ export default function OverviewMissionsScreen() {
           <Text className="text-sm font-medium text-foreground">Done</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Today's Focus Banner */}
-      {todayFocus.hasContent && (
-        <View className="px-6 pb-3">
-          <View className="rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3 flex-row items-center gap-3">
-            <View className="w-8 h-8 rounded-xl bg-amber-100 items-center justify-center">
-              <CalendarDays size={16} color="#92400e" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-[10px] font-semibold text-amber-700 uppercase tracking-wide mb-0.5">Today</Text>
-              <View className="flex-row items-center flex-wrap gap-x-2 gap-y-1">
-                {todayFocus.todayStages.map((cfg) => (
-                  <View
-                    key={cfg.label}
-                    className="flex-row items-center gap-1 rounded-full px-2 py-0.5"
-                    style={{ backgroundColor: cfg.bg }}
-                  >
-                    <Text style={{ fontSize: 11 }}>{cfg.emoji}</Text>
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: cfg.text }}>{cfg.label} day</Text>
-                  </View>
-                ))}
-                {todayFocus.eventLabel && (
-                  <Text className="text-xs text-amber-900 font-medium" numberOfLines={1}>
-                    {todayFocus.todayStages.length > 0 ? '· ' : ''}{todayFocus.eventLabel}
-                  </Text>
-                )}
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
 
       <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
         {missions.length === 0 ? (

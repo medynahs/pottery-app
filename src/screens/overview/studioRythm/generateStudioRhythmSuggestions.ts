@@ -1,4 +1,4 @@
-import type { StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '@/src/screens/overview/studioRythm/studioRhythm';
+import type { StudioRhythm, StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '@/src/screens/overview/studioRythm/studioRhythm';
 import type { Firing } from '@/src/types/kiln';
 import type { Piece } from '@/src/types/pieces';
 import type { Href } from 'expo-router';
@@ -20,6 +20,8 @@ export type StudioRhythmSuggestion = {
 
 export type GenerateStudioRhythmSuggestionsData = {
   routineConfiguration?: StudioRhythmConfig;
+  /** v2 Studio Rhythm — takes precedence over routineConfiguration when provided */
+  rhythm?: StudioRhythm;
   pieces: Piece[];
   firings: Firing[];
   elapsedTime?: {
@@ -52,6 +54,10 @@ function getCurrentStageEnteredAt(piece: Piece): Date | null {
 
 function diffDays(start: Date, end: Date) {
   return (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+}
+
+function diffHours(start: Date, end: Date) {
+  return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 }
 
 function isWithinNextDays(dateIso: string, from: Date, days: number): boolean {
@@ -146,11 +152,10 @@ export function generateStudioRhythmSuggestions(
   data: GenerateStudioRhythmSuggestionsData
 ): StudioRhythmSuggestion[] {
   const now = data.elapsedTime?.now ?? new Date();
+  const rhythm = data.rhythm;
   const routine = data.routineConfiguration;
-  const trimAfterDays = routine?.preferredTrimAfterDays ?? 3;
+  const trimAfterDays = rhythm?.dryingTimers.leatherHardDays ?? routine?.preferredTrimAfterDays ?? 3;
   const suggestions: StudioRhythmSuggestion[] = [];
-  const activeGoals = routine?.weeklyGoals?.filter((goal) => goal.active) ?? [];
-  const scheduledEvents = data.upcomingEvents ?? routine?.scheduledEvents ?? [];
 
   const dryingTooLongCount = data.pieces.filter((piece) => {
     if (!DRYING_STAGES.has(normalize(piece.stage))) return false;
@@ -162,7 +167,7 @@ export function generateStudioRhythmSuggestions(
   if (dryingTooLongCount > 0) {
     suggestions.push({
       type: 'trim',
-      text: 'A few bowls might be ready to trim.',
+      text: 'A few pieces might be ready to trim.',
       route: '/(tabs)/pieces?stage=drying',
       actionLabel: 'Open Pieces',
     });
@@ -171,7 +176,7 @@ export function generateStudioRhythmSuggestions(
   const trimmingCount = data.pieces.filter((piece) => normalize(piece.stage) === 'trimming').length;
   const failedCount = data.pieces.filter((piece) => ['cracked', 'warped'].includes(normalize(piece.status))).length;
 
-  if (trimmingCount + failedCount >= 5 || routine?.reclaimFocus) {
+  if (trimmingCount + failedCount >= 5) {
     suggestions.push({
       type: 'reclaim',
       text: 'Some scraps could be reclaimed today.',
@@ -180,29 +185,50 @@ export function generateStudioRhythmSuggestions(
     });
   }
 
-  if (routine?.wheelPractice) {
-    suggestions.push({
-      type: 'wheel-practice',
-      text: 'A short cylinder practice could feel grounding today.',
-      route: '/(tabs)/pieces?stage=in-progress',
-      actionLabel: 'Open Pieces',
-    });
-  }
-
-  for (const goal of activeGoals) {
-    const goalSuggestion = buildGoalSuggestion(goal);
-    if (goalSuggestion) {
-      suggestions.push(goalSuggestion);
-    }
-  }
-
   const readyPieces = data.pieces.filter((piece) => READY_FOR_KILN_STAGES.has(normalize(piece.stage))).length;
   const kilnNearTransition = data.firings.some((firing) => {
     const state = normalize(firing.state);
     return state === 'cooling' || state === 'unloading';
   });
 
-  if (readyPieces > 0 || kilnNearTransition) {
+  // Glazed pieces that have dried long enough to be kiln-ready
+  const glazeDryingHours = rhythm?.dryingTimers.glazeDryingHours ?? 8;
+  const glazedAndReadyCount = data.pieces.filter((piece) => {
+    if (normalize(piece.stage) !== 'glazing') return false;
+    const enteredAt = getCurrentStageEnteredAt(piece);
+    if (!enteredAt) return false;
+    return diffHours(enteredAt, now) >= glazeDryingHours;
+  }).length;
+
+  if (glazedAndReadyCount > 0) {
+    suggestions.push({
+      type: 'kiln-check',
+      text: `${glazedAndReadyCount} glazed ${glazedAndReadyCount === 1 ? 'piece looks' : 'pieces look'} dry and kiln-ready.`,
+      route: '/(tabs)/pieces?stage=glazing',
+      actionLabel: 'Open Pieces',
+    });
+  }
+
+  // Bisque firing that has cooled long enough for glazing to begin
+  const postBisqueCoolingHours = rhythm?.dryingTimers.postBisqueCoolingHours ?? 12;
+  const bisqueCooled = data.firings.some((firing) => {
+    if (normalize(firing.type) !== 'bisque') return false;
+    if (firing.state !== 'cooling' && firing.state !== 'unloading') return false;
+    const cooledSince = toDate(firing.completedAt ?? firing.startedAt);
+    if (!cooledSince) return true; // can't determine — assume ready
+    return diffHours(cooledSince, now) >= postBisqueCoolingHours;
+  });
+
+  if (bisqueCooled && !suggestions.some((s) => s.type === 'kiln-check')) {
+    suggestions.push({
+      type: 'kiln-check',
+      text: 'Bisque firing has cooled — pieces should be safe to unload and glaze.',
+      route: '/(tabs)/kiln',
+      actionLabel: 'Open Kiln',
+    });
+  }
+
+  if ((readyPieces > 0 || kilnNearTransition) && !suggestions.some((s) => s.type === 'kiln-check')) {
     suggestions.push({
       type: 'kiln-check',
       text: 'The kiln area might be ready for a quick check.',
@@ -211,9 +237,100 @@ export function generateStudioRhythmSuggestions(
     });
   }
 
-  const nextEvent = scheduledEvents.find((event) => isWithinNextDays(event.date, now, 2));
-  if (nextEvent) {
-    suggestions.push(buildEventSuggestion(nextEvent));
+  if (rhythm) {
+    // v2 path: suggestions derived from today's stage assignments
+    const todayDow = (now.getDay() + 6) % 7; // 0 = Mon
+    const todayStages = rhythm.stageDays
+      .filter((sd) => sd.days.includes(todayDow))
+      .map((sd) => sd.stage);
+
+    if (todayStages.includes('throw') && !suggestions.some((s) => s.type === 'wheel-practice')) {
+      suggestions.push({
+        type: 'wheel-practice',
+        text: 'Today is a throw day — the wheel is calling.',
+        route: '/(tabs)/pieces?stage=in-progress',
+        actionLabel: 'Open Pieces',
+      });
+    }
+
+    if (todayStages.includes('trim') && !suggestions.some((s) => s.type === 'trim')) {
+      suggestions.push({
+        type: 'trim',
+        text: 'Today is a trim day — check your leather-hard pieces.',
+        route: '/(tabs)/pieces?stage=leather-hard',
+        actionLabel: 'Open Pieces',
+      });
+    }
+
+    if (todayStages.includes('glaze')) {
+      suggestions.push({
+        type: 'goal-focus',
+        text: 'Today is a glaze day — lay out your brushes and test tiles.',
+        route: '/(tabs)/pieces?stage=bisque',
+        actionLabel: 'Open Pieces',
+      });
+    }
+
+    if (todayStages.includes('bisque') && !suggestions.some((s) => s.type === 'kiln-check')) {
+      suggestions.push({
+        type: 'kiln-check',
+        text: 'Today is a bisque day — check if any bone-dry pieces are kiln-ready.',
+        route: '/(tabs)/kiln',
+        actionLabel: 'Open Kiln',
+      });
+    }
+
+    const nextV2Event = rhythm.events.find((e) => isWithinNextDays(e.date, now, 2));
+    if (nextV2Event) {
+      suggestions.push({
+        type: 'upcoming-event',
+        text: `${nextV2Event.name} is coming up soon.`,
+        route: '/profile/studio-rhythm',
+        actionLabel: 'Open Calendar',
+      });
+    }
+
+    // Enabled weekly rituals scheduled for today
+    const todayRituals = rhythm.rituals.filter(
+      (r) => r.enabled && r.cadence === 'weekly' && r.dayOfWeek === todayDow
+    );
+    for (const ritual of todayRituals) {
+      suggestions.push({
+        type: 'goal-focus',
+        text: `${ritual.emoji} Today's your ${ritual.label.toLowerCase()} day.`,
+        route: '/profile/studio-rhythm',
+        actionLabel: 'Open Rhythm',
+      });
+    }
+  } else {
+    // Legacy path
+    if (routine?.reclaimFocus && !suggestions.some((s) => s.type === 'reclaim')) {
+      suggestions.push({
+        type: 'reclaim',
+        text: 'Some scraps could be reclaimed today.',
+        route: '/(tabs)/pieces?stage=trimming',
+        actionLabel: 'Open Pieces',
+      });
+    }
+
+    if (routine?.wheelPractice) {
+      suggestions.push({
+        type: 'wheel-practice',
+        text: 'A short cylinder practice could feel grounding today.',
+        route: '/(tabs)/pieces?stage=in-progress',
+        actionLabel: 'Open Pieces',
+      });
+    }
+
+    const activeGoals = routine?.weeklyGoals?.filter((goal) => goal.active) ?? [];
+    for (const goal of activeGoals) {
+      const goalSuggestion = buildGoalSuggestion(goal);
+      if (goalSuggestion) suggestions.push(goalSuggestion);
+    }
+
+    const scheduledEvents = data.upcomingEvents ?? routine?.scheduledEvents ?? [];
+    const nextEvent = scheduledEvents.find((event) => isWithinNextDays(event.date, now, 2));
+    if (nextEvent) suggestions.push(buildEventSuggestion(nextEvent));
   }
 
   const uniqueByType = new Map<string, StudioRhythmSuggestion>();

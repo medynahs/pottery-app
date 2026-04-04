@@ -1,22 +1,23 @@
+import { ConfirmSheet } from '@/src/components/AppSheets';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store/appStore';
 import {
-  applyPricingUserTypePreset,
-  buildDefaultPricingSettings,
-  calculatePiecePricingSnapshot,
-  normalizePricingSettings,
-  parseNumericInput,
-  PRICING_USER_TYPE_LABELS,
-  type PricingFiringMode,
-  type PricingSettings,
-  type PricingTier,
-  type PricingUserType,
+    applyPricingUserTypePreset,
+    buildDefaultPricingSettings,
+    calculatePiecePricingSnapshot,
+    normalizePricingSettings,
+    parseNumericInput,
+    PRICING_USER_TYPE_LABELS,
+    type PricingFiringMode,
+    type PricingSettings,
+    type PricingTier,
+    type PricingUserType,
 } from '@/src/types/pricing';
 import { useRouter } from 'expo-router';
 import { Calculator, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react-native';
 import React from 'react';
-import { Alert, ScrollView, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type TierDraft = {
@@ -214,6 +215,7 @@ export default function PricingRulesScreen() {
 
   const [draft, setDraft] = React.useState<PricingDraft>(() => toDraft(pricingSettings));
   const [openSection, setOpenSection] = React.useState<SectionId>('studio');
+  const [resetConfirmOpen, setResetConfirmOpen] = React.useState(false);
 
   React.useEffect(() => {
     setDraft(toDraft(pricingSettings));
@@ -267,22 +269,20 @@ export default function PricingRulesScreen() {
   };
 
   const handleResetDraft = () => {
-    Alert.alert(
-      'Reset Pricing Rules',
-      'Reset this form to the default pricing profile, cost defaults, and firing formulas?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: () => setDraft(toDraft(buildDefaultPricingSettings())),
-        },
-      ],
-    );
+    setResetConfirmOpen(true);
   };
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+      <ConfirmSheet
+        visible={resetConfirmOpen}
+        title="Reset Pricing Rules?"
+        body="Reset this form to the default pricing profile, cost defaults, and firing formulas?"
+        confirmLabel="Reset"
+        destructive
+        onConfirm={() => { setDraft(toDraft(buildDefaultPricingSettings())); setResetConfirmOpen(false); }}
+        onCancel={() => setResetConfirmOpen(false)}
+      />
       <View className="flex-row items-center justify-between px-6 pt-4 pb-2">
         <View className="pr-4 flex-1">
           <Text className="text-xl font-bold text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>

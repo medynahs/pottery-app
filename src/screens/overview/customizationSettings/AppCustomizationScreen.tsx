@@ -1,36 +1,25 @@
 import { SectionLabel } from '@/src/components/SectionLabel';
 import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { SettingsRow } from '@/src/components/SettingsRow';
-import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
 import { PRICING_USER_TYPE_LABELS } from '@/src/types/pricing';
 import { useRouter } from 'expo-router';
 import {
-  Bell,
   Box,
   Calculator,
-  Clock,
   Database,
   Flame,
   Hammer,
   Layers,
   Moon,
   Palette,
-  Trophy,
   Zap
 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-export type CustomizationNotifState = {
-  kilnFinished: boolean;
-  pieceDrying: boolean;
-  achievement: boolean;
-  weeklySummary: boolean;
-};
 
 export default function AppCustomizationScreen() {
   const router = useRouter();
@@ -47,17 +36,6 @@ export default function AppCustomizationScreen() {
   const backendUsersStatus = useAppStore((s) => s.backendUsersStatus);
   const backendUsersError = useAppStore((s) => s.backendUsersError);
   const loadBackendUsers = useAppStore((s) => s.loadBackendUsers);
-
-  const [notifs, setNotifs] = React.useState<CustomizationNotifState>({
-    kilnFinished: true,
-    pieceDrying: true,
-    achievement: true,
-    weeklySummary: false,
-  });
-
-  const toggleNotif = (key: keyof CustomizationNotifState) => {
-    setNotifs((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
 
   const backendStatusLabel =
     backendUsersStatus === 'loading'
@@ -102,13 +80,7 @@ export default function AppCustomizationScreen() {
           <SettingsRow icon={Palette} iconColor="hsl(15 50% 50%)" iconBg="bg-red-50" label="Accent Color" value="Terracotta" isLast />
         </SettingsGroup>
 
-        <SectionLabel title="Notifications" />
-        <View className="mx-6 bg-card rounded-2xl border border-border px-4 mb-10">
-          <ToggleRow icon={Flame} iconColor="hsl(25 90% 55%)" iconBg="bg-orange-50" label="Kiln Finished" value={notifs.kilnFinished} onToggle={() => toggleNotif('kilnFinished')} />
-          <ToggleRow icon={Clock} iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50" label="Drying Alert" value={notifs.pieceDrying} onToggle={() => toggleNotif('pieceDrying')} />
-          <ToggleRow icon={Trophy} iconColor="hsl(100 40% 45%)" iconBg="bg-green-50" label="Achievements" value={notifs.achievement} onToggle={() => toggleNotif('achievement')} />
-          <ToggleRow icon={Bell} iconColor="hsl(270 60% 55%)" iconBg="bg-purple-50" label="Weekly Summary" value={notifs.weeklySummary} onToggle={() => toggleNotif('weeklySummary')} isLast />
-        </View>
+        <View className="mb-10" />
       </ScrollView>
     </View>
   );

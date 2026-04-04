@@ -3,7 +3,7 @@ import { useAppStore } from '@/src/store';
 import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
-import { Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { LayoutAnimation, Platform, UIManager } from 'react-native';
 import type { DisplayItem, GridRow, Piece } from '../../../types/pieces';
 import { ActiveFilters, EMPTY_FILTERS, SortKey, countActiveFilters } from '../components/FilterSortSheet';
 import type { StageAdvanceCelebration } from '../modals/StageAdvanceCelebrationModal';
@@ -42,6 +42,15 @@ export function usePiecesScreen() {
   const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [advanceRequest, setAdvanceRequest] = React.useState<StageAdvanceRequest | null>(null);
   const scrollRef = React.useRef<ScrollViewType>(null);
+
+  // Lifted out of Alert.alert — screen renders ConfirmSheet / PickSheet for these
+  const [pendingDeletePieceId, setPendingDeletePieceId] = React.useState<number | null>(null);
+  const [pendingAdvanceChoice, setPendingAdvanceChoice] = React.useState<{
+    pieceName: string;
+    batchCount: number;
+    onSingle: () => void;
+    onAll: () => void;
+  } | null>(null);
 
   const activeFilterCount = countActiveFilters(filters);
 
@@ -198,15 +207,15 @@ export function usePiecesScreen() {
   const handleDelete = React.useCallback((pieceId: number) => {
     const piece = pieces.find(p => p.id === pieceId);
     if (!piece) return;
-    Alert.alert(
-      'Delete Piece?',
-      `"${piece.name}" will be permanently removed.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deletePiece(pieceId) },
-      ]
-    );
-  }, [pieces, deletePiece]);
+    setPendingDeletePieceId(pieceId);
+  }, [pieces]);
+
+  const confirmDeletePiece = React.useCallback(() => {
+    if (pendingDeletePieceId != null) deletePiece(pendingDeletePieceId);
+    setPendingDeletePieceId(null);
+  }, [pendingDeletePieceId, deletePiece]);
+
+  const clearPendingDelete = React.useCallback(() => setPendingDeletePieceId(null), []);
 
   const handleDuplicate = React.useCallback((piece: Piece) => {
     duplicatePiece(piece);
@@ -298,29 +307,23 @@ export function usePiecesScreen() {
       );
 
       if (batchMates.length > 1) {
-        Alert.alert(
-          'Advance Piece',
-          `Move just "${piece.name}", or all ${batchMates.length} pieces at this stage in the batch?`,
-          [
-            {
-              text: 'Just this one',
-              onPress: queueSingle,
-            },
-            {
-              text: `All ${batchMates.length} in batch`,
-              onPress: () => {
-                setAdvanceRequest({
-                  pieceIds: batchMates.map((p) => p.id),
-                  fromStage: piece.stage,
-                  toStage,
-                  pieceName: getSetName(piece.name),
-                  count: batchMates.length,
-                  isBatch: true,
-                });
-              },
-            },
-          ]
-        );
+        const onSingle = queueSingle;
+        const onAll = () => {
+          setAdvanceRequest({
+            pieceIds: batchMates.map((p) => p.id),
+            fromStage: piece.stage,
+            toStage,
+            pieceName: getSetName(piece.name),
+            count: batchMates.length,
+            isBatch: true,
+          });
+        };
+        setPendingAdvanceChoice({
+          pieceName: piece.name,
+          batchCount: batchMates.length,
+          onSingle,
+          onAll,
+        });
         return;
       }
     }
@@ -437,6 +440,11 @@ export function usePiecesScreen() {
     handleUpdatePiece,
     handleEditPiece,
     handleDelete,
+    confirmDeletePiece,
+    clearPendingDelete,
+    pendingDeletePieceId,
+    pendingAdvanceChoice,
+    setPendingAdvanceChoice,
     handleDuplicate,
     handleDuplicateBatch,
     handleUpdateJournalEntry,

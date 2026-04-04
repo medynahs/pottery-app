@@ -1,20 +1,20 @@
+import { ConfirmSheet } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { DEFAULT_FORMING_METHODS, type FormingMethod, useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import {
-  ChevronDown,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Trash2,
+    ChevronDown,
+    Pencil,
+    Plus,
+    RotateCcw,
+    Trash2,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 // ─── Forming Method Row ───────────────────────────────────────────────────────
@@ -32,6 +32,7 @@ function FormingMethodRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(method.name);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   function commitRename() {
     const trimmed = draft.trim();
@@ -46,6 +47,15 @@ function FormingMethodRow({
 
   return (
     <View className={!isLast ? 'border-b border-border' : ''}>
+      <ConfirmSheet
+        visible={confirmOpen}
+        title="Remove Forming Method?"
+        body={`Remove "${method.name}"?`}
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => { onRemove(); setConfirmOpen(false); }}
+        onCancel={() => setConfirmOpen(false)}
+      />
       <View className="flex-row items-center gap-3 px-4 py-3.5">
         {/* Icon */}
         <View className="w-9 h-9 rounded-xl items-center justify-center bg-stone-100">
@@ -87,16 +97,7 @@ function FormingMethodRow({
 
         {/* Trash (remove) */}
         <TouchableOpacity
-          onPress={() => {
-            Alert.alert(
-              'Remove Forming Method',
-              `Remove "${method.name}"?`,
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Remove', style: 'destructive', onPress: onRemove },
-              ],
-            );
-          }}
+          onPress={() => setConfirmOpen(true)}
           className="w-7 h-7 items-center justify-center rounded-lg active:bg-muted"
         >
           <Trash2 size={13} color="hsl(0 55% 50%)" />
@@ -172,23 +173,23 @@ export default function FormingMethodsScreen() {
   const removeFormingMethod = useAppStore((s) => s.removeFormingMethod);
   const renameFormingMethod = useAppStore((s) => s.renameFormingMethod);
 
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
   function handleReset() {
-    Alert.alert(
-      'Restore Defaults',
-      'This will replace your forming methods list with the built-in defaults. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Restore',
-          style: 'destructive',
-          onPress: () => useAppStore.setState({ formingMethods: DEFAULT_FORMING_METHODS }),
-        },
-      ],
-    );
+    setResetConfirmOpen(true);
   }
 
   return (
     <View className="flex-1 bg-background">
+      <ConfirmSheet
+        visible={resetConfirmOpen}
+        title="Restore Defaults?"
+        body="This will replace your forming methods list with the built-in defaults."
+        confirmLabel="Restore"
+        destructive
+        onConfirm={() => { useAppStore.setState({ formingMethods: DEFAULT_FORMING_METHODS }); setResetConfirmOpen(false); }}
+        onCancel={() => setResetConfirmOpen(false)}
+      />
       {/* Header */}
       <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
         <TouchableOpacity

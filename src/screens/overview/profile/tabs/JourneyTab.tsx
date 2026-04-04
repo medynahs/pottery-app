@@ -1,23 +1,182 @@
-import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
-import { RefreshCw, Sparkles, Trophy } from 'lucide-react-native';
-import React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
-import { ACHIEVEMENTS, KEY_STATS, TIMELINE } from '../mockedData/data';
+import { useAppStore } from '@/src/store/appStore';
+import { Award, BookOpen, Flame, Layers, Sparkles, Star, TrendingUp, Trophy } from 'lucide-react-native';
+import React, { useMemo } from 'react';
+import { View } from 'react-native';
+
+type BadgeIconComponent = React.ComponentType<{ size?: number; color?: string }>;
+
+interface BadgeDef {
+  id: string;
+  name: string;
+  desc: string;
+  icon: BadgeIconComponent;
+  iconColor: string;
+  bg: string;
+  border: string;
+  current: (ctx: BadgeContext) => number;
+  target: number;
+}
+
+interface BadgeContext {
+  totalPieces: number;
+  finishedPieces: number;
+  glazedPieces: number;
+  bisqueFirings: number;
+  totalFirings: number;
+  piecesWithNotes: number;
+  failedPieces: number;
+}
+
+const BADGE_REGISTRY: BadgeDef[] = [
+  {
+    id: 'first-fire',
+    name: 'First Fire',
+    desc: '1 bisque firing',
+    icon: Flame,
+    iconColor: 'hsl(25 90% 55%)',
+    bg: 'bg-orange-50',
+    border: 'border-orange-200',
+    current: (ctx) => ctx.bisqueFirings,
+    target: 1,
+  },
+  {
+    id: 'centering',
+    name: 'Centering',
+    desc: '50 pieces made',
+    icon: Layers,
+    iconColor: 'hsl(213 80% 55%)',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
+    current: (ctx) => ctx.totalPieces,
+    target: 50,
+  },
+  {
+    id: 'prolific',
+    name: 'Prolific',
+    desc: '150 pieces made',
+    icon: TrendingUp,
+    iconColor: 'hsl(145 50% 45%)',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200',
+    current: (ctx) => ctx.totalPieces,
+    target: 150,
+  },
+  {
+    id: 'kiln-master',
+    name: 'Kiln Master',
+    desc: '25 firings',
+    icon: Trophy,
+    iconColor: 'hsl(38 80% 50%)',
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+    current: (ctx) => ctx.totalFirings,
+    target: 25,
+  },
+  {
+    id: 'glazing-artist',
+    name: 'Glazing Artist',
+    desc: '50 pieces glazed',
+    icon: Star,
+    iconColor: 'hsl(270 60% 55%)',
+    bg: 'bg-purple-50',
+    border: 'border-purple-200',
+    current: (ctx) => ctx.glazedPieces,
+    target: 50,
+  },
+  {
+    id: 'finisher',
+    name: 'Finisher',
+    desc: '30 pieces finished',
+    icon: Award,
+    iconColor: 'hsl(100 40% 45%)',
+    bg: 'bg-green-50',
+    border: 'border-green-200',
+    current: (ctx) => ctx.finishedPieces,
+    target: 30,
+  },
+  {
+    id: 'record-keeper',
+    name: 'Record Keeper',
+    desc: '10 pieces with notes',
+    icon: BookOpen,
+    iconColor: 'hsl(213 70% 45%)',
+    bg: 'bg-sky-50',
+    border: 'border-sky-200',
+    current: (ctx) => ctx.piecesWithNotes,
+    target: 10,
+  },
+  {
+    id: 'resilient',
+    name: 'Resilient',
+    desc: '5 pieces failed',
+    icon: Sparkles,
+    iconColor: 'hsl(340 75% 50%)',
+    bg: 'bg-pink-50',
+    border: 'border-pink-200',
+    current: (ctx) => ctx.failedPieces,
+    target: 5,
+  },
+  {
+    id: 'giver',
+    name: 'Giver',
+    desc: '15 pieces gifted',
+    icon: Sparkles,
+    iconColor: 'hsl(340 75% 50%)',
+    bg: 'bg-pink-50',
+    border: 'border-pink-200',
+    current: (ctx) => ctx.failedPieces,
+    target: 5,
+  },
+];
 
 export function JourneyTab() {
+  const user = useAppStore((s) => s.user);
+  const pieces = useAppStore((s) => s.pieces);
+  const firings = useAppStore((s) => s.firings);
+
+  const ctx = useMemo<BadgeContext>(() => ({
+    totalPieces: pieces.length,
+    finishedPieces: pieces.filter((p) => p.stage === 'finished').length,
+    glazedPieces: pieces.filter((p) => ['glazing', 'glaze-fired'].includes(p.stage)).length,
+    bisqueFirings: firings.filter((f) => f.type === 'bisque').length,
+    totalFirings: firings.length,
+    piecesWithNotes: pieces.filter((p) => p.notes && p.notes.trim().length > 0).length,
+    failedPieces: pieces.filter((p) => p.stage === 'cemetery' || ['cracked', 'warped'].includes(p.status ?? '')).length,
+  }), [pieces, firings]);
+
+  const badges = useMemo(() =>
+    BADGE_REGISTRY.map((b) => {
+      const current = b.current(ctx);
+      const unlocked = current >= b.target;
+      const progress = Math.min(1, current / b.target);
+      return { ...b, current, unlocked, progress };
+    }),
+    [ctx]
+  );
+
+  const unlocked = badges.filter((b) => b.unlocked);
+  const locked = badges.filter((b) => !b.unlocked);
+
   return (
     <View className="px-6">
       {/* Studio Motto */}
       <View className="bg-accent/10 border border-accent/25 rounded-2xl px-4 py-4 mb-5">
         <Text className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">Studio Motto</Text>
-        <Text className="text-sm text-foreground font-serif italic">"Each imperfection is a signature."</Text>
+        <Text className="text-sm text-foreground font-serif italic">
+          {user.bio ? `"${user.bio}"` : '"Each imperfection is a signature."'}
+        </Text>
       </View>
 
-      {/* Stats */}
+      {/* Live stats row */}
       <Text className="text-base font-serif font-bold text-foreground mb-3">Craft Stats</Text>
       <View className="flex-row flex-wrap gap-3 mb-5">
-        {KEY_STATS.map(({ label, value, icon: Icon, color, bg }) => (
+        {[
+          { label: 'Total Pieces', value: ctx.totalPieces, icon: Layers, color: 'hsl(213 80% 55%)', bg: 'bg-blue-50' },
+          { label: 'Finished', value: ctx.finishedPieces, icon: Award, color: 'hsl(100 40% 45%)', bg: 'bg-green-50' },
+          { label: 'Firings', value: ctx.totalFirings, icon: Flame, color: 'hsl(25 90% 55%)', bg: 'bg-orange-50' },
+          { label: 'With Notes', value: ctx.piecesWithNotes, icon: BookOpen, color: 'hsl(213 70% 45%)', bg: 'bg-sky-50' },
+        ].map(({ label, value, icon: Icon, color, bg }) => (
           <View key={label} className={`rounded-2xl border border-border p-4 ${bg}`} style={{ width: '47%' }}>
             <Icon size={18} color={color} style={{ marginBottom: 6 }} />
             <Text className="text-2xl font-serif font-bold text-foreground">{value}</Text>
@@ -26,95 +185,61 @@ export function JourneyTab() {
         ))}
       </View>
 
-      {/* Achievements */}
-      <Text className="text-base font-serif font-bold text-foreground mb-3">Achievements</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        className="-mx-6 mb-5"
-        contentContainerStyle={{ paddingHorizontal: 24, gap: 12 }}
-      >
-        {ACHIEVEMENTS.map(({ icon: Icon, name, desc, bg, border, iconColor, unlocked }) => (
-          <TouchableOpacity
-            key={name}
-            activeOpacity={0.75}
-            className={`w-28 rounded-2xl border px-3 pt-4 pb-3 items-center ${bg} ${border} ${!unlocked ? 'opacity-50' : ''}`}
-          >
-            <View className="w-12 h-12 rounded-full bg-white/60 items-center justify-center mb-2">
-              <Icon size={22} color={unlocked ? iconColor : 'hsl(24 20% 60%)'} />
-            </View>
-            <Text className="text-xs font-bold text-foreground text-center leading-tight">{name}</Text>
-            <Text className="text-xs text-muted-foreground text-center mt-0.5">{desc}</Text>
-            {!unlocked && (
-              <View className="mt-1.5 px-2 py-0.5 bg-black/10 rounded-full">
-                <Text className="text-xs text-muted-foreground">Locked</Text>
+      {/* Earned badges */}
+      {unlocked.length > 0 && (
+        <>
+          <Text className="text-base font-serif font-bold text-foreground mb-3">
+            Badges Earned · {unlocked.length}
+          </Text>
+          <View className="flex-row flex-wrap gap-3 mb-5">
+            {unlocked.map(({ id, name, desc, icon: Icon, iconColor, bg, border }) => (
+              <View
+                key={id}
+                className={`rounded-2xl border px-3 pt-4 pb-3 items-center ${bg} ${border}`}
+                style={{ width: '30%' }}
+              >
+                <View className="w-11 h-11 rounded-full bg-white/70 items-center justify-center mb-2">
+                  <Icon size={20} color={iconColor} />
+                </View>
+                <Text className="text-xs font-bold text-foreground text-center leading-tight">{name}</Text>
+                <Text className="text-[10px] text-muted-foreground text-center mt-0.5">{desc}</Text>
               </View>
-            )}
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+            ))}
+          </View>
+        </>
+      )}
 
-      {/* Timeline */}
-      <Text className="text-base font-serif font-bold text-foreground mb-3">Studio Timeline</Text>
-      <Card className="p-5 mb-5">
-        {TIMELINE.map(({ year, label, color }, i) => (
-          <View key={i} className="flex-row gap-4">
-            <View className="items-center" style={{ width: 20 }}>
-              <View className={`w-3 h-3 rounded-full mt-1 ${color}`} />
-              {i < TIMELINE.length - 1 && <View className="w-px flex-1 bg-border mt-1" />}
-            </View>
-            <View className={`flex-1 ${i < TIMELINE.length - 1 ? 'pb-4' : ''}`}>
-              <Text className="text-xs font-semibold text-primary mb-0.5">{year}</Text>
-              <Text className="text-sm text-foreground leading-relaxed">{label}</Text>
-            </View>
-          </View>
-        ))}
-      </Card>
-
-      {/* Pottery Pet */}
-      <Text className="text-base font-serif font-bold text-foreground mb-3">Pottery Pet</Text>
-      <Card className="overflow-hidden mb-6" style={{ backgroundColor: 'hsl(260 20% 97%)' }}>
-        <View className="flex-row items-center p-5 gap-4">
-          <View
-            className="w-20 h-20 rounded-3xl items-center justify-center border border-border"
-            style={{ backgroundColor: 'hsl(260 15% 88%)' }}
-          >
-            <Text style={{ fontSize: 42 }}>🐾</Text>
-          </View>
-          <View className="flex-1">
-            <View className="flex-row items-center gap-2 mb-1">
-              <Text className="text-base font-bold font-serif text-foreground">Cinder</Text>
-              <View className="px-2 py-0.5 bg-green-100 rounded-full">
-                <Text className="text-xs text-green-700 font-medium">Happy 😊</Text>
+      {/* Locked badges with progress */}
+      {locked.length > 0 && (
+        <>
+          <Text className="text-base font-serif font-bold text-foreground mb-3">
+            In Progress · {locked.length}
+          </Text>
+          <View className="gap-2.5 mb-6">
+            {locked.map(({ id, name, desc, icon: Icon, iconColor, bg, border, current, target, progress }) => (
+              <View key={id} className={`rounded-2xl border px-4 py-3 flex-row items-center gap-3 ${bg} ${border}`}>
+                <View className="w-10 h-10 rounded-xl bg-white/60 items-center justify-center opacity-60">
+                  <Icon size={18} color={iconColor} />
+                </View>
+                <View className="flex-1">
+                  <View className="flex-row items-center justify-between mb-1">
+                    <Text className="text-xs font-bold text-foreground">{name}</Text>
+                    <Text className="text-[10px] text-muted-foreground">{current}/{target}</Text>
+                  </View>
+                  <Text className="text-[10px] text-muted-foreground mb-1.5">{desc}</Text>
+                  <View className="h-1.5 rounded-full bg-black/10 overflow-hidden">
+                    <View
+                      className="h-full rounded-full bg-foreground/25"
+                      style={{ width: `${Math.round(progress * 100)}%` }}
+                    />
+                  </View>
+                </View>
               </View>
-            </View>
-            <Text className="text-xs text-muted-foreground mb-2">Kiln Cat · Lv. 5</Text>
-            <View className="flex-row items-center gap-2">
-              <Text className="text-xs text-muted-foreground">Mood</Text>
-              <View className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                <View className="h-full w-4/5 rounded-full" style={{ backgroundColor: 'hsl(145 50% 45%)' }} />
-              </View>
-              <Text className="text-xs text-muted-foreground">80%</Text>
-            </View>
+            ))}
           </View>
-        </View>
-        <View className="border-t border-border flex-row">
-          {([
-            { label: 'Change Pet',  icon: RefreshCw },
-            { label: 'Accessories', icon: Sparkles  },
-            { label: 'Unlock Pets', icon: Trophy    },
-          ] as const).map(({ label, icon: Icon }, i) => (
-            <TouchableOpacity
-              key={label}
-              activeOpacity={0.7}
-              className={`flex-1 py-3.5 items-center justify-center flex-row gap-1.5 ${i < 2 ? 'border-r border-border' : ''}`}
-            >
-              <Icon size={13} color="hsl(15 50% 50%)" />
-              <Text className="text-xs font-medium text-primary">{label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Card>
+        </>
+      )}
     </View>
   );
 }
+

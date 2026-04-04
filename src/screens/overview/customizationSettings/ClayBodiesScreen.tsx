@@ -1,3 +1,4 @@
+import { ConfirmSheet } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { DEFAULT_CLAY_BODIES, useAppStore, type ClayBody } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
@@ -11,7 +12,6 @@ import {
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  Alert,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -37,6 +37,7 @@ function ClayBodyRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(clay.name);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   function commitRename() {
     const trimmed = draft.trim();
@@ -51,6 +52,15 @@ function ClayBodyRow({
 
   return (
     <View className={!isLast ? 'border-b border-border' : ''}>
+      <ConfirmSheet
+        visible={confirmOpen}
+        title="Remove Clay Body?"
+        body={`Remove "${clay.name}"?`}
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => { onRemove(); setConfirmOpen(false); }}
+        onCancel={() => setConfirmOpen(false)}
+      />
       <View className="flex-row items-center gap-3 px-4 py-3.5">
         {/* Clay icon placeholder */}
         <View className="w-9 h-9 rounded-xl items-center justify-center bg-stone-100">
@@ -112,16 +122,7 @@ function ClayBodyRow({
 
         {/* Trash (remove) */}
         <TouchableOpacity
-          onPress={() => {
-            Alert.alert(
-              'Remove Clay Body',
-              `Remove "${clay.name}"?`,
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Remove', style: 'destructive', onPress: onRemove },
-              ],
-            );
-          }}
+          onPress={() => setConfirmOpen(true)}
           className="w-7 h-7 items-center justify-center rounded-lg active:bg-muted"
         >
           <Trash2 size={13} color="hsl(0 55% 50%)" />
@@ -199,29 +200,23 @@ export default function ClayBodiesScreen() {
   const renameClayBody = useAppStore((s) => s.renameClayBody);
   const setDefaultClayBody = useAppStore((s) => s.setDefaultClayBody);
 
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
   function handleReset() {
-    Alert.alert(
-      'Restore Defaults',
-      'This will replace your clay bodies list with the built-in defaults. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Restore',
-          style: 'destructive',
-          onPress: () => {
-            useAppStore.setState({
-              clayBodies: DEFAULT_CLAY_BODIES,
-              defaultClayBodyId: 'stoneware',
-            });
-          },
-        },
-      ],
-    );
+    setResetConfirmOpen(true);
   }
 
   return (
     <View className="flex-1 bg-background">
-      {/* Header */}
+      <ConfirmSheet
+        visible={resetConfirmOpen}
+        title="Restore Defaults?"
+        body="This will replace your clay bodies list with the built-in defaults."
+        confirmLabel="Restore"
+        destructive
+        onConfirm={() => { useAppStore.setState({ clayBodies: DEFAULT_CLAY_BODIES, defaultClayBodyId: 'stoneware' }); setResetConfirmOpen(false); }}
+        onCancel={() => setResetConfirmOpen(false)}
+      />
       <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
         <TouchableOpacity
           onPress={() => router.back()}

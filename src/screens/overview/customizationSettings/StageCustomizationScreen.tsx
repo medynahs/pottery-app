@@ -1,3 +1,4 @@
+import { ConfirmSheet } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { CEMETERY_ID, type StageConfig, useStageConfig } from '@/src/hooks/useStageConfig';
 import { PICKABLE_ICONS, resolveStageIcon } from '@/src/screens/pieces/utils/stageIconUtils';
@@ -13,7 +14,6 @@ import {
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  Alert,
   ScrollView,
   Switch,
   TextInput,
@@ -65,6 +65,7 @@ function StageRow({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(stage.label);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const Icon = resolveStageIcon(stage);
   const colors = STAGE_COLORS[stage.id] ?? { icon: 'hsl(15 50% 50%)', bg: 'bg-orange-50' };
@@ -79,6 +80,15 @@ function StageRow({
 
   return (
     <View className={dim ? 'opacity-40' : ''}>
+      <ConfirmSheet
+        visible={confirmOpen}
+        title="Remove Stage?"
+        body={`Remove "${stage.label}"?`}
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => { onRemove(); setConfirmOpen(false); }}
+        onCancel={() => setConfirmOpen(false)}
+      />
       <View className="flex-row items-center gap-3 px-4 py-3">
         {/* Reorder buttons */}
         <View className="gap-0.5">
@@ -156,12 +166,7 @@ function StageRow({
               <Pencil size={13} color={editing ? 'hsl(213 80% 55%)' : 'hsl(24 20% 60%)'} />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => {
-                Alert.alert('Remove Stage', `Remove "${stage.label}"?`, [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Remove', style: 'destructive', onPress: onRemove },
-                ]);
-              }}
+              onPress={() => setConfirmOpen(true)}
               className="w-7 h-7 items-center justify-center rounded-lg active:bg-muted"
             >
               <Trash2 size={13} color="hsl(0 55% 50%)" />
@@ -281,19 +286,23 @@ export default function StageCustomizationScreen() {
   const movableStages = stages.filter(s => s.id !== CEMETERY_ID);
   const cemetery = stages.find(s => s.id === CEMETERY_ID);
 
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
   function handleReset() {
-    Alert.alert(
-      'Restore Defaults',
-      'This will reset all stage names and re-enable all stages. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Restore', style: 'destructive', onPress: resetToDefaults },
-      ],
-    );
+    setResetConfirmOpen(true);
   }
 
   return (
     <View className="flex-1 bg-background">
+      <ConfirmSheet
+        visible={resetConfirmOpen}
+        title="Restore Defaults?"
+        body="This will reset all stage names and re-enable all stages."
+        confirmLabel="Restore"
+        destructive
+        onConfirm={() => { resetToDefaults(); setResetConfirmOpen(false); }}
+        onCancel={() => setResetConfirmOpen(false)}
+      />
       {/* Header */}
       <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
         <TouchableOpacity

@@ -1,4 +1,5 @@
 // src/screens/kiln/FiringDetailModal.tsx
+import { ConfirmSheet } from '@/src/components/AppSheets';
 import { Button } from '@/src/components/ui/button';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
@@ -7,7 +8,7 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useAppStore } from '@/src/store';
 import { ChevronRight, Trash2, X } from 'lucide-react-native';
 import React from 'react';
-import { Alert, Modal, ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Modal, ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import type { Firing, FiringResult } from '../../../types/kiln';
 import { FIRING_STATE_LABELS, FIRING_TYPE_LABELS, nextFiringState } from '../constants';
 import { formatReadyDate, getExpectedReadyAt } from '../firingEstimations';
@@ -39,6 +40,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const [selectedResult, setSelectedResult] = React.useState<FiringResult>('success');
   const [showCompletionForm, setShowCompletionForm] = React.useState(false);
   const [showPiecePicker, setShowPiecePicker] = React.useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!visible) {
@@ -90,17 +92,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   };
 
   const handleDelete = () => {
-    Alert.alert('Delete Firing', `Delete "${liveFiring.name}"? This cannot be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          deleteFiring(liveFiring.id);
-          onClose();
-        },
-      },
-    ]);
+    setConfirmDeleteOpen(true);
   };
 
   const toggleAssignPiece = (pieceId: number) => {
@@ -145,6 +137,16 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   };
 
   return (
+    <>
+    <ConfirmSheet
+      visible={confirmDeleteOpen}
+      title="Delete Firing?"
+      body={`Delete "${liveFiring.name}"? This cannot be undone.`}
+      confirmLabel="Delete"
+      destructive
+      onConfirm={() => { deleteFiring(liveFiring.id); setConfirmDeleteOpen(false); onClose(); }}
+      onCancel={() => setConfirmDeleteOpen(false)}
+    />
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={onClose} />
@@ -216,5 +218,6 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
         </View>
       </View>
     </Modal>
+    </>
   );
 }

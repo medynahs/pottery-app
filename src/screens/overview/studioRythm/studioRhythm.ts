@@ -47,6 +47,8 @@ export interface StageDay {
 export interface DryingTimers {
   leatherHardDays: number;
   boneDryDays: number;
+  glazeDryingHours: number;
+  postBisqueCoolingHours: number;
 }
 
 export type EventCategoryId =
@@ -133,7 +135,7 @@ export const DEFAULT_STUDIO_RHYTHM: StudioRhythm = {
     { stage: 'glaze',  days: [4]    },
     { stage: 'bisque', days: []     },
   ],
-  dryingTimers: { leatherHardDays: 2, boneDryDays: 5 },
+  dryingTimers: { leatherHardDays: 2, boneDryDays: 5, glazeDryingHours: 8, postBisqueCoolingHours: 12 },
   rituals: DEFAULT_RITUALS,
   events: [],
 };

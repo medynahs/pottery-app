@@ -22,6 +22,13 @@ export const MainTabHeader = React.memo(function MainTabHeader({ title, descript
                 <TouchableOpacity
                     onPress={onPress}
                     className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-primary"
+                    activeOpacity={0.85}
+                    style={{
+                        flexDirection: 'row', alignItems: 'center', gap: 8,
+                        backgroundColor: '#C9963A', borderRadius: 20,
+                        paddingHorizontal: 20, paddingVertical: 14,
+                        shadowColor: '#8B6A2A', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4,
+                    }}
                 >
                     {pressIcon}
                     <Text className="text-sm font-semibold text-white">{actionText}</Text>

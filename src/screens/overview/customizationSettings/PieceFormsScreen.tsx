@@ -1,20 +1,20 @@
+import { ConfirmSheet } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { DEFAULT_PIECE_FORM_OPTIONS, type PieceFormOption, useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import {
-  ChevronDown,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Trash2,
+    ChevronDown,
+    Pencil,
+    Plus,
+    RotateCcw,
+    Trash2,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 // ─── Form Option Row ──────────────────────────────────────────────────────────
@@ -32,6 +32,7 @@ function FormOptionRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(option.name);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   function commitRename() {
     const trimmed = draft.trim();
@@ -46,6 +47,15 @@ function FormOptionRow({
 
   return (
     <View className={!isLast ? 'border-b border-border' : ''}>
+      <ConfirmSheet
+        visible={confirmOpen}
+        title="Remove Form?"
+        body={`Remove "${option.name}"?`}
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => { onRemove(); setConfirmOpen(false); }}
+        onCancel={() => setConfirmOpen(false)}
+      />
       <View className="flex-row items-center gap-3 px-4 py-3.5">
         <View className="w-9 h-9 rounded-xl items-center justify-center bg-stone-100">
           <Text className="text-base">🫙</Text>
@@ -83,12 +93,7 @@ function FormOptionRow({
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => {
-            Alert.alert('Remove Form', `Remove "${option.name}"?`, [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Remove', style: 'destructive', onPress: onRemove },
-            ]);
-          }}
+          onPress={() => setConfirmOpen(true)}
           className="w-7 h-7 items-center justify-center rounded-lg active:bg-muted"
         >
           <Trash2 size={13} color="hsl(0 55% 50%)" />
@@ -159,23 +164,23 @@ export default function PieceFormsScreen() {
   const removePieceFormOption = useAppStore((s) => s.removePieceFormOption);
   const renamePieceFormOption = useAppStore((s) => s.renamePieceFormOption);
 
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
   function handleReset() {
-    Alert.alert(
-      'Restore Defaults',
-      'This will replace your forms list with the built-in defaults. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Restore',
-          style: 'destructive',
-          onPress: () => useAppStore.setState({ pieceFormOptions: DEFAULT_PIECE_FORM_OPTIONS }),
-        },
-      ],
-    );
+    setResetConfirmOpen(true);
   }
 
   return (
     <View className="flex-1 bg-background">
+      <ConfirmSheet
+        visible={resetConfirmOpen}
+        title="Restore Defaults?"
+        body="This will replace your forms list with the built-in defaults."
+        confirmLabel="Restore"
+        destructive
+        onConfirm={() => { useAppStore.setState({ pieceFormOptions: DEFAULT_PIECE_FORM_OPTIONS }); setResetConfirmOpen(false); }}
+        onCancel={() => setResetConfirmOpen(false)}
+      />
       <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
         <TouchableOpacity
           onPress={() => router.back()}

@@ -1,50 +1,56 @@
-import { Text } from '@/src/components/ui/text';
+import GlazeDiscoverScreen from '@/src/screens/library/GlazeDiscoverScreen';
 import LibraryGlazesScreen from '@/src/screens/library/LibraryGlazesScreen';
-import LibraryRoadmapsScreen from '@/src/screens/library/LibraryRoadmapsScreen';
-import LibraryTemplatesScreen from '@/src/screens/library/LibraryTemplatesScreen';
-import LibraryToolsScreen from '@/src/screens/library/LibraryToolsScreen';
+// V2: import LibraryRoadmapsScreen from '@/src/screens/library/LibraryRoadmapsScreen';
+// V2: import LibraryTemplatesScreen from '@/src/screens/library/LibraryTemplatesScreen';
+// V2: import LibraryToolsScreen from '@/src/screens/library/LibraryToolsScreen';
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { MainTabHeader } from '../../components/MainTabHeader';
+import { Text } from '../../components/ui/text';
 
-type JournalTab = 'glazes' | 'roadmaps' | 'tools' | 'templates';
+type AtlasTab = 'my-atlas' | 'discover';
 
-const TABS: { key: JournalTab; label: string }[] = [
-  { key: 'glazes', label: 'Glaze Atlas' },
-  { key: 'roadmaps', label: 'Roadmaps' },
-  { key: 'tools', label: 'Tool Guide' },
-  { key: 'templates', label: 'Templates' },
+const TABS: { key: AtlasTab; label: string }[] = [
+  { key: 'my-atlas', label: 'My Atlas' },
+  { key: 'discover', label: 'Discover' },
 ];
 
 export default function JournalScreen() {
-  const [activeTab, setActiveTab] = useState<JournalTab>('glazes');
+  const [activeTab, setActiveTab] = useState<AtlasTab>('my-atlas');
 
   return (
     <View className="flex-1 bg-background">
+      <MainTabHeader
+        title="Glaze Atlas"
+        description={activeTab === 'my-atlas' ? 'Your personal collection of glazes and test tiles' : 'Browse and save community recipes'}
+      />
 
-      <MainTabHeader title='My Library' description='Your personal collection of references and resources' />
-
-      {/* Top Tab Bar */}
-      <View className="mx-6 mt-4 mb-2 flex-row bg-muted rounded-2xl p-1">
+      {/* Segment switcher */}
+      <View className="mx-6 mt-4 mb-1 flex-row bg-muted rounded-2xl p-1">
         {TABS.map(({ key, label }) => (
-          <View key={key} style={{ flex: 1 }}>
+          <TouchableOpacity
+            key={key}
+            onPress={() => setActiveTab(key)}
+            activeOpacity={0.75}
+            style={{ flex: 1 }}
+            className={`py-2.5 rounded-xl items-center justify-center ${activeTab === key ? 'bg-card' : ''}`}
+          >
             <Text
-              onPress={() => setActiveTab(key)}
-              className={`py-2.5 rounded-xl text-center font-semibold text-sm ${activeTab === key ? 'bg-card text-foreground' : 'text-muted-foreground'}`}
+              className={`text-sm font-semibold ${activeTab === key ? 'text-foreground' : 'text-muted-foreground'}`}
               style={activeTab === key ? { fontFamily: 'Fraunces_600SemiBold' } : {}}
             >
               {label}
             </Text>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
 
       <View className="flex-1">
-        {activeTab === 'glazes' && <LibraryGlazesScreen />}
-        {activeTab === 'roadmaps' && <LibraryRoadmapsScreen />}
-        {activeTab === 'tools' && <LibraryToolsScreen />}
-        {activeTab === 'templates' && <LibraryTemplatesScreen />}
+        {activeTab === 'my-atlas' ? <LibraryGlazesScreen /> : <GlazeDiscoverScreen />}
+        {/* V2: roadmaps, tools, templates tabs restored here */}
       </View>
     </View>
   );
 }
+
+

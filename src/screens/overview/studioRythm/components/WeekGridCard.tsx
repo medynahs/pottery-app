@@ -5,7 +5,7 @@ import { Pencil, Shuffle, Zap } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import type { StageKey, StudioRhythm } from '../studioRhythm';
+import type { Ritual, StageKey, StudioRhythm } from '../studioRhythm';
 import { EVENT_CATEGORIES, STAGE_CONFIG, getDateKey } from '../studioRhythm';
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -17,6 +17,7 @@ interface WeekGridCardProps {
   rhythm: StudioRhythm;
   onEditPress: () => void;
   pieces?: Piece[];
+  rituals?: Ritual[];
 }
 
 function addDays(dateStr: string, n: number): string {
@@ -30,10 +31,13 @@ function formatShort(dateStr: string) {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export function WeekGridCard({ rhythm, onEditPress, pieces = [] }: WeekGridCardProps) {
+export function WeekGridCard({ rhythm, onEditPress, pieces = [], rituals = [] }: WeekGridCardProps) {
   const stageDayMap = Object.fromEntries(rhythm.stageDays.map((sd) => [sd.stage, sd.days]));
   const todayIndex  = (new Date().getDay() + 6) % 7;
   const todayKey    = getDateKey();
+
+  // Enabled weekly rituals that have a pinned day — the ones we can visually place
+  const pinnedRituals = rituals.filter((r) => r.enabled && r.dayOfWeek !== undefined);
 
   const [view, setView] = useState<ViewMode>('week');
 
@@ -257,6 +261,45 @@ export function WeekGridCard({ rhythm, onEditPress, pieces = [] }: WeekGridCardP
               );
             })}
           </View>
+
+          {/* Ritual strip — enabled rituals with a pinned day */}
+          {pinnedRituals.length > 0 && (
+            <>
+              <View className="h-px bg-border/50 mt-2 mb-2" style={{ marginLeft: 44 }} />
+              {pinnedRituals.map((ritual) => (
+                <View key={ritual.id} className="flex-row items-center mb-1">
+                  {/* spacer so ritual emoji column aligns with day columns */}
+                  <View style={{ width: 44 }} />
+                  {Array.from({ length: 7 }, (_, i) => {
+                    const active  = ritual.dayOfWeek === i;
+                    const isToday = i === todayIndex;
+                    return (
+                      <View key={i} className="flex-1 items-center">
+                        {active ? (
+                          <View
+                            style={{
+                              width: 26,
+                              height: 26,
+                              borderRadius: 8,
+                              backgroundColor: isToday ? 'rgba(251,191,36,0.18)' : 'hsl(24 10% 93%)',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderWidth: isToday ? 1.5 : 1,
+                              borderColor: isToday ? '#f59e0b' : 'hsl(24 10% 82%)',
+                            }}
+                          >
+                            <Text style={{ fontSize: 13 }}>{ritual.emoji}</Text>
+                          </View>
+                        ) : (
+                          <View style={{ width: 26, height: 26 }} />
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
+            </>
+          )}
         </>
       )}
 
@@ -412,31 +455,45 @@ export function WeekGridCard({ rhythm, onEditPress, pieces = [] }: WeekGridCardP
                   </View>
                 ) : (
                   // Plain date — no stage, no event
-                  <View
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 13,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: isToday
-                        ? '#fbbf24'
-                        : isInSprint
-                          ? 'rgba(251,191,36,0.12)'
-                          : 'transparent',
-                      borderWidth: !isToday && isInSprint ? 1 : 0,
-                      borderColor: isInSprint ? '#f59e0b' : 'transparent',
-                    }}
-                  >
-                    <Text
+                  <View style={{ alignItems: 'center' }}>
+                    <View
                       style={{
-                        fontSize: 12,
-                        fontWeight: isToday ? '700' : '500',
-                        color: isToday ? '#fff' : isDisabled ? '#d1d5db' : '#22223b',
+                        width: 26,
+                        height: 26,
+                        borderRadius: 13,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: isToday
+                          ? '#fbbf24'
+                          : isInSprint
+                            ? 'rgba(251,191,36,0.12)'
+                            : 'transparent',
+                        borderWidth: !isToday && isInSprint ? 1 : 0,
+                        borderColor: isInSprint ? '#f59e0b' : 'transparent',
                       }}
                     >
-                      {date?.day}
-                    </Text>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: isToday ? '700' : '500',
+                          color: isToday ? '#fff' : isDisabled ? '#d1d5db' : '#22223b',
+                        }}
+                      >
+                        {date?.day}
+                      </Text>
+                    </View>
+                    {/* Ritual dot(s) for this day */}
+                    {(() => {
+                      const dayRituals = pinnedRituals.filter((r) => r.dayOfWeek === dow);
+                      if (dayRituals.length === 0) return null;
+                      return (
+                        <View style={{ flexDirection: 'row', gap: 2, marginTop: 2, justifyContent: 'center' }}>
+                          {dayRituals.slice(0, 3).map((r) => (
+                            <Text key={r.id} style={{ fontSize: 9, lineHeight: 11 }}>{r.emoji}</Text>
+                          ))}
+                        </View>
+                      );
+                    })()}
                   </View>
                 )}
               </View>

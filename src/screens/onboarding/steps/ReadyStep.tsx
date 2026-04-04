@@ -1,11 +1,11 @@
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
+import { OnboardingDraft } from '@/src/types/user';
 import { CheckCircle2 } from 'lucide-react-native';
 import React from 'react';
 import { View } from 'react-native';
 import { AVAILABLE_KILNKIN_COMPANIONS } from '../../overview/kilnkin/kilnkinCompanion';
-import { OnboardingDraft } from '../GeneralOnboardingScreen';
 
 interface ReadyStepProps {
     draft: OnboardingDraft;

@@ -126,7 +126,7 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
     pieceSlot: 'kilnArea',
     quickActions: [
       { label: 'Open Kiln', route: '/(tabs)/kiln' },
-      { label: 'Missions', route: '/overview-missions' },
+      { label: 'Rhythm', route: '/profile/studio-rhythm' },
     ],
     popoverLeft: '56%',
     popoverTop: '41%',
@@ -142,7 +142,7 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
     pieceSlot: 'dryingShelf',
     quickActions: [
       { label: 'Open Pieces', route: '/(tabs)/pieces?stage=drying' },
-      { label: 'Missions', route: '/overview-missions' },
+      { label: 'My Journey', route: '/(tabs)/profile' },
     ],
     popoverLeft: '10%',
     popoverTop: '29%',
@@ -174,7 +174,7 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
     pieceSlot: 'glazeRack',
     quickActions: [
       { label: 'Open Glazes', route: '/glaze-cone' },
-      { label: 'Analytics', route: '/overview-analytics' },
+      { label: 'Glaze Library', route: '/(tabs)/library' },
     ],
     popoverLeft: '8%',
     popoverTop: '56%',
@@ -189,7 +189,7 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
     height: '18%',
     quickActions: [
       { label: 'Open Pieces', route: '/(tabs)/pieces?stage=trimming' },
-      { label: 'Missions', route: '/overview-missions' },
+      { label: 'My Journey', route: '/(tabs)/profile' },
     ],
     popoverLeft: '50%',
     popoverTop: '62%',
@@ -205,7 +205,7 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
     pieceSlot: 'finishedCabinet',
     quickActions: [
       { label: 'Open Pieces', route: '/(tabs)/pieces?stage=finished' },
-      { label: 'Analytics', route: '/overview-analytics' },
+      { label: 'My Journey', route: '/(tabs)/profile' },
     ],
     popoverLeft: '62%',
     popoverTop: '9%',

@@ -135,8 +135,8 @@ function getSeasonalWrapAlert(companion: KilnkinCompanion, pieces: Piece[], now:
     id: `seasonal-wrap-${getDateKey(now)}`,
     title: `${seasonLabel} Wrap`,
     body: getKilnkinVoiceLine(companion, `your ${seasonLabel.toLowerCase()} studio wrap is ready to peek at.`),
-    route: '/overview-analytics',
-    actionLabel: 'Open Wrap',
+    route: '/(tabs)/profile',
+    actionLabel: 'View Journey',
     freshnessLabel: 'Fresh',
     type: 'seasonal',
   };

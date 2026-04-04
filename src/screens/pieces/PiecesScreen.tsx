@@ -1,4 +1,5 @@
 // src/screens/PiecesScreen.tsx
+import { ConfirmSheet, PickSheet } from '@/src/components/AppSheets';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -55,6 +56,11 @@ export default function PiecesScreen() {
     handleUpdatePiece,
     handleEditPiece,
     handleDelete,
+    confirmDeletePiece,
+    clearPendingDelete,
+    pendingDeletePieceId,
+    pendingAdvanceChoice,
+    setPendingAdvanceChoice,
     handleDuplicate,
     handleDuplicateBatch,
     handleUpdateJournalEntry,
@@ -89,6 +95,25 @@ export default function PiecesScreen() {
 
   return (
     <View className="flex-1 bg-background">
+      <ConfirmSheet
+        visible={pendingDeletePieceId != null}
+        title="Delete Piece?"
+        body={`"${pieces.find(p => p.id === pendingDeletePieceId)?.name ?? 'This piece'}" will be permanently removed.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDeletePiece}
+        onCancel={clearPendingDelete}
+      />
+      <PickSheet
+        visible={!!pendingAdvanceChoice}
+        title="Advance Piece"
+        body={pendingAdvanceChoice ? `Move just "${pendingAdvanceChoice.pieceName}", or all ${pendingAdvanceChoice.batchCount} pieces at this stage in the batch?` : undefined}
+        options={pendingAdvanceChoice ? [
+          { label: 'Just this one', onPress: pendingAdvanceChoice.onSingle },
+          { label: `All ${pendingAdvanceChoice.batchCount} in batch`, onPress: pendingAdvanceChoice.onAll },
+        ] : []}
+        onCancel={() => setPendingAdvanceChoice(null)}
+      />
       
       <MainTabHeader title='My Pieces' description={`${pieces.length} piece${pieces.length !== 1 ? 's' : ''} · ${filteredPieces.length} filtered`} pressIcon={<Plus size={16} color="white" />} onPress={() => setAddOpen(true)}  actionText='Add' />
 

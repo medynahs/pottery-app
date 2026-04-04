@@ -4,8 +4,8 @@ import { INITIAL_GLAZES, INITIAL_GLAZE_TESTS } from '../screens/glazes/data';
 import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
 import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
 import {
-    DEFAULT_KILNKIN_COMPANION,
-    type KilnkinCompanion,
+  DEFAULT_KILNKIN_COMPANION,
+  type KilnkinCompanion,
 } from '../screens/overview/kilnkin/kilnkinCompanion';
 import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import type { DryingTimers, Ritual, StageDay, StudioEvent, StudioRhythm, StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRythm/studioRhythm';
@@ -16,12 +16,12 @@ import { fetchUsers, type BackendUser } from '../services';
 import type { Firing, FiringState, Kiln, KilnChecklist, KilnType } from '../types/kiln';
 import type { Piece } from '../types/pieces';
 import {
-    applyPricingUserTypePreset,
-    buildDefaultPricingSettings,
-    type PricingFiringMode,
-    type PricingSettings,
-    type PricingTier,
-    type PricingUserType,
+  applyPricingUserTypePreset,
+  buildDefaultPricingSettings,
+  type PricingFiringMode,
+  type PricingSettings,
+  type PricingTier,
+  type PricingUserType,
 } from '../types/pricing';
 import { zustandStorage } from './storage';
 
@@ -149,6 +149,34 @@ export type Task = {
 
 export type DailyMissionCompletion = Record<string, StudioRhythmSuggestionType[]>;
 
+export type NotificationPrefs = {
+  kilnFinished: boolean;
+  pieceDrying: boolean;
+  achievement: boolean;
+  weeklySummary: boolean;
+};
+
+const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  kilnFinished: true,
+  pieceDrying: true,
+  achievement: true,
+  weeklySummary: false,
+};
+
+export type PrivacyPrefs = {
+  analyticsEnabled: boolean;
+  personalizedSuggestions: boolean;
+  profilePublic: boolean;
+  piecesPublic: boolean;
+};
+
+const DEFAULT_PRIVACY_PREFS: PrivacyPrefs = {
+  analyticsEnabled: true,
+  personalizedSuggestions: true,
+  profilePublic: true,
+  piecesPublic: true,
+};
+
 const DEFAULT_STUDIO_GOALS: StudioRhythmGoal[] = [
   {
     id: 'goal-cylinder-practice',
@@ -254,6 +282,21 @@ interface AppState {
   toggleModule: (module: string) => void;
   isModuleEnabled: (module: string) => boolean;
 
+  // ── Notification preferences ──────────────────────────────────
+  notificationPrefs: NotificationPrefs;
+  setNotificationPref: (key: keyof NotificationPrefs, value: boolean) => void;
+
+  // ── Privacy preferences ───────────────────────────────────────
+  privacyPrefs: PrivacyPrefs;
+  setPrivacyPref: (key: keyof PrivacyPrefs, value: boolean) => void;
+
+  // ── Auth ──────────────────────────────────────────────────────
+  sessionToken: string | null;
+  oryIdentityId: string | null;
+  oryEmail: string | null;
+  setSessionToken: (token: string, identityId: string, email: string) => void;
+  clearSession: () => void;
+
   // ── User ──────────────────────────────────────────────────────
   user: {
     name: string;
@@ -300,6 +343,8 @@ interface AppState {
   updateStudioEvent: (id: string, patch: Partial<Omit<StudioEvent, 'id'>>) => void;
   toggleStudioRitual: (id: string) => void;
   updateStudioRitual: (id: string, patch: Partial<Omit<Ritual, 'id'>>) => void;
+  addStudioRitual: (ritual: Omit<Ritual, 'id'>) => void;
+  removeStudioRitual: (id: string) => void;
   setSprintLength: (weeks: number) => void;
   setSprintGoalPieces: (count: number) => void;
 
@@ -463,6 +508,22 @@ export const useAppStore = create<AppState>()(
     }),
   isModuleEnabled: (module) =>
     normalizeModuleList(get().enabledModules).includes(normalizeModuleId(module) as AppModule),
+
+  notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
+  setNotificationPref: (key, value) =>
+    set((state) => ({ notificationPrefs: { ...state.notificationPrefs, [key]: value } })),
+
+  privacyPrefs: DEFAULT_PRIVACY_PREFS,
+  setPrivacyPref: (key, value) =>
+    set((state) => ({ privacyPrefs: { ...state.privacyPrefs, [key]: value } })),
+
+  // ── Auth ──────────────────────────────────────────────────────
+  sessionToken: null,
+  oryIdentityId: null,
+  oryEmail: null,
+  setSessionToken: (token, identityId, email) =>
+    set({ sessionToken: token, oryIdentityId: identityId, oryEmail: email }),
+  clearSession: () => set({ sessionToken: null, oryIdentityId: null, oryEmail: null }),
 
   // ── User ──────────────────────────────────────────────────────
   user: { name: 'Ariane Medina', avatarInitial: 'A', studioName: 'Mallory Clay Studio', location: 'Portland, OR', bio: 'Wheel-thrown stoneware with a love for imperfect forms. Teaching beginners on weekends.' },
@@ -643,6 +704,20 @@ export const useAppStore = create<AppState>()(
       studioRhythm: {
         ...state.studioRhythm,
         rituals: state.studioRhythm.rituals.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+      },
+    })),
+  addStudioRitual: (ritual) =>
+    set((state) => ({
+      studioRhythm: {
+        ...state.studioRhythm,
+        rituals: [...state.studioRhythm.rituals, { ...ritual, id: `ritual-custom-${Date.now()}` }],
+      },
+    })),
+  removeStudioRitual: (id) =>
+    set((state) => ({
+      studioRhythm: {
+        ...state.studioRhythm,
+        rituals: state.studioRhythm.rituals.filter((r) => r.id !== id),
       },
     })),
   setSprintLength: (weeks) =>
@@ -1188,6 +1263,9 @@ export const useAppStore = create<AppState>()(
         glazes: state.glazes,
         glazeTests: state.glazeTests,
         pendingSyncOps: state.pendingSyncOps,
+        studioRhythm: state.studioRhythm,
+        notificationPrefs: state.notificationPrefs,
+        privacyPrefs: state.privacyPrefs,
         lastSyncedAt: state.lastSyncedAt,
       }),
     }

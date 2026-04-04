@@ -3,17 +3,18 @@ import { Switch } from '@/src/components/ui/switch';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
-import { CalendarDays, Plus } from 'lucide-react-native';
+import { CalendarDays, Plus, Trash2 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AddEventModal } from './AddEventModal';
+import { AddRitualModal } from './AddRitualModal';
 import { StudioRhythmModal } from './StudioRhythmModal';
 import { DryingChip } from './components/DryingChip';
 import { EventRow } from './components/EventRow';
 import { SectionLabel } from './components/SectionLabel';
 import { WeekGridCard } from './components/WeekGridCard';
-import type { StudioEvent } from './studioRhythm';
+import type { Ritual, StudioEvent } from './studioRhythm';
 import { getDateKey } from './studioRhythm';
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; // used for ritual day labels
@@ -24,11 +25,14 @@ export default function StudioRhythmScreen() {
   const rhythm  = useAppStore((s) => s.studioRhythm);
   const pieces  = useAppStore((s) => s.pieces);
   const toggleRitual      = useAppStore((s) => s.toggleStudioRitual);
-  const removeStudioEvent = useAppStore((s) => s.removeStudioEvent);
+  const removeRitual       = useAppStore((s) => s.removeStudioRitual);
+  const removeStudioEvent  = useAppStore((s) => s.removeStudioEvent);
 
-  const [rhythmModalOpen, setRhythmModalOpen] = useState(false);
-  const [addEventOpen,    setAddEventOpen]    = useState(false);
-  const [editingEvent,    setEditingEvent]    = useState<StudioEvent | null>(null);
+  const [rhythmModalOpen,  setRhythmModalOpen]  = useState(false);
+  const [addEventOpen,     setAddEventOpen]     = useState(false);
+  const [editingEvent,     setEditingEvent]     = useState<StudioEvent | null>(null);
+  const [addRitualOpen,    setAddRitualOpen]    = useState(false);
+  const [editingRitual,    setEditingRitual]    = useState<Ritual | null>(null);
 
   const sortedEvents = useMemo(
     () => [...rhythm.events].sort((a, b) => a.date.localeCompare(b.date)),
@@ -70,14 +74,16 @@ export default function StudioRhythmScreen() {
       >
         {/* ── Week at a Glance ── */}
         <SectionLabel label="Your Week" />
-        <WeekGridCard rhythm={rhythm} onEditPress={() => setRhythmModalOpen(true)} pieces={pieces} />
+        <WeekGridCard rhythm={rhythm} onEditPress={() => setRhythmModalOpen(true)} pieces={pieces} rituals={rhythm.rituals} />
 
         {/* ── Drying Timers ── */}
         <SectionLabel label="Drying Timers" />
         <Card className="rounded-2xl border-border bg-card p-4 mb-4">
-          <View className="flex-row items-center gap-3">
+          <View className="flex-row items-center gap-3 flex-wrap">
             <DryingChip emoji="💧" label="Leather hard" value={rhythm.dryingTimers.leatherHardDays} />
             <DryingChip emoji="🌬️" label="Bone dry" value={rhythm.dryingTimers.boneDryDays} />
+            <DryingChip emoji="🖌️" label="Glaze dry" value={rhythm.dryingTimers.glazeDryingHours} unit="h" />
+            <DryingChip emoji="❄️" label="Bisque cool" value={rhythm.dryingTimers.postBisqueCoolingHours} unit="h" />
           </View>
         </Card>
 
@@ -132,28 +138,64 @@ export default function StudioRhythmScreen() {
         </Card>
 
         {/* ── Studio Rituals ── */}
-        <SectionLabel label="Studio Rituals" />
+        <View className="flex-row items-center justify-between mb-2">
+          <SectionLabel label="Studio Rituals" noMargin />
+          <TouchableOpacity
+            onPress={() => { setEditingRitual(null); setAddRitualOpen(true); }}
+            activeOpacity={0.8}
+            className="flex-row items-center gap-1 bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-full"
+          >
+            <Plus size={12} color="hsl(24 75% 45%)" />
+            <Text className="text-xs font-semibold text-primary">Add Ritual</Text>
+          </TouchableOpacity>
+        </View>
         <Card className="rounded-2xl border-border bg-card p-4 mb-6">
           <Text className="text-xs text-muted-foreground mb-3 leading-5">
             Regular habits that keep your studio ticking. Enable the ones that fit your week.
           </Text>
+          {rhythm.rituals.length === 0 && (
+            <View className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-5 items-center">
+              <Text className="text-sm text-muted-foreground text-center">
+                No rituals yet. Tap “+ Add Ritual” to create one.
+              </Text>
+            </View>
+          )}
           {rhythm.rituals.map((ritual, idx) => (
             <View
               key={ritual.id}
-              className={`flex-row items-center justify-between py-3 ${idx < rhythm.rituals.length - 1 ? 'border-b border-border' : ''}`}
+              className={`flex-row items-center justify-between py-3 ${
+                idx < rhythm.rituals.length - 1 ? 'border-b border-border' : ''
+              }`}
             >
-              <View className="flex-row items-center gap-3 flex-1">
+              <TouchableOpacity
+                onPress={() => { setEditingRitual(ritual); setAddRitualOpen(true); }}
+                activeOpacity={0.7}
+                className="flex-row items-center gap-3 flex-1"
+              >
                 <Text className="text-base">{ritual.emoji}</Text>
                 <View className="flex-1">
-                  <Text className={`text-sm font-medium ${ritual.enabled ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  <Text className={`text-sm font-medium ${
+                    ritual.enabled ? 'text-foreground' : 'text-muted-foreground'
+                  }`}>
                     {ritual.label}
                   </Text>
                   <Text className="text-xs text-muted-foreground mt-0.5 capitalize">
                     {ritual.cadence}{ritual.dayOfWeek !== undefined ? ` · ${DAY_LABELS[ritual.dayOfWeek]}` : ''}
                   </Text>
                 </View>
+              </TouchableOpacity>
+              <View className="flex-row items-center gap-3">
+                <Switch checked={ritual.enabled} onCheckedChange={() => toggleRitual(ritual.id)} />
+                {ritual.id.startsWith('ritual-custom-') && (
+                  <TouchableOpacity
+                    onPress={() => removeRitual(ritual.id)}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Trash2 size={14} color="hsl(24 10% 65%)" />
+                  </TouchableOpacity>
+                )}
               </View>
-              <Switch checked={ritual.enabled} onCheckedChange={() => toggleRitual(ritual.id)} />
             </View>
           ))}
         </Card>
@@ -165,6 +207,11 @@ export default function StudioRhythmScreen() {
         visible={addEventOpen}
         onClose={() => { setAddEventOpen(false); setEditingEvent(null); }}
         editEvent={editingEvent}
+      />
+      <AddRitualModal
+        visible={addRitualOpen}
+        onClose={() => { setAddRitualOpen(false); setEditingRitual(null); }}
+        editRitual={editingRitual}
       />
     </View>
   );
