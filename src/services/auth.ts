@@ -141,11 +141,34 @@ interface OryFlowWithCode {
   id: string;
   request_url: string;
   session_token_exchange_code: string;
+  ui?: {
+    action?: string;
+    nodes?: Array<{
+      group?: string;
+      attributes?: {
+        name?: string;
+        value?: string;
+      };
+    }>;
+  };
 }
 
 interface OryCodeExchangeResult {
   session: OrySession;
   session_token: string;
+}
+
+interface OryUiMessage {
+  id?: number;
+  text?: string;
+  type?: string;
+}
+
+interface OryLoginFlowContext {
+  state?: string;
+  ui?: {
+    messages?: OryUiMessage[];
+  };
 }
 
 // Response when submitting oidc method to a native flow — contains the Google redirect URL
@@ -187,6 +210,15 @@ async function oryGoogleOAuth(
 
   if (__DEV__) console.log('[Ory] Step 1 OK — flow id:', flow.id, 'exchange code:', flow.session_token_exchange_code);
 
+  // Ory expects the exact configured provider ID from the flow node value
+  // (e.g. "google-<project-specific-id>") instead of the provider slug.
+  const oidcProviderId = flow.ui?.nodes
+    ?.find((node) => node.group === 'oidc' && node.attributes?.name === 'provider')
+    ?.attributes?.value;
+  if (!oidcProviderId) {
+    throw new Error('Step 2 failed: OIDC provider is missing from flow UI nodes.');
+  }
+
   // 2. Submit OIDC provider to the native flow → Ory returns 422 + redirect_browser_to
   let browserUrl: string;
   try {
@@ -194,7 +226,7 @@ async function oryGoogleOAuth(
       `/self-service/${flowType}?flow=${flow.id}`,
       {
         method: 'POST',
-        body: JSON.stringify({ method: 'oidc', provider: 'google' }),
+        body: JSON.stringify({ method: 'oidc', provider: oidcProviderId }),
       }
     );
     browserUrl = submitResult.redirect_browser_to;
@@ -205,7 +237,7 @@ async function oryGoogleOAuth(
     } else {
       const msg = oidcErr.message;
       if (__DEV__) console.error('[Ory] Step 2 (submit oidc) failed:', msg);
-      throw new Error(`Step 2 failed: ${msg}\n\nCheck that the Ory Google provider ID is exactly "google".`);
+      throw new Error(`Step 2 failed: ${msg}`);
     }
   }
 
@@ -224,18 +256,61 @@ async function oryGoogleOAuth(
     throw new Error('Google sign-in was cancelled or failed.');
   }
 
-  // 4. Extract the exchange code from the redirect URL query string
+  // 4. Extract the return token from callback query.
+  // Expected is "code". Some error/continuation cases send back "flow" instead.
   const codeMatch = result.url.match(/[?&]code=([^&]+)/);
-  const code = codeMatch ? decodeURIComponent(codeMatch[1]) : null;
-  if (__DEV__) console.log('[Ory] Step 4 — redirect url:', result.url.substring(0, 120), '— code found:', !!code);
-  if (!code) {
-    throw new Error(`No auth code in redirect URL.\nReceived: ${result.url}`);
+  const flowMatch = result.url.match(/[?&]flow=([^&]+)/);
+  const code = codeMatch?.[1] ? decodeURIComponent(codeMatch[1]) : null;
+  const flowId = flowMatch?.[1] ? decodeURIComponent(flowMatch[1]) : null;
+  if (__DEV__) {
+    console.log(
+      '[Ory] Step 4 — redirect url:',
+      result.url.substring(0, 120),
+      '— code found:',
+      !!codeMatch,
+      '— flow found:',
+      !!flowMatch,
+    );
+  }
+  if (!code && !flowId) {
+    throw new Error(`No return_to_code (code/flow) in redirect URL.\nReceived: ${result.url}`);
+  }
+
+  if (!code && flowId) {
+    // This indicates OIDC did not complete with an exchange code and needs user action.
+    // Example: duplicate identifier during registration that requires account linking.
+    let flowMessage = '';
+    let duplicateIdentifierMessage = false;
+
+    try {
+      const continuedFlow = await oryFetch<OryLoginFlowContext>(
+        `/self-service/login/flows?id=${encodeURIComponent(flowId)}`
+      );
+      const messages = continuedFlow.ui?.messages ?? [];
+      flowMessage = messages.find((m) => !!m.text)?.text ?? '';
+      duplicateIdentifierMessage = messages.some(
+        (m) => m.id === 1010016 || /already used by another account/i.test(m.text ?? '')
+      );
+    } catch {
+      // If flow lookup fails, fall through to a generic actionable message.
+    }
+
+    if (duplicateIdentifierMessage) {
+      throw new Error(
+        'This Google email is already linked to an existing account. Sign in with email/password first, then link Google from account settings.'
+      );
+    }
+
+    throw new Error(
+      flowMessage ||
+      'Google login needs an extra account step and did not return an exchange code. Please sign in with email/password first and try Google again.'
+    );
   }
 
   // 5. Exchange init_code + code for a session_token
   try {
     return await oryFetch<OryLoginResult>(
-      `/self-service/login/exchange-code?init_code=${encodeURIComponent(flow.session_token_exchange_code)}&return_to=${encodeURIComponent(code)}`
+      `/sessions/token-exchange?init_code=${encodeURIComponent(flow.session_token_exchange_code)}&return_to_code=${encodeURIComponent(code as string)}`
     );
   } catch (e) {
     const msg = (e as Error).message;
