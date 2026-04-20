@@ -4,8 +4,10 @@ import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { SettingsRow } from '@/src/components/SettingsRow';
 import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
+import { ME_QUERY_KEY } from '@/src/hooks/useCurrentUser';
 import { oryLogout } from '@/src/services/auth';
 import { useAppStore } from '@/src/store';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import {
   Bell,
@@ -25,6 +27,7 @@ import { ScrollView, TouchableOpacity, View } from 'react-native';
 
 export default function AccountSettingsScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const notificationPrefs = useAppStore((s) => s.notificationPrefs);
   const setNotificationPref = useAppStore((s) => s.setNotificationPref);
   const sessionToken  = useAppStore((s) => s.sessionToken);
@@ -44,6 +47,7 @@ export default function AccountSettingsScreen() {
       // clear regardless
     } finally {
       clearSession();
+      queryClient.removeQueries({ queryKey: ME_QUERY_KEY });
       setBusy(false);
       setSheet(null);
       router.back();
@@ -58,6 +62,7 @@ export default function AccountSettingsScreen() {
       // swallow
     } finally {
       clearSession();
+      queryClient.removeQueries({ queryKey: ME_QUERY_KEY });
       setBusy(false);
       setSheet(null);
       router.back();

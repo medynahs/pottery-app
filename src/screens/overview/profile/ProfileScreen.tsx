@@ -1,6 +1,7 @@
 ﻿import { SectionLabel } from '@/src/components/SectionLabel';
 import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { SettingsRow } from '@/src/components/SettingsRow';
+import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import { CalendarDays, SlidersHorizontal } from 'lucide-react-native';
@@ -17,6 +18,8 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('portfolio');
   const rhythm = useAppStore((s) => s.studioRhythm);
   const rhythmConfigured = rhythm.stageDays.some((sd) => sd.days.length > 0) || rhythm.events.length > 0;
+  // Fetch /api/me and sync into Zustand store whenever a session is active
+  useCurrentUser();
 
   return (
     <ScrollView className="flex-1 bg-background" showsVerticalScrollIndicator={false}>

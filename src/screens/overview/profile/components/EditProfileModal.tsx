@@ -3,20 +3,21 @@ import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
+import { useUploadAvatar } from '@/src/hooks/useCurrentUser';
 import { useAppStore } from '@/src/store/appStore';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, ImageIcon, X } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
 } from 'react-native';
 
 interface EditProfileModalProps {
@@ -30,13 +31,19 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const colors = Colors[colorScheme];
   const user = useAppStore((s) => s.user);
   const setUser = useAppStore((s) => s.setUser);
+  const sessionToken = useAppStore((s) => s.sessionToken);
+  const uploadAvatar = useUploadAvatar();
 
   const [name, setName] = useState('');
   const [studioName, setStudioName] = useState('');
   const [location, setLocation] = useState('');
   const [bio, setBio] = useState('');
   const [avatarImageUri, setAvatarImageUri] = useState<string | undefined>(undefined);
+  const [avatarMimeType, setAvatarMimeType] = useState<string>('image/jpeg');
   const [coverImageUri, setCoverImageUri] = useState<string | undefined>(undefined);
+  // Track whether a new local image was picked (so we only upload when there's a change)
+  const avatarChanged = useRef(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Sync form state when modal opens
   useEffect(() => {
@@ -47,6 +54,8 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
       setBio(user.bio ?? '');
       setAvatarImageUri(user.avatarImageUri);
       setCoverImageUri(user.coverImageUri);
+      avatarChanged.current = false;
+      setUploadError(null);
     }
   }, [visible]);
 
@@ -58,7 +67,10 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
       quality: 0.85,
     });
     if (!result.canceled && result.assets[0]) {
-      setAvatarImageUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      setAvatarImageUri(asset.uri);
+      setAvatarMimeType(asset.mimeType ?? 'image/jpeg');
+      avatarChanged.current = true;
     }
   };
 
@@ -85,10 +97,18 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
       avatarImageUri,
       coverImageUri,
     });
+    // Fire-and-forget avatar upload when the user is signed in and picked a new image
+    if (sessionToken && avatarChanged.current && avatarImageUri) {
+      void uploadAvatar(avatarImageUri, avatarMimeType).catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Avatar upload failed';
+        if (__DEV__) console.warn('[uploadAvatar]', msg);
+        setUploadError(msg);
+      });
+    }
     onClose();
   };
 
-  const avatarInitial = (name.trim() || user.name).charAt(0).toUpperCase();
+  const avatarInitial = ((name.trim() || user.name || 'U')[0] ?? 'U').toUpperCase();
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -115,6 +135,11 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
               contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 8 }}
               showsVerticalScrollIndicator={false}
             >
+              {uploadError ? (
+                <View className="rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 mb-4">
+                  <Text className="text-xs text-red-600">{uploadError}</Text>
+                </View>
+              ) : null}
               {/* Cover photo picker */}
               <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
                 Cover Photo

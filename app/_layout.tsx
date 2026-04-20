@@ -1,8 +1,10 @@
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -23,6 +25,11 @@ import {
   Fraunces_600SemiBold,
   Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
+
+// Required on iOS: tells ASWebAuthenticationSession that the OAuth redirect was
+// received, so the session is cleanly closed. Without this call, a second
+// openAuthSessionAsync after sign-out throws "no resumable session found".
+WebBrowser.maybeCompleteAuthSession();
 
 // Prevent the splash screen from auto-hiding
 void SplashScreen.preventAutoHideAsync().catch(() => {
@@ -111,6 +118,8 @@ function AppShell() {
   );
 }
 
+const queryClient = new QueryClient();
+
 export default function RootLayout() {
   const [loaded] = useFonts({
     DMSans_400Regular,
@@ -137,13 +146,15 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#D7682D' }} onLayout={onLayoutRootView}>
-        <UIThemeProvider>
-          <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#D7682D' } }}>
-            <StageConfigProvider>
-              <AppShell />
-            </StageConfigProvider>
-          </ThemeProvider>
-        </UIThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <UIThemeProvider>
+            <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#D7682D' } }}>
+              <StageConfigProvider>
+                <AppShell />
+              </StageConfigProvider>
+            </ThemeProvider>
+          </UIThemeProvider>
+        </QueryClientProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
   );
