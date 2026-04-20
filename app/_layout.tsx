@@ -1,4 +1,5 @@
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -117,6 +118,8 @@ function AppShell() {
   );
 }
 
+const queryClient = new QueryClient();
+
 export default function RootLayout() {
   const [loaded] = useFonts({
     DMSans_400Regular,
@@ -143,13 +146,15 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#D7682D' }} onLayout={onLayoutRootView}>
-        <UIThemeProvider>
-          <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#D7682D' } }}>
-            <StageConfigProvider>
-              <AppShell />
-            </StageConfigProvider>
-          </ThemeProvider>
-        </UIThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <UIThemeProvider>
+            <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#D7682D' } }}>
+              <StageConfigProvider>
+                <AppShell />
+              </StageConfigProvider>
+            </ThemeProvider>
+          </UIThemeProvider>
+        </QueryClientProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
   );

@@ -294,8 +294,10 @@ interface AppState {
   sessionToken: string | null;
   oryIdentityId: string | null;
   oryEmail: string | null;
+  backendUserId: string | null;
   setSessionToken: (token: string, identityId: string, email: string) => void;
   clearSession: () => void;
+  setBackendUserId: (id: string | null) => void;
 
   // ── User ──────────────────────────────────────────────────────
   user: {
@@ -521,9 +523,20 @@ export const useAppStore = create<AppState>()(
   sessionToken: null,
   oryIdentityId: null,
   oryEmail: null,
+  backendUserId: null,
   setSessionToken: (token, identityId, email) =>
     set({ sessionToken: token, oryIdentityId: identityId, oryEmail: email }),
-  clearSession: () => set({ sessionToken: null, oryIdentityId: null, oryEmail: null }),
+  clearSession: () => set({
+    sessionToken: null,
+    oryIdentityId: null,
+    oryEmail: null,
+    backendUserId: null,
+    // Reset user-specific fields so the next sign-in starts clean.
+    // Without this, the previous user's avatar persists in AsyncStorage
+    // and is shown briefly (or permanently) when a different account signs in.
+    user: { name: '', avatarInitial: 'U', avatarImageUri: undefined },
+  }),
+  setBackendUserId: (id) => set({ backendUserId: id }),
 
   // ── User ──────────────────────────────────────────────────────
   user: { name: 'Ariane Medina', avatarInitial: 'A', studioName: 'Mallory Clay Studio', location: 'Portland, OR', bio: 'Wheel-thrown stoneware with a love for imperfect forms. Teaching beginners on weekends.' },
@@ -1248,7 +1261,10 @@ export const useAppStore = create<AppState>()(
         practiceMode: state.practiceMode,
         role: state.role,
         enabledModules: state.enabledModules,
-        user: state.user,
+        // avatarImageUri is excluded — it's a large base64 string fetched fresh
+        // from /api/me on every login. Persisting it leaks one user's avatar to
+        // the next account that signs in on the same device.
+        user: (({ avatarImageUri, ...rest }) => rest)(state.user),
         kilnkinCompanion: state.kilnkinCompanion,
         studioRhythmConfig: state.studioRhythmConfig,
         dailyMissionCompletion: state.dailyMissionCompletion,
