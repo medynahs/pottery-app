@@ -1,4 +1,5 @@
 import { Text } from '@/src/components/ui/text';
+import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { generateStudioRhythmSuggestions } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import { EVENT_CATEGORIES, STAGE_CONFIG, getDateKey } from '@/src/screens/overview/studioRythm/studioRhythm';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
@@ -25,6 +26,7 @@ const MISSION_META: Record<string, { title: string; Icon: MissionIcon; iconColor
 export function OverviewPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  useCurrentUser();
   const user = useAppStore((state) => state.user);
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
   const pieces = useAppStore((state) => state.pieces);

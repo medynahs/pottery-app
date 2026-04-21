@@ -5,8 +5,8 @@ import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import { CalendarDays, SlidersHorizontal } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import { TabBar } from '../../../config/TabBar';
 import { ProfileHeader } from './components/ProfileHeader';
 import type { Tab } from './mockedData/data';
@@ -19,10 +19,20 @@ export default function ProfileScreen() {
   const rhythm = useAppStore((s) => s.studioRhythm);
   const rhythmConfigured = rhythm.stageDays.some((sd) => sd.days.length > 0) || rhythm.events.length > 0;
   // Fetch /api/me and sync into Zustand store whenever a session is active
-  useCurrentUser();
+  const meQuery = useCurrentUser();
+
+  const onRefresh = useCallback(async () => {
+    await meQuery.refetch();
+  }, [meQuery.refetch]);
 
   return (
-    <ScrollView className="flex-1 bg-background" showsVerticalScrollIndicator={false}>
+    <ScrollView
+      className="flex-1 bg-background"
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={meQuery.isFetching} onRefresh={onRefresh} />
+      }
+    >
       <ProfileHeader
         onBack={() => router.back()}
         onOpenAccountSettings={() => router.push('/account-settings')}

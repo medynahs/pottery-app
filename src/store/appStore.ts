@@ -352,6 +352,7 @@ interface AppState {
 
   // ── Pieces ────────────────────────────────────────────────────
   pieces: Piece[];
+  setPieces: (pieces: Piece[]) => void;
   addPieces: (newPieces: Piece[]) => void;
   updatePiece: (piece: Piece) => void;
   deletePiece: (id: number) => void;
@@ -754,6 +755,7 @@ export const useAppStore = create<AppState>()(
 
   // ── Pieces ────────────────────────────────────────────────────
   pieces: INITIAL_PIECES,
+  setPieces: (pieces) => set({ pieces }),
   addPieces: (newPieces) => {
     set((state) => ({ pieces: [...newPieces, ...state.pieces] }));
     get().enqueueSyncOp({ type: 'addPieces', payload: newPieces });

@@ -56,9 +56,12 @@ export function useUploadAvatar() {
 
   return async (imageUri: string, mimeType?: string): Promise<void> => {
     if (!sessionToken) throw new Error('Not signed in');
-    await uploadAvatar(sessionToken, imageUri, mimeType);
-    // Invalidate so useCurrentUser refetches /users/me and picks up the
-    // new avatar_url — the effect will then update avatarImageUri in the store.
-    await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
+    const updatedProfile = await uploadAvatar(sessionToken, imageUri, mimeType);
+    // Seed the cache directly with the upload response — the POST endpoint
+    // already returns the updated profile with the new avatar_url.
+    // This avoids a redundant GET /users/me and prevents the race condition
+    // where a re-fetch returns a stale avatar_url and overwrites the
+    // optimistic local URI that was set before the upload completed.
+    queryClient.setQueryData(ME_QUERY_KEY, updatedProfile);
   };
 }

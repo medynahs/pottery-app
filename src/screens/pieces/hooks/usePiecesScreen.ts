@@ -10,6 +10,7 @@ import type { StageAdvanceCelebration } from '../modals/StageAdvanceCelebrationM
 import type { StageAdvanceCapture, StageAdvanceRequest } from '../modals/StageAdvanceFlowModal';
 import { FINISHED_STAGE_ID, getAdvanceOrder, getConfiguredNextStage } from '../utils/stageFlow';
 import { STAGE_ICONS, resolveStageIcon } from '../utils/stageIconUtils';
+import { useCreatePieceMutation, useDeletePieceMutation, usePiecesSync, useUpdatePieceMutation } from './usePiecesSync';
 
 function getSetName(name: string) {
   return name.replace(/\s+\d+$/, '');
@@ -28,6 +29,12 @@ export function usePiecesScreen() {
   const sendToCemetery = useAppStore((s) => s.sendToCemetery);
   const defaultBisqueTemp = useAppStore((s) => s.defaultBisqueTemp);
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
+
+  // ── Backend sync ────────────────────────────────────────────────────────────
+  const syncQuery = usePiecesSync();
+  const { mutate: createPiece } = useCreatePieceMutation();
+  const { mutate: syncPieceUpdate } = useUpdatePieceMutation();
+  const { mutate: deletePieceRemote } = useDeletePieceMutation();
 
   const [activeStage, setActiveStage] = React.useState('all');
   const [search, setSearch] = React.useState('');
@@ -190,6 +197,10 @@ export function usePiecesScreen() {
   const handleAdd = (newPieces: Piece[]) => {
     addPieces(newPieces);
     setAddOpen(false);
+    // Persist each new piece to the backend (fire-and-forget; backendId stamped on success)
+    for (const localPiece of newPieces) {
+      createPiece({ localPiece });
+    }
   };
 
   const handleUpdatePiece = React.useCallback((updated: Piece) => {
@@ -197,7 +208,11 @@ export function usePiecesScreen() {
     setJournalPiece((current) => (current?.id === updated.id ? updated : current));
     setActionSheetPiece((current) => (current?.id === updated.id ? updated : current));
     setEditPiece((current) => (current?.id === updated.id ? updated : current));
-  }, [updatePiece]);
+    // Sync name/description/status changes to the backend if the piece is already registered
+    if (updated.backendId) {
+      syncPieceUpdate(updated);
+    }
+  }, [updatePiece, syncPieceUpdate]);
 
   const handleEditPiece = React.useCallback((updated: Piece) => {
     handleUpdatePiece(updated);
@@ -211,9 +226,12 @@ export function usePiecesScreen() {
   }, [pieces]);
 
   const confirmDeletePiece = React.useCallback(() => {
-    if (pendingDeletePieceId != null) deletePiece(pendingDeletePieceId);
+    if (pendingDeletePieceId == null) return;
+    const piece = pieces.find(p => p.id === pendingDeletePieceId);
+    deletePiece(pendingDeletePieceId);
+    if (piece) deletePieceRemote(piece);
     setPendingDeletePieceId(null);
-  }, [pendingDeletePieceId, deletePiece]);
+  }, [pendingDeletePieceId, deletePiece, deletePieceRemote, pieces]);
 
   const clearPendingDelete = React.useCallback(() => setPendingDeletePieceId(null), []);
 
@@ -418,6 +436,8 @@ export function usePiecesScreen() {
     filteredPieces,
     displayItems,
     gridRows,
+    isSyncing: syncQuery.isFetching,
+    refetchPieces: syncQuery.refetch,
     stageTabs,
     stageLookup,
     progressStageOrder,

@@ -1,3 +1,4 @@
+import { ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import {
@@ -16,12 +17,9 @@ import {
 import { GLAZE_TEMPS } from '@/src/screens/pieces/utils/constants';
 import React from 'react';
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
     ScrollView,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { createEmptyTestDraft, pickImage } from './helpers';
 import { MediaSlot } from './MediaSlot';
@@ -60,33 +58,8 @@ export function LogTestModal({
   }, [glazes]);
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.46)' }}>
-        <TouchableOpacity
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View
-            style={{
-              backgroundColor: '#FDFAF5',
-              borderTopLeftRadius: 32,
-              borderTopRightRadius: 32,
-              maxHeight: 760,
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 4,
-                backgroundColor: '#D9C9A8',
-                borderRadius: 2,
-                alignSelf: 'center',
-                marginTop: 16,
-                marginBottom: 12,
-              }}
-            />
+    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.46)">
+      <ModalCard variant="pottery" radius={32} maxHeight={760}>
             <View
               style={{
                 paddingHorizontal: 24,
@@ -477,9 +450,7 @@ export function LogTestModal({
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
+      </ModalCard>
+    </ModalShell>
   );
 }

@@ -1,8 +1,9 @@
 ﻿// src/screens/community/components/FestivalSignUpSheet.tsx
+import { ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { ArrowLeft, CheckSquare, Square } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import type { Festival, FestivalTrack } from '../types';
 
 type Step = 'track' | 'rules';
@@ -38,24 +39,8 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose }: P
   };
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={handleClose}>
-      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(22,14,10,0.52)' }}>
-        <Pressable style={{ position: 'absolute', inset: 0 }} onPress={handleClose} />
-        <View
-          style={{
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            backgroundColor: '#FFFBF2',
-            borderTopWidth: 1,
-            borderColor: '#E8D9BE',
-            paddingBottom: 40,
-            maxHeight: '88%',
-          }}
-        >
-          {/* Drag handle */}
-          <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#C9B48C' }} />
-          </View>
+    <ModalShell visible onClose={handleClose}>
+        <ModalCard variant="pottery" maxHeight="88%">
 
           {/* â”€â”€ STEP 1: Track picker â”€â”€ */}
           {step === 'track' && (
@@ -270,8 +255,7 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose }: P
               </View>
             </>
           )}
-        </View>
-      </View>
-    </Modal>
+        </ModalCard>
+    </ModalShell>
   );
 }

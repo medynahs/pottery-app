@@ -1,5 +1,5 @@
 // src/screens/kiln/FiringDetailModal.tsx
-import { ConfirmSheet } from '@/src/components/AppSheets';
+import { ConfirmSheet, ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Button } from '@/src/components/ui/button';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
@@ -8,7 +8,7 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useAppStore } from '@/src/store';
 import { ChevronRight, Trash2, X } from 'lucide-react-native';
 import React from 'react';
-import { Modal, ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import type { Firing, FiringResult } from '../../../types/kiln';
 import { FIRING_STATE_LABELS, FIRING_TYPE_LABELS, nextFiringState } from '../constants';
 import { formatReadyDate, getExpectedReadyAt } from '../firingEstimations';
@@ -147,11 +147,8 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
       onConfirm={() => { deleteFiring(liveFiring.id); setConfirmDeleteOpen(false); onClose(); }}
       onCancel={() => setConfirmDeleteOpen(false)}
     />
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={onClose} />
-        <View className="bg-background rounded-t-3xl" style={{ maxHeight: height * 0.95 }}>
-          <View className="w-9 h-1 bg-muted rounded-full self-center mt-4 mb-2" />
+    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
+      <ModalCard maxHeight={height * 0.95}>
 
           <View className="flex-row justify-between items-start px-6 pb-4 border-b border-border">
             <View className="flex-1 pr-4">
@@ -215,9 +212,8 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
               </Button>
             </View>
           ) : null}
-        </View>
-      </View>
-    </Modal>
+      </ModalCard>
+    </ModalShell>
     </>
   );
 }

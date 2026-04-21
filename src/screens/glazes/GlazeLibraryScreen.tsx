@@ -1,4 +1,4 @@
-import { ConfirmSheet } from '@/src/components/AppSheets';
+import { ConfirmSheet, ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store/appStore';
@@ -12,12 +12,9 @@ import {
 } from 'lucide-react-native';
 import React from 'react';
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   ScrollView,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -583,22 +580,13 @@ export default function GlazeLibraryScreen({ collectionFilter }: { collectionFil
       </ScrollView>
 
       {/* Glaze profile bottom sheet */}
-      <Modal
+      <ModalShell
         visible={Boolean(selectedGlaze)}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setSelectedGlazeId(null)}
+        onClose={() => setSelectedGlazeId(null)}
+        backdropColor="rgba(0,0,0,0.46)"
       >
-        <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.46)' }}>
-          <TouchableOpacity
-            className="absolute inset-0"
-            activeOpacity={1}
-            onPress={() => setSelectedGlazeId(null)}
-          />
           {selectedGlaze ? (
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-              <View className="bg-background rounded-t-[32px]" style={{ maxHeight: 780 }}>
-                <View className="w-10 h-1 bg-muted rounded-full self-center mt-4 mb-3" />
+            <ModalCard radius={32} maxHeight={780}>
                 <View className="px-6 pb-4 border-b border-border flex-row items-start justify-between gap-3">
                   <View className="flex-1 pr-3">
                     <Text className="text-[11px] font-semibold uppercase tracking-[1.8px] text-primary mb-2">
@@ -909,11 +897,9 @@ export default function GlazeLibraryScreen({ collectionFilter }: { collectionFil
                     </View>
                   )}
                 </ScrollView>
-              </View>
-            </KeyboardAvoidingView>
+            </ModalCard>
           ) : null}
-        </View>
-      </Modal>
+        </ModalShell>
     </View>
   );
 }

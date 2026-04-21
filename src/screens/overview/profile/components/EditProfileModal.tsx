@@ -1,3 +1,4 @@
+import { ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
@@ -6,18 +7,15 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useUploadAvatar } from '@/src/hooks/useCurrentUser';
 import { useAppStore } from '@/src/store/appStore';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, ImageIcon, X } from 'lucide-react-native';
+import { Camera, CheckCircle2, ImageIcon, X } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    TouchableOpacity,
-    useWindowDimensions,
-    View,
+  Image,
+  Pressable,
+  ScrollView,
+  TouchableOpacity,
+  useWindowDimensions,
+  View
 } from 'react-native';
 
 interface EditProfileModalProps {
@@ -43,7 +41,9 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const [coverImageUri, setCoverImageUri] = useState<string | undefined>(undefined);
   // Track whether a new local image was picked (so we only upload when there's a change)
   const avatarChanged = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   // Sync form state when modal opens
   useEffect(() => {
@@ -56,6 +56,8 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
       setCoverImageUri(user.coverImageUri);
       avatarChanged.current = false;
       setUploadError(null);
+      setUploadSuccess(false);
+      setIsSaving(false);
     }
   }, [visible]);
 
@@ -86,7 +88,7 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmedName = name.trim();
     setUser({
       name: trimmedName || user.name,
@@ -97,30 +99,31 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
       avatarImageUri,
       coverImageUri,
     });
-    // Fire-and-forget avatar upload when the user is signed in and picked a new image
+
     if (sessionToken && avatarChanged.current && avatarImageUri) {
-      void uploadAvatar(avatarImageUri, avatarMimeType).catch((err: unknown) => {
+      setIsSaving(true);
+      setUploadError(null);
+      try {
+        await uploadAvatar(avatarImageUri, avatarMimeType);
+        setUploadSuccess(true);
+        setTimeout(onClose, 800);
+      } catch (err) {
         const msg = err instanceof Error ? err.message : 'Avatar upload failed';
         if (__DEV__) console.warn('[uploadAvatar]', msg);
         setUploadError(msg);
-      });
+        setIsSaving(false);
+      }
+      return;
     }
+
     onClose();
   };
 
   const avatarInitial = ((name.trim() || user.name || 'U')[0] ?? 'U').toUpperCase();
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <Pressable
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          onPress={onClose}
-        />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View className="bg-background rounded-t-3xl" style={{ maxHeight: screenHeight * 0.92 }}>
-            {/* Handle */}
-            <View className="w-9 h-1 bg-muted rounded-full self-center mt-4 mb-2" />
+    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
+      <ModalCard maxHeight={screenHeight * 0.92}>
 
             {/* Title row */}
             <View className="flex-row justify-between items-center px-6 pb-4 border-b border-border">
@@ -138,6 +141,12 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
               {uploadError ? (
                 <View className="rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 mb-4">
                   <Text className="text-xs text-red-600">{uploadError}</Text>
+                </View>
+              ) : null}
+              {uploadSuccess ? (
+                <View className="rounded-xl bg-green-50 border border-green-200 px-4 py-2.5 mb-4 flex-row items-center gap-2">
+                  <CheckCircle2 size={14} color="hsl(135 45% 35%)" />
+                  <Text className="text-xs text-green-700">Avatar updated successfully</Text>
                 </View>
               ) : null}
               {/* Cover photo picker */}
@@ -253,13 +262,13 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
 
             {/* Footer */}
             <View className="px-6 pt-4 pb-10 border-t border-border">
-              <Button onPress={handleSave} disabled={!name.trim()} className="w-full">
-                <Text className="text-primary-foreground font-semibold">Save Changes</Text>
+              <Button onPress={handleSave} disabled={!name.trim() || isSaving} className="w-full">
+                <Text className="text-primary-foreground font-semibold">
+                  {isSaving ? 'Saving…' : 'Save Changes'}
+                </Text>
               </Button>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
+      </ModalCard>
+    </ModalShell>
   );
 }

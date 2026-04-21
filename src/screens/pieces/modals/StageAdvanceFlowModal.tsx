@@ -1,3 +1,4 @@
+import { ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Pressable } from '@/src/components/ui/pressable';
@@ -8,7 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import type { LucideIcon } from 'lucide-react-native';
 import { ImagePlus, Sparkles, X } from 'lucide-react-native';
 import React from 'react';
-import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
 import { OptionPills } from '../components/OptionPills';
 import { BISQUE_TEMPS, GLAZE_TEMPS, PIECE_DISPOSITION_STATUSES } from '../utils/constants';
 import { FINISHED_STAGE_ID } from '../utils/stageFlow';
@@ -132,13 +133,8 @@ export function StageAdvanceFlowModal({
   const isFinished = request.toStage === FINISHED_STAGE_ID;
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
-        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={onClose} />
-
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View className="bg-background rounded-t-3xl">
-            <View className="w-9 h-1 bg-muted rounded-full self-center mt-4 mb-2" />
+    <ModalShell visible onClose={onClose} backdropColor="rgba(0,0,0,0.45)">
+      <ModalCard>
 
             <View className="flex-row items-center justify-between px-6 pb-4 border-b border-border">
               <View className="flex-1 pr-3">
@@ -237,9 +233,7 @@ export function StageAdvanceFlowModal({
                 <Text className="text-sm font-semibold text-muted-foreground">Skip</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
+      </ModalCard>
+    </ModalShell>
   );
 }

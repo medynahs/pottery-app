@@ -5,7 +5,7 @@ import { Text } from '@/src/components/ui/text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronUp, Layers, Plus, Search, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { MainTabHeader } from '../../components/MainTabHeader';
 import { BatchCard } from './components/BatchCard';
@@ -34,6 +34,8 @@ export default function PiecesScreen() {
     pieces,
     filteredPieces,
     displayItems,
+    isSyncing,
+    refetchPieces,
     stageTabs,
     stageLookup,
     progressStageOrder,
@@ -148,7 +150,14 @@ export default function PiecesScreen() {
         </View>
       </View>
 
-      <ScrollView ref={scrollRef} className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isSyncing} onRefresh={refetchPieces} />
+        }
+      >
         {/* Stage Filter */}
         <ScrollView
           horizontal

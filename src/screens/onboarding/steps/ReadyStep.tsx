@@ -1,8 +1,10 @@
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
+import { useAppStore } from '@/src/store';
 import { OnboardingDraft } from '@/src/types/user';
-import { CheckCircle2 } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { CheckCircle2, CloudUpload } from 'lucide-react-native';
 import React from 'react';
 import { View } from 'react-native';
 import { AVAILABLE_KILNKIN_COMPANIONS } from '../../overview/kilnkin/kilnkinCompanion';
@@ -13,6 +15,8 @@ interface ReadyStepProps {
 }
 
 export const ReadyStep: React.FC<ReadyStepProps> = ({ draft, updateDraft }) => {
+    const router = useRouter();
+    const sessionToken = useAppStore(s => s.sessionToken);
     const selectedCompanion = AVAILABLE_KILNKIN_COMPANIONS.find((companion) => companion.id === draft.kilnkinId)
         ?? AVAILABLE_KILNKIN_COMPANIONS[0];
 
@@ -38,6 +42,19 @@ export const ReadyStep: React.FC<ReadyStepProps> = ({ draft, updateDraft }) => {
                     <Text className="text-xs text-muted-foreground mt-3">Modules</Text>
                     <Text className="text-sm text-foreground mt-1">{draft.activeModules.join(', ')}</Text>
                 </View>
+
+                {!sessionToken && (
+                    <Pressable
+                        onPress={() => router.push('/register')}
+                        className="mt-4 rounded-2xl border border-border bg-background px-4 py-4 flex-row items-center gap-3"
+                    >
+                        <CloudUpload size={18} className="text-muted-foreground" />
+                        <View className="flex-1">
+                            <Text className="text-sm font-medium text-foreground">Back up your studio</Text>
+                            <Text className="text-xs text-muted-foreground mt-0.5">Create a free account to sync across devices. You can skip this and do it later.</Text>
+                        </View>
+                    </Pressable>
+                )}
 
                 <Pressable
                     onPress={() => updateDraft({ quickTourRequested: !draft.quickTourRequested })}
