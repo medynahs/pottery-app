@@ -1,3 +1,4 @@
+import { ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Button } from '@/src/components/ui/button';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
@@ -6,7 +7,7 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { Piece } from '@/src/types/pieces';
 import { X } from 'lucide-react-native';
 import React from 'react';
-import { KeyboardAvoidingView, Modal, Platform, useWindowDimensions, View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import { AddPieceForm } from '../components/AddPieceForm';
 import { useAddPieceForm } from '../hooks/useAddPieceForm';
 
@@ -26,19 +27,8 @@ export function AddPieceModal({ visible, onClose, onAdd, editPiece, onEdit }: Ad
   const isEditing = !!editPiece;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <Pressable
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          onPress={handleClose}
-        />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View
-            className="bg-background rounded-t-3xl"
-            style={{ maxHeight: screenHeight * 0.92 }}
-          >
-            {/* Handle */}
-            <View className="w-9 h-1 bg-muted rounded-full self-center mt-4 mb-2" />
+    <ModalShell visible={visible} onClose={handleClose} backdropColor="rgba(0,0,0,0.5)">
+      <ModalCard maxHeight={screenHeight * 0.92}>
 
             {/* Title row */}
             <View className="flex-row justify-between items-center px-6 pb-4 border-b border-border">
@@ -69,9 +59,7 @@ export function AddPieceModal({ visible, onClose, onAdd, editPiece, onEdit }: Ad
                 </Text>
               </Button>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
+      </ModalCard>
+    </ModalShell>
   );
 }

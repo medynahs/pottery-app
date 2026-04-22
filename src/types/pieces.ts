@@ -35,6 +35,8 @@ export type PieceStatus =
 
 export type Piece = {
   id: number;
+  /** UUID assigned by the backend after the piece is first synced. */
+  backendId?: string;
   name: string;
   stage: string;          // physical state (Stage)
   status?: string;        // outcome / condition (PieceStatus)

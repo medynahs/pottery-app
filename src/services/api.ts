@@ -1,4 +1,4 @@
-const API_BASE = 'https://kilnkins.onrender.com';
+import { API_BASE_URL as API_BASE } from './index';
 
 export interface BackendProfile {
   id: string;

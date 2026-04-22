@@ -55,7 +55,6 @@ export type OnboardingUserType =
   | 'studio-potter'
   | 'hybrid-potter'
   | 'studio-owner-technician'
-  | 'teacher'
   | 'business-owner'
   | 'not-sure';
 export type MeasurementUnit = 'metric' | 'imperial';
@@ -82,6 +81,7 @@ export interface OnboardingProfile {
   quickTourRequested: boolean;
   activeModules: AppModule[];
   kilnkinId?: string;
+  studioCode?: string;
 }
 
 export interface StageConfig {
@@ -308,6 +308,7 @@ interface AppState {
     bio?: string;
     coverImageUri?: string;
     avatarImageUri?: string;
+    linkedStudioCode?: string;
   };
   setUser: (patch: Partial<AppState['user']>) => void;
   backendUsers: BackendUser[];
@@ -352,6 +353,7 @@ interface AppState {
 
   // ── Pieces ────────────────────────────────────────────────────
   pieces: Piece[];
+  setPieces: (pieces: Piece[]) => void;
   addPieces: (newPieces: Piece[]) => void;
   updatePiece: (piece: Piece) => void;
   deletePiece: (id: number) => void;
@@ -754,6 +756,7 @@ export const useAppStore = create<AppState>()(
 
   // ── Pieces ────────────────────────────────────────────────────
   pieces: INITIAL_PIECES,
+  setPieces: (pieces) => set({ pieces }),
   addPieces: (newPieces) => {
     set((state) => ({ pieces: [...newPieces, ...state.pieces] }));
     get().enqueueSyncOp({ type: 'addPieces', payload: newPieces });

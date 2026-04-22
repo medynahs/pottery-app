@@ -1,6 +1,6 @@
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store/appStore';
-import { Award, BookOpen, Flame, Layers, Sparkles, Star, TrendingUp, Trophy } from 'lucide-react-native';
+import { Award, BookOpen, Camera, Crown, Disc, Flame, FlaskConical, Gem, Gift, Hammer, Layers, Medal, ShoppingBag, Sparkles, Star, Tag, TrendingUp, Trophy } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
 
@@ -23,12 +23,19 @@ interface BadgeContext {
   finishedPieces: number;
   glazedPieces: number;
   bisqueFirings: number;
+  glazeFirings: number;
   totalFirings: number;
   piecesWithNotes: number;
   failedPieces: number;
+  giftedPieces: number;
+  wheelPieces: number;
+  handBuiltPieces: number;
+  piecesWithPhoto: number;
+  soldPieces: number;
 }
 
 const BADGE_REGISTRY: BadgeDef[] = [
+  // ── Firings ──────────────────────────────────────────────
   {
     id: 'first-fire',
     name: 'First Fire',
@@ -41,6 +48,40 @@ const BADGE_REGISTRY: BadgeDef[] = [
     target: 1,
   },
   {
+    id: 'first-glaze',
+    name: 'First Glaze',
+    desc: '1 glaze firing',
+    icon: Gem,
+    iconColor: 'hsl(200 75% 48%)',
+    bg: 'bg-cyan-50',
+    border: 'border-cyan-200',
+    current: (ctx) => ctx.glazeFirings,
+    target: 1,
+  },
+  {
+    id: 'kiln-master',
+    name: 'Kiln Master',
+    desc: '25 firings',
+    icon: Trophy,
+    iconColor: 'hsl(38 80% 50%)',
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+    current: (ctx) => ctx.totalFirings,
+    target: 25,
+  },
+  {
+    id: 'glaze-alchemist',
+    name: 'Glaze Alchemist',
+    desc: '10 glaze firings',
+    icon: FlaskConical,
+    iconColor: 'hsl(168 60% 40%)',
+    bg: 'bg-teal-50',
+    border: 'border-teal-200',
+    current: (ctx) => ctx.glazeFirings,
+    target: 10,
+  },
+  // ── Pieces made ──────────────────────────────────────────
+  {
     id: 'centering',
     name: 'Centering',
     desc: '50 pieces made',
@@ -50,6 +91,17 @@ const BADGE_REGISTRY: BadgeDef[] = [
     border: 'border-blue-200',
     current: (ctx) => ctx.totalPieces,
     target: 50,
+  },
+  {
+    id: 'centurion',
+    name: 'Centurion',
+    desc: '100 pieces made',
+    icon: Medal,
+    iconColor: 'hsl(44 80% 46%)',
+    bg: 'bg-yellow-50',
+    border: 'border-yellow-200',
+    current: (ctx) => ctx.totalPieces,
+    target: 100,
   },
   {
     id: 'prolific',
@@ -63,14 +115,37 @@ const BADGE_REGISTRY: BadgeDef[] = [
     target: 150,
   },
   {
-    id: 'kiln-master',
-    name: 'Kiln Master',
-    desc: '25 firings',
-    icon: Trophy,
-    iconColor: 'hsl(38 80% 50%)',
+    id: 'studio-veteran',
+    name: 'Studio Veteran',
+    desc: '300 pieces made',
+    icon: Crown,
+    iconColor: 'hsl(38 90% 42%)',
     bg: 'bg-amber-50',
-    border: 'border-amber-200',
-    current: (ctx) => ctx.totalFirings,
+    border: 'border-amber-300',
+    current: (ctx) => ctx.totalPieces,
+    target: 300,
+  },
+  // ── Technique ────────────────────────────────────────────
+  {
+    id: 'wheel-warrior',
+    name: 'Wheel Warrior',
+    desc: '25 wheel-thrown pieces',
+    icon: Disc,
+    iconColor: 'hsl(213 65% 50%)',
+    bg: 'bg-blue-50',
+    border: 'border-blue-100',
+    current: (ctx) => ctx.wheelPieces,
+    target: 25,
+  },
+  {
+    id: 'hand-builder',
+    name: 'Hand Builder',
+    desc: '25 hand-built pieces',
+    icon: Hammer,
+    iconColor: 'hsl(28 55% 45%)',
+    bg: 'bg-stone-50',
+    border: 'border-stone-200',
+    current: (ctx) => ctx.handBuiltPieces,
     target: 25,
   },
   {
@@ -95,6 +170,7 @@ const BADGE_REGISTRY: BadgeDef[] = [
     current: (ctx) => ctx.finishedPieces,
     target: 30,
   },
+  // ── Documentation ────────────────────────────────────────
   {
     id: 'record-keeper',
     name: 'Record Keeper',
@@ -107,6 +183,18 @@ const BADGE_REGISTRY: BadgeDef[] = [
     target: 10,
   },
   {
+    id: 'photo-story',
+    name: 'Photo Story',
+    desc: '10 pieces with photos',
+    icon: Camera,
+    iconColor: 'hsl(240 30% 50%)',
+    bg: 'bg-indigo-50',
+    border: 'border-indigo-200',
+    current: (ctx) => ctx.piecesWithPhoto,
+    target: 10,
+  },
+  // ── Story ────────────────────────────────────────────────
+  {
     id: 'resilient',
     name: 'Resilient',
     desc: '5 pieces failed',
@@ -118,15 +206,37 @@ const BADGE_REGISTRY: BadgeDef[] = [
     target: 5,
   },
   {
+    id: 'first-sale',
+    name: 'First Sale',
+    desc: '1 piece sold',
+    icon: Tag,
+    iconColor: 'hsl(145 55% 42%)',
+    bg: 'bg-green-50',
+    border: 'border-green-100',
+    current: (ctx) => ctx.soldPieces,
+    target: 1,
+  },
+  {
+    id: 'market-ready',
+    name: 'Market Ready',
+    desc: '10 pieces sold',
+    icon: ShoppingBag,
+    iconColor: 'hsl(145 55% 35%)',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200',
+    current: (ctx) => ctx.soldPieces,
+    target: 10,
+  },
+  {
     id: 'giver',
     name: 'Giver',
     desc: '15 pieces gifted',
-    icon: Sparkles,
-    iconColor: 'hsl(340 75% 50%)',
-    bg: 'bg-pink-50',
-    border: 'border-pink-200',
-    current: (ctx) => ctx.failedPieces,
-    target: 5,
+    icon: Gift,
+    iconColor: 'hsl(310 60% 55%)',
+    bg: 'bg-fuchsia-50',
+    border: 'border-fuchsia-200',
+    current: (ctx) => ctx.giftedPieces,
+    target: 15,
   },
 ];
 
@@ -136,13 +246,19 @@ export function JourneyTab() {
   const firings = useAppStore((s) => s.firings);
 
   const ctx = useMemo<BadgeContext>(() => ({
-    totalPieces: pieces.length,
-    finishedPieces: pieces.filter((p) => p.stage === 'finished').length,
-    glazedPieces: pieces.filter((p) => ['glazing', 'glaze-fired'].includes(p.stage)).length,
-    bisqueFirings: firings.filter((f) => f.type === 'bisque').length,
-    totalFirings: firings.length,
+    totalPieces:     pieces.length,
+    finishedPieces:  pieces.filter((p) => p.stage === 'finished').length,
+    glazedPieces:    pieces.filter((p) => ['glazing', 'glaze-fired'].includes(p.stage)).length,
+    bisqueFirings:   firings.filter((f) => f.type === 'bisque').length,
+    glazeFirings:    firings.filter((f) => f.type === 'glaze').length,
+    totalFirings:    firings.length,
     piecesWithNotes: pieces.filter((p) => p.notes && p.notes.trim().length > 0).length,
-    failedPieces: pieces.filter((p) => p.stage === 'cemetery' || ['cracked', 'warped'].includes(p.status ?? '')).length,
+    failedPieces:    pieces.filter((p) => p.stage === 'cemetery' || ['cracked', 'warped'].includes(p.status ?? '')).length,
+    giftedPieces:    pieces.filter((p) => p.status === 'gifted').length,
+    wheelPieces:     pieces.filter((p) => p.formingMethod === 'wheel-thrown' || p.formingMethod === 'thrown-and-altered').length,
+    handBuiltPieces: pieces.filter((p) => ['coiled', 'pinched', 'slab-built'].includes(p.formingMethod ?? '')).length,
+    piecesWithPhoto: pieces.filter((p) => !!(p.photo || p.imgUrl)).length,
+    soldPieces:      pieces.filter((p) => p.status === 'sold').length,
   }), [pieces, firings]);
 
   const badges = useMemo(() =>

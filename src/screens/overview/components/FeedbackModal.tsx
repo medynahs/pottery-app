@@ -1,17 +1,14 @@
-import { InfoSheet } from '@/src/components/AppSheets';
+import { InfoSheet, ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { Check, MessageSquarePlus, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
-    KeyboardAvoidingView,
     Linking,
-    Modal,
     Platform,
-    Pressable,
     ScrollView,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -73,24 +70,9 @@ export function FeedbackModal({ visible, onClose }: Props) {
       body={infoSheet?.body ?? ''}
       onDismiss={() => setInfoSheet(null)}
     />
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(22,14,10,0.52)' }}>
-        <Pressable style={{ position: 'absolute', inset: 0 }} onPress={onClose} />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <ModalShell visible={visible} onClose={onClose}>
           {/* Letter card */}
-          <View
-            style={{
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
-              backgroundColor: '#FFFBF2',
-              borderTopWidth: 1,
-              borderColor: '#E8D9BE',
-            }}
-          >
-            {/* Handle */}
-            <View className="items-center pt-3 pb-1">
-              <View className="w-10 h-1 rounded-full" style={{ backgroundColor: '#C9B48C' }} />
-            </View>
+      <ModalCard variant="pottery">
 
             {/* Envelope flap strip */}
             <View
@@ -241,10 +223,8 @@ export function FeedbackModal({ visible, onClose }: Props) {
                 </TouchableOpacity>
               </View>
             </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
+      </ModalCard>
+    </ModalShell>
     </>
   );
 }

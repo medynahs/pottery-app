@@ -1,10 +1,12 @@
 import { Text } from '@/src/components/ui/text';
+import { useCurrentUser } from '@/src/hooks/useCurrentUser';
+import { generateSetupQuests, type SetupQuestKey } from '@/src/screens/overview/setupQuests/generateSetupQuests';
 import { generateStudioRhythmSuggestions } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import { EVENT_CATEGORIES, STAGE_CONFIG, getDateKey } from '@/src/screens/overview/studioRythm/studioRhythm';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
-import { CalendarDays, Check, Flame, Hammer, MessageSquarePlus, Scissors, Sparkles, Trophy } from 'lucide-react-native';
+import { CalendarDays, Check, Flame, Hammer, MessageSquarePlus, Plus, Scissors, Sparkles, Trophy, Wallet } from 'lucide-react-native';
 import React from 'react';
 import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,11 +24,21 @@ const MISSION_META: Record<string, { title: string; Icon: MissionIcon; iconColor
   'goal-focus': { title: 'Weekly Goal', Icon: Trophy, iconColor: 'hsl(44 70% 45%)', chipClassName: 'bg-yellow-50' },
 };
 
+const SETUP_QUEST_META: Record<SetupQuestKey, { Icon: MissionIcon; iconColor: string; chipClassName: string }> = {
+  'pricing-profile': { Icon: Wallet, iconColor: 'hsl(44 70% 45%)', chipClassName: 'bg-yellow-50' },
+  'studio-rhythm': { Icon: CalendarDays, iconColor: 'hsl(213 70% 45%)', chipClassName: 'bg-blue-50' },
+  'add-kiln': { Icon: Flame, iconColor: 'hsl(16 78% 52%)', chipClassName: 'bg-red-50' },
+  'log-first-piece': { Icon: Plus, iconColor: 'hsl(135 45% 35%)', chipClassName: 'bg-green-50' },
+};
+
 export function OverviewPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  useCurrentUser();
   const user = useAppStore((state) => state.user);
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
+  const kilns = useAppStore((state) => state.kilns);
+  const pricingOnboardingCompleted = useAppStore((state) => state.pricingOnboardingCompleted);
   const pieces = useAppStore((state) => state.pieces);
   const firings = useAppStore((state) => state.firings);
   const rhythm = useAppStore((state) => state.studioRhythm);
@@ -55,6 +67,13 @@ export function OverviewPage() {
     const remaining = all.filter((s) => !s.completed);
     return { total, completedCount, all, remaining, topMission: remaining[0] ?? null };
   }, [pieces, firings, rhythm, dailyMissionCompletion, todayMissionKey]);
+
+  const setupQuests = React.useMemo(() => generateSetupQuests({
+    kilnCount: kilns.length,
+    studioRhythmConfigured: rhythm.stageDays.length > 0,
+    pricingOnboardingCompleted,
+    pieceCount: pieces.length,
+  }), [kilns.length, rhythm.stageDays.length, pricingOnboardingCompleted, pieces.length]);
 
   const todayRhythm = React.useMemo(() => {
     const dow = (new Date().getDay() + 6) % 7;
@@ -119,7 +138,7 @@ export function OverviewPage() {
         ) : null}
 
         {/* Missions widget — top-left, full interactive quest board */}
-        {missionsSummary.total === 0 ? (
+        {setupQuests.length + missionsSummary.total === 0 ? (
           <TouchableOpacity
             onPress={() => router.push('/profile/studio-rhythm')}
             activeOpacity={0.86}
@@ -152,7 +171,7 @@ export function OverviewPage() {
                 <Text className="text-sm font-serif font-bold text-foreground">Daily Quest Board</Text>
               </View>
               <Text className="text-xs font-semibold text-primary">
-                {missionsSummary.completedCount}/{missionsSummary.total}
+                {missionsSummary.completedCount}/{setupQuests.length + missionsSummary.total}
               </Text>
             </View>
 
@@ -161,8 +180,8 @@ export function OverviewPage() {
               <View
                 className="h-full rounded-full bg-primary"
                 style={{
-                  width: `${missionsSummary.total > 0
-                    ? Math.round((missionsSummary.completedCount / missionsSummary.total) * 100)
+                  width: `${(setupQuests.length + missionsSummary.total) > 0
+                    ? Math.round((missionsSummary.completedCount / (setupQuests.length + missionsSummary.total)) * 100)
                     : 0}%`,
                 }}
               />
@@ -173,6 +192,37 @@ export function OverviewPage() {
               contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12 }}
               nestedScrollEnabled
             >
+              {/* Setup quest cards */}
+              {setupQuests.map((quest) => {
+                const meta = SETUP_QUEST_META[quest.key];
+                const Icon = meta.Icon;
+                return (
+                  <View
+                    key={quest.key}
+                    className="rounded-2xl p-3 mb-2.5 border border-blue-200 bg-blue-50/60"
+                  >
+                    <View className="flex-row items-start gap-2.5 mb-2">
+                      <View className={`w-9 h-9 rounded-xl items-center justify-center border border-border ${meta.chipClassName}`}>
+                        <Icon size={16} color={meta.iconColor} />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-xs font-semibold text-foreground">{quest.title}</Text>
+                        <Text className="text-[11px] mt-0.5 leading-4 text-muted-foreground">{quest.text}</Text>
+                      </View>
+                      <View className="rounded-full px-2 py-0.5 self-start border bg-blue-100 border-blue-200">
+                        <Text className="text-[9px] font-medium text-blue-700">Setup</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => router.push(quest.route as never)}
+                      activeOpacity={0.8}
+                      className="rounded-xl border border-blue-200 bg-blue-100 py-1.5 items-center justify-center"
+                    >
+                      <Text className="text-[11px] font-semibold text-blue-700">{quest.actionLabel} →</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
               {missionsSummary.all.map((mission) => {
                 const meta = MISSION_META[mission.type];
                 if (!meta) return null;

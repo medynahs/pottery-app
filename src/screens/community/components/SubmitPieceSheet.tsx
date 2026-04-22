@@ -1,16 +1,13 @@
 // src/screens/community/components/SubmitPieceSheet.tsx
+import { ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { Camera } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 type Props = {
@@ -55,27 +52,8 @@ export function SubmitPieceSheet({
   };
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={handleClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1, justifyContent: 'flex-end' }}
-      >
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(22,14,10,0.52)' }}>
-          <Pressable style={{ position: 'absolute', inset: 0 }} onPress={handleClose} />
-          <View
-            style={{
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
-              backgroundColor: '#FFFBF2',
-              borderTopWidth: 1,
-              borderColor: '#E8D9BE',
-              maxHeight: '92%',
-            }}
-          >
-            {/* Drag handle */}
-            <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
-              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#C9B48C' }} />
-            </View>
+    <ModalShell visible onClose={handleClose}>
+      <ModalCard variant="pottery" maxHeight="92%">
 
             {submitted ? (
               /* ── Success state ── */
@@ -223,9 +201,7 @@ export function SubmitPieceSheet({
                 </View>
               </ScrollView>
             )}
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      </ModalCard>
+    </ModalShell>
   );
 }

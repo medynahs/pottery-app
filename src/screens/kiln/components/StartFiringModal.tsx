@@ -1,4 +1,5 @@
 // src/screens/kiln/StartFiringModal.tsx
+import { ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Button } from '@/src/components/ui/button';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
@@ -8,20 +9,17 @@ import { useAppStore } from '@/src/store';
 import { X } from 'lucide-react-native';
 import React from 'react';
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  useWindowDimensions,
-  View,
+    ScrollView,
+    useWindowDimensions,
+    View
 } from 'react-native';
 import type { Firing } from '../../../types/kiln';
 import { FIRING_SOURCE_STAGE, KILN_TYPE_LABELS } from '../constants';
 import { estimateFiringCost, estimateReadyDateIso } from '../firingEstimations';
 import type { StartFiringFormValues } from './StartFiringModalContent';
 import {
-  EMPTY_START_FIRING_FORM,
-  StartFiringModalContent,
+    EMPTY_START_FIRING_FORM,
+    StartFiringModalContent,
 } from './StartFiringModalContent';
 
 interface StartFiringModalProps {
@@ -203,15 +201,8 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
   );
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <Pressable
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          onPress={onClose}
-        />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View className="bg-background rounded-t-3xl" style={{ maxHeight: height * 0.92 }}>
-            <View className="w-9 h-1 bg-muted rounded-full self-center mt-4 mb-2" />
+    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
+      <ModalCard maxHeight={height * 0.92}>
 
             <View className="flex-row justify-between items-center px-6 pb-4 border-b border-border">
               <Text className="text-2xl font-serif font-bold text-foreground">Start Firing</Text>
@@ -281,10 +272,8 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
                 </View>
               )}
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
+      </ModalCard>
+    </ModalShell>
   );
 }
 

@@ -11,7 +11,6 @@ export type OnboardingUserType =
     | 'studio-potter'
     | 'hybrid-potter'
     | 'studio-owner-technician'
-    | 'teacher'
     | 'business-owner'
     | 'not-sure';
 
@@ -31,13 +30,7 @@ export type UserTypeConfig = {
 export type StepKey =
     | 'welcome'
     | 'role'
-    | 'pricing'
-    | 'kiln'
     | 'kilnkin'
-    | 'home-setup'
-    | 'routines'
-    | 'preferences'
-    | 'studio-preview'
     | 'ready';
 
 export type OnboardingDraft = {
@@ -59,4 +52,5 @@ export type OnboardingDraft = {
     notificationsEnabled: boolean;
     quickTourRequested: boolean;
     activeModules: AppModule[];
+    studioCode: string;
 };

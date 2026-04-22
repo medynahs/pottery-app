@@ -1,9 +1,10 @@
 import { SectionLabel } from '@/src/components/SectionLabel';
 import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { SettingsRow } from '@/src/components/SettingsRow';
+import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
-import { useAppStore } from '@/src/store/appStore';
+import { useAppStore, type AppModule } from '@/src/store/appStore';
 import { PRICING_USER_TYPE_LABELS } from '@/src/types/pricing';
 import { useRouter } from 'expo-router';
 import {
@@ -13,8 +14,10 @@ import {
   Flame,
   Hammer,
   Layers,
+  LayoutGrid,
   Moon,
   Palette,
+  Users,
   Zap
 } from 'lucide-react-native';
 import React from 'react';
@@ -32,23 +35,18 @@ export default function AppCustomizationScreen() {
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
   const pricingSettings = useAppStore((s) => s.pricingSettings);
   const pricingOnboardingCompleted = useAppStore((s) => s.pricingOnboardingCompleted);
-  const backendUsers = useAppStore((s) => s.backendUsers);
-  const backendUsersStatus = useAppStore((s) => s.backendUsersStatus);
-  const backendUsersError = useAppStore((s) => s.backendUsersError);
-  const loadBackendUsers = useAppStore((s) => s.loadBackendUsers);
+  const enabledModules = useAppStore((s) => s.enabledModules);
+  const toggleModule = useAppStore((s) => s.toggleModule);
 
-  const backendStatusLabel =
-    backendUsersStatus === 'loading'
-      ? 'Syncing…'
-      : backendUsersStatus === 'success'
-        ? 'Connected'
-        : backendUsersStatus === 'error'
-          ? 'Error'
-          : 'Idle';
+  const MODULE_OPTIONS: Array<{ id: AppModule; label: string; description: string; icon: typeof LayoutGrid; iconColor: string; iconBg: string }> = [
+    { id: 'pieces',    label: 'Pieces',    description: 'Track pieces from forming to finished.',        icon: Box,         iconColor: 'hsl(24 40% 45%)',  iconBg: 'bg-stone-100' },
+    { id: 'kiln',      label: 'Kiln',      description: 'Firing queues, logs, and kiln context.',        icon: Flame,       iconColor: 'hsl(25 90% 55%)',  iconBg: 'bg-orange-50' },
+    { id: 'library',   label: 'Library',   description: 'Templates, glaze references, and reflections.', icon: Layers,      iconColor: 'hsl(213 80% 55%)', iconBg: 'bg-blue-50'   },
+    { id: 'community', label: 'Community', description: 'Share progress and learn from others.',         icon: Users,       iconColor: 'hsl(135 45% 40%)', iconBg: 'bg-green-50'  },
+  ];
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-
       <View className="flex-row items-center justify-between px-6 pt-4 pb-2">
         <View>
           <Text className="text-xl font-bold text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
@@ -74,8 +72,23 @@ export default function AppCustomizationScreen() {
           <SettingsRow icon={Calculator} iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50" label="Pricing Rules" value={pricingSettings.studioLabel} onPress={() => router.push('/pricing-rules' as never)} isLast />
         </SettingsGroup>
 
-        <SectionLabel title="Preferences" />
+        <SectionLabel title="Active Modules" />
         <SettingsGroup>
+          {MODULE_OPTIONS.map((mod, i) => (
+            <ToggleRow
+              key={mod.id}
+              icon={mod.icon}
+              iconColor={mod.iconColor}
+              iconBg={mod.iconBg}
+              label={mod.label}
+              value={enabledModules.includes(mod.id)}
+              onToggle={() => toggleModule(mod.id)}
+              isLast={i === MODULE_OPTIONS.length - 1}
+            />
+          ))}
+        </SettingsGroup>
+
+        <SectionLabel title="Preferences" />        <SettingsGroup>
           <SettingsRow icon={Moon} iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50" label="Theme" value="Light" />
           <SettingsRow icon={Palette} iconColor="hsl(15 50% 50%)" iconBg="bg-red-50" label="Accent Color" value="Terracotta" isLast />
         </SettingsGroup>

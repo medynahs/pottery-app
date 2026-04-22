@@ -4,14 +4,8 @@ import { ChevronLeft, Edit3, Settings, Share2, Zap } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Image, Modal, Pressable, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { useProfileLevel } from '../hooks/useProfileLevel';
 import { EditProfileModal } from './EditProfileModal';
-
-const XP = 2340;
-const XP_MAX = 3000;
-const xpPct = XP / XP_MAX;
-const LEVEL = 12;
-const TITLE = 'Craft Artisan';
-const NEXT_TITLE = 'Master Potter';
 
 export function ProfileHeader({
   onBack,
@@ -21,6 +15,7 @@ export function ProfileHeader({
   onOpenAccountSettings: () => void;
 }) {
   const user = useAppStore((s) => s.user);
+  const { progress, title, nextTitle, earnedCount, totalBadges, badgesUntilNext } = useProfileLevel();
   const [editVisible, setEditVisible] = useState(false);
   const [xpTooltip, setXpTooltip] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(false);
@@ -68,7 +63,7 @@ export function ProfileHeader({
                 strokeWidth={4}
                 fill="none"
                 strokeDasharray={`${2 * Math.PI * 44}`}
-                strokeDashoffset={`${2 * Math.PI * 44 * (1 - xpPct)}`}
+                strokeDashoffset={`${2 * Math.PI * 44 * (1 - progress)}`}
                 strokeLinecap="round"
                 rotation="-90"
                 origin="48,48"
@@ -102,7 +97,7 @@ export function ProfileHeader({
                 flexDirection: 'row', alignItems: 'center', gap: 3,
               }}>
                 <Zap size={8} color="white" />
-                <Text style={{ fontSize: 10, fontWeight: '700', color: 'white' }}>{TITLE}</Text>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: 'white' }}>{title}</Text>
               </View>
             </TouchableOpacity>
           </TouchableOpacity>
@@ -145,15 +140,18 @@ export function ProfileHeader({
             <View className="flex-row justify-between items-center mb-2">
               <View className="flex-row items-center gap-1.5">
                 <Zap size={12} color="hsl(38 80% 50%)" />
-                <Text className="text-xs font-bold text-foreground">{TITLE} · Lv. {LEVEL}</Text>
+                <Text className="text-xs font-bold text-foreground">{title}</Text>
               </View>
-              <Text className="text-xs text-muted-foreground">{XP.toLocaleString()} / {XP_MAX.toLocaleString()} XP</Text>
+              <Text className="text-xs text-muted-foreground">{earnedCount} / {totalBadges} badges</Text>
             </View>
             <View className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-              <View className="h-full rounded-full" style={{ width: `${xpPct * 100}%`, backgroundColor: 'hsl(38 80% 50%)' }} />
+              <View className="h-full rounded-full" style={{ width: `${progress * 100}%`, backgroundColor: 'hsl(38 80% 50%)' }} />
             </View>
             <Text className="text-xs text-muted-foreground mt-1.5">
-              {(XP_MAX - XP).toLocaleString()} XP until <Text className="font-semibold text-foreground">{NEXT_TITLE}</Text>
+              {nextTitle
+                ? <>{badgesUntilNext} badge{badgesUntilNext !== 1 ? 's' : ''} until <Text className="font-semibold text-foreground">{nextTitle}</Text></>
+                : <Text className="font-semibold text-foreground">All badges earned — Studio Legend! 🏺</Text>
+              }
             </Text>
           </View>
         ) : null}

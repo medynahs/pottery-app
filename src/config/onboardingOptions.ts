@@ -5,24 +5,13 @@ import {
     HelpCircle,
     Home,
     Layers,
-    Users,
 } from 'lucide-react-native';
 import { OnboardingUserType, StepKey, UserTypeConfig } from "../types/user";
 
 export const USER_TYPE_CONFIG: Record<OnboardingUserType, UserTypeConfig> = {
-    'home-potter': {
-        label: 'Home Potter',
-        description: 'You mostly create at home and may use your own kiln or a kiln service.',
-        help: 'Great for personal practice with light operations.',
-        practiceMode: 'home',
-        role: 'owner',
-        defaultModules: ['overview', 'pieces', 'kiln', 'library'],
-        pricingUserType: 'hobby',
-        includeHomeSetup: true,
-        icon: Home,
-    },
+   
     'studio-potter': {
-        label: 'Studio Potter',
+        label: ' Shared Studio Potter',
         description: 'You mainly work in a shared studio environment.',
         help: 'Keeps tools focused on studio flow and shared firing context.',
         practiceMode: 'studio',
@@ -31,6 +20,17 @@ export const USER_TYPE_CONFIG: Record<OnboardingUserType, UserTypeConfig> = {
         pricingUserType: 'side-business',
         includeHomeSetup: false,
         icon: Building2,
+    },
+    'business-owner': {
+        label: 'Production Potter',
+        description: 'You make consistently for markets, commissions, or online sales.',
+        help: 'Inventory tracking and production tools — with more coming in a future premium tier.',
+        practiceMode: 'both',
+        role: 'owner',
+        defaultModules: ['overview', 'pieces', 'kiln', 'library', 'community'],
+        pricingUserType: 'full-time',
+        includeHomeSetup: false,
+        icon: BriefcaseBusiness,
     },
     'hybrid-potter': {
         label: 'Hybrid Potter',
@@ -54,30 +54,19 @@ export const USER_TYPE_CONFIG: Record<OnboardingUserType, UserTypeConfig> = {
         includeHomeSetup: false,
         icon: Hammer,
     },
-    teacher: {
-        label: 'Teacher / Instructor',
-        description: 'You coordinate lessons, demos, and student progress.',
-        help: 'Keeps your flow structured and easy to revisit.',
-        practiceMode: 'studio',
-        role: 'owner',
-        defaultModules: ['overview', 'pieces', 'kiln', 'library'],
-        pricingUserType: 'side-business',
-        includeHomeSetup: false,
-        icon: Users,
-    },
-    'business-owner': {
-        label: 'Small Business Owner',
-        description: 'You create for sales, planning, and production consistency.',
-        help: 'Enables fuller workflow defaults for sustainable operations.',
-        practiceMode: 'both',
+     'home-potter': {
+        label: 'Home Potter',
+        description: 'You mostly create at home and may use your own kiln or a kiln service.',
+        help: 'Great for personal practice with light operations.',
+        practiceMode: 'home',
         role: 'owner',
         defaultModules: ['overview', 'pieces', 'kiln', 'library', 'community'],
-        pricingUserType: 'full-time',
-        includeHomeSetup: false,
-        icon: BriefcaseBusiness,
+        pricingUserType: 'hobby',
+        includeHomeSetup: true,
+        icon: Home,
     },
     'not-sure': {
-        label: 'I’m Not Sure Yet',
+        label: 'Not Sure Yet',
         description: 'Start with a balanced setup and refine later in settings.',
         help: 'You can adjust role and modules at any time.',
         practiceMode: 'both',
@@ -90,27 +79,15 @@ export const USER_TYPE_CONFIG: Record<OnboardingUserType, UserTypeConfig> = {
 };
 
 export const headingByStep: Record<StepKey, string> = {
-    welcome: 'Welcome to your cozy pottery companion',
+    welcome: 'Welcome to your cozy pottery studio',
     role: 'Who are you in your pottery practice?',
-    pricing: 'Choose your pricing starting point',
-    kiln: 'Kiln setup and studio context',
     kilnkin: 'Choose your Kilnkin companion',
-    'home-setup': 'Optional home studio setup',
-    routines: 'Set your pottery rhythm',
-    preferences: 'Personal preferences and modules',
-    'studio-preview': 'Quick studio / home overview',
     ready: 'Ready to create',
 };
 
 export const subheadingByStep: Record<StepKey, string> = {
     welcome: 'Track, create, and celebrate every piece with calm guidance and playful support.',
     role: 'Your role helps tailor modules and defaults so the app feels focused from day one.',
-    pricing: 'Pick the pricing profile that best matches how you make and sell right now.',
-    kiln: 'Add what you know now, skip what you can decide later.',
     kilnkin: 'Pick the companion that matches your studio energy.',
-    'home-setup': 'A few optional notes can make your home workflow smoother.',
-    routines: 'Start simple. You can update goals and cadence in settings.',
-    preferences: 'Choose units, language, reminders, and what modules are visible.',
-    'studio-preview': 'A mini orientation before entering your full studio view.',
-    ready: 'Your Kilnkin and studio are ready. Let’s begin your next piece.',
+    ready: 'Your Kilnkin is ready. Setup quests are waiting inside your studio.',
 };
