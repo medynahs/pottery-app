@@ -12,63 +12,67 @@ import { Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, Sty
 
 // ─── Shared card shell ────────────────────────────────────────────────────────
 
-function SheetCard({ children, onBackdrop }: { children: React.ReactNode; onBackdrop: () => void }) {
+function SheetCard({ visible, children, onBackdrop }: { visible: boolean; children: React.ReactNode; onBackdrop: () => void }) {
   const { height } = useWindowDimensions();
   const backdropOpacity = React.useRef(new Animated.Value(0)).current;
   const slideY = React.useRef(new Animated.Value(height)).current;
 
   React.useEffect(() => {
-    Animated.parallel([
-      Animated.timing(backdropOpacity, {
-        toValue: 1,
-        duration: 200,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideY, {
-        toValue: 0,
-        duration: 320,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
+    if (visible) {
+      backdropOpacity.setValue(0);
+      slideY.setValue(height);
+      Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: 200,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideY, {
+          toValue: 0,
+          duration: 320,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
 
   return (
-    // No Modal — plain absolute overlay rendered in-tree so the OS never
-    // touches our animation. Backdrop is always fixed; only the card moves.
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* Stationary dimmed background */}
-      <Animated.View
-        pointerEvents="none"
-        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(22,14,10,0.52)', opacity: backdropOpacity }]}
-      />
-      {/* Tap-to-dismiss target behind the card */}
-      <Pressable style={StyleSheet.absoluteFill} onPress={onBackdrop} />
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onBackdrop}>
+      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        {/* Stationary dimmed background */}
+        <Animated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(22,14,10,0.52)', opacity: backdropOpacity }]}
+        />
+        {/* Tap-to-dismiss target behind the card */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onBackdrop} />
 
-      {/* Card slides up from off-screen */}
-      <Animated.View
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          transform: [{ translateY: slideY }],
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
-          backgroundColor: '#FFFBF2',
-          borderTopWidth: 1,
-          borderColor: '#E8D9BE',
-          paddingBottom: 36,
-        }}
-      >
-        {/* Drag handle */}
-        <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
-          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#C9B48C' }} />
-        </View>
-        {children}
-      </Animated.View>
-    </View>
+        {/* Card slides up from off-screen */}
+        <Animated.View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            transform: [{ translateY: slideY }],
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            backgroundColor: '#FFFBF2',
+            borderTopWidth: 1,
+            borderColor: '#E8D9BE',
+            paddingBottom: 36,
+          }}
+        >
+          {/* Drag handle */}
+          <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#C9B48C' }} />
+          </View>
+          {children}
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
@@ -267,9 +271,8 @@ export function ConfirmSheet({
   onConfirm,
   onCancel,
 }: ConfirmSheetProps) {
-  if (!visible) return null;
   return (
-    <SheetCard onBackdrop={onCancel}>
+    <SheetCard visible={visible} onBackdrop={onCancel}>
       <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
         <Text className="text-lg font-bold text-foreground">{title}</Text>
         <Text className="text-sm text-muted-foreground mt-2 leading-5">{body}</Text>
@@ -298,9 +301,8 @@ export interface InfoSheetProps {
 }
 
 export function InfoSheet({ visible, title, body, buttonLabel = 'Got it', onDismiss }: InfoSheetProps) {
-  if (!visible) return null;
   return (
-    <SheetCard onBackdrop={onDismiss}>
+    <SheetCard visible={visible} onBackdrop={onDismiss}>
       <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
         <Text className="text-lg font-bold text-foreground">{title}</Text>
         <Text className="text-sm text-muted-foreground mt-2 leading-5">{body}</Text>
@@ -329,9 +331,8 @@ export interface PickSheetProps {
 }
 
 export function PickSheet({ visible, title, body, options, onCancel }: PickSheetProps) {
-  if (!visible) return null;
   return (
-    <SheetCard onBackdrop={onCancel}>
+    <SheetCard visible={visible} onBackdrop={onCancel}>
       <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
         <Text className="text-lg font-bold text-foreground">{title}</Text>
         {body ? <Text className="text-sm text-muted-foreground mt-2 leading-5">{body}</Text> : null}

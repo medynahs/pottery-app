@@ -14,23 +14,27 @@ import type { Piece } from '@/src/types/pieces';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import {
-    API_TO_LOCAL_STAGE,
-    LOCAL_STAGE_TO_API,
-    apiCreatePiece,
-    apiDeletePiece,
-    apiListPieces,
-    apiUpdatePiece,
-    apiUpdatePieceAsset,
-    apiUploadPieceAsset,
-    type ApiPieceStatus,
-    type BackendPiece,
-    type CreatePiecePayload,
-    type UpdateAssetPayload,
+  API_TO_LOCAL_STAGE,
+  LOCAL_STAGE_TO_API,
+  apiCreatePiece,
+  apiDeletePiece,
+  apiListPieces,
+  apiUpdatePiece,
+  apiUpdatePieceAsset,
+  apiUploadPieceAsset,
+  type ApiPieceStatus,
+  type BackendPiece,
+  type CreatePiecePayload,
+  type UpdateAssetPayload,
 } from '../../../services/pieces';
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
+/** Base key — used for prefix invalidation (matches all user-scoped entries). */
 export const PIECES_QUERY_KEY = ['pieces'] as const;
+/** Scoped key — unique per user so different accounts never share a cache entry. */
+export const piecesQueryKey = (userId: string) =>
+  [...PIECES_QUERY_KEY, userId] as const;
 export const pieceAssetsQueryKey = (pieceId: string) =>
   ['piece-assets', pieceId] as const;
 
@@ -108,18 +112,16 @@ function mergePiecesIntoStore(
  */
 export function usePiecesSync() {
   const sessionToken = useAppStore(s => s.sessionToken);
+  const oryIdentityId = useAppStore(s => s.oryIdentityId);
 
-  if (__DEV__) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      console.log('[pieces:sync] sessionToken present:', !!sessionToken);
-    }, [sessionToken]);
-  }
+  useEffect(() => {
+    if (__DEV__) console.log('[pieces:sync] sessionToken present:', !!sessionToken);
+  }, [sessionToken]);
 
   const query = useQuery({
-    queryKey: PIECES_QUERY_KEY,
+    queryKey: piecesQueryKey(oryIdentityId ?? ''),
     queryFn: () => apiListPieces(sessionToken!),
-    enabled: !!sessionToken,
+    enabled: !!sessionToken && !!oryIdentityId,
     staleTime: 2 * 60 * 1000,
     retry: 2,
   });
@@ -170,8 +172,11 @@ export function useCreatePieceMutation() {
     },
     onSuccess: ({ bp, localPiece }) => {
       if (__DEV__) console.log(`[pieces:create] "${localPiece.name}" → backendId ${bp.id}`);
-      // Stamp backendId onto the local record so future updates can route to it.
-      updatePiece({ ...localPiece, backendId: bp.id });
+      // Read the latest version of the piece from the store — the user may have
+      // edited it while the create request was in flight, so we must not clobber
+      // those changes with the stale localPiece snapshot.
+      const latest = useAppStore.getState().pieces.find(p => p.id === localPiece.id);
+      if (latest) updatePiece({ ...latest, backendId: bp.id });
       void queryClient.invalidateQueries({ queryKey: PIECES_QUERY_KEY });
     },
     onError: (err, { localPiece }) => {

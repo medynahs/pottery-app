@@ -1,7 +1,7 @@
 // Pieces API — /users/me/pieces
 // All endpoints require an X-Session-Token header from Ory Kratos.
 
-const API_BASE = 'https://kilnkins.onrender.com';
+import { API_BASE_URL as API_BASE } from './index';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
 
