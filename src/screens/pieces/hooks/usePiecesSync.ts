@@ -18,6 +18,7 @@ import {
   LOCAL_STAGE_TO_API,
   apiCreatePiece,
   apiDeletePiece,
+  apiDeletePieceAsset,
   apiListPieces,
   apiUpdatePiece,
   apiUpdatePieceAsset,
@@ -256,6 +257,36 @@ export function useDeletePieceMutation() {
           `[pieces:delete] FAILED for "${piece.name}":`,
           err,
         );
+      }
+    },
+  });
+}
+
+// ─── Asset delete mutation ────────────────────────────────────────────────────
+
+export interface DeletePieceAssetOptions {
+  pieceBackendId: string;
+  assetId: string;
+}
+
+export function useDeletePieceAssetMutation() {
+  const sessionToken = useAppStore(s => s.sessionToken);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ pieceBackendId, assetId }: DeletePieceAssetOptions) => {
+      if (!sessionToken) throw new Error('Not signed in');
+      if (__DEV__) console.log(`[pieces:asset:delete] DELETE asset ${assetId} on piece ${pieceBackendId}`);
+      await apiDeletePieceAsset(sessionToken, pieceBackendId, assetId);
+    },
+    onSuccess: (_, { pieceBackendId }) => {
+      void queryClient.invalidateQueries({
+        queryKey: pieceAssetsQueryKey(pieceBackendId),
+      });
+    },
+    onError: (err, { assetId }) => {
+      if (__DEV__) {
+        console.warn(`[pieces:asset:delete] FAILED for asset ${assetId}:`, err);
       }
     },
   });

@@ -244,7 +244,7 @@ export function usePiecesScreen() {
   }, [duplicateBatch]);
 
   const handleUpdateJournalEntry = React.useCallback(
-    (pieceId: number, entryIndex: number, patch: { notes?: string; photo?: string }) => {
+    (pieceId: number, entryIndex: number, patch: { notes?: string; photos?: string[] }) => {
       updateJournalEntry(pieceId, entryIndex, patch);
       setJournalPiece(prev =>
         prev?.id === pieceId
@@ -371,9 +371,9 @@ export function usePiecesScreen() {
     const notes = capture.notes?.trim();
     const journalPatch = {
       notes: notes || undefined,
-      photo: capture.photo || undefined,
+      photos: capture.photo ? [capture.photo] : undefined,
     };
-    const hasJournalPatch = !!journalPatch.notes || !!journalPatch.photo;
+    const hasJournalPatch = !!journalPatch.notes || !!journalPatch.photos;
 
     const bisqueTemp = advanceRequest.toStage === 'bisque' ? capture.bisqueTemp : undefined;
     const glazeTemp = advanceRequest.toStage === 'glaze-fired' ? capture.glazeTemp : undefined;

@@ -32,7 +32,7 @@ export function EntrySpread({
     durationLabel: string;
     dateLabel: string;
     totalEntries: number;
-    onPickPhoto: () => void;
+    onPickPhoto: (photoIndex: number) => void;
     onChangeNotes: (value: string) => void;
     compact: boolean;
 }) {
@@ -89,8 +89,8 @@ export function EntrySpread({
                             </View>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                                 <PolaroidPhotoPicker
-                                    photo={draft.photo}
-                                    onPress={onPickPhoto}
+                                    photo={draft.photos?.[0]}
+                                    onPress={() => onPickPhoto(0)}
                                     accent={accent}
                                     width={200}
                                     height={compact ? 180 : 240}
@@ -100,8 +100,8 @@ export function EntrySpread({
 
                                 />
                                 <PolaroidPhotoPicker
-                                    photo={draft.photo}
-                                    onPress={onPickPhoto}
+                                    photo={draft.photos?.[1]}
+                                    onPress={() => onPickPhoto(1)}
                                     accent={accent}
                                     width={100}
                                     height={100}

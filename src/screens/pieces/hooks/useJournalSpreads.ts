@@ -22,7 +22,7 @@ export function useJournalSpreads(piece: Piece | null, drafts: EntryDraft[], sta
         index,
         stageLabel,
         entry,
-        draft: drafts[index] ?? { notes: entry.notes ?? '', photo: entry.photo },
+        draft: drafts[index] ?? { notes: entry.notes ?? '', photos: entry.photos ?? [] },
         isLast: index === piece.timeline.length - 1,
         durationLabel: formatDuration(durationMs),
         dateLabel: formatDate(entry.timestamp),

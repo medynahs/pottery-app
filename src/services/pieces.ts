@@ -195,6 +195,20 @@ export async function apiUploadPieceAsset(
   return res.json() as Promise<BackendPieceAsset>;
 }
 
+/** DELETE /users/me/pieces/{piece_id}/assets/{asset_id} — permanently remove an asset. */
+export async function apiDeletePieceAsset(
+  sessionToken: string,
+  pieceId: string,
+  assetId: string,
+): Promise<void> {
+  const res = await authedFetch(
+    sessionToken,
+    `${API_BASE}/users/me/pieces/${pieceId}/assets/${assetId}`,
+    { method: 'DELETE' },
+  );
+  if (!res.ok) throw new Error(`deletePieceAsset failed (${res.status})`);
+}
+
 /**
  * PUT /users/me/pieces/{piece_id}/assets/{asset_id} — update status,
  * description, and/or replace the image for an asset.

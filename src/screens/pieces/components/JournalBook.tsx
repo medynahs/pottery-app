@@ -11,7 +11,7 @@ interface JournalBookProps {
   isCompact: boolean;
   currencySymbol: string;
   handleChangeSaleMode: (mode: any) => void;
-  pickPhoto: (index: number) => void;
+  pickPhoto: (entryIndex: number, photoIndex: number) => void;
   handleUpdateNotes: (index: number, notes: string) => void;
   pageScrollRef: React.RefObject<any>;
   handleMomentumEnd: (event: any) => void;
@@ -64,7 +64,7 @@ export function JournalBook({
               durationLabel={spread.durationLabel}
               dateLabel={spread.dateLabel}
               totalEntries={piece.timeline.length}
-              onPickPhoto={() => pickPhoto(spread.index)}
+              onPickPhoto={(photoIndex) => pickPhoto(spread.index, photoIndex)}
               onChangeNotes={(value) => handleUpdateNotes(spread.index, value)}
               compact={isCompact}
             />

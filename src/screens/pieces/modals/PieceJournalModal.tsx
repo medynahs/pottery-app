@@ -55,7 +55,7 @@ interface PieceJournalModalProps {
   onUpdateEntry: (
     pieceId: number,
     entryIndex: number,
-    patch: { notes?: string; photo?: string }
+    patch: { notes?: string; photos?: string[] }
   ) => void;
 }
 
@@ -77,14 +77,18 @@ export function PieceJournalModal({
   const pageScrollRef = React.useRef<ScrollViewType>(null);
 
   // Custom hook for drafts
-  const { drafts, setDrafts, updateNotes, updatePhoto } = useJournalDrafts(piece, visible);
+  const { drafts, setDrafts, updateNotes, updatePhotoAt } = useJournalDrafts(piece, visible);
 
   React.useEffect(() => {
     if (visible && piece) {
       setActivePage(0);
       requestAnimationFrame(() => pageScrollRef.current?.scrollTo({ x: 0, animated: false }));
     }
-  }, [piece, visible]);
+    // Only reset to cover when the modal opens or a *different* piece is shown.
+    // Using piece.id instead of piece prevents a reset on every content update
+    // (e.g. after picking a photo, setJournalPiece creates a new object reference).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [piece?.id, visible]);
 
   const totalMs = useMemo(() => piece ? Date.now() - new Date(piece.createdAt).getTime() : 0, [piece]);
   const bookWidth = useMemo(() => Math.min(width - (isCompact ? 10 : 18), 940), [width, isCompact]);
@@ -121,8 +125,8 @@ export function PieceJournalModal({
     onUpdateEntry(piece.id, index, { notes });
   }, [piece, updateNotes, onUpdateEntry]);
 
-  // Update photo using hook and call onUpdateEntry
-  const pickPhoto = React.useCallback(async (index: number) => {
+  // Update a single photo slot and persist the full photos array
+  const pickPhoto = React.useCallback(async (entryIndex: number, photoIndex: number) => {
     if (!piece) return;
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -133,11 +137,14 @@ export function PieceJournalModal({
       });
       if (!result.canceled) {
         const uri = result.assets[0].uri;
-        updatePhoto(index, uri);
-        onUpdateEntry(piece.id, index, { photo: uri });
+        updatePhotoAt(entryIndex, photoIndex, uri);
+        // Build updated photos array from the current draft
+        const currentPhotos = [...(drafts[entryIndex]?.photos ?? [])];
+        currentPhotos[photoIndex] = uri;
+        onUpdateEntry(piece.id, entryIndex, { photos: currentPhotos });
       }
     } catch { }
-  }, [piece, updatePhoto, onUpdateEntry]);
+  }, [piece, updatePhotoAt, drafts, onUpdateEntry]);
 
   const goToPage = (index: number) => {
     const clamped = Math.max(0, Math.min(index, spreads.length - 1));

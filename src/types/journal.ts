@@ -1,6 +1,10 @@
 import { TimelineEntry } from "./pieces";
 
-export type EntryDraft = { notes: string; photo?: string };
+export type EntryDraft = {
+  notes: string;
+  /** Ordered list of photo URIs — one per polaroid slot. */
+  photos: string[];
+};
 
 export type JournalSpread =
   | {

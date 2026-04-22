@@ -4,7 +4,8 @@ export type TimelineEntry = {
   stage: string;
   timestamp: string;
   notes?: string;
-  photo?: string;
+  /** Ordered list of photo URIs for this stage entry. */
+  photos?: string[];
 };
 
 // Physical state of the piece in the pottery process
