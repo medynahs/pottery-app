@@ -1,5 +1,4 @@
 import { ArchiveX, Droplets, Flame, Hammer, Lightbulb, PackageCheck, Scissors, Sparkles, Star, Wind, Zap } from 'lucide-react-native';
-import type { Piece } from '../../../types/pieces';
 
 export const LIFECYCLE_ORDER = [
   'idea',
@@ -16,11 +15,6 @@ export const LIFECYCLE_ORDER = [
 
 export type LifecycleStage = typeof LIFECYCLE_ORDER[number];
 
-export function nextStage(stage: string): string | null {
-  const idx = LIFECYCLE_ORDER.indexOf(stage as LifecycleStage);
-  if (idx === -1 || idx === LIFECYCLE_ORDER.length - 1) return null;
-  return LIFECYCLE_ORDER[idx + 1];
-}
 
 export const STAGES = [
   { id: 'all', label: 'All', Icon: PackageCheck },
@@ -74,32 +68,6 @@ export function isConditionStatus(status: string): boolean {
   return PIECE_CONDITION_STATUSES.map(s => s.toLowerCase()).includes(status.toLowerCase());
 }
 
-export const FORMING_METHODS = [
-  'No Forming Method',
-  'Coiled',
-  'Mold Formed',
-  'Pinched',
-  'Slab Built',
-  'Slip Cast',
-  'Thrown and Altered',
-  'Wheel Thrown',
-];
-
-export const PIECE_FORMS = [
-  'No Form',
-  'Bowl',
-  'Coffee Cup',
-  'Jar',
-  'Moon Jar',
-  'Mug',
-  'Planter',
-  'Plate',
-  'Platter',
-  'Tea Cup',
-  'Test Tile',
-  'Urn',
-  'Vase',
-];
 
 export const BISQUE_TEMPS = [
   'Cone 022',
@@ -225,16 +193,6 @@ export const EMPTY_FORM = {
   wholesalePriceTarget: '',
   quantity: 1,
 };
-
-export const INITIAL_PIECES: Piece[] = [
-  { id: 1, name: 'Speckled Mug', stage: 'bisque', createdAt: '2025-10-12T10:00:00.000Z', timeline: [{ stage: 'forming', timestamp: '2025-10-12T10:00:00.000Z' }, { stage: 'leather-hard', timestamp: '2025-10-13T08:00:00.000Z' }, { stage: 'trimming', timestamp: '2025-10-13T14:00:00.000Z' }, { stage: 'drying', timestamp: '2025-10-14T09:00:00.000Z' }, { stage: 'bone-dry', timestamp: '2025-10-15T10:00:00.000Z' }, { stage: 'bisque', timestamp: '2025-10-16T11:00:00.000Z' }], clay: 'B-Mix', weight: '320g', location: 'Studio Shelf B', imgUrl: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=400&auto=format&fit=crop' },
-  { id: 2, name: 'Tall Vase', stage: 'leather-hard', createdAt: '2025-10-15T14:00:00.000Z', timeline: [{ stage: 'forming', timestamp: '2025-10-15T14:00:00.000Z' }, { stage: 'leather-hard', timestamp: '2025-10-16T10:00:00.000Z' }], clay: 'Speckled Buff', weight: '580g', location: 'Drying Rack', imgUrl: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=80&w=400&auto=format&fit=crop' },
-  { id: 3, name: 'Matcha Bowl', stage: 'forming', createdAt: '2025-10-18T16:00:00.000Z', timeline: [{ stage: 'idea', timestamp: '2025-10-17T10:00:00.000Z' }, { stage: 'forming', timestamp: '2025-10-18T16:00:00.000Z' }], clay: 'Porcelain', location: 'Wheel', imgUrl: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=400&auto=format&fit=crop' },
-  { id: 4, name: 'Planter Pot', stage: 'cemetery', status: 'Cracked', createdAt: '2025-09-22T12:00:00.000Z', timeline: [{ stage: 'forming', timestamp: '2025-09-22T12:00:00.000Z' }, { stage: 'leather-hard', timestamp: '2025-09-23T09:00:00.000Z' }, { stage: 'trimming', timestamp: '2025-09-23T15:00:00.000Z' }, { stage: 'bone-dry', timestamp: '2025-09-26T10:00:00.000Z' }, { stage: 'bisque', timestamp: '2025-09-28T10:00:00.000Z' }, { stage: 'cemetery', timestamp: '2025-09-30T15:00:00.000Z' }], clay: 'Red Stoneware', notes: 'Cracked during bisque firing', imgUrl: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=80&w=400&auto=format&fit=crop' },
-  { id: 5, name: 'Yunomi Cup', stage: 'glazing', createdAt: '2025-10-20T09:00:00.000Z', timeline: [{ stage: 'forming', timestamp: '2025-10-20T09:00:00.000Z' }, { stage: 'leather-hard', timestamp: '2025-10-21T09:00:00.000Z' }, { stage: 'trimming', timestamp: '2025-10-21T14:00:00.000Z' }, { stage: 'drying', timestamp: '2025-10-22T10:00:00.000Z' }, { stage: 'bone-dry', timestamp: '2025-10-23T09:00:00.000Z' }, { stage: 'bisque', timestamp: '2025-10-25T11:00:00.000Z' }, { stage: 'glazing', timestamp: '2025-10-27T14:00:00.000Z' }], clay: 'B-Mix', weight: '210g', dimensions: '8cm × 9cm', location: 'Glazing Station', imgUrl: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?q=80&w=400&auto=format&fit=crop' },
-  { id: 6, name: 'Serving Bowl', stage: 'finished', status: 'Available', createdAt: '2025-10-08T11:00:00.000Z', timeline: [{ stage: 'forming', timestamp: '2025-10-08T11:00:00.000Z' }, { stage: 'leather-hard', timestamp: '2025-10-09T09:00:00.000Z' }, { stage: 'trimming', timestamp: '2025-10-09T15:00:00.000Z' }, { stage: 'drying', timestamp: '2025-10-11T08:00:00.000Z' }, { stage: 'bone-dry', timestamp: '2025-10-12T09:00:00.000Z' }, { stage: 'bisque', timestamp: '2025-10-14T13:00:00.000Z' }, { stage: 'glazing', timestamp: '2025-10-16T10:00:00.000Z' }, { stage: 'glaze-fired', timestamp: '2025-10-18T14:00:00.000Z' }, { stage: 'finished', timestamp: '2025-10-19T10:00:00.000Z' }], clay: 'Porcelain', weight: '480g', dimensions: '28cm × 8cm', price: '85', imgUrl: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?q=80&w=400&auto=format&fit=crop' },
-];
-
 
 export const STAGE_ICON_MAP = Object.fromEntries(STAGES.map(s => [s.id, s.Icon]));
 export const PAGE_ACCENTS = ['#C97752', '#D49F56', '#8FAE70', '#7D99BD', '#C88290', '#9A846B'];

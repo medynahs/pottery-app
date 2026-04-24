@@ -1,11 +1,12 @@
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
+import { useAppStore } from '@/src/store/appStore';
 import { Check, SlidersHorizontal, X } from 'lucide-react-native';
 import React from 'react';
 import { Modal, Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
-import { FIRING_TYPES, FORMING_METHODS, PIECE_FORMS, PIECE_STATUSES } from '../utils/constants';
+import { FIRING_TYPES, PIECE_STATUSES } from '../utils/constants';
 
 export type SortKey = 'newest' | 'oldest' | 'name-asc' | 'name-desc' | 'updated';
 
@@ -65,13 +66,16 @@ export function FilterSortSheet({
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
 
+  const storeFormOptions = useAppStore(s => s.pieceFormOptions);
+  const storeFormingMethods = useAppStore(s => s.formingMethods);
+
   const clayOptions = React.useMemo(() => {
     const set = new Set(allPieces.map(p => p.clay));
     return Array.from(set).sort();
   }, [allPieces]);
 
-  const formOptions = PIECE_FORMS.filter(f => f !== 'No Form');
-  const methodOptions = FORMING_METHODS.filter(m => m !== 'No Forming Method');
+  const formOptions = storeFormOptions.map(f => f.name);
+  const methodOptions = storeFormingMethods.map(m => m.name);
   const filterCount = countActiveFilters(filters);
   const hasAnyActive = filterCount > 0 || sortKey !== 'newest';
 

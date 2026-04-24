@@ -13,7 +13,8 @@ export type ApiPieceStatus =
   | 'bisque'
   | 'glazing'
   | 'glaze_firing'
-  | 'done';
+  | 'done'
+  | 'cemetery';
 
 export interface BackendPiece {
   id: string;           // UUID
@@ -74,7 +75,7 @@ export const LOCAL_STAGE_TO_API: Record<string, ApiPieceStatus> = {
   glazing: 'glazing',
   'glaze-fired': 'glaze_firing',
   finished: 'done',
-  cemetery: 'done',
+  cemetery: 'cemetery',
 };
 
 /** Maps backend status values back to local stage IDs. */
@@ -86,6 +87,7 @@ export const API_TO_LOCAL_STAGE: Record<ApiPieceStatus, string> = {
   glazing: 'glazing',
   glaze_firing: 'glaze-fired',
   done: 'finished',
+  cemetery: 'cemetery',
 };
 
 // ─── Internal helper ─────────────────────────────────────────────────────────
@@ -186,7 +188,7 @@ export async function apiUploadPieceAsset(
   if (status) form.append('status', status);
   if (description) form.append('description', description);
 
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces/${pieceId}`, {
+  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces/${pieceId}/assets`, {
     method: 'POST',
     // Do NOT set Content-Type — let fetch inject the multipart boundary.
     body: form as unknown as BodyInit_,

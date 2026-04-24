@@ -1,4 +1,3 @@
-import * as ImagePicker from 'expo-image-picker';
 import { COLOR_FAMILY_HEX } from './constants';
 import type { GlazeDraft, TestDraft } from './types';
 
@@ -68,13 +67,3 @@ export function createEmptyTestDraft(glazeId: string, defaultCone: string | null
   };
 }
 
-export async function pickImage(onPick: (uri: string) => void): Promise<void> {
-  try {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
-    });
-    if (!result.canceled) onPick(result.assets[0].uri);
-  } catch {}
-}

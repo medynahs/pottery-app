@@ -139,8 +139,4 @@ export type DisplayItem =
   | { type: 'batch'; pieces: Piece[]; batchId: string }
   | { type: 'set-header'; batchId: string; name: string; count: number };
 
-export type GridRow =
-  | { type: 'batch'; batchId: string; pieces: Piece[] }
-  | { type: 'pair'; items: Piece[] }
-  | { type: 'set-header'; batchId: string; name: string; count: number };
 

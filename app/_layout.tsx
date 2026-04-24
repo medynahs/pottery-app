@@ -14,6 +14,7 @@ import '../global.css';
 import { ErrorBoundary } from '@/src/components/error-boundary';
 import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
 import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
+import { ToastOverlay } from '@/src/components/ui/toast-overlay';
 import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
@@ -113,6 +114,7 @@ function AppShell() {
         <Stack.Screen name="register" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>
       <OfflineBanner />
+      <ToastOverlay />
       <StatusBar style="auto" />
     </>
   );

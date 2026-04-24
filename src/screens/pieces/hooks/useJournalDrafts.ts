@@ -41,5 +41,15 @@ export function useJournalDrafts(piece: Piece | null, visible: boolean) {
     });
   }, []);
 
-  return { drafts, setDrafts, updateNotes, updatePhotoAt };
+  const deletePhotoAt = useCallback((entryIndex: number, photoIndex: number) => {
+    setDrafts(prev => {
+      const next = [...prev];
+      const current = next[entryIndex];
+      const photos = (current.photos ?? []).filter((_, i) => i !== photoIndex);
+      next[entryIndex] = { ...current, photos };
+      return next;
+    });
+  }, []);
+
+  return { drafts, setDrafts, updateNotes, updatePhotoAt, deletePhotoAt };
 }

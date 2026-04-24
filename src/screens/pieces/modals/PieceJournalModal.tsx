@@ -1,6 +1,6 @@
+import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
-import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ChevronLeft,
@@ -31,21 +31,6 @@ import { PAGE_ACCENTS } from '../utils/constants';
 import { formatDuration } from '../utils/journal';
 import { resolveStageIcon } from '../utils/stageIconUtils';
 
-// Memoize stageLabelById outside the component since it only depends on stages
-let memoizedStageLabelById: Record<string, string> | null = null;
-let memoizedStages: any[] | null = null;
-function getStageLabelById(stages: any[]) {
-  if (memoizedStages === stages && memoizedStageLabelById) {
-    return memoizedStageLabelById;
-  }
-  const labels: Record<string, string> = {};
-  for (const stage of stages) {
-    labels[stage.id] = stage.label;
-  }
-  memoizedStages = stages;
-  memoizedStageLabelById = labels;
-  return labels;
-}
 
 interface PieceJournalModalProps {
   piece: Piece | null;
@@ -77,7 +62,8 @@ export function PieceJournalModal({
   const pageScrollRef = React.useRef<ScrollViewType>(null);
 
   // Custom hook for drafts
-  const { drafts, setDrafts, updateNotes, updatePhotoAt } = useJournalDrafts(piece, visible);
+  const { drafts, setDrafts, updateNotes, updatePhotoAt, deletePhotoAt } = useJournalDrafts(piece, visible);
+  const { openPickSheet, PhotoPickerSheets } = usePhotoPicker({ aspect: [4, 3] });
 
   React.useEffect(() => {
     if (visible && piece) {
@@ -96,8 +82,11 @@ export function PieceJournalModal({
   // For tablet, each page is half the book minus insets; for mobile, full width minus insets
   const pageWidth = useMemo(() => isTablet ? (bookWidth - pageInset * 2) / 2 : bookWidth - pageInset, [bookWidth, pageInset, isTablet]);
 
-  // Memoized stageLabelById outside the component
-  const stageLabelById = getStageLabelById(stages);
+  const stageLabelById = useMemo(() => {
+    const labels: Record<string, string> = {};
+    for (const stage of stages) labels[stage.id] = stage.label;
+    return labels;
+  }, [stages]);
 
   // Custom hook for spreads
   const spreads = useJournalSpreads(piece, drafts, stageLabelById, totalMs);
@@ -125,26 +114,40 @@ export function PieceJournalModal({
     onUpdateEntry(piece.id, index, { notes });
   }, [piece, updateNotes, onUpdateEntry]);
 
-  // Update a single photo slot and persist the full photos array
-  const pickPhoto = React.useCallback(async (entryIndex: number, photoIndex: number) => {
+  // Update the piece-level cover photo
+  const pickCoverPhoto = React.useCallback(() => {
     if (!piece) return;
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-      if (!result.canceled) {
-        const uri = result.assets[0].uri;
+    const heroImage = piece.photo ?? piece.imgUrl;
+    openPickSheet(
+      (uri) => onUpdatePiece({ ...piece, photo: uri }),
+      heroImage ? () => onUpdatePiece({ ...piece, photo: undefined, imgUrl: undefined }) : undefined,
+    );
+  }, [piece, onUpdatePiece, openPickSheet]);
+
+  // Persist description changes from the cover spread
+  const handleUpdateDescription = React.useCallback((description: string) => {
+    if (!piece) return;
+    onUpdatePiece({ ...piece, description });
+  }, [piece, onUpdatePiece]);
+
+  // Update a single photo slot and persist the full photos array
+  const pickPhoto = React.useCallback((entryIndex: number, photoIndex: number) => {
+    if (!piece) return;
+    const existingUri = drafts[entryIndex]?.photos?.[photoIndex];
+    openPickSheet(
+      (uri) => {
         updatePhotoAt(entryIndex, photoIndex, uri);
-        // Build updated photos array from the current draft
         const currentPhotos = [...(drafts[entryIndex]?.photos ?? [])];
         currentPhotos[photoIndex] = uri;
         onUpdateEntry(piece.id, entryIndex, { photos: currentPhotos });
-      }
-    } catch { }
-  }, [piece, updatePhotoAt, drafts, onUpdateEntry]);
+      },
+      existingUri ? () => {
+        deletePhotoAt(entryIndex, photoIndex);
+        const currentPhotos = (drafts[entryIndex]?.photos ?? []).filter((_, i) => i !== photoIndex);
+        onUpdateEntry(piece.id, entryIndex, { photos: currentPhotos });
+      } : undefined,
+    );
+  }, [piece, updatePhotoAt, deletePhotoAt, drafts, onUpdateEntry, openPickSheet]);
 
   const goToPage = (index: number) => {
     const clamped = Math.max(0, Math.min(index, spreads.length - 1));
@@ -176,6 +179,7 @@ export function PieceJournalModal({
 
   return (
     <Modal visible={visible} animationType="fade" transparent={false} onRequestClose={onClose} statusBarTranslucent>
+      {PhotoPickerSheets}
       <LinearGradient
         colors={['#2D221C', '#4C3226', '#6C4433']}
         start={{ x: 0, y: 0 }}
@@ -220,7 +224,9 @@ export function PieceJournalModal({
                   currencySymbol={currencySymbol}
                   handleChangeSaleMode={handleChangeSaleMode}
                   pickPhoto={pickPhoto}
+                  pickCoverPhoto={pickCoverPhoto}
                   handleUpdateNotes={handleUpdateNotes}
+                  handleUpdateDescription={handleUpdateDescription}
                   pageScrollRef={pageScrollRef}
                   handleMomentumEnd={handleMomentumEnd}
                 />

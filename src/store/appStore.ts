@@ -10,7 +10,7 @@ import {
 import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import type { DryingTimers, Ritual, StageDay, StudioEvent, StudioRhythm, StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRythm/studioRhythm';
 import { DEFAULT_STUDIO_RHYTHM, getDateKey } from '../screens/overview/studioRythm/studioRhythm';
-import { INITIAL_PIECES, STAGES } from '../screens/pieces/utils/constants';
+import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
 import { fetchUsers, type BackendUser } from '../services';
 import type { Firing, FiringState, Kiln, KilnChecklist, KilnType } from '../types/kiln';
@@ -449,6 +449,9 @@ interface AppState {
   clearSyncQueue: () => void;
   setIsSyncing: (v: boolean) => void;
   setLastSyncedAt: (ts: string) => void;
+  toast: { message: string; variant: 'success' | 'error' } | null;
+  showToast: (message: string, variant: 'success' | 'error') => void;
+  dismissToast: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -541,7 +544,7 @@ export const useAppStore = create<AppState>()(
   setBackendUserId: (id) => set({ backendUserId: id }),
 
   // ── User ──────────────────────────────────────────────────────
-  user: { name: 'Ariane Medina', avatarInitial: 'A', studioName: 'Mallory Clay Studio', location: 'Portland, OR', bio: 'Wheel-thrown stoneware with a love for imperfect forms. Teaching beginners on weekends.' },
+  user: { name: '', avatarInitial: '', studioName: '', location: '', bio: '' },
   setUser: (patch) => set((state) => ({ user: { ...state.user, ...patch } })),
   backendUsers: [],
   backendUsersStatus: 'idle',
@@ -741,11 +744,7 @@ export const useAppStore = create<AppState>()(
     set((state) => ({ studioRhythm: { ...state.studioRhythm, sprintGoalPieces: count } })),
 
   // ── Tasks ─────────────────────────────────────────────────────
-  tasks: [
-    { title: 'Wheel practice: 3 cylinders', time: '1 hr', type: 'practice', status: 'pending' },
-    { title: 'Time to reclaim clay', time: '30 min', type: 'chore', status: 'completed' },
-    { title: 'Clean bottoms before kiln', time: '15 min', type: 'checklist', status: 'completed' },
-  ],
+  tasks: [],
   toggleTask: (index) =>
     set((state) => ({
       tasks: state.tasks.map((t, i) =>
@@ -755,7 +754,7 @@ export const useAppStore = create<AppState>()(
   addTask: (task) => set((state) => ({ tasks: [...state.tasks, task] })),
 
   // ── Pieces ────────────────────────────────────────────────────
-  pieces: INITIAL_PIECES,
+  pieces: [],
   setPieces: (pieces) => set({ pieces }),
   addPieces: (newPieces) => {
     set((state) => ({ pieces: [...newPieces, ...state.pieces] }));
@@ -1220,6 +1219,11 @@ export const useAppStore = create<AppState>()(
   clearSyncQueue: () => set({ pendingSyncOps: [] }),
   setIsSyncing: (v) => set({ isSyncing: v }),
   setLastSyncedAt: (ts) => set({ lastSyncedAt: ts }),
+
+  // ── Toast ─────────────────────────────────────────────────────
+  toast: null,
+  showToast: (message, variant) => set({ toast: { message, variant } }),
+  dismissToast: () => set({ toast: null }),
     }),
     {
       name: 'pottery-life-store',

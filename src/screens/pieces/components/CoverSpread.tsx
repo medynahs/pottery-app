@@ -29,6 +29,7 @@ export function CoverSpread({
     currencySymbol,
     onChangeSaleMode,
     onPickPhoto,
+    onUpdateDescription,
 }: {
     piece: Piece;
     totalMs: number;
@@ -37,8 +38,16 @@ export function CoverSpread({
     currencySymbol: string;
     onChangeSaleMode: (mode: PricingSaleMode) => void;
     onPickPhoto: () => void;
+    onUpdateDescription: (description: string) => void;
 }) {
     const [description, setDescription] = React.useState(piece.description || '');
+    const descDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const handleDescriptionChange = React.useCallback((text: string) => {
+        setDescription(text);
+        if (descDebounceRef.current) clearTimeout(descDebounceRef.current);
+        descDebounceRef.current = setTimeout(() => onUpdateDescription(text), 500);
+    }, [onUpdateDescription]);
 
     const heroImage = piece.photo ?? piece.imgUrl;
     // Add simple icons for each tile
@@ -50,7 +59,7 @@ export function CoverSpread({
         { label: 'Location', value: piece.location || 'Unknown', icon: '📍' },
         { label: 'Dimensions', value: piece.dimensions || 'Unknown', icon: '📏' },
         { label: 'Weight', value: piece.weight || 'Unknown', icon: '⚖️' },
-        { label: 'Firing Fee', value: piece.firingFee || 'Unknown', icon: '💸' },
+        { label: 'Firing Fee', value: piece.firingFee != null ? `${currencySymbol}${piece.firingFee.toFixed(2)}` : 'Unknown', icon: '💸' },
         { label: 'Glaze Temp', value: piece.glazeTemp || 'Unknown', icon: '🌡️' },
     ].filter(Boolean) as { label: string; value: string; icon: string }[];
     const polaroidStartDate = piece.createdAt ? formatShortDate(piece.createdAt) : '';
@@ -118,7 +127,7 @@ export function CoverSpread({
                 />
                 <View style={{ flex: 1, gap: 12, justifyContent: 'center', alignItems: 'flex-start', maxHeight: 130 }}>
                     <NotesCard
-                        onChangeText={setDescription}
+                        onChangeText={handleDescriptionChange}
                         value={description}
                         title='Description'
                         placeholder='Add a description for your piece! What was the inspiration for it? Or your favorite part to make?'

@@ -1,9 +1,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, ImagePlus } from 'lucide-react-native';
+import { Camera, ImagePlus, X } from 'lucide-react-native';
 import React from 'react';
 import {
   Image,
   ImageStyle,
+  Pressable,
   StyleProp,
   Text,
   TouchableOpacity,
@@ -14,6 +15,7 @@ import {
 export interface PolaroidPhotoPickerProps {
   photo?: string;
   onPress?: () => void;
+  onDelete?: () => void;
   accent?: string;
   placeholder?: string | React.ReactNode;
   label?: string | React.ReactNode;
@@ -29,6 +31,7 @@ export interface PolaroidPhotoPickerProps {
 export function PolaroidPhotoPicker({
   photo,
   onPress,
+  onDelete,
   accent = '#B89B7B',
   placeholder = 'Choose your pic ✦',
   label,
@@ -41,12 +44,13 @@ export function PolaroidPhotoPicker({
   children,
 }: PolaroidPhotoPickerProps) {
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={onPress ? 0.82 : 1}
-      style={[{ alignItems: 'center' }, style]}
-      disabled={!onPress}
-    >
+    // Outer View holds both the polaroid card and the floating X button
+    <View style={[{ alignItems: 'center' }, style]}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={onPress ? 0.82 : 1}
+        disabled={!onPress}
+      >
       <View
         style={{
           backgroundColor: '#fff',
@@ -142,6 +146,27 @@ export function PolaroidPhotoPicker({
           </View>
         )}
       </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+      {photo && onDelete && (
+        <Pressable
+          onPress={onDelete}
+          hitSlop={10}
+          style={{
+            position: 'absolute',
+            top: 6,
+            right: 6,
+            width: 26,
+            height: 26,
+            borderRadius: 999,
+            backgroundColor: 'rgba(30, 10, 4, 0.65)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 20,
+          }}
+        >
+          <X size={13} color="white" strokeWidth={2.5} />
+        </Pressable>
+      )}
+    </View>
   );
 }

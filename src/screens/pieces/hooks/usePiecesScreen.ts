@@ -4,7 +4,7 @@ import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
 import { LayoutAnimation, Platform, UIManager } from 'react-native';
-import type { DisplayItem, GridRow, Piece } from '../../../types/pieces';
+import type { DisplayItem, Piece } from '../../../types/pieces';
 import { ActiveFilters, EMPTY_FILTERS, SortKey, countActiveFilters } from '../components/FilterSortSheet';
 import type { StageAdvanceCelebration } from '../modals/StageAdvanceCelebrationModal';
 import type { StageAdvanceCapture, StageAdvanceRequest } from '../modals/StageAdvanceFlowModal';
@@ -171,28 +171,6 @@ export function usePiecesScreen() {
     }
     return result;
   }, [filteredPieces, expandedBatches]);
-
-  const gridRows = React.useMemo((): GridRow[] => {
-    const rows: GridRow[] = [];
-    let pending: Piece | null = null;
-    const flush = () => {
-      if (pending) { rows.push({ type: 'pair', items: [pending] }); pending = null; }
-    };
-    for (const item of displayItems) {
-      if (item.type === 'batch') {
-        flush();
-        rows.push({ type: 'batch', batchId: item.batchId, pieces: item.pieces });
-      } else if (item.type === 'set-header') {
-        flush();
-        rows.push(item);
-      } else {
-        if (pending) { rows.push({ type: 'pair', items: [pending, item.piece] }); pending = null; }
-        else pending = item.piece;
-      }
-    }
-    flush();
-    return rows;
-  }, [displayItems]);
 
   const handleAdd = (newPieces: Piece[]) => {
     addPieces(newPieces);
@@ -435,7 +413,6 @@ export function usePiecesScreen() {
     pieces,
     filteredPieces,
     displayItems,
-    gridRows,
     isSyncing: syncQuery.isFetching,
     refetchPieces: syncQuery.refetch,
     stageTabs,

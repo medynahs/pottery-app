@@ -1,20 +1,25 @@
 import React from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollView as ScrollViewType } from 'react-native';
+import type { JournalSpread } from '../../../types/journal';
+import type { Piece } from '../../../types/pieces';
+import type { PricingSaleMode } from '../../../types/pricing';
 import { CoverSpread } from './CoverSpread';
 import { EntrySpread } from './EntrySpread';
 
 interface JournalBookProps {
-  spreads: any[];
+  spreads: JournalSpread[];
   pageWidth: number;
-  piece: any;
+  piece: Piece;
   totalMs: number;
   isCompact: boolean;
   currencySymbol: string;
-  handleChangeSaleMode: (mode: any) => void;
+  handleChangeSaleMode: (mode: PricingSaleMode) => void;
   pickPhoto: (entryIndex: number, photoIndex: number) => void;
+  pickCoverPhoto: () => void;
   handleUpdateNotes: (index: number, notes: string) => void;
-  pageScrollRef: React.RefObject<any>;
-  handleMomentumEnd: (event: any) => void;
+  handleUpdateDescription: (description: string) => void;
+  pageScrollRef: React.RefObject<ScrollViewType | null>;
+  handleMomentumEnd: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
 }
 
 export function JournalBook({
@@ -26,7 +31,9 @@ export function JournalBook({
   currencySymbol,
   handleChangeSaleMode,
   pickPhoto,
+  pickCoverPhoto,
   handleUpdateNotes,
+  handleUpdateDescription,
   pageScrollRef,
   handleMomentumEnd,
 }: JournalBookProps) {
@@ -51,7 +58,8 @@ export function JournalBook({
               compact={isCompact}
               currencySymbol={currencySymbol}
               onChangeSaleMode={handleChangeSaleMode}
-              onPickPhoto={() => pickPhoto(spread.index)}
+              onPickPhoto={pickCoverPhoto}
+              onUpdateDescription={handleUpdateDescription}
             />
           ) : (
             <EntrySpread
