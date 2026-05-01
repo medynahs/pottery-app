@@ -23,6 +23,7 @@ import {
   type PricingTier,
   type PricingUserType,
 } from '../types/pricing';
+import type { AppNotification, Studio, StudioMember } from '../types/studio';
 import { zustandStorage } from './storage';
 
 // ── Sync queue ────────────────────────────────────────────────────────────────
@@ -323,6 +324,7 @@ interface AppState {
   tasks: Task[];
   toggleTask: (index: number) => void;
   addTask: (task: Task) => void;
+  clearCompletedTasks: () => void;
 
   // ── Studio Rhythm (legacy) ────────────────────────────────────
   studioRhythmConfig: StudioRhythmConfig;
@@ -425,6 +427,7 @@ interface AppState {
   kilns: Kiln[];
   firings: Firing[];
   kilnChecklist: KilnChecklist[];
+  setKilns: (kilns: Kiln[]) => void;
   addKiln: (kiln: Kiln) => void;
   updateKiln: (kiln: Kiln) => void;
   deleteKiln: (id: string) => void;
@@ -452,6 +455,17 @@ interface AppState {
   toast: { message: string; variant: 'success' | 'error' } | null;
   showToast: (message: string, variant: 'success' | 'error') => void;
   dismissToast: () => void;
+
+  // ── Studio (shared-studio context) ───────────────────────────
+  studio: Studio | null;
+  studioMembers: StudioMember[];
+  notifications: AppNotification[];
+  unreadNotificationCount: number;
+  setStudio: (studio: Studio | null) => void;
+  setStudioMembers: (members: StudioMember[]) => void;
+  setNotifications: (notifications: AppNotification[]) => void;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -648,9 +662,17 @@ export const useAppStore = create<AppState>()(
         ? existing.filter((type) => type !== missionType)
         : [...existing, missionType];
 
+      // Prune keys older than 60 days to prevent unbounded growth
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 60);
+      const pruned: DailyMissionCompletion = {};
+      for (const key of Object.keys(state.dailyMissionCompletion)) {
+        if (new Date(key) >= cutoff) pruned[key] = state.dailyMissionCompletion[key];
+      }
+
       return {
         dailyMissionCompletion: {
-          ...state.dailyMissionCompletion,
+          ...pruned,
           [dateKey]: nextForDate,
         },
       };
@@ -752,6 +774,8 @@ export const useAppStore = create<AppState>()(
       ),
     })),
   addTask: (task) => set((state) => ({ tasks: [...state.tasks, task] })),
+  clearCompletedTasks: () =>
+    set((state) => ({ tasks: state.tasks.filter((t) => t.status !== 'completed') })),
 
   // ── Pieces ────────────────────────────────────────────────────
   pieces: [],
@@ -1083,6 +1107,7 @@ export const useAppStore = create<AppState>()(
   kilns: [],
   firings: [],
   kilnChecklist: DEFAULT_CHECKLIST,
+  setKilns: (kilns) => set({ kilns }),
   addKiln: (kiln) => set((state) => ({ kilns: [kiln, ...state.kilns] })),
   updateKiln: (kiln) =>
     set((state) => ({ kilns: state.kilns.map((k) => (k.id === kiln.id ? kiln : k)) })),
@@ -1206,16 +1231,19 @@ export const useAppStore = create<AppState>()(
   isSyncing: false,
   lastSyncedAt: null,
   enqueueSyncOp: (op) =>
-    set((state) => ({
-      pendingSyncOps: [
+    set((state) => {
+      const MAX_SYNC_OPS = 500;
+      const next = [
         ...state.pendingSyncOps,
         {
           ...op,
           id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
           timestamp: new Date().toISOString(),
         },
-      ],
-    })),
+      ];
+      // Drop oldest ops if the queue exceeds the cap (e.g. sync never succeeds)
+      return { pendingSyncOps: next.length > MAX_SYNC_OPS ? next.slice(-MAX_SYNC_OPS) : next };
+    }),
   clearSyncQueue: () => set({ pendingSyncOps: [] }),
   setIsSyncing: (v) => set({ isSyncing: v }),
   setLastSyncedAt: (ts) => set({ lastSyncedAt: ts }),
@@ -1224,6 +1252,26 @@ export const useAppStore = create<AppState>()(
   toast: null,
   showToast: (message, variant) => set({ toast: { message, variant } }),
   dismissToast: () => set({ toast: null }),
+
+  // ── Studio (shared-studio context) ───────────────────────────
+  studio: null,
+  studioMembers: [],
+  notifications: [],
+  unreadNotificationCount: 0,
+  setStudio: (studio) => set({ studio }),
+  setStudioMembers: (members) => set({ studioMembers: members }),
+  setNotifications: (notifications) =>
+    set({ notifications, unreadNotificationCount: notifications.filter((n) => !n.isRead).length }),
+  markNotificationRead: (id) =>
+    set((state) => {
+      const updated = state.notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n));
+      return { notifications: updated, unreadNotificationCount: updated.filter((n) => !n.isRead).length };
+    }),
+  markAllNotificationsRead: () =>
+    set((state) => ({
+      notifications: state.notifications.map((n) => ({ ...n, isRead: true })),
+      unreadNotificationCount: 0,
+    })),
     }),
     {
       name: 'pottery-life-store',

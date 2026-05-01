@@ -7,6 +7,8 @@ export type FiringStatusOverride = 'fired' | 'ready' | 'picked-up';
 
 export type Kiln = {
   id: string;
+  /** UUID issued by the backend after the kiln is first synced. */
+  backendId?: string;
   name: string;
   imageUri?: string;
   type: KilnType;
@@ -38,6 +40,16 @@ export type FiringState =
 
 export type FiringResult = 'success' | 'issues' | 'failure';
 
+export type PieceFireReceipt = {
+  pieceBackendId: string;
+  pieceName: string;
+  stageBeforeFiring?: string;
+  stageAfterFiring?: string;
+  survived: boolean;
+  firingFee?: number;
+  clayBody?: string;
+};
+
 export type Firing = {
   id: string;
   kilnId: string;
@@ -62,6 +74,18 @@ export type Firing = {
   result?: FiringResult;
   resultNotes?: string;
   createdAt: string;
+  /** UUID issued by the backend after the firing is first synced. */
+  backendId?: string;
+  /** Studio this firing belongs to (for shared-studio firings). */
+  studioId?: string;
+  /** How many active days the firing ran (backend-calculated). */
+  activeDays?: number;
+  /** Pieces that survived (backend-calculated from receipts). */
+  survivedCount?: number;
+  /** Pieces that were lost (backend-calculated from receipts). */
+  lostCount?: number;
+  /** Per-piece outcome receipts, populated after completion. */
+  pieceReceipts?: PieceFireReceipt[];
 };
 
 export type KilnChecklist = {

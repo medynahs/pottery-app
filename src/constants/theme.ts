@@ -11,7 +11,7 @@ export const Colors = {
     cardForeground: 'hsl(24 25% 15%)',
     popover: 'hsl(34 40% 96%)',
     popoverForeground: 'hsl(24 25% 15%)',
-    primary: 'hsl(15 50% 50%)',
+    primary: 'hsl(39 57% 51%)',
     primaryForeground: 'hsl(0 0% 100%)',
     secondary: 'hsl(100 20% 45%)',
     secondaryForeground: 'hsl(0 0% 100%)',
@@ -23,7 +23,7 @@ export const Colors = {
     destructiveForeground: 'hsl(0 0% 100%)',
     border: 'hsl(34 25% 82%)',
     input: 'hsl(34 25% 82%)',
-    ring: 'hsl(15 50% 50%)',
+    ring: 'hsl(39 57% 51%)',
   },
   dark: {
     background: 'hsl(224 71.4% 4.1%)',

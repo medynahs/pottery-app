@@ -217,7 +217,7 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
               <Input
                 value={studioName}
                 onChangeText={setStudioName}
-                placeholder="e.g. Mallory Clay Studio"
+                placeholder="e.g. My Studio"
                 className="mb-4"
                 autoCorrect={false}
               />

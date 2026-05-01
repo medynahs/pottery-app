@@ -1,27 +1,37 @@
-import { Button } from '@/src/components/ui/button';
+﻿import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { Check, FlameKindling, PackageCheck } from 'lucide-react-native';
 import React from 'react';
 import { Image, TextInput, TouchableOpacity, View } from 'react-native';
-import type { Firing, FiringResult, FiringState, Kiln } from '../../../types/kiln';
+import type { Firing, FiringResult, Kiln } from '../../../types/kiln';
 import type { Piece } from '../../../types/pieces';
 import {
   FIRING_LOCATION_LABELS,
-  FIRING_STATE_LABELS,
-  FIRING_STATE_ORDER,
   FIRING_TYPE_LABELS,
   KILN_TYPE_LABELS,
 } from '../constants';
+import {
+  type AutoFiringStatus,
+  getAutoFiringStatus,
+  getCalculatedTimeline,
+} from '../firingEstimations';
 import { formatMoney } from '../utils/kilnUtils';
 
-const STATE_COLORS: Record<FiringState, string> = {
-  scheduled: 'hsl(220 80% 56%)',
-  loading: 'hsl(39 80% 50%)',
-  firing: 'hsl(15 80% 52%)',
-  cooling: 'hsl(195 70% 45%)',
-  unloading: 'hsl(142 60% 40%)',
+const AUTO_STATUS_COLOR: Record<AutoFiringStatus, string> = {
+  waiting:   'hsl(220 80% 56%)',
+  firing:    'hsl(15 80% 52%)',
+  cooling:   'hsl(195 70% 45%)',
+  ready:     'hsl(142 60% 40%)',
   completed: 'hsl(142 60% 40%)',
+};
+
+const AUTO_STATUS_LABEL: Record<AutoFiringStatus, string> = {
+  waiting:   'In Queue',
+  firing:    'Firing',
+  cooling:   'Cooling Down',
+  ready:     'Ready for Pickup',
+  completed: 'Completed',
 };
 
 type Palette = {
@@ -35,7 +45,6 @@ type Palette = {
 interface FiringDetailContentProps {
   liveFiring: Firing;
   kiln?: Kiln;
-  formattedExpectedReady: string;
   currencySymbol: string;
   palette: Palette;
   isCompleted: boolean;
@@ -52,52 +61,13 @@ interface FiringDetailContentProps {
   onChangeResultNotes: (notes: string) => void;
   onCancelCompletion: () => void;
   onComplete: () => void;
-  onStatusOverride: (override: 'fired' | 'ready' | 'picked-up') => void;
-}
-
-function StateTimeline({ current, muted }: { current: FiringState; muted: string }) {
-  return (
-    <View className="flex-row items-center gap-0 mb-6">
-      {FIRING_STATE_ORDER.map((state, index) => {
-        const isPast = FIRING_STATE_ORDER.indexOf(current) >= index;
-        const isCurrent = state === current;
-
-        return (
-          <React.Fragment key={state}>
-            <View className="items-center" style={{ flex: index < FIRING_STATE_ORDER.length - 1 ? 0 : undefined }}>
-              <View
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 5,
-                  backgroundColor: isPast ? STATE_COLORS[state] : muted,
-                  borderWidth: isCurrent ? 2 : 0,
-                  borderColor: isCurrent ? STATE_COLORS[state] : 'transparent',
-                  transform: [{ scale: isCurrent ? 1.4 : 1 }],
-                }}
-              />
-            </View>
-            {index < FIRING_STATE_ORDER.length - 1 && (
-              <View
-                style={{
-                  flex: 1,
-                  height: 2,
-                  backgroundColor:
-                    FIRING_STATE_ORDER.indexOf(current) > index ? STATE_COLORS[FIRING_STATE_ORDER[index]] : muted,
-                }}
-              />
-            )}
-          </React.Fragment>
-        );
-      })}
-    </View>
-  );
+  /** Called when user taps "Mark as Picked Up" (auto-status = ready) */
+  onMarkPickedUp: () => void;
 }
 
 export function FiringDetailContent({
   liveFiring,
   kiln,
-  formattedExpectedReady,
   currencySymbol,
   palette,
   isCompleted,
@@ -114,9 +84,11 @@ export function FiringDetailContent({
   onChangeResultNotes,
   onCancelCompletion,
   onComplete,
-  onStatusOverride,
+  onMarkPickedUp,
 }: FiringDetailContentProps) {
-  const stateColor = STATE_COLORS[liveFiring.state];
+  const autoStatus = getAutoFiringStatus(liveFiring, kiln);
+  const timeline = getCalculatedTimeline(liveFiring, kiln);
+  const statusColor = AUTO_STATUS_COLOR[autoStatus];
 
   const resultOptions: { value: FiringResult; label: string; color: string }[] = [
     { value: 'success', label: '✓ Success', color: 'hsl(142 60% 40%)' },
@@ -126,6 +98,7 @@ export function FiringDetailContent({
 
   return (
     <>
+      {/* ── Kiln card ── */}
       {kiln && (
         <Card className="p-4 mb-4 bg-card/60">
           {kiln.imageUri ? (
@@ -144,71 +117,81 @@ export function FiringDetailContent({
             {kiln.name} — {KILN_TYPE_LABELS[kiln.type]}
             {kiln.location ? `  ·  ${kiln.location}` : ''}
           </Text>
-          {kiln.notes ? <Text className="text-xs text-muted-foreground italic">{`“${kiln.notes}”`}</Text> : null}
+          {kiln.notes ? <Text className="text-xs text-muted-foreground italic">{`"${kiln.notes}"`}</Text> : null}
         </Card>
       )}
 
+      {/* ── Session snapshot ── */}
       <Card className="p-4 mb-4 bg-card/60">
-        <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Session Snapshot</Text>
+        <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Session</Text>
         <Text className="text-sm text-foreground">
           {FIRING_TYPE_LABELS[liveFiring.type]} · {FIRING_LOCATION_LABELS[liveFiring.location ?? 'studio']}
         </Text>
-        <Text className="text-xs text-muted-foreground mt-1">
-          Submitted: {liveFiring.submissionDate ?? liveFiring.createdAt.slice(0, 10)}
-        </Text>
-        <Text className="text-xs text-muted-foreground mt-1">Expected ready: {formattedExpectedReady}</Text>
-        <Text className="text-xs text-muted-foreground mt-1">
-          Est. cost: {formatMoney(currencySymbol, liveFiring.estimatedTotalCost)}
-          {typeof liveFiring.estimatedCostPerPiece === 'number'
-            ? ` · ${formatMoney(currencySymbol, liveFiring.estimatedCostPerPiece)} / piece`
-            : ''}
-        </Text>
+        <Text className="text-xs text-muted-foreground mt-1">Cone {liveFiring.cone}</Text>
+        {typeof liveFiring.estimatedTotalCost === 'number' ? (
+          <Text className="text-xs text-muted-foreground mt-1">
+            Est. cost: {formatMoney(currencySymbol, liveFiring.estimatedTotalCost)}
+            {typeof liveFiring.estimatedCostPerPiece === 'number'
+              ? ` · ${formatMoney(currencySymbol, liveFiring.estimatedCostPerPiece)} / piece`
+              : ''}
+          </Text>
+        ) : null}
       </Card>
 
+      {/* ── Auto-calculated timeline ── */}
       {!isCompleted ? (
-        <Card className="p-4 mb-4 border-primary/30">
-          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Status Override</Text>
-          <View className="flex-row gap-2">
-            <Button variant="outline" className="flex-1" onPress={() => onStatusOverride('fired')}>
-              <Text className="text-xs">Mark Fired</Text>
-            </Button>
-            <Button variant="outline" className="flex-1" onPress={() => onStatusOverride('ready')}>
-              <Text className="text-xs">Mark Ready</Text>
-            </Button>
-            <Button variant="outline" className="flex-1" onPress={() => onStatusOverride('picked-up')}>
-              <Text className="text-xs">Picked Up</Text>
-            </Button>
+        <Card className="p-4 mb-4 bg-card/60">
+          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Timeline</Text>
+
+          {/* Current status badge */}
+          <View className="flex-row items-center gap-2 mb-3">
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: statusColor }} />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: statusColor }}>
+              {AUTO_STATUS_LABEL[autoStatus]}
+            </Text>
           </View>
+
+          {/* Three milestone rows */}
+          {[
+            { label: 'Submitted', date: timeline.submittedLabel, done: true },
+            { label: 'Fires ~', date: timeline.firesOnLabel, done: autoStatus === 'firing' || autoStatus === 'cooling' || autoStatus === 'ready' || autoStatus === 'completed' },
+            { label: 'Ready ~', date: timeline.readyOnLabel, done: autoStatus === 'ready' || autoStatus === 'completed' },
+          ].map(({ label, date, done }, i) => (
+            <View key={label} className="flex-row items-center gap-3 mb-2">
+              <View
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 9,
+                  backgroundColor: done ? statusColor : palette.muted,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {done ? <Check size={10} color="white" strokeWidth={3} /> : null}
+              </View>
+              <Text style={{ fontSize: 12, color: done ? palette.foreground : palette.mutedForeground, flex: 1 }}>
+                {label} <Text style={{ fontWeight: '600' }}>{date}</Text>
+              </Text>
+            </View>
+          ))}
         </Card>
       ) : null}
 
-      {!isCompleted ? (
-        <>
-          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Progress</Text>
-          <StateTimeline current={liveFiring.state} muted={palette.muted} />
-          <View className="flex-row justify-between mb-6">
-            {FIRING_STATE_ORDER.map((state) => {
-              const isCurrent = state === liveFiring.state;
-
-              return (
-                <Text
-                  key={state}
-                  className="text-center"
-                  style={{
-                    fontSize: 8,
-                    color: isCurrent ? stateColor : palette.mutedForeground,
-                    fontWeight: isCurrent ? '700' : '400',
-                    flex: 1,
-                  }}
-                >
-                  {FIRING_STATE_LABELS[state].split(' ')[0]}
-                </Text>
-              );
-            })}
-          </View>
-        </>
+      {/* ── Ready for pickup CTA ── */}
+      {!isCompleted && autoStatus === 'ready' && !showCompletionForm ? (
+        <Card className="p-4 mb-4" style={{ borderColor: 'hsl(142 60% 65%)', borderWidth: 1.5, backgroundColor: 'hsl(142 45% 97%)' }}>
+          <Text className="text-sm font-semibold text-foreground mb-1">Pieces are ready 🎉</Text>
+          <Text className="text-xs text-muted-foreground mb-3">
+            The estimated ready date has passed. Mark this firing as complete when you've collected your pieces.
+          </Text>
+          <Button onPress={onMarkPickedUp} className="w-full">
+            <Text className="font-semibold text-primary-foreground">Mark as Picked Up</Text>
+          </Button>
+        </Card>
       ) : null}
 
+      {/* ── Completed result ── */}
       {isCompleted && liveFiring.result ? (
         <Card className="p-4 mb-4 bg-card/60">
           <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Result</Text>
@@ -216,23 +199,18 @@ export function FiringDetailContent({
             className="text-sm font-semibold"
             style={{
               color:
-                liveFiring.result === 'success'
-                  ? 'hsl(142 60% 40%)'
-                  : liveFiring.result === 'issues'
-                    ? 'hsl(39 80% 50%)'
-                    : 'hsl(0 70% 50%)',
+                liveFiring.result === 'success' ? 'hsl(142 60% 40%)' :
+                liveFiring.result === 'issues'  ? 'hsl(39 80% 50%)'  :
+                                                   'hsl(0 70% 50%)',
             }}
           >
-            {liveFiring.result === 'success'
-              ? '✓ Success'
-              : liveFiring.result === 'issues'
-                ? '⚡ Issues Reported'
-                : '✕ Failure'}
+            {liveFiring.result === 'success' ? '✓ Success' : liveFiring.result === 'issues' ? '⚡ Issues Reported' : '✕ Failure'}
           </Text>
           {liveFiring.resultNotes ? <Text className="text-sm text-muted-foreground mt-1">{liveFiring.resultNotes}</Text> : null}
         </Card>
       ) : null}
 
+      {/* ── Notes ── */}
       {liveFiring.notes ? (
         <Card className="p-4 mb-4 bg-card/60">
           <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Notes</Text>
@@ -240,6 +218,7 @@ export function FiringDetailContent({
         </Card>
       ) : null}
 
+      {/* ── Pieces ── */}
       <View className="flex-row justify-between items-center mb-2">
         <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Pieces ({assignedPiecesCount})
@@ -257,7 +236,6 @@ export function FiringDetailContent({
         <Card className="overflow-hidden mb-4">
           {pieceRows.map((piece, index, arr) => {
             const isAssigned = assignedPieceIdSet.has(piece.id);
-
             return (
               <TouchableOpacity
                 key={piece.id}
@@ -279,9 +257,7 @@ export function FiringDetailContent({
                 <PackageCheck size={14} color={palette.mutedForeground} />
                 <View className="flex-1">
                   <Text className="text-sm font-medium text-foreground">{piece.name}</Text>
-                  <Text className="text-xs text-muted-foreground">
-                    {piece.stage} · {piece.clay}
-                  </Text>
+                  <Text className="text-xs text-muted-foreground">{piece.stage} · {piece.clay}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -289,6 +265,7 @@ export function FiringDetailContent({
         </Card>
       )}
 
+      {/* ── Completion form ── */}
       {showCompletionForm ? (
         <Card className="p-4 mb-4 border-primary/30">
           <Text className="text-sm font-semibold text-foreground mb-3">Mark as Completed</Text>

@@ -98,6 +98,9 @@ export type Piece = {
   batchId?: string;
   batchSize?: number;
   updatedAt?: string;
+  /** Studio queue status — set when a studio member submits a piece for firing. */
+  studioQueueStatus?: 'submitted' | 'in-firing' | 'ready-for-pickup' | 'picked-up';
+  studioQueueSubmittedAt?: string;
 };
 
 export type PieceForm = {

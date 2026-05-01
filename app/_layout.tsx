@@ -19,12 +19,12 @@ import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
 import {
-  DMSans_400Regular,
-  DMSans_500Medium,
+    DMSans_400Regular,
+    DMSans_500Medium,
 } from '@expo-google-fonts/dm-sans';
 import {
-  Fraunces_600SemiBold,
-  Fraunces_700Bold,
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
 
 // Required on iOS: tells ASWebAuthenticationSession that the OAuth redirect was
@@ -110,6 +110,8 @@ function AppShell() {
         <Stack.Screen name="profile/studio-rhythm" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="overview-alerts" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="kilnkin" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="analytics" options={{ headerShown: false }} />
+        <Stack.Screen name="kiln-history" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="register" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>

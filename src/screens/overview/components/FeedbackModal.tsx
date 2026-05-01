@@ -3,12 +3,12 @@ import { Text } from '@/src/components/ui/text';
 import { Check, MessageSquarePlus, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
-    Linking,
-    Platform,
-    ScrollView,
-    TextInput,
-    TouchableOpacity,
-    View
+  Linking,
+  Platform,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -82,7 +82,7 @@ export function FeedbackModal({ visible, onClose }: Props) {
               <View className="flex-row items-center gap-2">
                 <MessageSquarePlus size={15} color="hsl(24 75% 45%)" />
                 <Text className="text-sm font-serif font-bold" style={{ color: '#6B4E2A' }}>
-                  Write to the Pottery Nook team
+                  Write to Pottery Nook team
                 </Text>
               </View>
               <Text className="text-[11px] mt-1 leading-4" style={{ color: '#A68555' }}>

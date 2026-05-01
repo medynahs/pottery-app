@@ -25,7 +25,7 @@ export const MainTabHeader = React.memo(function MainTabHeader({ title, descript
                     activeOpacity={0.85}
                     style={{
                         flexDirection: 'row', alignItems: 'center', gap: 8,
-                        backgroundColor: '#C9963A', borderRadius: 20,
+                        borderRadius: 20,
                         paddingHorizontal: 20, paddingVertical: 14,
                         shadowColor: '#8B6A2A', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4,
                     }}

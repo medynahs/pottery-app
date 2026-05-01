@@ -16,7 +16,7 @@ export const USER_TYPE_CONFIG: Record<OnboardingUserType, UserTypeConfig> = {
         help: 'Keeps tools focused on studio flow and shared firing context.',
         practiceMode: 'studio',
         role: 'member',
-        defaultModules: ['overview', 'pieces', 'kiln', 'library', 'community'],
+        defaultModules: ['overview', 'pieces', 'library', 'community'],
         pricingUserType: 'side-business',
         includeHomeSetup: false,
         icon: Building2,
