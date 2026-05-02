@@ -24,6 +24,9 @@ export function useOnboardingState() {
   // State
   const [stepIndex, setStepIndex] = React.useState(0);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [celebrationVisible, setCelebrationVisible] = React.useState(false);
+  const [celebrationCompanionName, setCelebrationCompanionName] = React.useState('');
+  const [celebrationCompanionElement, setCelebrationCompanionElement] = React.useState<string>('');
   const [draft, setDraft] = React.useState<OnboardingDraft>(() => ({
     userType: onboardingProfile.userType,
     pricingUserType: onboardingProfile.pricingUserType,
@@ -50,7 +53,7 @@ export function useOnboardingState() {
 
   const userTypeConfig = USER_TYPE_CONFIG[draft.userType];
 
-  const steps: StepKey[] = ['welcome', 'role', 'kilnkin', 'ready'];
+  const steps: StepKey[] = ['welcome', 'role', 'kilnkin'];
 
   React.useEffect(() => {
     if (stepIndex >= steps.length) {
@@ -65,7 +68,7 @@ export function useOnboardingState() {
     setDraft((previous) => ({ ...previous, ...patch }));
   }, []);
 
-  const optionalStep = currentStep === 'kilnkin';
+  const optionalStep = false;
 
   const handleSkip = React.useCallback(() => {
     setStepIndex((current) => Math.min(current + 1, steps.length - 1));
@@ -97,36 +100,45 @@ export function useOnboardingState() {
     if (draft.studioCode.trim()) userPatch.linkedStudioCode = draft.studioCode.trim();
     if (Object.keys(userPatch).length > 0) setUser(userPatch);
 
-    completeGeneralOnboarding({
-      userType: draft.userType,
-      pricingUserType: draft.pricingUserType,
-      hasOwnKiln: null,
-      studioName: draft.studioName.trim() || undefined,
-      kilnCount: undefined,
-      kilnName: undefined,
-      kilnType: 'electric',
-      kilnNickname: undefined,
-      homeStudioNotes: undefined,
-      toolsChecklist: undefined,
-      routinesFrequency: draft.routinesFrequency,
-      routinesFocus: draft.routinesFocus,
-      preferredUnits: draft.preferredUnits,
-      language: 'English',
-      notificationsEnabled: draft.notificationsEnabled,
-      quickTourRequested: false,
-      activeModules: configuredModules,
-      kilnkinId: selectedCompanion.id,
-      studioCode: draft.studioCode.trim() || undefined,
-    });
+    // Show the ceremony before completing onboarding.
+    // completeGeneralOnboarding sets generalOnboardingCompleted = true, which
+    // triggers AppOnboardingGuard to navigate away immediately — so we defer it
+    // until after the ceremony animation has finished.
+    setCelebrationCompanionName(selectedCompanion.name);
+    setCelebrationCompanionElement(selectedCompanion.element);
+    setCelebrationVisible(true);
 
-    router.replace('/overview' as never);
+    setTimeout(() => {
+      completeGeneralOnboarding({
+        userType: draft.userType,
+        pricingUserType: draft.pricingUserType,
+        hasOwnKiln: null,
+        studioName: draft.studioName.trim() || undefined,
+        kilnCount: undefined,
+        kilnName: undefined,
+        kilnType: 'electric',
+        kilnNickname: undefined,
+        homeStudioNotes: undefined,
+        toolsChecklist: undefined,
+        routinesFrequency: draft.routinesFrequency,
+        routinesFocus: draft.routinesFocus,
+        preferredUnits: draft.preferredUnits,
+        language: 'English',
+        notificationsEnabled: draft.notificationsEnabled,
+        quickTourRequested: false,
+        activeModules: configuredModules,
+        kilnkinId: selectedCompanion.id,
+        studioCode: draft.studioCode.trim() || undefined,
+      });
+      router.replace('/overview' as never);
+    }, 2400);
   }, [
     isSubmitting, draft, userTypeConfig, setPracticeMode, setRole, setEnabledModules,
     setKilnkinCompanion, setUser, completeGeneralOnboarding, router
   ]);
 
   const handleContinue = React.useCallback(() => {
-    if (currentStep === 'ready') {
+    if (currentStep === 'kilnkin') {
       handleFinish();
       return;
     }
@@ -148,5 +160,8 @@ export function useOnboardingState() {
     steps,
     currentStep,
     progress,
+    celebrationVisible,
+    celebrationCompanionName,
+    celebrationCompanionElement,
   };
 }

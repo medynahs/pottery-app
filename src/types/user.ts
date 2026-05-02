@@ -9,7 +9,6 @@ import { PricingUserType } from "./pricing";
 export type OnboardingUserType =
     | 'home-potter'
     | 'studio-potter'
-    | 'hybrid-potter'
     | 'studio-owner-technician'
     | 'business-owner'
     | 'not-sure';
@@ -30,8 +29,7 @@ export type UserTypeConfig = {
 export type StepKey =
     | 'welcome'
     | 'role'
-    | 'kilnkin'
-    | 'ready';
+    | 'kilnkin';
 
 export type OnboardingDraft = {
     userType: OnboardingUserType;

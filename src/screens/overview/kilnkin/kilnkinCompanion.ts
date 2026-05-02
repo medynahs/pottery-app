@@ -1,10 +1,11 @@
-export type KilnkinPersonality = 'gentle' | 'playful' | 'steady';
+export type KilnkinPersonality = 'fire' | 'earth' | 'air' | 'water';
 
 export type KilnkinCompanion = {
   id: string;
   name: string;
   species: string;
   personality: KilnkinPersonality;
+  element: KilnkinPersonality;
   bornOn: string;
   notificationToneLabel: string;
   favoriteSnack: string;
@@ -15,54 +16,73 @@ export type KilnkinCompanion = {
 
 export const AVAILABLE_KILNKIN_COMPANIONS: KilnkinCompanion[] = [
   {
-    id: 'cinder',
-    name: 'Cinder',
-    species: 'Kiln Cat',
-    personality: 'gentle',
-    bornOn: '2026-03-08',
-    notificationToneLabel: 'Warm and reassuring',
-    favoriteSnack: 'Imaginary clay crumbs and steam from tea mugs',
-    napSpot: 'Under the warm work table near the reclaim bucket',
-    loves: 'Warm kiln shelves and trim-room gossip',
-    collects: 'Tiny kiln cookies, ribbon scraps, and glaze test stories',
-  },
-  {
     id: 'ember',
     name: 'Ember',
-    species: 'Shelf Sprite',
-    personality: 'playful',
+    species: 'Kiln Fox',
+    personality: 'fire',
+    element: 'fire',
     bornOn: '2026-03-08',
-    notificationToneLabel: 'Bright and bouncy',
-    favoriteSnack: 'Biscuit crumbs and fresh wedged clay',
-    napSpot: 'On the sunny corner of the drying shelf',
-    loves: 'Surprise trims and shiny glaze notes',
-    collects: 'Test tile secrets and lucky sponge corners',
+    notificationToneLabel: 'Bold & Energising',
+    favoriteSnack: 'Spicy cinnamon tea and roasted clay crumbs',
+    napSpot: 'On top of the warm kiln lid',
+    loves: 'Fast-fire schedules and decisive glaze choices',
+    collects: 'Temperature logs and brave test tiles',
   },
   {
-    id: 'sage',
-    name: 'Sage',
-    species: 'Studio Fox',
-    personality: 'steady',
+    id: 'terra',
+    name: 'Terra',
+    species: 'Studio Hare',
+    personality: 'earth',
+    element: 'earth',
     bornOn: '2026-03-08',
-    notificationToneLabel: 'Grounded and thoughtful',
-    favoriteSnack: 'Tea steam and stories from old kilns',
-    napSpot: 'Beside the finished cabinet in quiet light',
-    loves: 'Orderly shelves and smooth handles',
-    collects: 'Stamp marks, sketches, and quiet victories',
+    notificationToneLabel: 'Grounded & Reassuring',
+    favoriteSnack: 'Oat biscuits and fresh wedged clay',
+    napSpot: 'Under the warm work table near the reclaim bucket',
+    loves: 'Well-ordered shelves and slow rhythmic work',
+    collects: 'Kiln cookies, glaze test cards, and studio routines',
+  },
+  {
+    id: 'wisp',
+    name: 'Wisp',
+    species: 'Glaze Sprite',
+    personality: 'air',
+    element: 'air',
+    bornOn: '2026-03-08',
+    notificationToneLabel: 'Playful & Curious',
+    favoriteSnack: 'Biscuit crumbs and morning studio air',
+    napSpot: 'On the sunny corner of the drying shelf',
+    loves: 'Surprise glazes and spontaneous experiments',
+    collects: 'Forgotten glaze recipes and lucky sponge corners',
+  },
+  {
+    id: 'drift',
+    name: 'Drift',
+    species: 'River Cat',
+    personality: 'water',
+    element: 'water',
+    bornOn: '2026-03-08',
+    notificationToneLabel: 'Calm & Reflective',
+    favoriteSnack: 'Chamomile steam and stories from old kilns',
+    napSpot: 'Beside the finished cabinet in soft morning light',
+    loves: 'Slow-dry days and thoughtful glaze layers',
+    collects: 'Glaze chemistry notes and quiet victory stamps',
   },
 ];
 
-export const DEFAULT_KILNKIN_COMPANION = AVAILABLE_KILNKIN_COMPANIONS[0];
+// Default free companion: Earth (most universally approachable)
+export const DEFAULT_KILNKIN_COMPANION = AVAILABLE_KILNKIN_COMPANIONS[1];
 
 function getPrefix(personality: KilnkinPersonality) {
   switch (personality) {
-    case 'playful':
-      return 'Little heads-up:';
-    case 'steady':
-      return 'A quiet note:';
-    case 'gentle':
+    case 'fire':
+      return 'Yes! Time to act:';
+    case 'air':
+      return 'Oh! Something fun:';
+    case 'water':
+      return 'Gently, a reminder:';
+    case 'earth':
     default:
-      return 'Soft reminder:';
+      return 'Worth noting:';
   }
 }
 

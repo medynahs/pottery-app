@@ -54,7 +54,6 @@ export type UserRole = 'owner' | 'member';
 export type OnboardingUserType =
   | 'home-potter'
   | 'studio-potter'
-  | 'hybrid-potter'
   | 'studio-owner-technician'
   | 'business-owner'
   | 'not-sure';

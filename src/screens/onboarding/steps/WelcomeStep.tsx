@@ -1,4 +1,4 @@
-import { Input } from '@/src/components/ui/input.ios';
+import { IllustrationSlot } from '@/src/components/IllustrationSlot';
 import { Text } from '@/src/components/ui/text';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, View } from 'react-native';
@@ -6,42 +6,33 @@ import { Animated, Easing, Image, View } from 'react-native';
 interface WelcomeStepProps {
     draft: any;
     updateDraft: (patch: Partial<any>) => void;
-    formatLabel: (value: string) => string;
 }
 
-const HIGHLIGHTS = [
-    { emoji: '🏺', label: 'Track every piece', desc: 'From first throw to final glaze — every stage logged.' },
-    { emoji: '🔥', label: 'Know your rhythm', desc: 'Daily quests shaped around how you actually work.' },
-    { emoji: '✨', label: 'Celebrate progress', desc: 'A companion that notices and cheers your milestones.' },
+const CORE_FEATURES = [
+    { emoji: '🏺', label: 'Stage tracking', desc: 'Every piece from throw to finished, logged.' },
+    { emoji: '🔥', label: 'Kiln ops', desc: 'Schedule firings, track temps, manage loads.' },
+    { emoji: '📊', label: 'Studio analytics', desc: 'Survival rates, clay usage, cost per firing.' },
+    { emoji: '💰', label: 'Pricing tools', desc: 'Real cost-based pricing for your work.' },
+];
+
+const EXTRA_FEATURES = [
+    { emoji: '🤝', label: 'Community' },
+    { emoji: '🎯', label: 'Daily missions' },
+    { emoji: '🧪', label: 'Glaze library' },
+    { emoji: '🏆', label: 'Badges & XP' },
 ];
 
 export const WelcomeStep: React.FC<WelcomeStepProps> = ({ draft, updateDraft }) => {
-    const heroY = useRef(new Animated.Value(28)).current;
-    const heroOpacity = useRef(new Animated.Value(0)).current;
     const contentOpacity = useRef(new Animated.Value(0)).current;
     const petY = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        Animated.sequence([
-            Animated.parallel([
-                Animated.timing(heroY, {
-                    toValue: 0,
-                    duration: 480,
-                    useNativeDriver: true,
-                    easing: Easing.out(Easing.cubic),
-                }),
-                Animated.timing(heroOpacity, {
-                    toValue: 1,
-                    duration: 380,
-                    useNativeDriver: true,
-                }),
-            ]),
-            Animated.timing(contentOpacity, {
-                toValue: 1,
-                duration: 320,
-                useNativeDriver: true,
-            }),
-        ]).start();
+        Animated.timing(contentOpacity, {
+            toValue: 1,
+            duration: 400,
+            delay: 180,
+            useNativeDriver: true,
+        }).start();
 
         const bobLoop = Animated.loop(
             Animated.sequence([
@@ -64,18 +55,9 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ draft, updateDraft }) 
     }, []);
 
     return (
-        <View className="mt-3 gap-3">
-            {/* Hero illustration */}
-            <Animated.View
-                style={{ transform: [{ translateY: heroY }], opacity: heroOpacity }}
-                className="rounded-[28px] overflow-hidden"
-            >
-                <Image
-                    source={require('../../../../assets/images/pottery-studio.png')}
-                    style={{ width: '100%', height: 190 }}
-                    resizeMode="cover"
-                />
-                {/* Floating clay-pet sticker */}
+        <View>
+            {/* Illustration with floating clay-pet sticker */}
+            <IllustrationSlot imageSource={require('../../../../assets/images/pottery-studio.png')}>
                 <Animated.View
                     style={{
                         position: 'absolute',
@@ -90,38 +72,51 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ draft, updateDraft }) 
                         resizeMode="contain"
                     />
                 </Animated.View>
+            </IllustrationSlot>
+
+            {/* Heading */}
+            <Animated.View style={{ opacity: contentOpacity }} className="px-6 pt-5 pb-2">
+                <Text className="text-3xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold', lineHeight: 38 }}>
+                    Welcome to your cozy pottery studio
+                </Text>
+                <Text className="text-sm text-muted-foreground mt-2 leading-6">
+                    Track, create, and celebrate every piece with calm guidance and playful support.
+                </Text>
             </Animated.View>
 
-            {/* Highlights + input */}
-            <Animated.View style={{ opacity: contentOpacity }} className="gap-3">
-                <View className="rounded-[28px] border border-border bg-card p-5 gap-4">
-                    {HIGHLIGHTS.map((h) => (
-                        <View key={h.label} className="flex-row items-start gap-3">
-                            <View className="w-10 h-10 rounded-2xl bg-muted items-center justify-center">
-                                <Text style={{ fontSize: 20 }}>{h.emoji}</Text>
-                            </View>
-                            <View className="flex-1">
-                                <Text className="text-sm text-foreground" style={{ fontFamily: 'Fraunces_600SemiBold' }}>{h.label}</Text>
-                                <Text className="text-xs text-muted-foreground mt-0.5 leading-5">{h.desc}</Text>
-                            </View>
+            {/* Feature highlights */}
+            <Animated.View style={{ opacity: contentOpacity }} className="px-6 mt-1 gap-3">
+                {/* 2×2 core feature grid */}
+                <View className="flex-row gap-3">
+                    {CORE_FEATURES.slice(0, 2).map((f) => (
+                        <View key={f.label} className="flex-1 rounded-[22px] border border-border bg-card p-4">
+                            <Text style={{ fontSize: 22, marginBottom: 8 }}>{f.emoji}</Text>
+                            <Text className="text-sm text-foreground" style={{ fontFamily: 'Fraunces_600SemiBold', lineHeight: 18 }}>{f.label}</Text>
+                            <Text className="text-xs text-muted-foreground mt-1 leading-5">{f.desc}</Text>
+                        </View>
+                    ))}
+                </View>
+                <View className="flex-row gap-3">
+                    {CORE_FEATURES.slice(2, 4).map((f) => (
+                        <View key={f.label} className="flex-1 rounded-[22px] border border-border bg-card p-4">
+                            <Text style={{ fontSize: 22, marginBottom: 8 }}>{f.emoji}</Text>
+                            <Text className="text-sm text-foreground" style={{ fontFamily: 'Fraunces_600SemiBold', lineHeight: 18 }}>{f.label}</Text>
+                            <Text className="text-xs text-muted-foreground mt-1 leading-5">{f.desc}</Text>
                         </View>
                     ))}
                 </View>
 
-                <View className="rounded-[28px] border border-border bg-card px-5 pt-4 pb-5">
-                    <Text className="text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground mb-1.5">Studio name (optional)</Text>
-                    <Input
-                        value={draft.studioName}
-                        onChangeText={(value: string) => updateDraft({ studioName: value })}
-                        placeholder="e.g. The Clay Nook"
-                    />
-                    <Text className="text-xs text-muted-foreground mt-2 leading-5">Shown on your overview. You can change it anytime.</Text>
-                </View>
-
-                <View className="rounded-2xl border border-dashed border-border bg-background/60 px-4 py-3">
-                    <Text className="text-xs text-muted-foreground leading-5">
-                        Setup is kept short. Your kiln, rhythm, and pricing can be configured from quick-start quests once you're inside.
-                    </Text>
+                {/* Extra feature chips */}
+                <View className="flex-row flex-wrap gap-2">
+                    {EXTRA_FEATURES.map((f) => (
+                        <View key={f.label} className="flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2">
+                            <Text style={{ fontSize: 13 }}>{f.emoji}</Text>
+                            <Text className="text-xs text-muted-foreground">{f.label}</Text>
+                        </View>
+                    ))}
+                    <View className="flex-row items-center gap-1.5 rounded-full border border-dashed border-border bg-background px-3 py-2">
+                        <Text className="text-xs text-muted-foreground">+ more</Text>
+                    </View>
                 </View>
             </Animated.View>
         </View>

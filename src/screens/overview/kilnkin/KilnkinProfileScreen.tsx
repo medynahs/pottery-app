@@ -58,9 +58,10 @@ export default function KilnkinProfileScreen() {
 
   const personalityLabel = useMemo(() => {
     switch (companion.personality) {
-      case 'playful': return 'Bouncy';
-      case 'steady': return 'Grounded';
-      case 'gentle': default: return 'Tender';
+      case 'fire': return 'Fiery';
+      case 'air': return 'Breezy';
+      case 'water': return 'Calm';
+      case 'earth': default: return 'Grounded';
     }
   }, [companion.personality]);
 
