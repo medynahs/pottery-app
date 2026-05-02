@@ -347,10 +347,10 @@ export function OverviewPage() {
 
   // Feature 3: stage chips with longest-days annotation
   const STAGE_CHIPS = [
-    { label: 'In Progress', piecesInSlot: stagePositions.workTable, route: '/(tabs)/pieces?stage=in-progress', emoji: '🪆', urgent: false },
-    { label: 'Drying', piecesInSlot: stagePositions.dryingShelf, route: '/(tabs)/pieces?stage=drying', emoji: '💨', urgent: studioSignals.dryingTooLong },
-    { label: 'Glaze Ready', piecesInSlot: stagePositions.kilnArea, route: '/(tabs)/pieces?stage=bone-dry', emoji: '🔥', urgent: studioSignals.kilnReady },
-    { label: 'Glazing', piecesInSlot: stagePositions.glazeRack, route: '/(tabs)/pieces?stage=glazed', emoji: '🎨', urgent: false },
+    { label: 'In Progress', piecesInSlot: stagePositions.workTable, route: '/(tabs)/pieces?stage=idea,forming,leather-hard,trimming', emoji: '🪆', urgent: false },
+    { label: 'Drying', piecesInSlot: stagePositions.dryingShelf, route: '/(tabs)/pieces?stage=drying,bone-dry', emoji: '💨', urgent: studioSignals.dryingTooLong },
+    { label: 'Glaze Ready', piecesInSlot: stagePositions.kilnArea, route: '/(tabs)/pieces?stage=glazing,glaze-fired', emoji: '🔥', urgent: studioSignals.kilnReady },
+    { label: 'Glazing', piecesInSlot: stagePositions.glazeRack, route: '/(tabs)/pieces?stage=bisque', emoji: '🎨', urgent: false },
     { label: 'Finished', piecesInSlot: stagePositions.finishedCabinet, route: '/(tabs)/pieces?stage=finished', emoji: '✨', urgent: false },
   ].map((chip) => ({
     ...chip,

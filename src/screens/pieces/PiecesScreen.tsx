@@ -26,7 +26,7 @@ const itemLayout = LinearTransition
 
 export default function PiecesScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ openJournalPieceId?: string | string[] }>();
+  const params = useLocalSearchParams<{ openJournalPieceId?: string | string[]; stage?: string | string[] }>();
   const handledOpenJournalIdRef = React.useRef<string | null>(null);
   const [stageTransition, setStageTransition] = React.useState<StageAdvanceCelebration | null>(null);
 
@@ -94,6 +94,13 @@ export default function PiecesScreen() {
     handledOpenJournalIdRef.current = rawId;
     router.replace('/(tabs)/pieces');
   }, [params.openJournalPieceId, pieces, router, setJournalPiece]);
+
+  React.useEffect(() => {
+    const stageParam = Array.isArray(params.stage) ? params.stage[0] : params.stage;
+    if (!stageParam) return;
+    setActiveStage(stageParam);
+    router.replace('/(tabs)/pieces');
+  }, [params.stage, setActiveStage, router]);
 
   return (
     <View className="flex-1 bg-background">

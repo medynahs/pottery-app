@@ -90,7 +90,7 @@ export function usePiecesScreen() {
   );
 
   React.useEffect(() => {
-    if (activeStage !== 'all' && !enabledStages.some(s => s.id === activeStage)) {
+    if (activeStage !== 'all' && !activeStage.includes(',') && !enabledStages.some(s => s.id === activeStage)) {
       setActiveStage('all');
     }
   }, [enabledStages, activeStage]);
@@ -106,8 +106,9 @@ export function usePiecesScreen() {
   }, []);
 
   const filteredPieces = React.useMemo(() => {
+    const stageIds = activeStage.includes(',') ? activeStage.split(',') : null;
     const result = pieces.filter(p =>
-      (activeStage === 'all' || p.stage === activeStage) &&
+      (stageIds ? stageIds.includes(p.stage) : (activeStage === 'all' || p.stage === activeStage)) &&
       (search === '' || p.name.toLowerCase().includes(search.toLowerCase())) &&
       (filters.clays.length === 0 || filters.clays.includes(p.clay)) &&
       (filters.forms.length === 0 || (!!p.form && filters.forms.includes(p.form))) &&
