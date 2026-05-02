@@ -35,7 +35,7 @@ export function Reactions({ likes, comments, saveable }: Props) {
       </TouchableOpacity>
 
       <TouchableOpacity className="flex-row items-center gap-1.5 ml-auto" activeOpacity={0.7}>
-        <Gift size={13} color="hsl(15 50% 50%)" />
+        <Gift size={13} color="#8B6A2A" />
         <Text className="text-xs text-primary font-medium">Celebrate</Text>
       </TouchableOpacity>
 

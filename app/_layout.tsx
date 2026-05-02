@@ -15,16 +15,17 @@ import { ErrorBoundary } from '@/src/components/error-boundary';
 import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
 import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
 import { ToastOverlay } from '@/src/components/ui/toast-overlay';
+import { configureRevenueCat } from '@/src/hooks/useEntitlements';
 import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
 import {
-    DMSans_400Regular,
-    DMSans_500Medium,
+  DMSans_400Regular,
+  DMSans_500Medium,
 } from '@expo-google-fonts/dm-sans';
 import {
-    Fraunces_600SemiBold,
-    Fraunces_700Bold,
+  Fraunces_600SemiBold,
+  Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
 
 // Required on iOS: tells ASWebAuthenticationSession that the OAuth redirect was
@@ -52,6 +53,19 @@ function useStoreHydration() {
   return hydrated;
 }
 
+/**
+ * Restores the session token from SecureStore after Zustand AsyncStorage
+ * hydration completes. Runs once per cold start, resolves in < 100ms.
+ */
+function useAuthInitialization(hydrated: boolean) {
+  const [authReady, setAuthReady] = useState(false);
+  useEffect(() => {
+    if (!hydrated) return;
+    void useAppStore.getState().initializeAuth().finally(() => setAuthReady(true));
+  }, [hydrated]);
+  return authReady;
+}
+
 /** Inner component so hooks run inside providers. */
 function AppOnboardingGuard() {
   const pathname = usePathname();
@@ -77,6 +91,11 @@ function AppShell() {
   const backendUsersStatus = useAppStore((state) => state.backendUsersStatus);
   const loadBackendUsers = useAppStore((state) => state.loadBackendUsers);
 
+  // Initialise RevenueCat SDK early so offerings are prefetched
+  useEffect(() => {
+    configureRevenueCat();
+  }, []);
+
   useEffect(() => {
     if (backendUsersStatus !== 'idle') {
       return;
@@ -91,6 +110,7 @@ function AppShell() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="premium" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="stage-customization" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="clay-bodies" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="forming-methods" options={{ headerShown: false, presentation: 'modal' }} />
@@ -136,7 +156,8 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
   const hydrated = useStoreHydration();
-  const isAppReady = loaded && hydrated;
+  const authReady = useAuthInitialization(hydrated);
+  const isAppReady = loaded && hydrated && authReady;
 
   const onLayoutRootView = useCallback(() => {
     if (!isAppReady) return;

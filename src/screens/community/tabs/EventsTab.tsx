@@ -49,7 +49,7 @@ function EventCard({ event, highlight }: { event: BackendEvent; highlight: boole
         {event.description}
       </Text>
       <View className="flex-row items-center gap-1.5 mt-2">
-        <Calendar size={11} color="hsl(15 50% 50%)" />
+        <Calendar size={11} color="#8B6A2A" />
         <Text className="text-xs text-muted-foreground">
           {start} – {end}
         </Text>

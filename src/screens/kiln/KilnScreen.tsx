@@ -310,13 +310,13 @@ export default function KilnScreen() {
             <View className="mb-4">
               <SectionHeader
                 title="Studio / Kiln Profiles"
-                icon={<Thermometer size={18} color="hsl(15 50% 50%)" />}
+                icon={<Thermometer size={18} color="#8B6A2A" />}
                 action={
                   <TouchableOpacity
                     onPress={() => setAddKilnOpen(true)}
                     className="flex-row items-center gap-1 px-3 py-1.5 rounded-xl border border-border bg-card"
                   >
-                    <Plus size={14} color="hsl(15 50% 50%)" />
+                    <Plus size={14} color="#8B6A2A" />
                     <Text className="text-xs font-semibold text-primary">Add Kiln</Text>
                   </TouchableOpacity>
                 }

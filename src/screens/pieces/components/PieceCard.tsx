@@ -128,7 +128,7 @@ export function PieceCard({
           <View className="flex-row items-center justify-between mt-2">
             {piece.stage === 'cemetery' ? (
               <View className="flex-row items-center gap-1">
-                <Heart size={10} color="hsl(15 50% 50%)" fill="hsl(15 50% 50%)" />
+                <Heart size={10} color="#8B6A2A" fill="#8B6A2A" />
                 <Text className="text-[10px] font-bold text-primary uppercase tracking-tight">
                   Remembered
                 </Text>

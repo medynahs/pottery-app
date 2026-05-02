@@ -22,7 +22,7 @@ export const ToggleRow = React.memo(function ToggleRow({ icon: Icon, iconColor, 
             <Switch
                 value={value}
                 onValueChange={onToggle}
-                trackColor={{ false: 'hsl(34 25% 82%)', true: 'hsl(15 50% 50%)' }}
+                trackColor={{ false: 'hsl(34 25% 82%)', true: '#8B6A2A' }}
                 thumbColor="white"
             />
         </View>

@@ -151,7 +151,7 @@ export default function PiecesScreen() {
           >
             <SlidersHorizontal
               size={16}
-              color={activeFilterCount > 0 ? 'hsl(15 50% 50%)' : 'hsl(24 20% 40%)'}
+              color={activeFilterCount > 0 ? '#8B6A2A' : 'hsl(24 20% 40%)'}
             />
             {activeFilterCount > 0 && (
               <View className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary items-center justify-center">
@@ -220,7 +220,7 @@ export default function PiecesScreen() {
                         {item.name} · {item.count}
                       </Text>
                       <Text className="text-[10px] font-body-medium text-primary">Collapse</Text>
-                      <ChevronUp size={11} color="hsl(15 50% 50%)" />
+                      <ChevronUp size={11} color="#8B6A2A" />
                     </TouchableOpacity>
                   </Animated.View>
                 );

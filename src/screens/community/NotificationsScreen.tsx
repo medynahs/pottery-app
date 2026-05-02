@@ -65,7 +65,7 @@ function NotifRow({
           activeOpacity={0.7}
         >
           {busy === 'decline'
-            ? <ActivityIndicator size="small" color="hsl(15 50% 50%)" />
+            ? <ActivityIndicator size="small" color="#8B6A2A" />
             : <X size={16} color="hsl(0 55% 55%)" />
           }
         </TouchableOpacity>

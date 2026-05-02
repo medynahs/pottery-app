@@ -148,7 +148,7 @@ function OwnedStudioCard({
           activeOpacity={0.7}
         >
           {deleting
-            ? <ActivityIndicator size="small" color="hsl(15 50% 50%)" />
+            ? <ActivityIndicator size="small" color="#8B6A2A" />
             : <Trash2 size={14} color="hsl(0 60% 55%)" />
           }
         </TouchableOpacity>
@@ -205,7 +205,7 @@ function MemberStudioCard({
           activeOpacity={0.7}
         >
           {leaving
-            ? <ActivityIndicator size="small" color="hsl(15 50% 50%)" />
+            ? <ActivityIndicator size="small" color="#8B6A2A" />
             : <DoorOpen size={14} color="hsl(25 70% 55%)" />
           }
         </TouchableOpacity>
@@ -247,7 +247,7 @@ function InviteRow({
           activeOpacity={0.7}
         >
           {busy === 'reject'
-            ? <ActivityIndicator size="small" color="hsl(15 50% 50%)" />
+            ? <ActivityIndicator size="small" color="#8B6A2A" />
             : <X size={15} color="hsl(0 55% 55%)" />
           }
         </TouchableOpacity>
@@ -305,7 +305,7 @@ function JoinRequestRow({
           activeOpacity={0.7}
         >
           {busy === 'reject'
-            ? <ActivityIndicator size="small" color="hsl(15 50% 50%)" />
+            ? <ActivityIndicator size="small" color="#8B6A2A" />
             : <X size={15} color="hsl(0 55% 55%)" />
           }
         </TouchableOpacity>

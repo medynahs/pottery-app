@@ -122,7 +122,7 @@ function FriendRow({
         activeOpacity={0.7}
       >
         {removing
-          ? <ActivityIndicator size="small" color="hsl(15 50% 50%)" />
+          ? <ActivityIndicator size="small" color="#8B6A2A" />
           : <UserMinus size={15} color="hsl(0 60% 55%)" />
         }
       </TouchableOpacity>
@@ -163,7 +163,7 @@ function IncomingRequestRow({
           activeOpacity={0.7}
         >
           {busy === 'decline'
-            ? <ActivityIndicator size="small" color="hsl(15 50% 50%)" />
+            ? <ActivityIndicator size="small" color="#8B6A2A" />
             : <X size={15} color="hsl(0 55% 55%)" />
           }
         </TouchableOpacity>
@@ -216,7 +216,7 @@ function OutgoingRequestRow({
         activeOpacity={0.7}
       >
         {canceling
-          ? <ActivityIndicator size="small" color="hsl(15 50% 50%)" />
+          ? <ActivityIndicator size="small" color="#8B6A2A" />
           : <Text className="text-xs font-semibold text-muted-foreground">Cancel</Text>
         }
       </TouchableOpacity>

@@ -246,7 +246,7 @@ export function CemeterySacrificeModal({
               <View className="rounded-3xl border border-border bg-card px-4 py-4 mb-5">
                 <View className="flex-row items-start gap-3">
                   <View className="w-10 h-10 rounded-2xl bg-primary/10 items-center justify-center mt-0.5">
-                    <Sparkles size={18} color="hsl(15 50% 50%)" />
+                    <Sparkles size={18} color="#8B6A2A" />
                   </View>
                   <View className="flex-1">
                     <Text className="text-base font-semibold text-foreground mb-1">

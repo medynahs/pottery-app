@@ -24,6 +24,7 @@ import {
   type PricingUserType,
 } from '../types/pricing';
 import type { AppNotification, Studio, StudioMember } from '../types/studio';
+import { clearSecureAuth, loadSecureAuth, saveSecureAuth } from './secureStorage';
 import { zustandStorage } from './storage';
 
 // ── Sync queue ────────────────────────────────────────────────────────────────
@@ -300,9 +301,14 @@ interface AppState {
   oryIdentityId: string | null;
   oryEmail: string | null;
   backendUserId: string | null;
+  /** True when the user has an active premium entitlement (synced from RevenueCat). */
+  isPremium: boolean;
   setSessionToken: (token: string, identityId: string, email: string) => void;
   clearSession: () => void;
   setBackendUserId: (id: string | null) => void;
+  setIsPremium: (v: boolean) => void;
+  /** Restore sessionToken + oryIdentityId from SecureStore on cold-start. */
+  initializeAuth: () => Promise<void>;
 
   // ── User ──────────────────────────────────────────────────────
   user: {
@@ -553,19 +559,37 @@ export const useAppStore = create<AppState>()(
   oryIdentityId: null,
   oryEmail: null,
   backendUserId: null,
-  setSessionToken: (token, identityId, email) =>
-    set({ sessionToken: token, oryIdentityId: identityId, oryEmail: email }),
-  clearSession: () => set({
-    sessionToken: null,
-    oryIdentityId: null,
-    oryEmail: null,
-    backendUserId: null,
-    // Reset user-specific fields so the next sign-in starts clean.
-    // Without this, the previous user's avatar persists in AsyncStorage
-    // and is shown briefly (or permanently) when a different account signs in.
-    user: { name: '', avatarInitial: 'U', avatarImageUri: undefined },
-  }),
+  isPremium: false,
+  setSessionToken: (token, identityId, email) => {
+    set({ sessionToken: token, oryIdentityId: identityId, oryEmail: email });
+    void saveSecureAuth(token, identityId);
+  },
+  clearSession: () => {
+    set({
+      sessionToken: null,
+      oryIdentityId: null,
+      oryEmail: null,
+      backendUserId: null,
+      isPremium: false,
+      // Reset user-specific fields so the next sign-in starts clean.
+      // Without this, the previous user's avatar persists in AsyncStorage
+      // and is shown briefly (or permanently) when a different account signs in.
+      user: { name: '', avatarInitial: 'U', avatarImageUri: undefined },
+    });
+    void clearSecureAuth();
+  },
   setBackendUserId: (id) => set({ backendUserId: id }),
+  setIsPremium: (v) => set({ isPremium: v }),
+  initializeAuth: async () => {
+    try {
+      const auth = await loadSecureAuth();
+      if (auth) {
+        set({ sessionToken: auth.sessionToken, oryIdentityId: auth.oryIdentityId });
+      }
+    } catch {
+      // SecureStore unavailable (e.g. Expo Go simulator) — proceed without session
+    }
+  },
 
   // ── User ──────────────────────────────────────────────────────
   user: { name: '', avatarInitial: '', studioName: '', location: '', bio: '' },
@@ -1348,6 +1372,8 @@ export const useAppStore = create<AppState>()(
         notificationPrefs: state.notificationPrefs,
         privacyPrefs: state.privacyPrefs,
         lastSyncedAt: state.lastSyncedAt,
+        backendUserId: state.backendUserId,
+        isPremium: state.isPremium,
       }),
     }
   )

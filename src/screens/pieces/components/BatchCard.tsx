@@ -95,7 +95,7 @@ export function BatchCard({ pieces, stageLabel, nextStageLabel, onAdvanceAll, on
               <Text className="text-[11px] font-body-medium text-primary">
                 {nextStageLabel} all
               </Text>
-              <ArrowRight size={10} color="hsl(15 50% 50%)" />
+              <ArrowRight size={10} color="#8B6A2A" />
             </TouchableOpacity>
           )}
           </View>

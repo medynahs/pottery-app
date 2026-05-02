@@ -110,7 +110,7 @@ function PollCard({
                 )}
                 <View className="flex-row items-center justify-between px-3 py-2.5">
                   <View className="flex-row items-center gap-2 flex-1">
-                    {isVoting && <ActivityIndicator size="small" color="hsl(15 50% 50%)" />}
+                    {isVoting && <ActivityIndicator size="small" color="#8B6A2A" />}
                     <Text
                       className="text-sm flex-1"
                       style={{
@@ -291,7 +291,7 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
           activeOpacity={0.7}
         >
           {isLoadingMore
-            ? <ActivityIndicator size="small" color="hsl(15 50% 50%)" />
+            ? <ActivityIndicator size="small" color="#8B6A2A" />
             : <Text className="text-sm font-medium text-muted-foreground">Load more</Text>
           }
         </TouchableOpacity>
