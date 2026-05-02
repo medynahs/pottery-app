@@ -281,6 +281,11 @@ interface AppState {
   setEnabledModules: (modules: string[]) => void;
   toggleModule: (module: string) => void;
   isModuleEnabled: (module: string) => boolean;
+  /** ISO timestamp of when the studio was first set up (onboarding completed). */
+  studioCreatedAt: string | null;
+  /** One-time ceremony keys that have already been shown (never repeat). */
+  seenCeremonies: string[];
+  markCeremonyAsSeen: (key: string) => void;
 
   // ── Notification preferences ──────────────────────────────────
   notificationPrefs: NotificationPrefs;
@@ -472,10 +477,12 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
   // ── App settings ──────────────────────────────────────────────
   generalOnboardingCompleted: false,
+  studioCreatedAt: null,
   onboardingProfile: DEFAULT_ONBOARDING_PROFILE,
   practiceMode: 'both',
   role: 'owner',
   enabledModules: ['overview', 'pieces', 'kiln', 'library', 'community'],
+  seenCeremonies: [],
 
   setOnboardingProfile: (patch) =>
     set((state) => {
@@ -496,6 +503,7 @@ export const useAppStore = create<AppState>()(
       const currentProfile = normalizeOnboardingProfile(state.onboardingProfile);
       return {
       generalOnboardingCompleted: true,
+      studioCreatedAt: state.studioCreatedAt ?? new Date().toISOString(),
       onboardingProfile: {
         ...currentProfile,
         ...profile,
@@ -507,6 +515,9 @@ export const useAppStore = create<AppState>()(
     };
     }),
   reopenGeneralOnboarding: () => set({ generalOnboardingCompleted: false }),
+  markCeremonyAsSeen: (key) => set((state) => ({
+    seenCeremonies: state.seenCeremonies.includes(key) ? state.seenCeremonies : [...state.seenCeremonies, key],
+  })),
   setPracticeMode: (mode) => set({ practiceMode: mode }),
   setRole: (role) => set({ role }),
   setEnabledModules: (modules) => set({ enabledModules: normalizeModuleList(modules) }),

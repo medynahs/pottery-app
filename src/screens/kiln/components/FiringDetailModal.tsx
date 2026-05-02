@@ -1,5 +1,6 @@
 // src/screens/kiln/FiringDetailModal.tsx
 import { ConfirmSheet, ModalCard, ModalShell } from '@/src/components/AppSheets';
+import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
@@ -38,6 +39,8 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const [showCompletionForm, setShowCompletionForm] = React.useState(false);
   const [showPiecePicker, setShowPiecePicker] = React.useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
+  const [firingCeremonyVisible, setFiringCeremonyVisible] = React.useState(false);
+  const [firingCeremonyName, setFiringCeremonyName] = React.useState('');
 
   React.useEffect(() => {
     if (!visible) {
@@ -72,6 +75,10 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const handleComplete = () => {
     completeFiring(liveFiring.id, selectedResult, resultNotes);
     setShowCompletionForm(false);
+    if (selectedResult === 'success') {
+      setFiringCeremonyName(liveFiring.name);
+      setFiringCeremonyVisible(true);
+    }
   };
 
   const handleDelete = () => {
@@ -97,6 +104,16 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
       destructive
       onConfirm={() => { deleteFiring(liveFiring.id); setConfirmDeleteOpen(false); onClose(); }}
       onCancel={() => setConfirmDeleteOpen(false)}
+    />
+    <CeremonyOverlay
+      visible={firingCeremonyVisible}
+      emoji="🔥"
+      title="Firing complete!"
+      subtitle={firingCeremonyName ? `"${firingCeremonyName}" came out beautifully.` : 'The kiln delivered.'}
+      footnote="Pieces advanced from the firing."
+      tint="rgba(211, 120, 60, 1)"
+      durationMs={3000}
+      onDismiss={() => { setFiringCeremonyVisible(false); onClose(); }}
     />
     <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
       <ModalCard maxHeight={height * 0.95}>

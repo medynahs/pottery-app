@@ -1,8 +1,10 @@
 ﻿// src/screens/KilnScreen.tsx
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
+import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Flame, FlameKindling, Layers, Plus, Thermometer } from 'lucide-react-native';
 import React from 'react';
@@ -58,6 +60,9 @@ export default function KilnScreen() {
 
   const waitingCount = waitingForBisque.length + waitingForGlaze.length;
   const [sectionMode, setSectionMode] = React.useState<'sessions' | 'queue' | 'kilns'>('sessions');
+  const [firstKilnCeremony, setFirstKilnCeremony] = React.useState(false);
+  const seenCeremonies = useAppStore((s) => s.seenCeremonies);
+  const markCeremonyAsSeen = useAppStore((s) => s.markCeremonyAsSeen);
   const [readyFilter, setReadyFilter] = React.useState<'bisque' | 'glaze'>('bisque');
   const [readySort, setReadySort] = React.useState<'longest' | 'newest'>('longest');
   const [showAllReadyPieces, setShowAllReadyPieces] = React.useState(false);
@@ -346,10 +351,26 @@ export default function KilnScreen() {
       </ScrollView>
 
       {/* Modals */}
+      <CeremonyOverlay
+        visible={firstKilnCeremony}
+        emoji="🔥"
+        title="Your first kiln is ready."
+        subtitle="The heart of your studio."
+        tint="rgba(211, 120, 60, 1)"
+        durationMs={3000}
+        onDismiss={() => setFirstKilnCeremony(false)}
+      />
       <AddKilnModal
         visible={addKilnOpen || !!editKiln}
         onClose={() => { setAddKilnOpen(false); setEditKiln(undefined); }}
-        onSave={handleSaveKiln}
+        onSave={(kiln) => {
+          const isFirst = kilns.length === 0 && !editKiln && !seenCeremonies.includes('first-kiln');
+          handleSaveKiln(kiln);
+          if (isFirst) {
+            markCeremonyAsSeen('first-kiln');
+            setFirstKilnCeremony(true);
+          }
+        }}
         editKiln={editKiln}
       />
       <StartFiringModal

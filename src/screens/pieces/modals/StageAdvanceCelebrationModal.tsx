@@ -1,3 +1,4 @@
+import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
@@ -7,16 +8,16 @@ import { Flame, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { Image, Modal, View } from 'react-native';
 import Animated, {
-  Easing,
-  FadeIn,
-  FadeInDown,
-  FadeOut,
-  FadeOutDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
+    Easing,
+    FadeIn,
+    FadeInDown,
+    FadeOut,
+    FadeOutDown,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
 } from 'react-native-reanimated';
 
 export type StageAdvanceCelebration = {
@@ -80,11 +81,11 @@ export function StageAdvanceCelebrationModal({
       false
     );
 
-    const autoCloseMs = FIRING_STAGE_IDS.has(transition.toStage) || transition.toStage === FINISHED_STAGE_ID
-      ? 2200
-      : 1500;
-    const timer = setTimeout(onClose, autoCloseMs);
+    // finished stage uses CeremonyOverlay (self-dismissing) — no timer needed here
+    if (transition.toStage === FINISHED_STAGE_ID) return;
 
+    const autoCloseMs = FIRING_STAGE_IDS.has(transition.toStage) ? 2200 : 1500;
+    const timer = setTimeout(onClose, autoCloseMs);
     return () => clearTimeout(timer);
   }, [transition, onClose, pulse]);
 
@@ -103,11 +104,35 @@ export function StageAdvanceCelebrationModal({
 
   const isFiring = FIRING_STAGE_IDS.has(transition.toStage);
   const isFinished = transition.toStage === FINISHED_STAGE_ID;
+
   const heading = transition.count > 1
+    ? `${transition.count} pieces finished`
+    : `${transition.pieceName}`;
+  const cardHeading = transition.count > 1
     ? `${transition.count} pieces advanced`
     : `${transition.pieceName} advanced`;
   const subtitle = `${fromLabel} → ${toLabel}`;
 
+  // ── Full-screen ceremony for "finished" ────────────────────────────────────
+  if (isFinished) {
+    const ceremonySubtitle = transition.count > 1
+      ? `${transition.count} pieces made it all the way through.`
+      : 'This piece made it all the way through.';
+    return (
+      <CeremonyOverlay
+        visible
+        emoji="✨"
+        title={heading}
+        subtitle={ceremonySubtitle}
+        footnote="From raw clay to finished piece."
+        tint="rgba(130, 180, 110, 1)"
+        durationMs={3200}
+        onDismiss={onClose}
+      />
+    );
+  }
+
+  // ── Regular card modal for all other stages ────────────────────────────────
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Animated.View
@@ -129,22 +154,16 @@ export function StageAdvanceCelebrationModal({
           className="w-full max-w-[360px] rounded-3xl border border-border bg-card px-5 pt-5 pb-6"
         >
           <View className="items-center">
-            {(isFiring || isFinished) ? (
+            {isFiring ? (
               <Animated.View style={pulseStyle} className="w-full h-36 rounded-2xl overflow-hidden">
                 <Image
-                  source={
-                    isFiring
-                      ? require('../../../../assets/animations/activeOven.gif')
-                      : require('../../../../assets/animations/kilnPet.gif')
-                  }
+                  source={require('../../../../assets/animations/activeOven.gif')}
                   className="w-full h-full"
                   resizeMode="cover"
                 />
-                {isFiring && (
-                  <View className="absolute top-2 right-2 bg-background/70 rounded-full p-2">
-                    <Flame size={14} color={colors.primary} />
-                  </View>
-                )}
+                <View className="absolute top-2 right-2 bg-background/70 rounded-full p-2">
+                  <Flame size={14} color={colors.primary} />
+                </View>
               </Animated.View>
             ) : (
               <Animated.View
@@ -156,7 +175,7 @@ export function StageAdvanceCelebrationModal({
             )}
           </View>
 
-          <Text className="mt-4 text-center text-lg font-serif font-bold text-foreground">{heading}</Text>
+          <Text className="mt-4 text-center text-lg font-serif font-bold text-foreground">{cardHeading}</Text>
           <Text className="mt-1 text-center text-xs font-semibold uppercase tracking-wide text-primary">
             {subtitle}
           </Text>

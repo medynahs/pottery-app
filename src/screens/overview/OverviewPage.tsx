@@ -1,3 +1,4 @@
+import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { Text } from '@/src/components/ui/text';
 import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { getKilnkinVoiceLine } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
@@ -288,6 +289,60 @@ export function OverviewPage() {
 
   const [patReaction, setPatReaction] = React.useState<string | null>(null);
   const patTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Ceremony state (birthday / anniversary) ─────────────────────────────────
+  const seenCeremonies = useAppStore((s) => s.seenCeremonies);
+  const markCeremonyAsSeen = useAppStore((s) => s.markCeremonyAsSeen);
+  const studioCreatedAt = useAppStore((s) => s.studioCreatedAt);
+  const [overlayCeremony, setOverlayCeremony] = React.useState<{
+    emoji: string; title: string; subtitle: string; tint: string;
+  } | null>(null);
+
+  React.useEffect(() => {
+    const now = new Date();
+    const mm = now.getMonth() + 1;
+    const dd = now.getDate();
+    const year = now.getFullYear();
+
+    // Studio anniversary (skip year 0 = same year as creation)
+    if (studioCreatedAt) {
+      const created = new Date(studioCreatedAt);
+      const createdYear = created.getFullYear();
+      const yearsElapsed = year - createdYear;
+      if (yearsElapsed > 0 && created.getMonth() + 1 === mm && created.getDate() === dd) {
+        const key = `studio-anniversary-${year}`;
+        if (!seenCeremonies.includes(key)) {
+          markCeremonyAsSeen(key);
+          setOverlayCeremony({
+            emoji: '🏺',
+            title: `${yearsElapsed} year${yearsElapsed > 1 ? 's' : ''} in the studio!`,
+            subtitle: `Happy studio anniversary. Keep making things.`,
+            tint: 'rgba(211, 165, 60, 1)',
+          });
+          return;
+        }
+      }
+    }
+
+    // Kilnkin birthday
+    if (kilnkinCompanion?.bornOn) {
+      const bornDate = new Date(kilnkinCompanion.bornOn);
+      if (bornDate.getMonth() + 1 === mm && bornDate.getDate() === dd) {
+        const key = `kilnkin-birthday-${year}`;
+        if (!seenCeremonies.includes(key)) {
+          markCeremonyAsSeen(key);
+          setOverlayCeremony({
+            emoji: '🎂',
+            title: `Happy birthday, ${kilnkinCompanion.name}!`,
+            subtitle: `Your companion turns ${year - bornDate.getFullYear()} today.`,
+            tint: 'rgba(180, 130, 211, 1)',
+          });
+        }
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handlePat = React.useCallback(() => {
     if (patTimeoutRef.current) clearTimeout(patTimeoutRef.current);
     const reaction = PAT_REACTIONS[Math.floor(Math.random() * PAT_REACTIONS.length)];
@@ -373,6 +428,15 @@ export function OverviewPage() {
 
   return (
     <View className="flex-1 bg-background">
+      <CeremonyOverlay
+        visible={overlayCeremony !== null}
+        emoji={overlayCeremony?.emoji ?? '🏺'}
+        title={overlayCeremony?.title ?? ''}
+        subtitle={overlayCeremony?.subtitle ?? ''}
+        tint={overlayCeremony?.tint ?? 'rgba(130, 180, 110, 1)'}
+        durationMs={3500}
+        onDismiss={() => setOverlayCeremony(null)}
+      />
       {/* ── Header ── */}
       <View style={{ backgroundColor: 'hsl(35 62% 93%)', paddingTop: insets.top + 14 }} className="px-5 pb-0">
         <View className="flex-row items-start justify-between mb-3">

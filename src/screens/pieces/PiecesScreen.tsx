@@ -1,7 +1,9 @@
 // src/screens/PiecesScreen.tsx
 import { ConfirmSheet, PickSheet } from '@/src/components/AppSheets';
+import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
+import { useAppStore } from '@/src/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronUp, Layers, Plus, Search, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
@@ -29,6 +31,9 @@ export default function PiecesScreen() {
   const params = useLocalSearchParams<{ openJournalPieceId?: string | string[]; stage?: string | string[] }>();
   const handledOpenJournalIdRef = React.useRef<string | null>(null);
   const [stageTransition, setStageTransition] = React.useState<StageAdvanceCelebration | null>(null);
+  const [firstPieceCeremony, setFirstPieceCeremony] = React.useState(false);
+  const seenCeremonies = useAppStore((s) => s.seenCeremonies);
+  const markCeremonyAsSeen = useAppStore((s) => s.markCeremonyAsSeen);
 
   const {
     pieces,
@@ -279,10 +284,26 @@ export default function PiecesScreen() {
         </View>
       </ScrollView>
 
+      <CeremonyOverlay
+        visible={firstPieceCeremony}
+        emoji="🏺"
+        title="First piece logged!"
+        subtitle="Your studio journey starts here."
+        tint="rgba(130, 180, 110, 1)"
+        durationMs={3000}
+        onDismiss={() => setFirstPieceCeremony(false)}
+      />
       <AddPieceModal
         visible={addOpen || editPiece !== undefined}
         onClose={() => { setAddOpen(false); setEditPiece(undefined); }}
-        onAdd={handleAdd}
+        onAdd={(newPieces) => {
+          const isFirst = pieces.length === 0 && !seenCeremonies.includes('first-piece');
+          handleAdd(newPieces);
+          if (isFirst) {
+            markCeremonyAsSeen('first-piece');
+            setFirstPieceCeremony(true);
+          }
+        }}
         editPiece={editPiece}
         onEdit={handleEditPiece}
       />
