@@ -1,6 +1,6 @@
 import { Award, BookOpen, Flame, Heart, Layers, Sparkles, Star, TrendingUp, Trophy } from 'lucide-react-native';
 
-export type Tab = 'portfolio' | 'journey';
+export type Tab = 'portfolio' | 'journey' | 'posts';
 
 export const KEY_STATS = [
   { label: 'Total Pieces',  value: '142', icon: Layers,     color: 'hsl(213 80% 55%)', bg: 'bg-blue-50' },

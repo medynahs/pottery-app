@@ -23,11 +23,13 @@ export function AddPieceModal({ visible, onClose, onAdd, editPiece, onEdit }: Ad
   const { height: screenHeight } = useWindowDimensions();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
-  const { form, set, handleClose, pickImage, handleAdd, handleEdit } = useAddPieceForm(onClose, onAdd, editPiece, onEdit);
+  const { form, set, handleClose, pickImage, handleAdd, handleEdit, PhotoPickerSheets } = useAddPieceForm(onClose, onAdd, editPiece, onEdit);
   const isEditing = !!editPiece;
 
   return (
-    <ModalShell visible={visible} onClose={handleClose} backdropColor="rgba(0,0,0,0.5)">
+    <>
+      {PhotoPickerSheets}
+      <ModalShell visible={visible} onClose={handleClose} backdropColor="rgba(0,0,0,0.5)">
       <ModalCard maxHeight={screenHeight * 0.92}>
 
             {/* Title row */}
@@ -61,5 +63,6 @@ export function AddPieceModal({ visible, onClose, onAdd, editPiece, onEdit }: Ad
             </View>
       </ModalCard>
     </ModalShell>
+    </>
   );
 }

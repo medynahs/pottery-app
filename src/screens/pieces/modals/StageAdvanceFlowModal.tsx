@@ -5,7 +5,7 @@ import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import * as ImagePicker from 'expo-image-picker';
+import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import type { LucideIcon } from 'lucide-react-native';
 import { ImagePlus, Sparkles, X } from 'lucide-react-native';
 import React from 'react';
@@ -73,6 +73,7 @@ export function StageAdvanceFlowModal({
 }: StageAdvanceFlowModalProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
+  const { openPickSheet, PhotoPickerSheets } = usePhotoPicker({ aspect: [4, 3] });
 
   const [photo, setPhoto] = React.useState<string | undefined>(undefined);
   const [notes, setNotes] = React.useState('');
@@ -97,20 +98,9 @@ export function StageAdvanceFlowModal({
     setStatus('');
   }, [request, defaultBisqueTemp, defaultGlazeTemp]);
 
-  const pickPhoto = React.useCallback(async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled) {
-        setPhoto(result.assets[0].uri);
-      }
-    } catch {}
-  }, []);
+  const pickPhoto = React.useCallback(() => {
+    openPickSheet((uri) => setPhoto(uri));
+  }, [openPickSheet]);
 
   const handleConfirm = React.useCallback(() => {
     const capture: StageAdvanceCapture = {
@@ -133,7 +123,9 @@ export function StageAdvanceFlowModal({
   const isFinished = request.toStage === FINISHED_STAGE_ID;
 
   return (
-    <ModalShell visible onClose={onClose} backdropColor="rgba(0,0,0,0.45)">
+    <>
+      {PhotoPickerSheets}
+      <ModalShell visible onClose={onClose} backdropColor="rgba(0,0,0,0.45)">
       <ModalCard>
 
             <View className="flex-row items-center justify-between px-6 pb-4 border-b border-border">
@@ -235,5 +227,6 @@ export function StageAdvanceFlowModal({
             </View>
       </ModalCard>
     </ModalShell>
+    </>
   );
 }

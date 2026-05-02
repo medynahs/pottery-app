@@ -3,7 +3,7 @@ import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { FlameKindling, MoreHorizontal, Trash2 } from 'lucide-react-native';
+import { Clock, FlameKindling, MoreHorizontal, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import type { Kiln } from '../../../types/kiln';
@@ -15,10 +15,10 @@ interface KilnCardProps {
   firingCount: number;
   onEdit: () => void;
   onDelete: () => void;
-  onStartFiring: () => void;
+  onViewHistory: () => void;
 }
 
-export function KilnCard({ kiln, firingCount, onEdit, onDelete, onStartFiring }: KilnCardProps) {
+export function KilnCard({ kiln, firingCount, onEdit, onDelete, onViewHistory }: KilnCardProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const timingSummary = getKilnTimingSummary(kiln);
@@ -94,16 +94,11 @@ export function KilnCard({ kiln, firingCount, onEdit, onDelete, onStartFiring }:
       ) : null}
 
       <TouchableOpacity
-        onPress={onStartFiring}
-        className="flex-row items-center justify-center gap-2 py-2.5 rounded-xl"
-        style={{
-          borderWidth: 1,
-          borderColor: 'hsl(15 50% 50% / 0.3)',
-          backgroundColor: 'hsl(15 50% 50% / 0.06)',
-        }}
+        onPress={onViewHistory}
+        className="flex-row items-center justify-center gap-2 py-2.5 rounded-xl bg-primary"
       >
-        <FlameKindling size={14} color="hsl(15 50% 50%)" />
-        <Text className="text-sm font-semibold text-primary">Start Firing</Text>
+        <Clock size={14} color="white" />
+        <Text className="text-sm font-semibold text-primary-foreground">Firing History</Text>
       </TouchableOpacity>
     </Card>
   );

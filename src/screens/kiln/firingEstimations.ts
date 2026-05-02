@@ -206,3 +206,40 @@ export function getKilnTimingSummary(kiln?: Kiln) {
 
   return summary;
 }
+
+// ─── Calculated timeline ──────────────────────────────────────────────────────
+
+export type CalculatedTimeline = {
+  submittedLabel: string;
+  firesOnLabel: string;
+  readyOnLabel: string;
+  /** ISO strings for the computed milestone dates */
+  firesOnIso: string;
+  readyOnIso: string;
+};
+
+/**
+ * Returns the three key milestone dates for a firing, fully derived from
+ * submission date + kiln timing config. No manual state required.
+ */
+export function getCalculatedTimeline(firing: Firing, kiln?: Kiln): CalculatedTimeline {
+  const submissionDate = firing.submissionDate ?? toIsoDate(new Date(firing.createdAt));
+  const location = firing.location ?? 'studio';
+
+  const queueDelayDays = getQueueDelayDays({ kiln, location });
+  const cycleDurationDays = getCycleDurationDays({ kiln, type: firing.type });
+  const pickupDelayDays = getPickupDelayDays(kiln);
+
+  const submitted = parseIsoDate(submissionDate);
+
+  const firesOn = new Date(submitted.getTime() + queueDelayDays * MS_PER_DAY);
+  const readyOn = new Date(firesOn.getTime() + (cycleDurationDays + pickupDelayDays) * MS_PER_DAY);
+
+  return {
+    submittedLabel: formatReadyDate(submitted.toISOString()),
+    firesOnLabel: formatReadyDate(firesOn.toISOString()),
+    readyOnLabel: formatReadyDate(readyOn.toISOString()),
+    firesOnIso: firesOn.toISOString(),
+    readyOnIso: readyOn.toISOString(),
+  };
+}

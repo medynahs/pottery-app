@@ -1,7 +1,10 @@
 import { Text } from '@/src/components/ui/text';
+import { apiListFriends } from '@/src/services/friends';
+import { apiListMemberStudios, apiListOwnedStudios } from '@/src/services/studios';
 import { useAppStore } from '@/src/store/appStore';
-import { ChevronLeft, Edit3, Settings, Share2, Zap } from 'lucide-react-native';
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { ChevronLeft, Edit3, Palette, Settings, Share2, Zap } from 'lucide-react-native';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Image, Modal, Pressable, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useProfileLevel } from '../hooks/useProfileLevel';
@@ -14,12 +17,32 @@ export function ProfileHeader({
   onBack: () => void;
   onOpenAccountSettings: () => void;
 }) {
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
+  const sessionToken = useAppStore((s) => s.sessionToken);
+  const pieceCount = useAppStore((s) => s.pieces.length);
+  void pieceCount; // kept in store but no longer shown in stat strip
   const { progress, title, nextTitle, earnedCount, totalBadges, badgesUntilNext } = useProfileLevel();
   const [editVisible, setEditVisible] = useState(false);
   const [xpTooltip, setXpTooltip] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(false);
+  const [friendCount, setFriendCount] = useState<number | null>(null);
+  const [studioCount, setStudioCount] = useState<number | null>(null);
 
+  const loadStats = useCallback(async () => {
+    if (!sessionToken) return;
+    try {
+      const [friends, owned, member] = await Promise.all([
+        apiListFriends(sessionToken),
+        apiListOwnedStudios(sessionToken),
+        apiListMemberStudios(sessionToken),
+      ]);
+      setFriendCount((friends ?? []).length);
+      setStudioCount((owned ?? []).length + (member ?? []).length);
+    } catch { /* silent — stats are non-critical */ }
+  }, [sessionToken]);
+
+  useEffect(() => { loadStats(); }, [loadStats]);
 
   const studioLine = [user.studioName, user.location].filter(Boolean).join(' · ');
 
@@ -112,6 +135,13 @@ export function ProfileHeader({
               <Text className="text-sm font-medium text-foreground">Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              onPress={() => router.push('/app-customization')}
+              className="w-9 h-9 rounded-xl border border-border bg-card items-center justify-center"
+              activeOpacity={0.75}
+            >
+              <Palette size={15} color="hsl(24 20% 40%)" />
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={onOpenAccountSettings}
               className="w-9 h-9 rounded-xl border border-border bg-card items-center justify-center"
               activeOpacity={0.75}
@@ -159,10 +189,35 @@ export function ProfileHeader({
           <Text className="text-sm font-medium text-primary mb-1">{studioLine}</Text>
         ) : null}
         {user.bio ? (
-          <Text className="text-sm text-muted-foreground leading-relaxed mb-0">{user.bio}</Text>
-        ) : (
-          <View className="mb-0" />
-        )}
+          <Text className="text-sm text-muted-foreground leading-relaxed">{user.bio}</Text>
+        ) : null}
+
+        {/* ── Social stat strip ── */}
+        <View className="flex-row items-center gap-6 mt-4">
+          <TouchableOpacity
+            className="items-start"
+            activeOpacity={0.7}
+            onPress={() => router.push('/friends')}
+          >
+            <Text className="text-base font-bold text-foreground">
+              {friendCount === null ? '—' : friendCount}
+            </Text>
+            <Text className="text-xs text-muted-foreground mt-0.5">Clay Friends</Text>
+          </TouchableOpacity>
+
+          <View className="w-px h-8 bg-border" />
+
+          <TouchableOpacity
+            className="items-start"
+            activeOpacity={0.7}
+            onPress={() => router.push('/studios')}
+          >
+            <Text className="text-base font-bold text-foreground">
+              {studioCount === null ? '—' : studioCount}
+            </Text>
+            <Text className="text-xs text-muted-foreground mt-0.5">Studios</Text>
+          </TouchableOpacity>
+        </View>
 
       </View>
 

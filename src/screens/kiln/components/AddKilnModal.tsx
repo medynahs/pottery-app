@@ -1,12 +1,12 @@
 // src/screens/kiln/AddKilnModal.tsx
-import { InfoSheet, ModalCard, ModalShell, PickSheet } from '@/src/components/AppSheets';
+import { InfoSheet, ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Button } from '@/src/components/ui/button';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
+import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { useAppStore } from '@/src/store';
-import * as ImagePicker from 'expo-image-picker';
 import { X } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
@@ -36,7 +36,8 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
   const [openHelp, setOpenHelp] = React.useState<AddKilnHelpField | null>(null);
   const [showAdvancedTiming, setShowAdvancedTiming] = React.useState(false);
   const [infoSheet, setInfoSheet] = React.useState<{ title: string; body: string } | null>(null);
-  const [photoSourceOpen, setPhotoSourceOpen] = React.useState(false);
+
+  const { openPickSheet, PhotoPickerSheets } = usePhotoPicker({ aspect: [4, 3] });
 
   React.useEffect(() => {
     if (!visible) {
@@ -77,56 +78,16 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
     setOpenHelp((current) => (current === field ? null : field));
   }, []);
 
-  const handlePickKilnImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const handleChooseKilnImageSource = React.useCallback(() => {
+    openPickSheet(
+      (uri) => setForm((current) => ({ ...current, imageUri: uri })),
+      form.imageUri ? () => setForm((current) => ({ ...current, imageUri: '' })) : undefined,
+    );
+  }, [openPickSheet, form.imageUri]);
 
-    if (!permission.granted) {
-      setInfoSheet({ title: 'Photo Permission Needed', body: 'Allow photo library access to add a kiln picture.' });
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (result.canceled || !result.assets?.[0]?.uri) {
-      return;
-    }
-
-    setForm((current) => ({ ...current, imageUri: result.assets[0].uri }));
-  };
-
-  const handleTakeKilnPhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (!permission.granted) {
-      setInfoSheet({ title: 'Camera Permission Needed', body: 'Allow camera access to take a kiln picture.' });
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (result.canceled || !result.assets?.[0]?.uri) {
-      return;
-    }
-
-    setForm((current) => ({ ...current, imageUri: result.assets[0].uri }));
-  };
-
-  const handleChooseKilnImageSource = () => {
-    setPhotoSourceOpen(true);
-  };
-
-  const handleRemoveKilnImage = () => {
+  const handleRemoveKilnImage = React.useCallback(() => {
     setForm((current) => ({ ...current, imageUri: '' }));
-  };
+  }, []);
 
   const handleSave = () => {
     if (!form.name.trim()) return;
@@ -164,17 +125,8 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
       body={infoSheet?.body ?? ''}
       onDismiss={() => setInfoSheet(null)}
     />
-    <PickSheet
-      visible={photoSourceOpen}
-      title="Add Kiln Photo"
-      body="Choose where to get the picture from."
-      options={[
-        { label: 'Take Photo', onPress: () => void handleTakeKilnPhoto() },
-        { label: 'Choose from Library', onPress: () => void handlePickKilnImage() },
-      ]}
-      onCancel={() => setPhotoSourceOpen(false)}
-    />
     <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
+      {PhotoPickerSheets}
       <ModalCard maxHeight={height * 0.92}>
 
             <View className="flex-row justify-between items-center px-6 pb-4 border-b border-border">

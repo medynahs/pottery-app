@@ -124,10 +124,6 @@ export default function AccountSettingsScreen() {
         {isAuthenticated ? (
           <>
             {/* Signed-in card */}
-            <View className="mx-6 mb-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
-              <Text className="text-xs font-semibold text-green-700">Signed in</Text>
-              <Text className="text-sm text-foreground mt-0.5">{oryEmail}</Text>
-            </View>
             <SettingsGroup>
               <SettingsRow icon={Mail}   iconColor="hsl(100 40% 45%)" iconBg="bg-green-50"  label="Change Email" />
               <SettingsRow icon={Lock}   iconColor="hsl(38 80% 50%)"  iconBg="bg-amber-50"  label="Change Password" />

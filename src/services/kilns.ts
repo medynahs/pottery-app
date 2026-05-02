@@ -1,0 +1,150 @@
+// Kilns API — /users/me/kilns
+// All endpoints require an X-Session-Token header from Ory Kratos.
+
+import type { Kiln, KilnPricingModel, KilnType } from '../types/kiln';
+import { API_BASE_URL } from './index';
+
+// ─── Backend types ────────────────────────────────────────────────────────────
+
+export interface BackendKiln {
+  id: string;
+  name: string;
+  type: KilnType;
+  coneRange: string;
+  shelves: number;
+  size: string;
+  location: string;
+  notes: string;
+  imageUri?: string | null;
+  queueDelayDays?: number | null;
+  cycleDurationDays?: number | null;
+  pickupDelayDays?: number | null;
+  runsEveryDays?: number | null;
+  studioDelayDays?: number | null;
+  pricingModel?: KilnPricingModel | null;
+  pricingBaseRate?: number | null;
+  createdAt: string;
+}
+
+// ─── Request payload ──────────────────────────────────────────────────────────
+
+export interface UpsertKilnPayload {
+  /** Present when updating an existing backend record. */
+  id?: string;
+  name: string;
+  type: string;
+  coneRange: string;
+  shelves: number;
+  size: string;
+  location: string;
+  notes: string;
+  imageUri?: string;
+  queueDelayDays?: number;
+  cycleDurationDays?: number;
+  pickupDelayDays?: number;
+  runsEveryDays?: number;
+  pricingModel?: string;
+  pricingBaseRate?: number;
+}
+
+// ─── Mappers ──────────────────────────────────────────────────────────────────
+
+export function localKilnToUpsertPayload(kiln: Kiln): UpsertKilnPayload {
+  const payload: UpsertKilnPayload = {
+    name: kiln.name,
+    type: kiln.type,
+    coneRange: kiln.coneRange,
+    shelves: kiln.shelves,
+    size: kiln.size,
+    location: kiln.location,
+    notes: kiln.notes,
+  };
+
+  if (kiln.backendId) payload.id = kiln.backendId;
+  if (kiln.imageUri) payload.imageUri = kiln.imageUri;
+  if (kiln.queueDelayDays != null) payload.queueDelayDays = kiln.queueDelayDays;
+  if (kiln.cycleDurationDays != null) payload.cycleDurationDays = kiln.cycleDurationDays;
+  if (kiln.pickupDelayDays != null) payload.pickupDelayDays = kiln.pickupDelayDays;
+  if (kiln.runsEveryDays != null) payload.runsEveryDays = kiln.runsEveryDays;
+  if (kiln.pricingModel) payload.pricingModel = kiln.pricingModel;
+  if (kiln.pricingBaseRate != null) payload.pricingBaseRate = kiln.pricingBaseRate;
+
+  return payload;
+}
+
+export function backendKilnToLocal(b: BackendKiln, existing?: Kiln): Kiln {
+  const base: Kiln = existing ?? {
+    id: b.id,
+    name: b.name,
+    type: b.type ?? 'electric',
+    coneRange: b.coneRange,
+    shelves: b.shelves,
+    size: b.size,
+    location: b.location,
+    notes: b.notes,
+    createdAt: b.createdAt,
+  };
+
+  return {
+    ...base,
+    backendId: b.id,
+    name: b.name,
+    type: b.type ?? base.type,
+    coneRange: b.coneRange,
+    shelves: b.shelves,
+    size: b.size,
+    location: b.location,
+    notes: b.notes,
+    imageUri: b.imageUri ?? base.imageUri,
+    queueDelayDays: b.queueDelayDays ?? base.queueDelayDays,
+    cycleDurationDays: b.cycleDurationDays ?? base.cycleDurationDays,
+    pickupDelayDays: b.pickupDelayDays ?? base.pickupDelayDays,
+    runsEveryDays: b.runsEveryDays ?? base.runsEveryDays,
+    pricingModel: b.pricingModel ?? base.pricingModel,
+    pricingBaseRate: b.pricingBaseRate ?? base.pricingBaseRate,
+  };
+}
+
+// ─── API functions ────────────────────────────────────────────────────────────
+
+function authHeaders(sessionToken: string): HeadersInit_ {
+  return {
+    'X-Session-Token': sessionToken,
+    'Content-Type': 'application/json',
+  };
+}
+
+export async function apiListKilns(sessionToken: string): Promise<BackendKiln[]> {
+  const response = await fetch(`${API_BASE_URL}/users/me/kilns`, {
+    headers: authHeaders(sessionToken),
+  });
+  if (!response.ok) throw new Error(`GET /users/me/kilns → ${response.status}`);
+  return response.json() as Promise<BackendKiln[]>;
+}
+
+export async function apiUpsertKiln(
+  sessionToken: string,
+  payload: UpsertKilnPayload,
+): Promise<BackendKiln> {
+  const response = await fetch(`${API_BASE_URL}/users/me/kilns`, {
+    method: 'POST',
+    headers: authHeaders(sessionToken),
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error(`POST /users/me/kilns → ${response.status}`);
+  return response.json() as Promise<BackendKiln>;
+}
+
+export async function apiDeleteKiln(
+  sessionToken: string,
+  backendId: string,
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE_URL}/users/me/kilns/${encodeURIComponent(backendId)}`,
+    {
+      method: 'DELETE',
+      headers: { 'X-Session-Token': sessionToken },
+    },
+  );
+  if (!response.ok) throw new Error(`DELETE /users/me/kilns/${backendId} → ${response.status}`);
+}

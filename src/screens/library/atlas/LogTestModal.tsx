@@ -1,27 +1,28 @@
 import { ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
+import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import {
-    GLAZE_APPLICATION_METHOD_LABELS,
-    GLAZE_APPLICATION_METHOD_OPTIONS,
-    GLAZE_DEFECT_LABELS,
-    GLAZE_DEFECT_OPTIONS,
-    GLAZE_KILN_TYPE_LABELS,
-    GLAZE_KILN_TYPE_OPTIONS,
-    GLAZE_RESULT_LABELS,
-    GLAZE_RESULT_OPTIONS,
-    GLAZE_THICKNESS_LABELS,
-    GLAZE_THICKNESS_OPTIONS,
-    type GlazeLibraryItem,
+  GLAZE_APPLICATION_METHOD_LABELS,
+  GLAZE_APPLICATION_METHOD_OPTIONS,
+  GLAZE_DEFECT_LABELS,
+  GLAZE_DEFECT_OPTIONS,
+  GLAZE_KILN_TYPE_LABELS,
+  GLAZE_KILN_TYPE_OPTIONS,
+  GLAZE_RESULT_LABELS,
+  GLAZE_RESULT_OPTIONS,
+  GLAZE_THICKNESS_LABELS,
+  GLAZE_THICKNESS_OPTIONS,
+  type GlazeLibraryItem,
 } from '@/src/screens/glazes/types';
 import { GLAZE_TEMPS } from '@/src/screens/pieces/utils/constants';
 import React from 'react';
 import {
-    ScrollView,
-    TouchableOpacity,
-    View
+  ScrollView,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { createEmptyTestDraft, pickImage } from './helpers';
+import { createEmptyTestDraft } from './helpers';
 import { MediaSlot } from './MediaSlot';
 import { Pill } from './Pill';
 import type { TestDraft } from './types';
@@ -44,6 +45,7 @@ export function LogTestModal({
   const [testDraft, setTestDraft] = React.useState<TestDraft>(() =>
     createEmptyTestDraft(glazes[0]?.id ?? '', defaultGlazeTemp),
   );
+  const { openPickSheet, PhotoPickerSheets } = usePhotoPicker();
 
   React.useEffect(() => {
     if (visible) {
@@ -58,7 +60,9 @@ export function LogTestModal({
   }, [glazes]);
 
   return (
-    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.46)">
+    <>
+      {PhotoPickerSheets}
+      <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.46)">
       <ModalCard variant="pottery" radius={32} maxHeight={760}>
             <View
               style={{
@@ -418,7 +422,7 @@ export function LogTestModal({
               <MediaSlot
                 label="Tap to add tile photo"
                 uri={testDraft.photoUri}
-                onPress={() => pickImage((uri) => setTestDraft((d) => ({ ...d, photoUri: uri })))}
+                onPress={() => openPickSheet((uri) => setTestDraft((d) => ({ ...d, photoUri: uri })))}
               />
             </ScrollView>
 
@@ -452,5 +456,6 @@ export function LogTestModal({
             </View>
       </ModalCard>
     </ModalShell>
+    </>
   );
 }

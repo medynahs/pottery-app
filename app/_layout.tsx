@@ -14,16 +14,17 @@ import '../global.css';
 import { ErrorBoundary } from '@/src/components/error-boundary';
 import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
 import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
+import { ToastOverlay } from '@/src/components/ui/toast-overlay';
 import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
 import {
-  DMSans_400Regular,
-  DMSans_500Medium,
+    DMSans_400Regular,
+    DMSans_500Medium,
 } from '@expo-google-fonts/dm-sans';
 import {
-  Fraunces_600SemiBold,
-  Fraunces_700Bold,
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
 
 // Required on iOS: tells ASWebAuthenticationSession that the OAuth redirect was
@@ -109,10 +110,16 @@ function AppShell() {
         <Stack.Screen name="profile/studio-rhythm" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="overview-alerts" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="kilnkin" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="analytics" options={{ headerShown: false }} />
+        <Stack.Screen name="kiln-history" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="register" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="friends" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="studios" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false, presentation: 'card' }} />
       </Stack>
       <OfflineBanner />
+      <ToastOverlay />
       <StatusBar style="auto" />
     </>
   );

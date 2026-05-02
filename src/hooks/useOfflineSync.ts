@@ -50,13 +50,12 @@ export function useOfflineSync() {
     }
   }, [isOnline]);
 
-  // Also flush on mount if we're already online with a non-empty queue
-  // (covers the case where the app was closed offline and reopened online)
-  const hasFlushedOnMount = useRef(false);
+  // Flush whenever a new op is enqueued and we're already online
+  // (covers continuous-online sessions where network never toggles)
   useEffect(() => {
-    if (!hasFlushedOnMount.current && isOnline && pendingSyncOps.length > 0) {
-      hasFlushedOnMount.current = true;
+    if (isOnline && pendingSyncOps.length > 0) {
       flushQueue(pendingSyncOps);
     }
-  }, []);
+  }, [pendingSyncOps.length]);
+
 }

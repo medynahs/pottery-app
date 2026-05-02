@@ -98,6 +98,9 @@ export type Piece = {
   batchId?: string;
   batchSize?: number;
   updatedAt?: string;
+  /** Studio queue status — set when a studio member submits a piece for firing. */
+  studioQueueStatus?: 'submitted' | 'in-firing' | 'ready-for-pickup' | 'picked-up';
+  studioQueueSubmittedAt?: string;
 };
 
 export type PieceForm = {
@@ -139,8 +142,4 @@ export type DisplayItem =
   | { type: 'batch'; pieces: Piece[]; batchId: string }
   | { type: 'set-header'; batchId: string; name: string; count: number };
 
-export type GridRow =
-  | { type: 'batch'; batchId: string; pieces: Piece[] }
-  | { type: 'pair'; items: Piece[] }
-  | { type: 'set-header'; batchId: string; name: string; count: number };
 

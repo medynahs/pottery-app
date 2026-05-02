@@ -2,6 +2,11 @@
 import { useAppStore } from '@/src/store';
 import React from 'react';
 import type { Firing, Kiln } from '../../../types/kiln';
+import {
+    useDeleteKilnMutation,
+    useKilnsSync,
+    useUpsertKilnMutation,
+} from './useKilnsSync';
 
 export function useKilnScreen() {
   const kilns = useAppStore((s) => s.kilns);
@@ -16,6 +21,11 @@ export function useKilnScreen() {
   const toggleKilnChecklistItem = useAppStore((s) => s.toggleKilnChecklistItem);
   const addKilnChecklistItem = useAppStore((s) => s.addKilnChecklistItem);
   const removeKilnChecklistItem = useAppStore((s) => s.removeKilnChecklistItem);
+
+  // Sync kilns from the backend on mount (no-op when signed out)
+  useKilnsSync();
+  const upsertKilnMutation = useUpsertKilnMutation();
+  const deleteKilnMutation = useDeleteKilnMutation();
 
   // ── Modal state ────────────────────────────────────────────────
   const [addKilnOpen, setAddKilnOpen] = React.useState(false);
@@ -90,6 +100,8 @@ export function useKilnScreen() {
     }
     setEditKiln(undefined);
     setAddKilnOpen(false);
+    // Fire-and-forget — store is already updated optimistically above
+    upsertKilnMutation.mutate(kiln);
   };
 
   const handleStartFiringFromKiln = (kilnId: string) => {
@@ -99,6 +111,8 @@ export function useKilnScreen() {
 
   const handleDeleteKiln = (kiln: Kiln) => {
     deleteKiln(kiln.id);
+    // Fire-and-forget — store is already updated optimistically above
+    deleteKilnMutation.mutate(kiln);
   };
 
   return {

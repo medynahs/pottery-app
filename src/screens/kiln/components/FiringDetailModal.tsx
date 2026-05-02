@@ -1,17 +1,15 @@
 // src/screens/kiln/FiringDetailModal.tsx
 import { ConfirmSheet, ModalCard, ModalShell } from '@/src/components/AppSheets';
-import { Button } from '@/src/components/ui/button';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useAppStore } from '@/src/store';
-import { ChevronRight, Trash2, X } from 'lucide-react-native';
+import { Trash2, X } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import type { Firing, FiringResult } from '../../../types/kiln';
-import { FIRING_STATE_LABELS, FIRING_TYPE_LABELS, nextFiringState } from '../constants';
-import { formatReadyDate, getExpectedReadyAt } from '../firingEstimations';
+import { FIRING_TYPE_LABELS } from '../constants';
 import { FiringDetailContent } from './FiringDetailContent';
 
 interface FiringDetailModalProps {
@@ -28,7 +26,6 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const kilns = useAppStore((state) => state.kilns);
   const pieces = useAppStore((state) => state.pieces);
   const currencySymbol = useAppStore((state) => state.pricingSettings.currencySymbol);
-  const updateFiringState = useAppStore((state) => state.updateFiringState);
   const assignPiecesToFiring = useAppStore((state) => state.assignPiecesToFiring);
   const completeFiring = useAppStore((state) => state.completeFiring);
   const deleteFiring = useAppStore((state) => state.deleteFiring);
@@ -70,21 +67,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   if (!firing || !liveFiring) return null;
 
   const kiln = kilns.find((currentKiln) => currentKiln.id === liveFiring.kilnId);
-  const next = nextFiringState(liveFiring.state);
   const isCompleted = liveFiring.state === 'completed';
-  const expectedReadyAt = getExpectedReadyAt(liveFiring, kiln);
-  const formattedExpectedReady = formatReadyDate(expectedReadyAt);
-
-  const handleAdvanceState = () => {
-    if (!next) return;
-
-    if (next === 'completed') {
-      setShowCompletionForm(true);
-      return;
-    }
-
-    updateFiringState(liveFiring.id, next);
-  };
 
   const handleComplete = () => {
     completeFiring(liveFiring.id, selectedResult, resultNotes);
@@ -102,38 +85,6 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
     }
 
     assignPiecesToFiring(liveFiring.id, [pieceId]);
-  };
-
-  const handleStatusOverride = (override: 'fired' | 'ready' | 'picked-up') => {
-    const now = new Date().toISOString();
-
-    if (override === 'fired') {
-      updateFiring({
-        ...liveFiring,
-        state: 'firing',
-        startedAt: liveFiring.startedAt ?? now,
-        statusOverride: 'fired',
-      });
-      return;
-    }
-
-    if (override === 'ready') {
-      updateFiring({
-        ...liveFiring,
-        state: 'unloading',
-        statusOverride: 'ready',
-      });
-      return;
-    }
-
-    updateFiring({
-      ...liveFiring,
-      state: 'completed',
-      completedAt: now,
-      statusOverride: 'picked-up',
-      result: liveFiring.result ?? 'success',
-      resultNotes: liveFiring.resultNotes ?? 'Marked as picked up',
-    });
   };
 
   return (
@@ -175,7 +126,6 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
             <FiringDetailContent
               liveFiring={liveFiring}
               kiln={kiln}
-              formattedExpectedReady={formattedExpectedReady}
               currencySymbol={currencySymbol}
               palette={{
                 muted: colors.muted,
@@ -198,20 +148,11 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
               onChangeResultNotes={setResultNotes}
               onCancelCompletion={() => setShowCompletionForm(false)}
               onComplete={handleComplete}
-              onStatusOverride={handleStatusOverride}
+              onMarkPickedUp={() => setShowCompletionForm(true)}
             />
           </ScrollView>
 
-          {!isCompleted && !showCompletionForm && next ? (
-            <View className="px-6 pb-8 pt-3 border-t border-border">
-              <Button onPress={handleAdvanceState} className="w-full">
-                <View className="flex-row items-center gap-2">
-                  <Text className="font-semibold text-primary-foreground">Advance to {FIRING_STATE_LABELS[next]}</Text>
-                  <ChevronRight size={16} color="white" />
-                </View>
-              </Button>
-            </View>
-          ) : null}
+
       </ModalCard>
     </ModalShell>
     </>

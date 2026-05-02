@@ -5,8 +5,8 @@ import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useUploadAvatar } from '@/src/hooks/useCurrentUser';
+import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { useAppStore } from '@/src/store/appStore';
-import * as ImagePicker from 'expo-image-picker';
 import { Camera, CheckCircle2, ImageIcon, X } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -31,6 +31,8 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const setUser = useAppStore((s) => s.setUser);
   const sessionToken = useAppStore((s) => s.sessionToken);
   const uploadAvatar = useUploadAvatar();
+  const avatarPicker = usePhotoPicker({ aspect: [1, 1], quality: 0.85 });
+  const coverPicker = usePhotoPicker({ aspect: [16, 9], quality: 0.85 });
 
   const [name, setName] = useState('');
   const [studioName, setStudioName] = useState('');
@@ -61,31 +63,16 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
     }
   }, [visible]);
 
-  const pickAvatar = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.85,
-    });
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      setAvatarImageUri(asset.uri);
-      setAvatarMimeType(asset.mimeType ?? 'image/jpeg');
+  const pickAvatar = () => {
+    avatarPicker.openPickSheet((uri) => {
+      setAvatarImageUri(uri);
+      setAvatarMimeType('image/jpeg');
       avatarChanged.current = true;
-    }
+    });
   };
 
-  const pickCover = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.85,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setCoverImageUri(result.assets[0].uri);
-    }
+  const pickCover = () => {
+    coverPicker.openPickSheet((uri) => setCoverImageUri(uri));
   };
 
   const handleSave = async () => {
@@ -122,7 +109,10 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const avatarInitial = ((name.trim() || user.name || 'U')[0] ?? 'U').toUpperCase();
 
   return (
-    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
+    <>
+      {avatarPicker.PhotoPickerSheets}
+      {coverPicker.PhotoPickerSheets}
+      <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
       <ModalCard maxHeight={screenHeight * 0.92}>
 
             {/* Title row */}
@@ -227,7 +217,7 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
               <Input
                 value={studioName}
                 onChangeText={setStudioName}
-                placeholder="e.g. Mallory Clay Studio"
+                placeholder="e.g. My Studio"
                 className="mb-4"
                 autoCorrect={false}
               />
@@ -270,5 +260,6 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
             </View>
       </ModalCard>
     </ModalShell>
+    </>
   );
 }

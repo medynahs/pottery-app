@@ -1,20 +1,21 @@
 import { ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
+import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import {
-    GLAZE_FINISH_LABELS,
-    GLAZE_FINISH_OPTIONS,
-    GLAZE_SOURCE_LABELS,
-    GLAZE_SOURCE_OPTIONS,
+  GLAZE_FINISH_LABELS,
+  GLAZE_FINISH_OPTIONS,
+  GLAZE_SOURCE_LABELS,
+  GLAZE_SOURCE_OPTIONS,
 } from '@/src/screens/glazes/types';
 import React from 'react';
 import {
-    ScrollView,
-    TouchableOpacity,
-    View
+  ScrollView,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { CollectionChip } from './CollectionChip';
-import { createEmptyGlazeDraft, pickImage } from './helpers';
+import { createEmptyGlazeDraft } from './helpers';
 import { MediaSlot } from './MediaSlot';
 import { Pill } from './Pill';
 import type { AddMode, GlazeDraft } from './types';
@@ -36,6 +37,7 @@ export function AddGlazeModal({
   const [draft, setDraft] = React.useState<GlazeDraft>(() =>
     createEmptyGlazeDraft(defaultCone, collections),
   );
+  const { openPickSheet, PhotoPickerSheets } = usePhotoPicker();
 
   React.useEffect(() => {
     if (visible) {
@@ -45,7 +47,9 @@ export function AddGlazeModal({
   }, [visible, defaultCone]);
 
   return (
-    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.46)">
+    <>
+      {PhotoPickerSheets}
+      <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.46)">
       <ModalCard variant="pottery" radius={32} maxHeight={780}>
             <View
               style={{
@@ -408,21 +412,21 @@ export function AddGlazeModal({
                       label="Bucket photo"
                       uri={draft.bucketPhotoUri}
                       onPress={() =>
-                        pickImage((uri) => setDraft((d) => ({ ...d, bucketPhotoUri: uri })))
+                        openPickSheet((uri) => setDraft((d) => ({ ...d, bucketPhotoUri: uri })))
                       }
                     />
                     <MediaSlot
                       label="Test tile"
                       uri={draft.firstTilePhotoUri}
                       onPress={() =>
-                        pickImage((uri) => setDraft((d) => ({ ...d, firstTilePhotoUri: uri })))
+                        openPickSheet((uri) => setDraft((d) => ({ ...d, firstTilePhotoUri: uri })))
                       }
                     />
                     <MediaSlot
                       label="Finished piece"
                       uri={draft.firstPiecePhotoUri}
                       onPress={() =>
-                        pickImage((uri) => setDraft((d) => ({ ...d, firstPiecePhotoUri: uri })))
+                        openPickSheet((uri) => setDraft((d) => ({ ...d, firstPiecePhotoUri: uri })))
                       }
                     />
                   </View>
@@ -469,5 +473,6 @@ export function AddGlazeModal({
             </View>
       </ModalCard>
     </ModalShell>
+    </>
   );
 }

@@ -50,13 +50,15 @@ function backendToLocalPatch(
   bp: BackendPiece,
   existing?: Piece,
 ): Piece {
+  const stage = API_TO_LOCAL_STAGE[bp.status] ?? bp.status;
+
   const base: Piece = existing ?? {
     id: Date.now() + Math.floor(Math.random() * 1_000),
     name: bp.name,
-    stage: API_TO_LOCAL_STAGE[bp.status] ?? bp.status,
+    stage,
     createdAt: bp.created_at,
     updatedAt: bp.updated_at,
-    timeline: [{ stage: API_TO_LOCAL_STAGE[bp.status] ?? bp.status, timestamp: bp.created_at }],
+    timeline: [{ stage, timestamp: bp.created_at }],
     clay: '',
   };
 
@@ -64,7 +66,7 @@ function backendToLocalPatch(
     ...base,
     backendId: bp.id,
     name: bp.name,
-    stage: API_TO_LOCAL_STAGE[bp.status] ?? bp.status,
+    stage,
     description: bp.description ?? undefined,
     updatedAt: bp.updated_at,
   };
@@ -179,6 +181,7 @@ export function useCreatePieceMutation() {
       const latest = useAppStore.getState().pieces.find(p => p.id === localPiece.id);
       if (latest) updatePiece({ ...latest, backendId: bp.id });
       void queryClient.invalidateQueries({ queryKey: PIECES_QUERY_KEY });
+      useAppStore.getState().showToast('Piece saved', 'success');
     },
     onError: (err, { localPiece }) => {
       if (__DEV__) {
@@ -187,6 +190,7 @@ export function useCreatePieceMutation() {
           err,
         );
       }
+      useAppStore.getState().showToast('Could not save piece', 'error');
     },
   });
 }
@@ -228,6 +232,7 @@ export function useUpdatePieceMutation() {
           err,
         );
       }
+      useAppStore.getState().showToast('Could not update piece', 'error');
     },
   });
 }
@@ -258,6 +263,7 @@ export function useDeletePieceMutation() {
           err,
         );
       }
+      useAppStore.getState().showToast('Could not delete piece', 'error');
     },
   });
 }
@@ -280,14 +286,12 @@ export function useDeletePieceAssetMutation() {
       await apiDeletePieceAsset(sessionToken, pieceBackendId, assetId);
     },
     onSuccess: (_, { pieceBackendId }) => {
-      void queryClient.invalidateQueries({
-        queryKey: pieceAssetsQueryKey(pieceBackendId),
-      });
+      void queryClient.invalidateQueries({ queryKey: pieceAssetsQueryKey(pieceBackendId) });
+      useAppStore.getState().showToast('Photo removed', 'success');
     },
     onError: (err, { assetId }) => {
-      if (__DEV__) {
-        console.warn(`[pieces:asset:delete] FAILED for asset ${assetId}:`, err);
-      }
+      if (__DEV__) console.warn(`[pieces:asset:delete] FAILED for asset ${assetId}:`, err);
+      useAppStore.getState().showToast('Could not remove photo', 'error');
     },
   });
 }
@@ -306,30 +310,19 @@ export function useUploadPieceAssetMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      pieceBackendId,
-      file,
-      stage,
-      description,
-    }: UploadPieceAssetOptions) => {
+    mutationFn: async ({ pieceBackendId, file, stage, description }: UploadPieceAssetOptions) => {
       if (!sessionToken) throw new Error('Not signed in');
-
       const apiStatus: ApiPieceStatus | undefined = stage
         ? (LOCAL_STAGE_TO_API[stage] ?? undefined)
         : undefined;
-
-      return apiUploadPieceAsset(
-        sessionToken,
-        pieceBackendId,
-        file,
-        apiStatus,
-        description,
-      );
+      return apiUploadPieceAsset(sessionToken, pieceBackendId, file, apiStatus, description);
     },
     onSuccess: (_, { pieceBackendId }) => {
-      void queryClient.invalidateQueries({
-        queryKey: pieceAssetsQueryKey(pieceBackendId),
-      });
+      void queryClient.invalidateQueries({ queryKey: pieceAssetsQueryKey(pieceBackendId) });
+      useAppStore.getState().showToast('Photo uploaded', 'success');
+    },
+    onError: () => {
+      useAppStore.getState().showToast('Could not upload photo', 'error');
     },
   });
 }
@@ -347,18 +340,13 @@ export function useUpdatePieceAssetMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      pieceBackendId,
-      assetId,
-      payload,
-    }: UpdatePieceAssetOptions) => {
+    mutationFn: async ({ pieceBackendId, assetId, payload }: UpdatePieceAssetOptions) => {
       if (!sessionToken) throw new Error('Not signed in');
       return apiUpdatePieceAsset(sessionToken, pieceBackendId, assetId, payload);
     },
     onSuccess: (_, { pieceBackendId }) => {
-      void queryClient.invalidateQueries({
-        queryKey: pieceAssetsQueryKey(pieceBackendId),
-      });
+      void queryClient.invalidateQueries({ queryKey: pieceAssetsQueryKey(pieceBackendId) });
     },
   });
 }
+
