@@ -65,6 +65,20 @@ const STAGE_LABELS: Record<string, string> = {
   cemetery: 'Retired',
 };
 
+const STAGE_BADGE_COLORS: Record<string, { dot: string; text: string }> = {
+  idea:          { dot: 'hsl(270 45% 52%)', text: 'hsl(270 40% 38%)' },
+  forming:       { dot: 'hsl(24 60% 50%)',  text: 'hsl(24 55% 36%)' },
+  'leather-hard':{ dot: 'hsl(30 55% 48%)',  text: 'hsl(30 50% 34%)' },
+  trimming:      { dot: 'hsl(35 55% 48%)',  text: 'hsl(35 50% 34%)' },
+  drying:        { dot: 'hsl(210 50% 52%)', text: 'hsl(210 45% 36%)' },
+  'bone-dry':    { dot: 'hsl(210 45% 50%)', text: 'hsl(210 40% 34%)' },
+  bisque:        { dot: 'hsl(16 55% 50%)',  text: 'hsl(16 50% 36%)' },
+  glazing:       { dot: 'hsl(130 42% 46%)', text: 'hsl(130 40% 32%)' },
+  'glaze-fired': { dot: 'hsl(44 60% 46%)',  text: 'hsl(44 55% 32%)' },
+  finished:      { dot: 'hsl(130 45% 42%)', text: 'hsl(130 42% 28%)' },
+  cemetery:      { dot: 'hsl(0 30% 52%)',   text: 'hsl(0 25% 38%)' },
+};
+
 function buildActivityFeed(pieces: Piece[], limit = 8): ActivityEntry[] {
   const now = new Date();
   const entries: ActivityEntry[] = [];
@@ -469,17 +483,20 @@ export function OverviewPage() {
             </View>
           </View>
         ) : null}
-        {/* ── Today's work header + progress ── */}
-        <View className="flex-row items-center justify-between mb-2">
-          <Text className="text-base font-serif font-bold text-foreground">Today's work</Text>
+        {/* ── Today's work — full-bleed section band ── */}
+        <View style={{ marginHorizontal: -16, paddingHorizontal: 16, paddingVertical: 11, backgroundColor: 'hsl(38 52% 86%)', marginBottom: 14, marginTop: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'hsl(36 42% 79%)' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: 'hsl(39 57% 46%)' }} />
+            <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.9, color: 'hsl(32 55% 24%)', textTransform: 'uppercase' }}>Today's Work</Text>
+          </View>
           {totalTasks > 0 ? (
-            <Text className="text-xs text-muted-foreground">{totalDone} of {totalTasks} done</Text>
+            <Text style={{ fontSize: 11, fontWeight: '500', color: 'hsl(32 40% 40%)' }}>{totalDone}/{totalTasks} done</Text>
           ) : null}
         </View>
 
         {totalTasks > 0 ? (
-          <View className="h-1 rounded-full bg-muted mb-3 overflow-hidden">
-            <View className="h-full rounded-full bg-primary" style={{ width: `${Math.round((totalDone / totalTasks) * 100)}%` }} />
+          <View style={{ height: 5, borderRadius: 3, backgroundColor: 'hsl(35 35% 83%)', marginBottom: 14, overflow: 'hidden' }}>
+            <View style={{ height: '100%', borderRadius: 3, backgroundColor: 'hsl(39 57% 51%)', width: `${Math.round((totalDone / totalTasks) * 100)}%` }} />
           </View>
         ) : null}
 
@@ -503,7 +520,7 @@ export function OverviewPage() {
 
         {/* Setup quests — grouped compact list */}
         {setupQuests.length > 0 ? (
-          <View className="rounded-2xl border border-blue-200 overflow-hidden mb-3">
+          <View className="rounded-2xl border border-blue-200 overflow-hidden mb-3" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4, elevation: 2 }}>
             <View className="px-4 py-2 border-b border-blue-200" style={{ backgroundColor: 'hsl(213 55% 95%)' }}>
               <Text className="text-[10px] font-semibold uppercase tracking-wide text-blue-600">Get started</Text>
             </View>
@@ -534,7 +551,7 @@ export function OverviewPage() {
 
         {/* Daily missions — compact checklist rows */}
         {missionsSummary.all.length > 0 ? (
-          <View className="rounded-2xl border border-border bg-card overflow-hidden mb-4">
+          <View className="rounded-2xl border border-border overflow-hidden mb-4" style={{ backgroundColor: 'rgba(255, 252, 248, 0.96)', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4, elevation: 2 }}>
             {missionsSummary.all.map((mission, i) => {
               const meta = MISSION_META[mission.type];
               if (!meta) return null;
@@ -614,37 +631,44 @@ export function OverviewPage() {
           </TouchableOpacity>
         ) : null}
 
-        {/* Studio journal */}
+        {/* Studio journal — full-bleed section band */}
         {activityFeed.length > 0 ? (
           <>
-            <Text className="text-base font-serif font-bold text-foreground mt-2 mb-3">Studio journal</Text>
-            <View className="rounded-2xl border border-border bg-card overflow-hidden mb-4">
-              {activityFeed.map((entry, index) => (
-                <View
-                  key={entry.id}
-                  className={`flex-row items-center gap-3 px-4 py-3 ${index < activityFeed.length - 1 ? 'border-b border-border' : ''}`}
-                >
-                  {entry.piecePhoto ? (
-                    <Image source={{ uri: entry.piecePhoto }} className="w-9 h-9 rounded-xl" resizeMode="cover" />
-                  ) : (
-                    <View
-                      className="w-9 h-9 rounded-xl items-center justify-center"
-                      style={{ backgroundColor: 'hsl(35 50% 90%)' }}
-                    >
-                      <Text style={{ fontSize: 16 }}>🏺</Text>
+            <View style={{ marginHorizontal: -16, paddingHorizontal: 16, paddingVertical: 11, backgroundColor: 'hsl(210 38% 90%)', marginBottom: 14, marginTop: 6, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'hsl(210 30% 81%)' }}>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: 'hsl(213 55% 50%)', marginRight: 7 }} />
+              <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.9, color: 'hsl(210 45% 24%)', textTransform: 'uppercase' }}>Studio Journal</Text>
+            </View>
+            <View className="rounded-2xl border border-border overflow-hidden mb-4" style={{ backgroundColor: 'rgba(255, 252, 248, 0.96)', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4, elevation: 2 }}>
+              {activityFeed.map((entry, index) => {
+                const stageKey = entry.stage.trim().toLowerCase();
+                const badge = STAGE_BADGE_COLORS[stageKey] ?? { dot: 'hsl(32 30% 55%)', text: 'hsl(32 25% 42%)' };
+                return (
+                  <View
+                    key={entry.id}
+                    style={[{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 11 }, index < activityFeed.length - 1 ? { borderBottomWidth: 1, borderBottomColor: 'hsl(34 25% 88%)' } : {}]}
+                  >
+                    {entry.piecePhoto ? (
+                      <Image source={{ uri: entry.piecePhoto }} style={{ width: 36, height: 36, borderRadius: 10 }} resizeMode="cover" />
+                    ) : (
+                      <View style={{ width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(35 50% 90%)' }}>
+                        <Text style={{ fontSize: 16 }}>🏺</Text>
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: 'hsl(24 25% 18%)' }} numberOfLines={1}>{entry.pieceName}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                        <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: badge.dot }} />
+                        <Text style={{ fontSize: 10, fontWeight: '600', color: badge.text }}>
+                          {STAGE_LABELS[stageKey] ?? entry.stage}
+                        </Text>
+                      </View>
                     </View>
-                  )}
-                  <View className="flex-1">
-                    <Text className="text-xs font-semibold text-foreground" numberOfLines={1}>{entry.pieceName}</Text>
-                    <Text className="text-[11px] text-muted-foreground mt-0.5">
-                      → {STAGE_LABELS[entry.stage.trim().toLowerCase()] ?? entry.stage}
+                    <Text style={{ fontSize: 10, color: 'hsl(32 25% 52%)' }}>
+                      {entry.daysAgo === 0 ? 'today' : entry.daysAgo === 1 ? 'yesterday' : `${entry.daysAgo}d ago`}
                     </Text>
                   </View>
-                  <Text className="text-[10px] text-muted-foreground">
-                    {entry.daysAgo === 0 ? 'today' : entry.daysAgo === 1 ? 'yesterday' : `${entry.daysAgo}d ago`}
-                  </Text>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </>
         ) : null}
