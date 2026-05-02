@@ -179,9 +179,9 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
       try {
         const page = await apiGetFeed(sessionToken, { limit: 20, cursor });
         if (isFirstPage) {
-          setPosts(page.posts ?? []);
+          setPosts(page.items ?? page.posts ?? []);
         } else {
-          setPosts((prev) => [...prev, ...(page.posts ?? [])]);
+          setPosts((prev) => [...prev, ...(page.items ?? page.posts ?? [])]);
         }
         setNextCursor(page.next_cursor);
       } catch (err) {

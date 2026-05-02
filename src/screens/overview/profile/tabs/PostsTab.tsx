@@ -1,9 +1,10 @@
 import { Text } from '@/src/components/ui/text';
 import { apiListMyPosts, type BackendFeedPost } from '@/src/services/community';
 import { useAppStore } from '@/src/store/appStore';
+import { useFocusEffect } from 'expo-router';
 import { Heart, Image as ImageIcon, MessageCircle } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
 
 function relativeDate(iso: string): string {
   try {
@@ -25,19 +26,11 @@ function relativeDate(iso: string): string {
 }
 
 function PostCard({ post }: { post: BackendFeedPost }) {
-  const assets = post.assets ?? [];
-  const firstAsset = assets[0];
+  const assetCount = post.asset_ids?.length ?? post.assets?.length ?? 0;
   const reactionCount = post.reaction_count ?? 0;
   const commentCount = post.comment_count ?? 0;
   return (
     <View className="mx-6 mb-4 rounded-2xl border border-border bg-card overflow-hidden">
-      {firstAsset ? (
-        <Image
-          source={{ uri: firstAsset.url }}
-          style={{ width: '100%', aspectRatio: 4 / 3 }}
-          resizeMode="cover"
-        />
-      ) : null}
       <View className="p-4">
         {post.content ? (
           <Text className="text-sm text-foreground leading-relaxed mb-3">{post.content}</Text>
@@ -52,10 +45,10 @@ function PostCard({ post }: { post: BackendFeedPost }) {
               <MessageCircle size={14} color="hsl(213 60% 55%)" />
               <Text className="text-xs text-muted-foreground">{commentCount}</Text>
             </View>
-            {assets.length > 0 && (
+            {assetCount > 0 && (
               <View className="flex-row items-center gap-1.5">
                 <ImageIcon size={14} color="hsl(24 20% 55%)" />
-                <Text className="text-xs text-muted-foreground">{assets.length}</Text>
+                <Text className="text-xs text-muted-foreground">{assetCount}</Text>
               </View>
             )}
           </View>
@@ -78,15 +71,17 @@ export function PostsTab() {
     setLoading(true);
     try {
       const page = await apiListMyPosts(sessionToken, { limit: 50 });
-      setPosts(page.posts ?? []);
+      console.log('[PostsTab] GET /users/me/posts raw:', JSON.stringify(page));
+      setPosts(page.items ?? page.posts ?? []);
     } catch (e) {
+      console.error('[PostsTab] load error:', e);
       setError('Could not load posts.');
     } finally {
       setLoading(false);
     }
   }, [sessionToken]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   if (loading) {
     return (

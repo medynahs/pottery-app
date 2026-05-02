@@ -15,7 +15,8 @@ export interface BackendFeedPost {
   id: string;
   user_id: string;
   content: string;
-  assets: BackendPostAsset[];
+  assets: BackendPostAsset[] | null;
+  asset_ids: string[];
   created_at: string;
   reaction_count: number;
   comment_count: number;
@@ -23,7 +24,8 @@ export interface BackendFeedPost {
 }
 
 export interface FeedPage {
-  posts: BackendFeedPost[];
+  items: BackendFeedPost[];
+  posts: BackendFeedPost[]; // legacy alias — some endpoints may use either
   next_cursor: string | null;
 }
 

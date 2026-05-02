@@ -1,10 +1,11 @@
 // src/screens/community/CommunityScreen.tsx
 import { Text } from '@/src/components/ui/text';
+import { apiCreatePost } from '@/src/services/community';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
-import { Bell, Users } from 'lucide-react-native';
+import { Bell, Pencil, Users, X } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { MainTabHeader } from '../../components/MainTabHeader';
 import { FilterBar } from './components/FilterBar';
 import { EventsTab } from './tabs/EventsTab';
@@ -14,217 +15,99 @@ import { HallOfFameTab } from './tabs/HallOfFameTab';
 import { MissionsTab } from './tabs/MissionsTab';
 import type { FilterTab } from './types';
 
-// ─── Tray row ─────────────────────────────────────────────────────────────────
+// ─── Create post sheet ───────────────────────────────────────────────────────
 
-function TrayRow({
-  icon,
-  title,
-  subtitle,
-  onAccept,
-  onDecline,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  onAccept: () => Promise<void>;
-  onDecline: () => Promise<void>;
-}) {
-  const [busy, setBusy] = useState<'accept' | 'decline' | null>(null);
-  return (
-    <View className="flex-row items-center gap-3 py-3 border-b border-border/40">
-      <View className="w-10 h-10 rounded-xl bg-primary/10 items-center justify-center">
-        {icon}
-      </View>
-      <View className="flex-1">
-        <Text className="text-sm font-semibold text-foreground">{title}</Text>
-        <Text className="text-xs text-muted-foreground mt-0.5">{subtitle}</Text>
-      </View>
-      <View className="flex-row gap-2">
-        <TouchableOpacity
-          onPress={async () => { setBusy('decline'); try { await onDecline(); } finally { setBusy(null); } }}
-          disabled={busy !== null}
-          className="w-8 h-8 rounded-full bg-muted items-center justify-center"
-          activeOpacity={0.7}
-        >
-          {busy === 'decline'
-            ? <ActivityIndicator size="small" color="hsl(15 50% 50%)" />
-            : <X size={15} color="hsl(0 55% 55%)" />
-          }
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={async () => { setBusy('accept'); try { await onAccept(); } finally { setBusy(null); } }}
-          disabled={busy !== null}
-          className="w-8 h-8 rounded-full bg-primary items-center justify-center"
-          activeOpacity={0.7}
-        >
-          {busy === 'accept'
-            ? <ActivityIndicator size="small" color="white" />
-            : <Check size={15} color="white" />
-          }
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-// ─── Notification tray ────────────────────────────────────────────────────────
-
-function NotificationTray({
-  sessionToken,
+function CreatePostSheet({
   visible,
   onClose,
-  onCountChange,
+  sessionToken,
+  onPosted,
 }: {
-  sessionToken: string;
   visible: boolean;
   onClose: () => void;
-  onCountChange: (n: number) => void;
+  sessionToken: string;
+  onPosted: () => void;
 }) {
-  const [friendRequests, setFriendRequests] = useState<BackendFriendRequest[]>([]);
-  const [studioInvites, setStudioInvites] = useState<BackendStudioInvite[]>([]);
-  const [joinRequests, setJoinRequests] = useState<BackendStudioJoinRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [content, setContent] = useState('');
+  const [posting, setPosting] = useState(false);
+  const showToast = useAppStore((s) => s.showToast);
 
-  // Keep badge count in sync with list state
-  useEffect(() => {
-    onCountChange(friendRequests.length + studioInvites.length + joinRequests.length);
-  }, [friendRequests, studioInvites, joinRequests, onCountChange]);
-
-  const load = useCallback(async () => {
-    setIsLoading(true);
+  const submit = async () => {
+    if (!content.trim() || posting) return;
+    setPosting(true);
     try {
-      const [fr, si, jr] = await Promise.all([
-        apiListIncomingFriendRequests(sessionToken),
-        apiListIncomingStudioInvites(sessionToken),
-        apiListIncomingJoinRequests(sessionToken),
-      ]);
-      setFriendRequests(fr ?? []);
-      setStudioInvites(si ?? []);
-      setJoinRequests(jr ?? []);
-    } catch { /* silent */ }
-    finally { setIsLoading(false); }
-  }, [sessionToken]);
-
-  // Initial load for badge
-  useEffect(() => { load(); }, [load]);
-  // Reload whenever tray is opened
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (visible) load(); }, [visible]);
-
-  const isEmpty = !isLoading &&
-    friendRequests.length === 0 &&
-    studioInvites.length === 0 &&
-    joinRequests.length === 0;
+      const created = await apiCreatePost(sessionToken, { content: content.trim() });
+      console.log('[CreatePost] response:', JSON.stringify(created));
+      setContent('');
+      onClose();
+      onPosted();
+      showToast('Post shared!', 'success');
+    } catch (e) {
+      console.error('[CreatePost] error:', e);
+      showToast('Failed to post — please try again', 'error');
+    } finally {
+      setPosting(false);
+    }
+  };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-        <View className="bg-background rounded-t-3xl pt-4 pb-10" style={{ maxHeight: '70%' }}>
-          <View className="items-center mb-3">
-            <View className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+          <View className="bg-background rounded-t-3xl px-6 pt-4 pb-10">
+            <View className="items-center mb-4">
+              <View className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </View>
+            <View className="flex-row items-center justify-between mb-5">
+              <Text className="text-lg font-bold text-foreground">New post</Text>
+              <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
+                <X size={20} color="hsl(0 0% 55%)" />
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              value={content}
+              onChangeText={setContent}
+              placeholder="Share an update, finished piece, or discovery…"
+              placeholderTextColor="hsl(24 10% 65%)"
+              multiline
+              maxLength={500}
+              autoFocus
+              style={{
+                minHeight: 120,
+                maxHeight: 200,
+                fontSize: 15,
+                lineHeight: 22,
+                color: 'hsl(15 10% 20%)',
+                textAlignVertical: 'top',
+              }}
+            />
+            <View className="flex-row items-center justify-between mt-4 pt-4 border-t border-border">
+              <Text className="text-xs text-muted-foreground">{content.length}/500</Text>
+              <TouchableOpacity
+                onPress={submit}
+                disabled={!content.trim() || posting}
+                className={`px-5 py-2.5 rounded-xl items-center justify-center ${
+                  content.trim() && !posting ? 'bg-primary' : 'bg-muted'
+                }`}
+                activeOpacity={0.8}
+                style={{ minWidth: 70 }}
+              >
+                {posting ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className={`text-sm font-bold ${
+                    content.trim() ? 'text-white' : 'text-muted-foreground'
+                  }`}>Post</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
-          <View className="flex-row items-center justify-between px-6 mb-4">
-            <Text className="text-lg font-bold text-foreground">Notifications</Text>
-            <TouchableOpacity onPress={onClose} className="w-8 h-8 items-center justify-center" activeOpacity={0.7}>
-              <X size={20} color="hsl(0 0% 55%)" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 16 }}
-          >
-            {isLoading && (
-              <View className="py-10 items-center">
-                <ActivityIndicator color="hsl(15 65% 50%)" />
-              </View>
-            )}
-            {isEmpty && (
-              <View className="py-10 items-center gap-2">
-                <Bell size={32} color="hsl(0 0% 70%)" />
-                <Text className="text-sm font-semibold text-foreground mt-1">All caught up</Text>
-                <Text className="text-xs text-muted-foreground text-center leading-relaxed">
-                  No pending requests or invites.
-                </Text>
-              </View>
-            )}
-            {friendRequests.length > 0 && (
-              <View className="mb-4">
-                <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
-                  Friend requests · {friendRequests.length}
-                </Text>
-                <View className="bg-card rounded-2xl border border-border px-4">
-                  {friendRequests.map((r) => (
-                    <TrayRow
-                      key={r.id}
-                      icon={<UserPlus size={16} color="hsl(15 65% 50%)" />}
-                      title="Friend request"
-                      subtitle={`From ${r.requester_id.slice(0, 8)}…`}
-                      onAccept={async () => {
-                        await apiAcceptFriendRequest(sessionToken, r.id);
-                        setFriendRequests((prev) => prev.filter((x) => x.id !== r.id));
-                      }}
-                      onDecline={async () => {
-                        await apiDeclineFriendRequest(sessionToken, r.id);
-                        setFriendRequests((prev) => prev.filter((x) => x.id !== r.id));
-                      }}
-                    />
-                  ))}
-                </View>
-              </View>
-            )}
-            {studioInvites.length > 0 && (
-              <View className="mb-4">
-                <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
-                  Studio invites · {studioInvites.length}
-                </Text>
-                <View className="bg-card rounded-2xl border border-border px-4">
-                  {studioInvites.map((i) => (
-                    <TrayRow
-                      key={i.id}
-                      icon={<Users size={16} color="hsl(213 70% 55%)" />}
-                      title="Studio invite"
-                      subtitle={`Studio ${i.studio_id.slice(0, 8)}…`}
-                      onAccept={async () => {
-                        await apiAcceptStudioInvite(sessionToken, i.id);
-                        setStudioInvites((prev) => prev.filter((x) => x.id !== i.id));
-                      }}
-                      onDecline={async () => {
-                        await apiRejectStudioInvite(sessionToken, i.id);
-                        setStudioInvites((prev) => prev.filter((x) => x.id !== i.id));
-                      }}
-                    />
-                  ))}
-                </View>
-              </View>
-            )}
-            {joinRequests.length > 0 && (
-              <View className="mb-4">
-                <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
-                  Join requests · {joinRequests.length}
-                </Text>
-                <View className="bg-card rounded-2xl border border-border px-4">
-                  {joinRequests.map((r) => (
-                    <TrayRow
-                      key={r.id}
-                      icon={<ChevronRight size={16} color="hsl(25 50% 55%)" />}
-                      title="Join request"
-                      subtitle={`Studio ${r.studio_id.slice(0, 8)}… · User ${r.requester_id.slice(0, 8)}…`}
-                      onAccept={async () => {
-                        await apiAcceptJoinRequest(sessionToken, r.id);
-                        setJoinRequests((prev) => prev.filter((x) => x.id !== r.id));
-                      }}
-                      onDecline={async () => {
-                        await apiRejectJoinRequest(sessionToken, r.id);
-                        setJoinRequests((prev) => prev.filter((x) => x.id !== r.id));
-                      }}
-                    />
-                  ))}
-                </View>
-              </View>
-            )}
-          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -282,6 +165,7 @@ export default function CommunityScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('For You');
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
   const [feedRefreshing, setFeedRefreshing] = useState(false);
+  const [createPostVisible, setCreatePostVisible] = useState(false);
 
   const handleRefresh = useCallback(() => {
     setFeedRefreshKey((k) => k + 1);
@@ -336,6 +220,40 @@ export default function CommunityScreen() {
           {renderTab()}
         </View>
       </ScrollView>
+
+      {/* FAB */}
+      <TouchableOpacity
+        onPress={() => setCreatePostVisible(true)}
+        activeOpacity={0.85}
+        style={{
+          position: 'absolute',
+          bottom: 24,
+          right: 20,
+          width: 52,
+          height: 52,
+          borderRadius: 26,
+          backgroundColor: 'hsl(15 65% 50%)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#000',
+          shadowOpacity: 0.2,
+          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: 8,
+          elevation: 6,
+        }}
+      >
+        <Pencil size={20} color="white" />
+      </TouchableOpacity>
+
+      <CreatePostSheet
+        visible={createPostVisible}
+        onClose={() => setCreatePostVisible(false)}
+        sessionToken={sessionToken}
+        onPosted={() => {
+          setActiveFilter('For You');
+          handleRefresh();
+        }}
+      />
     </View>
   );
 }
