@@ -8,9 +8,10 @@ interface MainTabHeaderProps {
     onPress?: () => void;
     pressIcon?: React.ReactNode;
     actionText?: string;
+    rightElement?: React.ReactNode;
 }
 
-export const MainTabHeader = React.memo(function MainTabHeader({ title, description, onPress, pressIcon, actionText }: MainTabHeaderProps) {
+export const MainTabHeader = React.memo(function MainTabHeader({ title, description, onPress, pressIcon, actionText, rightElement }: MainTabHeaderProps) {
     return (
         <View className="px-6 pt-16 flex-row items-center justify-between">
             <View>
@@ -18,7 +19,8 @@ export const MainTabHeader = React.memo(function MainTabHeader({ title, descript
                 {description && <Text className="text-sm text-muted-foreground mt-0.5">{description}</Text>}
             </View>
 
-            {onPress && actionText && pressIcon && (
+            {rightElement}
+            {!rightElement && onPress && actionText && pressIcon && (
                 <TouchableOpacity
                     onPress={onPress}
                     className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-primary"

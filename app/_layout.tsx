@@ -114,6 +114,9 @@ function AppShell() {
         <Stack.Screen name="kiln-history" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="register" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="friends" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="studios" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false, presentation: 'card' }} />
       </Stack>
       <OfflineBanner />
       <ToastOverlay />
