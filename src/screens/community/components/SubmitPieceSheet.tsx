@@ -4,10 +4,10 @@ import { Text } from '@/src/components/ui/text';
 import { Camera } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  View
+    ScrollView,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 type Props = {
@@ -15,7 +15,7 @@ type Props = {
   contextName: string;     // "The Humble Bowl" | "Underwater Forms Festival"
   contextSubtitle: string; // "March Challenge" | "Beginner Track"
   accentColor: string;
-  onSubmit: () => void;
+  onSubmit: (payload?: { note: string; hasPhoto: boolean }) => void;
   onClose: () => void;
 };
 
@@ -38,10 +38,14 @@ export function SubmitPieceSheet({
   const handleSubmit = () => setSubmitted(true);
 
   const handleDone = () => {
+    const payload = {
+      note: note.trim(),
+      hasPhoto,
+    };
     setSubmitted(false);
     setHasPhoto(false);
     setNote('');
-    onSubmit();
+    onSubmit(payload);
   };
 
   const handleClose = () => {

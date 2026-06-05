@@ -11,9 +11,9 @@ import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
 import { useAppStore } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
 import { useRouter } from 'expo-router';
-import { BarChart2, CalendarDays, Check, Flame, Hammer, MessageSquarePlus, Plus, Scissors, Sparkles, Trophy, Wallet } from 'lucide-react-native';
+import { BarChart2, CalendarDays, Check, ChevronDown, ChevronUp, Flame, Hammer, MessageSquarePlus, Plus, Scissors, Sparkles, Trophy, Wallet } from 'lucide-react-native';
 import React from 'react';
-import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, Image, ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedbackModal } from './components/FeedbackModal';
 
@@ -50,6 +50,12 @@ type ActivityEntry = {
   stage: string;
   timestamp: string;
   daysAgo: number;
+};
+
+type CustomTodo = {
+  id: string;
+  title: string;
+  completed: boolean;
 };
 
 const STAGE_LABELS: Record<string, string> = {
@@ -101,6 +107,79 @@ function buildActivityFeed(pieces: Piece[], limit = 8): ActivityEntry[] {
   return entries
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, limit);
+}
+
+type WidgetCardProps = {
+  title: string;
+  status?: string;
+  description?: string;
+  primaryActionLabel?: string;
+  onPrimaryAction?: () => void;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
+  accentColor?: string;
+  children?: React.ReactNode;
+};
+
+function WidgetCard({
+  title,
+  status,
+  description,
+  primaryActionLabel,
+  onPrimaryAction,
+  expanded = true,
+  onToggleExpand,
+  accentColor = 'hsl(31 44% 34%)',
+  children,
+}: WidgetCardProps) {
+  return (
+    <View
+      className="rounded-2xl border overflow-hidden mb-4"
+      style={{
+        borderColor: 'hsl(30 26% 66%)',
+        backgroundColor: 'hsl(36 55% 98%)',
+        shadowColor: '#3f2a12',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+        elevation: 2,
+      }}
+    >
+      <View className="px-4 py-3" style={{ borderBottomWidth: expanded ? 1 : 0, borderBottomColor: 'hsl(34 25% 86%)' }}>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1 pr-2">
+            <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.9, color: accentColor, textTransform: 'uppercase' }}>{title}</Text>
+            {description ? <Text style={{ fontSize: 11, color: 'hsl(32 30% 42%)', marginTop: 3 }}>{description}</Text> : null}
+          </View>
+          <View className="flex-row items-center gap-2">
+            {status ? <Text style={{ fontSize: 11, fontWeight: '600', color: 'hsl(32 30% 42%)' }}>{status}</Text> : null}
+            {onToggleExpand ? (
+              <TouchableOpacity
+                onPress={onToggleExpand}
+                activeOpacity={0.82}
+                className="w-7 h-7 rounded-full items-center justify-center"
+                style={{ backgroundColor: 'hsl(34 28% 90%)' }}
+              >
+                {expanded ? <ChevronUp size={15} color="hsl(31 40% 34%)" /> : <ChevronDown size={15} color="hsl(31 40% 34%)" />}
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+        {primaryActionLabel && onPrimaryAction ? (
+          <TouchableOpacity
+            onPress={onPrimaryAction}
+            activeOpacity={0.82}
+            className="rounded-full px-3 py-1.5 flex-row items-center gap-1 self-start mt-2"
+            style={{ backgroundColor: 'hsl(35 42% 80%)', borderWidth: 1, borderColor: 'hsl(34 32% 62%)' }}
+          >
+            <Plus size={12} color="hsl(33 42% 32%)" />
+            <Text style={{ fontSize: 11, fontWeight: '600', color: 'hsl(33 42% 32%)' }}>{primaryActionLabel}</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+      {expanded ? children : null}
+    </View>
+  );
 }
 
 
@@ -227,11 +306,12 @@ export function OverviewPage() {
   const toggleDailyMissionCompletion = useAppStore((state) => state.toggleDailyMissionCompletion);
   const todayMissionKey = getTodayMissionKey();
   const [feedbackOpen, setFeedbackOpen] = React.useState(false);
-
-  const activeCommunityChallenge = React.useMemo(
-    () => ({ title: 'Underwater Forms Festival', track: 'Beginner Track', phase: 'Submissions open', daysLeft: 6 }),
-    []
-  );
+  const [showSetupWidget, setShowSetupWidget] = React.useState(false);
+  const [showJournalWidget, setShowJournalWidget] = React.useState(false);
+  const [draftTodo, setDraftTodo] = React.useState('');
+  const [showAddTodoComposer, setShowAddTodoComposer] = React.useState(false);
+  const [customTodosByDay, setCustomTodosByDay] = React.useState<Record<string, CustomTodo[]>>({});
+  const [showAllMissionTasks, setShowAllMissionTasks] = React.useState(false);
 
   const missionsSummary = React.useMemo(() => {
     const suggestions = generateStudioRhythmSuggestions({ pieces, firings, rhythm });
@@ -289,6 +369,10 @@ export function OverviewPage() {
 
   const [patReaction, setPatReaction] = React.useState<string | null>(null);
   const patTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const heroReveal = React.useRef(new Animated.Value(0)).current;
+  const focusReveal = React.useRef(new Animated.Value(0)).current;
+  const secondaryReveal = React.useRef(new Animated.Value(0)).current;
+  const journalReveal = React.useRef(new Animated.Value(0)).current;
 
   // ── Ceremony state (birthday / anniversary) ─────────────────────────────────
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
@@ -349,6 +433,42 @@ export function OverviewPage() {
     setPatReaction(reaction);
     patTimeoutRef.current = setTimeout(() => setPatReaction(null), 2000);
   }, []);
+
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(heroReveal, {
+        toValue: 1,
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(focusReveal, {
+        toValue: 1,
+        duration: 440,
+        delay: 120,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(secondaryReveal, {
+        toValue: 1,
+        duration: 420,
+        delay: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(journalReveal, {
+        toValue: 1,
+        duration: 440,
+        delay: 320,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    return () => {
+      if (patTimeoutRef.current) clearTimeout(patTimeoutRef.current);
+    };
+  }, [heroReveal, focusReveal, secondaryReveal, journalReveal]);
 
   // Feature 1: "The One Thing" pulse card
   const oneThingCard = React.useMemo((): PulseCard | null => {
@@ -413,6 +533,38 @@ export function OverviewPage() {
   const todayLabel = DOW_LABELS[(new Date().getDay() + 6) % 7];
   const totalTasks = setupQuests.length + missionsSummary.total;
   const totalDone = missionsSummary.completedCount;
+  const customTodos = customTodosByDay[todayMissionKey] ?? [];
+  const nextSuggestedMission = missionsSummary.all.find((m) => !m.completed) ?? null;
+  const nextCustomTodo = customTodos.find((t) => !t.completed) ?? null;
+  const nextTodoLabel = nextSuggestedMission
+    ? `${MISSION_META[nextSuggestedMission.type]?.title ?? 'Mission'} · ${nextSuggestedMission.text}`
+    : nextCustomTodo
+      ? nextCustomTodo.title
+      : null;
+
+  const addCustomTodo = React.useCallback(() => {
+    const title = draftTodo.trim();
+    if (!title) return;
+    setCustomTodosByDay((prev) => {
+      const current = prev[todayMissionKey] ?? [];
+      return {
+        ...prev,
+        [todayMissionKey]: [{ id: `${Date.now()}`, title, completed: false }, ...current],
+      };
+    });
+    setDraftTodo('');
+    setShowAddTodoComposer(false);
+  }, [draftTodo, todayMissionKey]);
+
+  const toggleCustomTodo = React.useCallback((id: string) => {
+    setCustomTodosByDay((prev) => {
+      const current = prev[todayMissionKey] ?? [];
+      return {
+        ...prev,
+        [todayMissionKey]: current.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)),
+      };
+    });
+  }, [todayMissionKey]);
 
   // Feature 3: stage chips with longest-days annotation
   const STAGE_CHIPS = [
@@ -426,6 +578,12 @@ export function OverviewPage() {
     count: chip.piecesInSlot.length,
   }));
 
+  const missionChecklistCount = missionsSummary.total + customTodos.length;
+  const missionChecklistDone = missionsSummary.completedCount + customTodos.filter((t) => t.completed).length;
+  const visibleMissions = showAllMissionTasks ? missionsSummary.all : missionsSummary.all.slice(0, 3);
+  const visibleCustomTodos = showAllMissionTasks ? customTodos : customTodos.slice(0, 2);
+  const hiddenTaskCount = (missionsSummary.all.length - visibleMissions.length) + (customTodos.length - visibleCustomTodos.length);
+
   return (
     <View className="flex-1 bg-background">
       <CeremonyOverlay
@@ -438,11 +596,11 @@ export function OverviewPage() {
         onDismiss={() => setOverlayCeremony(null)}
       />
       {/* ── Header ── */}
-      <View style={{ backgroundColor: 'hsl(35 62% 93%)', paddingTop: insets.top + 14 }} className="px-5 pb-0">
+      <View style={{ backgroundColor: 'hsl(35 62% 93%)', paddingTop: insets.top + 14 }} className="px-5 pb-1">
         <View className="flex-row items-start justify-between mb-3">
           <View className="flex-1 pr-4">
             <Text className="text-xs font-medium" style={{ color: 'hsl(32 45% 52%)' }}>{greeting}</Text>
-            <Text className="text-2xl font-serif font-bold text-foreground mt-0.5">Pottery Nook</Text>
+            <Text className="text-[31px] font-serif font-bold text-foreground mt-0.5">Studio Ledger</Text>
             <View className="flex-row flex-wrap items-center gap-1.5 mt-2">
               {todayRhythm.isEmpty ? (
                 <View className="flex-row items-center gap-1">
@@ -501,68 +659,307 @@ export function OverviewPage() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: insets.bottom + 110, backgroundColor: 'hsl(35 62% 93%)' }}
       >
-        {/* Studio pipeline */}
-        {pieces.length > 0 ? (
-          <View className="mb-4">
-            <Text style={{ fontSize: 10, color: 'hsl(32 35% 48%)', marginBottom: 6 }}>In the studio</Text>
-            <View className="flex-row flex-wrap gap-1.5">
-              {STAGE_CHIPS.filter((c) => c.count > 0).map((chip) => (
+        {/* Live studio state hero */}
+        <Animated.View
+          className="rounded-[28px] border mb-4 overflow-hidden"
+          style={{
+            backgroundColor: 'hsl(34 66% 89%)',
+            borderColor: 'hsl(34 44% 74%)',
+            shadowColor: '#4d3314',
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.12,
+            shadowRadius: 12,
+            elevation: 4,
+            opacity: heroReveal,
+            transform: [{
+              translateY: heroReveal.interpolate({
+                inputRange: [0, 1],
+                outputRange: [18, 0],
+              }),
+            }],
+          }}
+        >
+          <View style={{ position: 'absolute', right: -18, top: -24, width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255, 248, 228, 0.75)' }} />
+          <View style={{ position: 'absolute', left: -22, bottom: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(205, 172, 117, 0.22)' }} />
+
+          <View className="px-4 pt-4 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: 'hsl(34 42% 78%)' }}>
+            <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 1, color: 'hsl(32 48% 36%)', textTransform: 'uppercase' }}>Live Studio State</Text>
+            <View className="flex-row items-start gap-3 mt-2">
+              <View className="w-11 h-11 rounded-2xl items-center justify-center" style={{ backgroundColor: oneThingCard ? oneThingCard.accentBg : 'hsl(36 54% 85%)', borderWidth: 1, borderColor: oneThingCard ? oneThingCard.accentBorder : 'hsl(35 40% 72%)' }}>
+                <Text style={{ fontSize: 21 }}>{oneThingCard?.emoji ?? '🏺'}</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="font-serif text-[22px] leading-6 text-foreground">
+                  {oneThingCard?.title ?? (pieces.length === 0 ? 'A quiet bench, ready to begin' : 'Steady clay day in motion')}
+                </Text>
+                <Text className="text-[12px] mt-1" style={{ color: oneThingCard?.accentText ?? 'hsl(31 34% 40%)' }}>
+                  {oneThingCard?.subtitle ?? `${pieces.length} piece${pieces.length !== 1 ? 's' : ''} currently in your studio flow`}
+                </Text>
+              </View>
+            </View>
+
+            {oneThingCard ? (
+              <TouchableOpacity
+                onPress={() => router.push(oneThingCard.route as never)}
+                activeOpacity={0.82}
+                className="rounded-2xl px-3 py-2 mt-3 self-start"
+                style={{ backgroundColor: 'hsl(32 45% 26%)' }}
+              >
+                <Text className="text-[11px] font-semibold text-white">Open live status</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          <View className="px-4 py-3">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-[10px] uppercase" style={{ letterSpacing: 0.8, color: 'hsl(32 34% 44%)' }}>Now · Next · Blocked</Text>
+              <Text className="text-[11px]" style={{ color: 'hsl(32 32% 42%)' }}>{totalDone}/{Math.max(totalTasks, 1)} done</Text>
+            </View>
+
+            <View className="flex-row flex-wrap gap-1.5 mb-2.5">
+              {STAGE_CHIPS.filter((c) => c.count > 0).slice(0, 4).map((chip) => (
                 <TouchableOpacity
                   key={chip.label}
                   onPress={() => router.push(chip.route as never)}
                   activeOpacity={0.75}
                   className="flex-row items-center gap-1 rounded-full px-2.5 py-1"
                   style={{
-                    backgroundColor: chip.urgent ? 'hsl(24 70% 88%)' : 'hsl(35 45% 84%)',
+                    backgroundColor: chip.urgent ? 'hsl(24 70% 88%)' : 'hsl(35 46% 84%)',
                     borderWidth: 1,
                     borderColor: chip.urgent ? 'hsl(24 55% 72%)' : 'hsl(35 40% 74%)',
                   }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${chip.label}: ${chip.count} pieces`}
                 >
                   <Text style={{ fontSize: 11 }}>{chip.emoji}</Text>
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: chip.urgent ? 'hsl(24 60% 34%)' : 'hsl(32 40% 30%)' }}>
-                    {chip.count}
-                  </Text>
-                  <Text style={{ fontSize: 10, color: chip.urgent ? 'hsl(24 50% 44%)' : 'hsl(32 30% 44%)' }}>
-                    {chip.label.toLowerCase()}
-                  </Text>
-                  {chip.urgent ? (
-                    <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: 'hsl(16 75% 52%)' }} />
-                  ) : null}
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: chip.urgent ? 'hsl(24 60% 34%)' : 'hsl(32 40% 30%)' }}>{chip.count}</Text>
+                  <Text style={{ fontSize: 10, color: chip.urgent ? 'hsl(24 50% 44%)' : 'hsl(32 30% 44%)' }}>{chip.label.toLowerCase()}</Text>
                 </TouchableOpacity>
               ))}
-              {pieces.filter((p) => p.stage.trim().toLowerCase() === 'finished').length > 0 ? (
-                <View
-                  className="flex-row items-center gap-1 rounded-full px-2.5 py-1"
-                  style={{ backgroundColor: 'hsl(130 35% 88%)', borderWidth: 1, borderColor: 'hsl(130 30% 76%)' }}
-                >
-                  <Text style={{ fontSize: 11 }}>✨</Text>
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: 'hsl(130 38% 28%)' }}>
-                    {pieces.filter((p) => p.stage.trim().toLowerCase() === 'finished').length}
-                  </Text>
-                  <Text style={{ fontSize: 10, color: 'hsl(130 30% 40%)' }}>finished</Text>
+            </View>
+
+            <View className="rounded-2xl px-3 py-2.5" style={{ backgroundColor: 'rgba(255, 252, 245, 0.72)', borderWidth: 1, borderColor: 'hsl(34 40% 80%)' }}>
+              <View className="flex-row items-start justify-between gap-3">
+                <View className="flex-1">
+                  <Text className="text-[10px] uppercase" style={{ letterSpacing: 0.8, color: 'hsl(32 35% 46%)' }}>Kilnkin note</Text>
+                  <Text className="text-[12px] mt-1 leading-5 text-foreground">{kilnkinNudge}</Text>
+                  <TouchableOpacity
+                    onPress={() => router.push('/kilnkin' as never)}
+                    activeOpacity={0.8}
+                    className="self-start mt-2 rounded-full px-2.5 py-1"
+                    style={{ backgroundColor: 'hsl(35 54% 87%)' }}
+                  >
+                    <Text className="text-[11px] font-medium" style={{ color: 'hsl(33 45% 30%)' }}>Visit {kilnkinCompanion.name}</Text>
+                  </TouchableOpacity>
                 </View>
-              ) : null}
+
+                <View className="items-center">
+                  <TouchableOpacity
+                    onPress={() => router.push('/kilnkin' as never)}
+                    onLongPress={handlePat}
+                    delayLongPress={400}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${kilnkinCompanion.name} — ${moodMeta.label}. Tap to visit.`}
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: moodMeta.avatarBg,
+                      borderWidth: 2,
+                      borderColor: moodMeta.cardBorder,
+                    }}
+                  >
+                    <Image
+                      source={require('../../../assets/images/clay-pet.png')}
+                      style={{ width: 24, height: 24 }}
+                      resizeMode="contain"
+                    />
+                    <View
+                      style={{
+                        position: 'absolute',
+                        bottom: -2,
+                        right: -2,
+                        width: 16,
+                        height: 16,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'white',
+                        borderWidth: 1,
+                        borderColor: moodMeta.cardBorder,
+                      }}
+                    >
+                      <Text style={{ fontSize: 8 }}>{moodMeta.badge}</Text>
+                    </View>
+                  </TouchableOpacity>
+                  {patReaction ? (
+                    <Text
+                      numberOfLines={1}
+                      style={{ maxWidth: 92, marginTop: 6, fontSize: 10, color: 'hsl(32 60% 34%)', fontWeight: '600' }}
+                    >
+                      {patReaction}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
             </View>
           </View>
-        ) : null}
-        {/* ── Today's work — full-bleed section band ── */}
-        <View style={{ marginHorizontal: -16, paddingHorizontal: 16, paddingVertical: 11, backgroundColor: 'hsl(38 52% 86%)', marginBottom: 14, marginTop: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'hsl(36 42% 79%)' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: 'hsl(39 57% 46%)' }} />
-            <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.9, color: 'hsl(32 55% 24%)', textTransform: 'uppercase' }}>Today's Work</Text>
-          </View>
-          {totalTasks > 0 ? (
-            <Text style={{ fontSize: 11, fontWeight: '500', color: 'hsl(32 40% 40%)' }}>{totalDone}/{totalTasks} done</Text>
-          ) : null}
-        </View>
+        </Animated.View>
 
-        {totalTasks > 0 ? (
+        <Animated.View
+          style={{
+            opacity: focusReveal,
+            transform: [{
+              translateY: focusReveal.interpolate({
+                inputRange: [0, 1],
+                outputRange: [14, 0],
+              }),
+            }],
+          }}
+        >
           <View style={{ height: 5, borderRadius: 3, backgroundColor: 'hsl(35 35% 83%)', marginBottom: 14, overflow: 'hidden' }}>
-            <View style={{ height: '100%', borderRadius: 3, backgroundColor: 'hsl(39 57% 51%)', width: `${Math.round((totalDone / totalTasks) * 100)}%` }} />
+            <View style={{ height: '100%', borderRadius: 3, backgroundColor: 'hsl(39 57% 51%)', width: `${Math.round((missionChecklistDone / Math.max(missionChecklistCount, 1)) * 100)}%` }} />
           </View>
-        ) : null}
+
+          <WidgetCard
+            title="Today Missions"
+            status={`${missionChecklistDone}/${Math.max(missionChecklistCount, 0)} complete`}
+            description="Your task-focused to-do widget"
+            primaryActionLabel="Add task"
+            onPrimaryAction={() => setShowAddTodoComposer((v) => !v)}
+            accentColor="hsl(32 48% 36%)"
+          >
+            {nextTodoLabel ? (
+              <View className="rounded-2xl px-3 py-2.5 mb-2 mx-3 mt-3" style={{ borderWidth: 1, borderColor: 'hsl(30 36% 56%)', backgroundColor: 'hsl(35 72% 90%)' }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: 'hsl(32 42% 40%)', textTransform: 'uppercase' }}>Next up</Text>
+                <View style={{ marginTop: 5, borderLeftWidth: 3, borderLeftColor: 'hsl(31 56% 42%)', paddingLeft: 8 }}>
+                  <Text style={{ fontSize: 12, color: 'hsl(20 28% 16%)', fontWeight: '600' }} numberOfLines={2}>{nextTodoLabel}</Text>
+                </View>
+              </View>
+            ) : null}
+
+            {visibleMissions.map((mission, idx) => {
+              const meta = MISSION_META[mission.type];
+              if (!meta) return null;
+              const Icon = meta.Icon;
+              return (
+                <TouchableOpacity
+                  key={mission.type}
+                  onPress={() => router.push(mission.route as never)}
+                  activeOpacity={0.75}
+                  className="flex-row items-center gap-3 px-4 py-3"
+                  style={{ borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: 'hsl(34 25% 88%)' }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${meta.title}: ${mission.text}`}
+                >
+                  <View className={`w-8 h-8 rounded-xl items-center justify-center border border-border ${meta.chipClassName}`} style={{ opacity: mission.completed ? 0.45 : 1 }}>
+                    <Icon size={15} color={meta.iconColor} />
+                  </View>
+                  <View className="flex-1">
+                    <Text className={`text-xs font-semibold${mission.completed ? ' text-muted-foreground line-through' : ' text-foreground'}`}>{meta.title}</Text>
+                    <Text className="text-[10px] text-muted-foreground" numberOfLines={1}>{mission.text}</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => toggleDailyMissionCompletion(todayMissionKey, mission.type)}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 10, bottom: 10, left: 12, right: 12 }}
+                    className={`w-6 h-6 rounded-full items-center justify-center${mission.completed ? ' bg-primary/20' : ' border-2 border-muted-foreground/30'}`}
+                    accessibilityRole="checkbox"
+                    accessibilityLabel={mission.completed ? 'Reopen' : 'Mark done'}
+                  >
+                    {mission.completed ? <Check size={11} color="hsl(36 70% 48%)" /> : null}
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              );
+            })}
+
+            {customTodos.length > 0 ? (
+              <View style={{ borderTopWidth: 1, borderTopColor: 'hsl(34 25% 86%)', backgroundColor: 'rgba(249, 245, 235, 0.9)' }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.7, color: 'hsl(32 38% 42%)', textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 9 }}>Added by you</Text>
+                {visibleCustomTodos.map((todo) => (
+                  <View
+                    key={todo.id}
+                    className="flex-row items-center gap-3 px-4 py-3"
+                    style={{ borderTopWidth: 1, borderTopColor: 'hsl(34 24% 88%)' }}
+                  >
+                    <View className="w-8 h-8 rounded-xl items-center justify-center" style={{ backgroundColor: 'hsl(35 52% 88%)' }}>
+                      <Text style={{ fontSize: 13 }}>•</Text>
+                    </View>
+                    <Text className={`flex-1 text-xs font-medium${todo.completed ? ' text-muted-foreground line-through' : ' text-foreground'}`}>{todo.title}</Text>
+                    <TouchableOpacity
+                      onPress={() => toggleCustomTodo(todo.id)}
+                      activeOpacity={0.72}
+                      hitSlop={{ top: 10, bottom: 10, left: 12, right: 12 }}
+                      className={`w-6 h-6 rounded-full items-center justify-center${todo.completed ? ' bg-primary/20' : ' border-2 border-muted-foreground/30'}`}
+                      accessibilityRole="checkbox"
+                      accessibilityLabel={todo.completed ? 'Reopen task' : 'Mark task done'}
+                    >
+                      {todo.completed ? <Check size={11} color="hsl(36 70% 48%)" /> : null}
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            {hiddenTaskCount > 0 ? (
+              <TouchableOpacity
+                onPress={() => setShowAllMissionTasks(true)}
+                activeOpacity={0.82}
+                className="px-4 py-2.5"
+                style={{ borderTopWidth: 1, borderTopColor: 'hsl(34 25% 86%)', backgroundColor: 'hsl(35 46% 94%)' }}
+              >
+                <Text style={{ fontSize: 11, fontWeight: '600', color: 'hsl(31 44% 34%)' }}>Show {hiddenTaskCount} more task{hiddenTaskCount > 1 ? 's' : ''}</Text>
+              </TouchableOpacity>
+            ) : showAllMissionTasks && missionChecklistCount > 4 ? (
+              <TouchableOpacity
+                onPress={() => setShowAllMissionTasks(false)}
+                activeOpacity={0.82}
+                className="px-4 py-2.5"
+                style={{ borderTopWidth: 1, borderTopColor: 'hsl(34 25% 86%)', backgroundColor: 'hsl(35 46% 94%)' }}
+              >
+                <Text style={{ fontSize: 11, fontWeight: '600', color: 'hsl(31 44% 34%)' }}>Show fewer tasks</Text>
+              </TouchableOpacity>
+            ) : null}
+
+            {showAddTodoComposer ? (
+              <View className="px-4 py-3" style={{ borderTopWidth: 1, borderTopColor: 'hsl(34 25% 86%)' }}>
+                <TextInput
+                  value={draftTodo}
+                  onChangeText={setDraftTodo}
+                  placeholder="Add a personal task for today"
+                  placeholderTextColor="hsl(32 20% 58%)"
+                  returnKeyType="done"
+                  onSubmitEditing={addCustomTodo}
+                  className="rounded-xl border px-3 py-2 text-[12px] text-foreground"
+                  style={{ borderColor: 'hsl(34 28% 78%)', backgroundColor: 'white' }}
+                />
+                <View className="flex-row items-center justify-end gap-2 mt-2">
+                  <TouchableOpacity
+                    onPress={() => {
+                      setDraftTodo('');
+                      setShowAddTodoComposer(false);
+                    }}
+                    activeOpacity={0.8}
+                    className="rounded-full px-3 py-1.5"
+                    style={{ backgroundColor: 'hsl(34 28% 86%)' }}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: 'hsl(32 30% 38%)' }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={addCustomTodo}
+                    activeOpacity={0.8}
+                    className="rounded-full px-3 py-1.5"
+                    style={{ backgroundColor: 'hsl(39 57% 51%)', opacity: draftTodo.trim() ? 1 : 0.5 }}
+                    disabled={!draftTodo.trim()}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: 'white' }}>Add to list</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+          </WidgetCard>
+        </Animated.View>
 
         {/* Empty state */}
         {totalTasks === 0 ? (
@@ -582,246 +979,123 @@ export function OverviewPage() {
           </TouchableOpacity>
         ) : null}
 
-        {/* Setup quests — grouped compact list */}
-        {setupQuests.length > 0 ? (
-          <View className="rounded-2xl border border-blue-200 overflow-hidden mb-3" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4, elevation: 2 }}>
-            <View className="px-4 py-2 border-b border-blue-200" style={{ backgroundColor: 'hsl(213 55% 95%)' }}>
-              <Text className="text-[10px] font-semibold uppercase tracking-wide text-blue-600">Get started</Text>
-            </View>
-            {setupQuests.map((quest, i) => {
-              const meta = SETUP_QUEST_META[quest.key];
-              const Icon = meta.Icon;
-              return (
-                <TouchableOpacity
-                  key={quest.key}
-                  onPress={() => router.push(quest.route as never)}
-                  activeOpacity={0.75}
-                  className={`flex-row items-center gap-3 px-4 py-3 bg-blue-50/60${i < setupQuests.length - 1 ? ' border-b border-blue-200' : ''}`}
-                  accessibilityRole="button"
-                >
-                  <View className={`w-8 h-8 rounded-xl items-center justify-center border border-border ${meta.chipClassName}`}>
-                    <Icon size={15} color={meta.iconColor} />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-xs font-semibold text-foreground">{quest.title}</Text>
-                    <Text className="text-[10px] text-muted-foreground" numberOfLines={1}>{quest.text}</Text>
-                  </View>
-                  <Text className="text-xs font-semibold text-blue-500">→</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        ) : null}
-
-        {/* Daily missions — compact checklist rows */}
-        {missionsSummary.all.length > 0 ? (
-          <View className="rounded-2xl border border-border overflow-hidden mb-4" style={{ backgroundColor: 'rgba(255, 252, 248, 0.96)', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4, elevation: 2 }}>
-            {missionsSummary.all.map((mission, i) => {
-              const meta = MISSION_META[mission.type];
-              if (!meta) return null;
-              const Icon = meta.Icon;
-              return (
-                <TouchableOpacity
-                  key={mission.type}
-                  onPress={() => router.push(mission.route as never)}
-                  activeOpacity={0.7}
-                  className={`flex-row items-center gap-3 px-4 py-3${i < missionsSummary.all.length - 1 ? ' border-b border-border' : ''}`}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${meta.title}: ${mission.text}`}
-                >
-                  <View
-                    className={`w-8 h-8 rounded-xl items-center justify-center border border-border ${meta.chipClassName}`}
-                    style={{ opacity: mission.completed ? 0.45 : 1 }}
-                  >
-                    <Icon size={15} color={meta.iconColor} />
-                  </View>
-                  <View className="flex-1">
-                    <Text className={`text-xs font-semibold${mission.completed ? ' text-muted-foreground line-through' : ' text-foreground'}`}>
-                      {meta.title}
-                    </Text>
-                    <Text className="text-[10px] text-muted-foreground" numberOfLines={1}>{mission.text}</Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => toggleDailyMissionCompletion(todayMissionKey, mission.type)}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 10, bottom: 10, left: 12, right: 12 }}
-                    className={`w-6 h-6 rounded-full items-center justify-center${mission.completed ? ' bg-primary/20' : ' border-2 border-muted-foreground/30'}`}
-                    accessibilityRole="checkbox"
-                    accessibilityLabel={mission.completed ? 'Reopen' : 'Mark done'}
-                  >
-                    {mission.completed ? <Check size={11} color="hsl(36 70% 48%)" /> : null}
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        ) : null}
-
-        {/* Urgent attention banner */}
-        {oneThingCard ? (
-          <TouchableOpacity
-            onPress={() => router.push(oneThingCard.route as never)}
-            activeOpacity={0.86}
-            className="flex-row items-center gap-3 rounded-2xl px-4 py-3.5 mb-3"
-            style={{ borderWidth: 1, borderColor: oneThingCard.accentBorder, backgroundColor: oneThingCard.accentBg }}
-            accessibilityRole="button"
-            accessibilityLabel={oneThingCard.title}
-          >
-            <Text style={{ fontSize: 22 }}>{oneThingCard.emoji}</Text>
-            <View className="flex-1">
-              <Text className="text-xs font-bold" style={{ color: oneThingCard.accentText }}>{oneThingCard.title}</Text>
-              <Text className="text-[10px] text-muted-foreground" numberOfLines={1}>{oneThingCard.subtitle}</Text>
-            </View>
-            <Text className="text-sm font-semibold" style={{ color: oneThingCard.accentText }}>→</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {/* Community challenge — compact row */}
-        {activeCommunityChallenge ? (
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/community' as never)}
-            activeOpacity={0.86}
-            className="flex-row items-center gap-3 rounded-2xl px-4 py-3.5 mb-4 border border-green-200/80"
-            style={{ backgroundColor: 'hsl(130 40% 96%)' }}
-            accessibilityRole="button"
-            accessibilityLabel="Open active community challenge"
-          >
-            <Trophy size={17} color="hsl(100 38% 42%)" />
-            <View className="flex-1">
-              <Text className="text-xs font-semibold text-foreground" numberOfLines={1}>{activeCommunityChallenge.title}</Text>
-              <Text className="text-[10px] text-muted-foreground">{activeCommunityChallenge.track} · {activeCommunityChallenge.daysLeft}d left</Text>
-            </View>
-            <Text className="text-xs font-semibold" style={{ color: 'hsl(130 40% 38%)' }}>Join →</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {/* Studio journal — full-bleed section band */}
-        {activityFeed.length > 0 ? (
-          <>
-            <View style={{ marginHorizontal: -16, paddingHorizontal: 16, paddingVertical: 11, backgroundColor: 'hsl(210 38% 90%)', marginBottom: 14, marginTop: 6, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'hsl(210 30% 81%)' }}>
-              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: 'hsl(213 55% 50%)', marginRight: 7 }} />
-              <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.9, color: 'hsl(210 45% 24%)', textTransform: 'uppercase' }}>Studio Journal</Text>
-            </View>
-            <View className="rounded-2xl border border-border overflow-hidden mb-4" style={{ backgroundColor: 'rgba(255, 252, 248, 0.96)', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4, elevation: 2 }}>
-              {activityFeed.map((entry, index) => {
-                const stageKey = entry.stage.trim().toLowerCase();
-                const badge = STAGE_BADGE_COLORS[stageKey] ?? { dot: 'hsl(32 30% 55%)', text: 'hsl(32 25% 42%)' };
+        <Animated.View
+          style={{
+            opacity: secondaryReveal,
+            transform: [{
+              translateY: secondaryReveal.interpolate({
+                inputRange: [0, 1],
+                outputRange: [12, 0],
+              }),
+            }],
+          }}
+        >
+          {/* Setup quests widget */}
+          {setupQuests.length > 0 ? (
+            <WidgetCard
+              title="Studio Setup"
+              status={`${setupQuests.length} left`}
+              description="Finish launch steps when you have time"
+              expanded={showSetupWidget}
+              onToggleExpand={() => setShowSetupWidget((v) => !v)}
+              accentColor="hsl(213 55% 36%)"
+            >
+              {setupQuests.map((quest, i) => {
+                const meta = SETUP_QUEST_META[quest.key];
+                const Icon = meta.Icon;
                 return (
-                  <View
-                    key={entry.id}
-                    style={[{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 11 }, index < activityFeed.length - 1 ? { borderBottomWidth: 1, borderBottomColor: 'hsl(34 25% 88%)' } : {}]}
+                  <TouchableOpacity
+                    key={quest.key}
+                    onPress={() => router.push(quest.route as never)}
+                    activeOpacity={0.75}
+                    className={`flex-row items-center gap-3 px-4 py-3 bg-blue-50/60${i < setupQuests.length - 1 ? ' border-b border-blue-200' : ''}`}
+                    accessibilityRole="button"
                   >
-                    {entry.piecePhoto ? (
-                      <Image source={{ uri: entry.piecePhoto }} style={{ width: 36, height: 36, borderRadius: 10 }} resizeMode="cover" />
-                    ) : (
-                      <View style={{ width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(35 50% 90%)' }}>
-                        <Text style={{ fontSize: 16 }}>🏺</Text>
+                    <View className={`w-8 h-8 rounded-xl items-center justify-center border border-border ${meta.chipClassName}`}>
+                      <Icon size={15} color={meta.iconColor} />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-xs font-semibold text-foreground">{quest.title}</Text>
+                      <Text className="text-[10px] text-muted-foreground" numberOfLines={1}>{quest.text}</Text>
+                    </View>
+                    <Text className="text-xs font-semibold text-blue-500">→</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </WidgetCard>
+          ) : null}
+
+        </Animated.View>
+
+        <Animated.View
+          style={{
+            opacity: journalReveal,
+            transform: [{
+              translateY: journalReveal.interpolate({
+                inputRange: [0, 1],
+                outputRange: [10, 0],
+              }),
+            }],
+          }}
+        >
+          {/* Studio journal widget */}
+          {activityFeed.length > 0 ? (
+            <WidgetCard
+              title="Studio Journal"
+              status={`${activityFeed.length} recent`}
+              description="Recent movement across your pieces"
+              expanded={showJournalWidget}
+              onToggleExpand={() => setShowJournalWidget((v) => !v)}
+              accentColor="hsl(210 45% 36%)"
+            >
+              <View className="px-4 pb-1 pt-3">
+                <TouchableOpacity onPress={() => router.push('/(tabs)/pieces' as never)} activeOpacity={0.78} className="self-end mb-2">
+                  <Text style={{ fontSize: 11, color: 'hsl(210 45% 36%)', fontWeight: '600' }}>View all</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingRight: 24, gap: 10, marginBottom: 14 }}>
+                {activityFeed.slice(0, 8).map((entry) => {
+                  const stageKey = entry.stage.trim().toLowerCase();
+                  const badge = STAGE_BADGE_COLORS[stageKey] ?? { dot: 'hsl(32 30% 55%)', text: 'hsl(32 25% 42%)' };
+                  return (
+                    <TouchableOpacity
+                      key={entry.id}
+                      activeOpacity={0.8}
+                      onPress={() => router.push('/(tabs)/pieces' as never)}
+                      className="rounded-2xl border p-3"
+                      style={{ width: 205, borderColor: 'hsl(34 28% 82%)', backgroundColor: 'rgba(255, 252, 248, 0.96)' }}
+                    >
+                      <View className="flex-row items-center justify-between mb-2">
+                        <View className="flex-row items-center gap-2">
+                          {entry.piecePhoto ? (
+                            <Image source={{ uri: entry.piecePhoto }} style={{ width: 36, height: 36, borderRadius: 10 }} resizeMode="cover" />
+                          ) : (
+                            <View style={{ width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(35 50% 90%)' }}>
+                              <Text style={{ fontSize: 16 }}>🏺</Text>
+                            </View>
+                          )}
+                          <Text style={{ fontSize: 10, color: 'hsl(32 25% 52%)' }}>
+                            {entry.daysAgo === 0 ? 'today' : entry.daysAgo === 1 ? 'yesterday' : `${entry.daysAgo}d ago`}
+                          </Text>
+                        </View>
                       </View>
-                    )}
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: 'hsl(24 25% 18%)' }} numberOfLines={1}>{entry.pieceName}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                        <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: badge.dot }} />
-                        <Text style={{ fontSize: 10, fontWeight: '600', color: badge.text }}>
+
+                      <Text className="font-serif text-[18px] leading-6 text-foreground" numberOfLines={2}>{entry.pieceName}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: badge.dot }} />
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: badge.text, textTransform: 'uppercase', letterSpacing: 0.6 }}>
                           {STAGE_LABELS[stageKey] ?? entry.stage}
                         </Text>
                       </View>
-                    </View>
-                    <Text style={{ fontSize: 10, color: 'hsl(32 25% 52%)' }}>
-                      {entry.daysAgo === 0 ? 'today' : entry.daysAgo === 1 ? 'yesterday' : `${entry.daysAgo}d ago`}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          </>
-        ) : null}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </WidgetCard>
+          ) : null}
+        </Animated.View>
 
       </ScrollView>
-
-      {/* ── Ember — compact avatar bubble, bottom-left ── */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: insets.bottom - 20,
-          left: 16,
-          alignItems: 'flex-start',
-        }}
-        pointerEvents="box-none"
-      >
-        {/* Speech bubble — shown when patReaction is set */}
-        {patReaction ? (
-          <View
-            style={{
-              marginBottom: 6,
-              marginLeft: 4,
-              borderRadius: 12,
-              paddingHorizontal: 10,
-              paddingVertical: 6,
-              backgroundColor: moodMeta.cardBg,
-              borderWidth: 1,
-              borderColor: moodMeta.cardBorder,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.06,
-              shadowRadius: 4,
-              elevation: 2,
-              maxWidth: 180,
-            }}
-          >
-            <Text style={{ fontSize: 11, fontWeight: '600', color: 'hsl(32 60% 36%)' }}>{patReaction}</Text>
-          </View>
-        ) : null}
-
-        {/* Avatar circle */}
-        <TouchableOpacity
-          onPress={() => router.push('/kilnkin' as never)}
-          onLongPress={handlePat}
-          delayLongPress={400}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={`${kilnkinCompanion.name} — ${moodMeta.label}. Tap to visit.`}
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: 24,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: moodMeta.avatarBg,
-            borderWidth: 2,
-            borderColor: moodMeta.cardBorder,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 6,
-            elevation: 4,
-          }}
-        >
-          <Image
-            source={require('../../../assets/images/clay-pet.png')}
-            style={{ width: 26, height: 26 }}
-            resizeMode="contain"
-          />
-          {/* Mood badge */}
-          <View
-            style={{
-              position: 'absolute',
-              bottom: -2,
-              right: -2,
-              width: 16,
-              height: 16,
-              borderRadius: 8,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'white',
-              borderWidth: 1,
-              borderColor: moodMeta.cardBorder,
-            }}
-          >
-            <Text style={{ fontSize: 8 }}>{moodMeta.badge}</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
 
       {/* Feedback — absolute, bottom-right */}
       <TouchableOpacity

@@ -3,6 +3,10 @@ import { useAppStore } from '@/src/store';
 import React from 'react';
 import type { Firing, Kiln } from '../../../types/kiln';
 import {
+    useCreateFiringMutation,
+    useFiringsSync,
+} from './useFiringsSync';
+import {
     useDeleteKilnMutation,
     useKilnsSync,
     useUpsertKilnMutation,
@@ -24,8 +28,10 @@ export function useKilnScreen() {
 
   // Sync kilns from the backend on mount (no-op when signed out)
   useKilnsSync();
+  useFiringsSync();
   const upsertKilnMutation = useUpsertKilnMutation();
   const deleteKilnMutation = useDeleteKilnMutation();
+  const createFiringMutation = useCreateFiringMutation();
 
   // ── Modal state ────────────────────────────────────────────────
   const [addKilnOpen, setAddKilnOpen] = React.useState(false);
@@ -115,6 +121,11 @@ export function useKilnScreen() {
     deleteKilnMutation.mutate(kiln);
   };
 
+  const handleCreateFiring = (firing: Firing) => {
+    addFiring(firing);
+    createFiringMutation.mutate(firing);
+  };
+
   return {
     // data
     kilns,
@@ -138,6 +149,7 @@ export function useKilnScreen() {
     handleStartFiringFromKiln,
     handleDeleteKiln,
     addFiring,
+    handleCreateFiring,
     toggleKilnChecklistItem,
     addKilnChecklistItem,
     removeKilnChecklistItem,

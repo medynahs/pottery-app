@@ -2,14 +2,8 @@
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store';
-import {
-  Award,
-  Star,
-  Trophy,
-  Zap,
-} from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import {
   apiGetFeed,
   apiGetPolls,
@@ -18,7 +12,6 @@ import {
   type BackendPoll,
 } from '../../../services/community';
 import { FeedPostCard } from '../components/FeedPostCard';
-import { FOLLOW_CREATORS } from '../data';
 
 // ─── Skeleton placeholder card ────────────────────────────────────────────────
 
@@ -154,8 +147,6 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
 
   const [polls, setPolls] = useState<BackendPoll[]>([]);
 
-  const [followed, setFollowed] = useState<Record<string, boolean>>({});
-
   // Track whether the current fetch is a pull-to-refresh.
   const isRefreshRef = useRef(false);
 
@@ -218,34 +209,6 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
 
   return (
     <>
-      {/* 1 ── Featured challenge ── static hero until challenge API is wired */}
-      <TouchableOpacity activeOpacity={0.88}>
-        <View className="rounded-3xl overflow-hidden border border-green-200" style={{ backgroundColor: 'hsl(100 25% 96%)' }}>
-          <View className="absolute top-4 left-4 z-10 flex-row items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-green-200">
-            <Trophy size={12} color="hsl(100 35% 44%)" />
-            <Text className="text-xs font-bold" style={{ color: 'hsl(100 35% 44%)' }}>March Challenge</Text>
-          </View>
-          <View className="h-44 items-center justify-center">
-            <Text style={{ fontSize: 80 }}>🥣</Text>
-          </View>
-          <View className="px-5 pb-5">
-            <Text className="text-xl font-serif font-bold text-foreground leading-snug">The Humble Bowl</Text>
-            <Text className="text-sm text-muted-foreground mt-1 leading-relaxed">
-              Throw the most honest, beautiful bowl you can. No handles, no decorations — just form.
-            </Text>
-            <View className="flex-row items-center justify-between mt-4">
-              <View className="flex-row items-center gap-4">
-                <Text className="text-xs text-muted-foreground"><Text className="font-bold text-foreground">124</Text> joined</Text>
-                <Text className="text-xs text-muted-foreground"><Text className="font-bold text-foreground">23</Text> days left</Text>
-              </View>
-              <View className="px-4 py-2 rounded-xl" style={{ backgroundColor: 'hsl(100 35% 44%)' }}>
-                <Text className="text-white text-xs font-bold">Join Challenge</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </TouchableOpacity>
-
       {/* ── Feed posts ─────────────────────────────────────────────────────── */}
 
       {isLoading && (
@@ -311,66 +274,6 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
         />
       ))}
 
-      {/* Potters you might love */}
-      <Card className="p-4">
-        <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Potters you might love
-        </Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ marginHorizontal: -4 }}
-          contentContainerStyle={{ gap: 10, paddingHorizontal: 4 }}
-        >
-          {FOLLOW_CREATORS.map(({ name, avatar, specialty, color }) => (
-            <View key={name} className="w-28 items-center bg-muted/40 rounded-2xl p-3 border border-border">
-              <View className="w-12 h-12 rounded-full items-center justify-center mb-1.5" style={{ backgroundColor: color }}>
-                <Text className="text-white font-bold text-base">{avatar}</Text>
-              </View>
-              <Text className="text-xs font-bold text-foreground text-center">{name}</Text>
-              <Text className="text-xs text-muted-foreground text-center mt-0.5">{specialty}</Text>
-              <TouchableOpacity
-                onPress={() => setFollowed(prev => ({ ...prev, [name]: !prev[name] }))}
-                className={`mt-2.5 w-full py-1.5 rounded-xl items-center border ${
-                  followed[name] ? 'bg-muted border-border' : 'border-primary'
-                }`}
-                activeOpacity={0.75}
-              >
-                <Text className={`text-xs font-semibold ${followed[name] ? 'text-muted-foreground' : 'text-primary'}`}>
-                  {followed[name] ? 'Following' : 'Follow'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </ScrollView>
-      </Card>
-
-      {/* Mentor CTA */}
-      <TouchableOpacity activeOpacity={0.85}>
-        <View className="rounded-3xl p-5 overflow-hidden" style={{ backgroundColor: 'hsl(260 15% 48%)' }}>
-          <View
-            className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full"
-            style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
-          />
-          <View className="flex-row items-center gap-2.5 mb-2">
-            <Zap size={18} color="hsl(38 80% 70%)" />
-            <Text className="text-white font-serif font-bold text-lg">Become a Mentor</Text>
-          </View>
-          <Text className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>
-            Share your knowledge. Answer questions. Help the next generation of potters grow.
-          </Text>
-          <View className="flex-row gap-2 mt-4">
-            <View className="flex-row items-center gap-1.5 bg-white/20 rounded-xl px-3 py-2">
-              <Star size={12} color="hsl(38 80% 75%)" />
-              <Text className="text-white text-xs font-semibold">+250 XP / answer</Text>
-            </View>
-            <View className="flex-row items-center gap-1.5 bg-white/20 rounded-xl px-3 py-2">
-              <Award size={12} color="hsl(38 80% 75%)" />
-              <Text className="text-white text-xs font-semibold">Mentor Badge</Text>
-            </View>
-          </View>
-        </View>
-      </TouchableOpacity>
     </>
   );
 }

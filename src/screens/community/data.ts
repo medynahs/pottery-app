@@ -1,7 +1,7 @@
 // src/screens/community/data.ts
-import type { Creator, Festival, FestivalTrack, FilterTab, GroupMission, MonthlyChallenge, PollOption, WallOfFameEntry } from './types';
+import type { Creator, Festival, FestivalTrack, FilterTab, MonthlyChallenge, PollOption, WallOfFameEntry } from './types';
 
-export const FILTERS: FilterTab[] = ['For You', 'Challenges', 'Missions', 'Hall of Fame', 'Events'];
+export const FILTERS: FilterTab[] = ['For You', 'Challenges', 'Hall of Fame', 'Events'];
 
 export const ACTIVE_CHALLENGE: MonthlyChallenge = {
   emoji: '🥣',
@@ -54,12 +54,6 @@ export const ACTIVE_FESTIVAL: Festival = {
   ],
   tracks: FESTIVAL_TRACKS,
 };
-
-export const GROUP_MISSIONS: GroupMission[] = [
-  { title: '7-Day Cylinder Sprint', members: 18, status: 'In progress', xp: '+180 XP' },
-  { title: 'Tea Bowl Pairing Week', members: 11, status: 'Recruiting', xp: '+140 XP' },
-  { title: 'Glaze Story Challenge', members: 9, status: 'Starts in 2 days', xp: '+220 XP' },
-];
 
 export const WALL_OF_FAME: WallOfFameEntry[] = [
   { name: 'Mara L.', title: 'Best Surface Story', piece: 'Ash-run Vessel', badge: 'Festival Winner' },

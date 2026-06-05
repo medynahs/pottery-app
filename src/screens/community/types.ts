@@ -3,7 +3,6 @@
 export type FilterTab =
   | 'For You'
   | 'Challenges'
-  | 'Missions'
   | 'Hall of Fame'
   | 'Events'
   | 'Drops';
@@ -50,13 +49,6 @@ export type Festival = {
   totalParticipants: number;
   rules: string[];
   tracks: FestivalTrack[];
-};
-
-export type GroupMission = {
-  title: string;
-  members: number;
-  status: string;
-  xp: string;
 };
 
 export type WallOfFameEntry = {

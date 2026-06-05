@@ -1,20 +1,22 @@
-import * as React from "react";
-import { Platform, Linking } from "react-native";
+import {
+  Camera,
+  useCameraPermissions,
+} from "expo-camera";
 import * as Location from "expo-location";
 import * as MediaLibrary from "expo-media-library";
-import * as Contacts from "expo-contacts";
 import * as Notifications from "expo-notifications";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./dialog";
+import { AlertCircle, Bell, Camera as CameraIcon, Image, MapPin } from "lucide-react-native";
+import * as React from "react";
+import { Linking, Platform } from "react-native";
 import { Button } from "./button";
-import { Text } from "./text";
-import { AlertCircle, Camera as CameraIcon, MapPin, Image, Users, Bell } from "lucide-react-native";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./dialog";
 import { iconWithClassName } from "./lib/icons/icon-with-classname";
+import { Text } from "./text";
 
 const AlertCircleIcon = iconWithClassName(AlertCircle);
 const CameraIconStyled = iconWithClassName(CameraIcon);
 const MapPinIcon = iconWithClassName(MapPin);
 const ImageIcon = iconWithClassName(Image);
-const UsersIcon = iconWithClassName(Users);
 const BellIcon = iconWithClassName(Bell);
 
 export type PermissionType = 
@@ -22,7 +24,6 @@ export type PermissionType =
   | "location" 
   | "locationForeground"
   | "mediaLibrary"
-  | "contacts"
   | "notifications";
 
 interface PermissionInfo {
@@ -52,17 +53,44 @@ const permissionInfoMap: Record<PermissionType, PermissionInfo> = {
     description: "Allow the app to access your photos and videos",
     icon: <ImageIcon className="h-12 w-12 text-primary" />,
   },
-  contacts: {
-    title: "Contacts Access",
-    description: "Allow the app to access your contacts",
-    icon: <UsersIcon className="h-12 w-12 text-primary" />,
-  },
   notifications: {
     title: "Notification Access",
     description: "Allow the app to send you notifications",
     icon: <BellIcon className="h-12 w-12 text-primary" />,
   },
 };
+
+async function getPermissionStatusByType(permission: PermissionType) {
+  if (permission === "camera") {
+    return Camera.getCameraPermissionsAsync();
+  }
+  if (permission === "location") {
+    return Location.getBackgroundPermissionsAsync();
+  }
+  if (permission === "locationForeground") {
+    return Location.getForegroundPermissionsAsync();
+  }
+  if (permission === "mediaLibrary") {
+    return MediaLibrary.getPermissionsAsync();
+  }
+  return Notifications.getPermissionsAsync();
+}
+
+async function requestPermissionByType(permission: PermissionType) {
+  if (permission === "camera") {
+    return Camera.requestCameraPermissionsAsync();
+  }
+  if (permission === "location") {
+    return Location.requestBackgroundPermissionsAsync();
+  }
+  if (permission === "locationForeground") {
+    return Location.requestForegroundPermissionsAsync();
+  }
+  if (permission === "mediaLibrary") {
+    return MediaLibrary.requestPermissionsAsync();
+  }
+  return Notifications.requestPermissionsAsync();
+}
 
 interface PermissionRequesterProps {
   permission: PermissionType;
@@ -86,28 +114,8 @@ export function PermissionRequester({
 
   const checkPermission = React.useCallback(async () => {
     try {
-      let permissionStatus;
-      
-      // For now, we'll skip camera permission check due to API changes
-      // You can implement expo-camera hooks separately
-      if (permission === "camera") {
-        // Skip checking for camera in this example
-        return;
-      } else if (permission === "location") {
-        permissionStatus = await Location.getBackgroundPermissionsAsync();
-      } else if (permission === "locationForeground") {
-        permissionStatus = await Location.getForegroundPermissionsAsync();
-      } else if (permission === "mediaLibrary") {
-        permissionStatus = await MediaLibrary.getPermissionsAsync();
-      } else if (permission === "contacts") {
-        permissionStatus = await Contacts.getPermissionsAsync();
-      } else if (permission === "notifications") {
-        permissionStatus = await Notifications.getPermissionsAsync();
-      }
-      
-      if (permissionStatus) {
-        setStatus(permissionStatus.status as "undetermined" | "granted" | "denied");
-      }
+      const permissionStatus = await getPermissionStatusByType(permission);
+      setStatus(permissionStatus.status as "undetermined" | "granted" | "denied");
     } catch (error) {
       console.error("Error checking permission:", error);
     }
@@ -126,36 +134,14 @@ export function PermissionRequester({
     }
 
     try {
-      let permissionResult;
-      
-      // For camera, you'll need to use the useCameraPermissions hook in your component
-      if (permission === "camera") {
-        // For camera, just simulate granted for demo
-        // In real app, use useCameraPermissions hook from expo-camera
-        setStatus("granted");
+      const permissionResult = await requestPermissionByType(permission);
+      const newStatus = permissionResult.status as "undetermined" | "granted" | "denied";
+      setStatus(newStatus);
+
+      if (newStatus === "granted") {
         onPermissionGranted?.();
-        return;
-      } else if (permission === "location") {
-        permissionResult = await Location.requestBackgroundPermissionsAsync();
-      } else if (permission === "locationForeground") {
-        permissionResult = await Location.requestForegroundPermissionsAsync();
-      } else if (permission === "mediaLibrary") {
-        permissionResult = await MediaLibrary.requestPermissionsAsync();
-      } else if (permission === "contacts") {
-        permissionResult = await Contacts.requestPermissionsAsync();
-      } else if (permission === "notifications") {
-        permissionResult = await Notifications.requestPermissionsAsync();
-      }
-      
-      if (permissionResult) {
-        const newStatus = permissionResult.status as "undetermined" | "granted" | "denied";
-        setStatus(newStatus);
-        
-        if (newStatus === "granted") {
-          onPermissionGranted?.();
-        } else if (newStatus === "denied") {
-          onPermissionDenied?.();
-        }
+      } else if (newStatus === "denied") {
+        onPermissionDenied?.();
       }
     } catch (error) {
       console.error("Error requesting permission:", error);
@@ -210,26 +196,8 @@ export function usePermission(permission: PermissionType) {
 
   const checkPermission = React.useCallback(async () => {
     try {
-      let permissionStatus;
-      
-      if (permission === "camera") {
-        // For camera, you need to use useCameraPermissions hook
-        return;
-      } else if (permission === "location") {
-        permissionStatus = await Location.getBackgroundPermissionsAsync();
-      } else if (permission === "locationForeground") {
-        permissionStatus = await Location.getForegroundPermissionsAsync();
-      } else if (permission === "mediaLibrary") {
-        permissionStatus = await MediaLibrary.getPermissionsAsync();
-      } else if (permission === "contacts") {
-        permissionStatus = await Contacts.getPermissionsAsync();
-      } else if (permission === "notifications") {
-        permissionStatus = await Notifications.getPermissionsAsync();
-      }
-      
-      if (permissionStatus) {
-        setStatus(permissionStatus.status as "undetermined" | "granted" | "denied");
-      }
+      const permissionStatus = await getPermissionStatusByType(permission);
+      setStatus(permissionStatus.status as "undetermined" | "granted" | "denied");
     } catch (error) {
       console.error("Error checking permission:", error);
     }
@@ -241,31 +209,10 @@ export function usePermission(permission: PermissionType) {
 
   const request = async () => {
     try {
-      let permissionResult;
-      
-      if (permission === "camera") {
-        // For camera, return true for demo
-        setStatus("granted");
-        return true;
-      } else if (permission === "location") {
-        permissionResult = await Location.requestBackgroundPermissionsAsync();
-      } else if (permission === "locationForeground") {
-        permissionResult = await Location.requestForegroundPermissionsAsync();
-      } else if (permission === "mediaLibrary") {
-        permissionResult = await MediaLibrary.requestPermissionsAsync();
-      } else if (permission === "contacts") {
-        permissionResult = await Contacts.requestPermissionsAsync();
-      } else if (permission === "notifications") {
-        permissionResult = await Notifications.requestPermissionsAsync();
-      }
-      
-      if (permissionResult) {
-        const newStatus = permissionResult.status as "undetermined" | "granted" | "denied";
-        setStatus(newStatus);
-        return newStatus === "granted";
-      }
-      
-      return false;
+      const permissionResult = await requestPermissionByType(permission);
+      const newStatus = permissionResult.status as "undetermined" | "granted" | "denied";
+      setStatus(newStatus);
+      return newStatus === "granted";
     } catch (error) {
       console.error("Error requesting permission:", error);
       return false;
@@ -276,4 +223,5 @@ export function usePermission(permission: PermissionType) {
 }
 
 // For camera permissions, export a separate hook that uses expo-camera's hook
-export { useCameraPermissions } from "expo-camera";
+export { useCameraPermissions };
+

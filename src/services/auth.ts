@@ -228,11 +228,8 @@ async function oryGoogleOAuth(
       );
     } catch (e) {
       const msg = (e as Error).message;
-      if (__DEV__) console.error(`[Ory] attempt=${attempt} step 1 failed:`, msg);
       throw new Error(`Step 1 failed: ${msg}\n\nThe BE must add "${OAUTH_RETURN_TO}" to Ory's selfservice.allowed_return_urls.`);
     }
-
-    if (__DEV__) console.log(`[Ory] attempt=${attempt} flow=${flow.id} stc=${flow.session_token_exchange_code?.substring(0, 8)}`);
 
     if (!flow.session_token_exchange_code) {
       throw new Error(
@@ -263,12 +260,10 @@ async function oryGoogleOAuth(
         browserUrl = oidcErr.redirectUrl;
       } else {
         const msg = oidcErr.message;
-        if (__DEV__) console.error(`[Ory] attempt=${attempt} step 2 failed:`, msg);
         throw new Error(`Step 2 failed: ${msg}`);
       }
     }
 
-    if (__DEV__) console.log(`[Ory] attempt=${attempt} browserUrl=`, browserUrl);
     if (!browserUrl) throw new Error('Ory did not return a Google redirect URL.');
 
     // 3. Open the in-app browser once per attempt.
@@ -279,8 +274,6 @@ async function oryGoogleOAuth(
     const res = await WebBrowser.openAuthSessionAsync(browserUrl, OAUTH_RETURN_TO, {
       preferEphemeralSession: true,
     });
-    if (__DEV__) console.log(`[Ory] attempt=${attempt} browser result=`, res.type, '\nfull callback URL:', (res as { url?: string }).url);
-
     if (res.type !== 'success' || !(res as { url?: string }).url) {
       throw new Error('Google sign-in was cancelled or failed.');
     }
@@ -291,8 +284,6 @@ async function oryGoogleOAuth(
     const flowMatch   = callbackUrl.match(/[?&]flow=([^&#]+)/);
     const code        = codeMatch?.[1] ? decodeURIComponent(codeMatch[1]) : null;
     const flowId      = flowMatch?.[1] ? decodeURIComponent(flowMatch[1]) : null;
-
-    if (__DEV__) console.log(`[Ory] attempt=${attempt} code=`, code ?? 'none', '\nflow=', flowId ?? 'none');
 
     if (!code && !flowId) {
       throw new Error('No return_to_code (code/flow) found in the redirect URL.');
@@ -330,7 +321,6 @@ async function oryGoogleOAuth(
     // Do NOT re-open the same browserUrl: Google's OAuth state is single-use and
     // Ory would reject the callback as a replay.
     if (_consumedReturnToCodes.has(code as string)) {
-      if (__DEV__) console.warn(`[Ory] attempt=${attempt} stale code (in consumed set) — retrying with fresh flow`);
       if (attempt < MAX_ATTEMPTS - 1) continue;
       throw new Error('Google sign-in failed: received a stale redirect. Please try again.');
     }
@@ -339,8 +329,6 @@ async function oryGoogleOAuth(
     // "no session yet for this code" is a transient 422 — Ory hasn't finished
     // creating the session after the OIDC callback yet. Poll with short retries.
     const exchangeUrl = `/sessions/token-exchange?init_code=${encodeURIComponent(flow.session_token_exchange_code)}&return_to_code=${encodeURIComponent(code as string)}`;
-    if (__DEV__) console.log(`[Ory] attempt=${attempt} exchange URL:`, `${ORY_BASE}${exchangeUrl}`);
-
     const EXCHANGE_POLLS = 6;
     let retryWithFreshFlow = false;
     for (let ex = 0; ex < EXCHANGE_POLLS; ex++) {
@@ -350,19 +338,15 @@ async function oryGoogleOAuth(
         return exchangeResult;
       } catch (e) {
         const msg = (e as Error).message;
-        if (__DEV__) console.warn(`[Ory] attempt=${attempt} ex=${ex} exchange failed:`, msg);
-
         // Ory 422: "The native session hasn't been set yet, try again later."
         if (/no session yet|hasn't been set yet|wait for native session/i.test(msg)) {
           if (ex < EXCHANGE_POLLS - 1) {
             // Transient: Ory is still processing the OIDC callback — wait and poll
-            if (__DEV__) console.log(`[Ory] transient "no session yet" — retrying exchange in 700ms (${ex + 1}/${EXCHANGE_POLLS - 1})`);
             await sleep(700);
             continue;
           }
           // Polls exhausted — code is a permanent mismatch (stale return_to_code),
           // restart with a completely fresh flow + new browser session
-          if (__DEV__) console.warn(`[Ory] attempt=${attempt} polls exhausted on "no session yet" — restarting with fresh flow`);
           if (attempt < MAX_ATTEMPTS - 1) {
             _consumedReturnToCodes.add(code as string);
             retryWithFreshFlow = true;
@@ -372,7 +356,6 @@ async function oryGoogleOAuth(
 
         if (/could not be found|no resumable session/i.test(msg) && attempt < MAX_ATTEMPTS - 1) {
           _consumedReturnToCodes.add(code as string);
-          if (__DEV__) console.log('[Ory] 404 — retrying with fresh flow');
           retryWithFreshFlow = true;
           break;
         }

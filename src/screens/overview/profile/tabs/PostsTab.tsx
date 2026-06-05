@@ -71,7 +71,6 @@ export function PostsTab() {
     setLoading(true);
     try {
       const page = await apiListMyPosts(sessionToken, { limit: 50 });
-      console.log('[PostsTab] GET /users/me/posts raw:', JSON.stringify(page));
       setPosts(page.items ?? page.posts ?? []);
     } catch (e) {
       console.error('[PostsTab] load error:', e);

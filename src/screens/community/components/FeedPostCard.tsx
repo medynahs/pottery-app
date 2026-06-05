@@ -2,6 +2,8 @@
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { apiAddReaction, apiRemoveReaction } from '@/src/services/community';
+import { apiSendFriendRequest } from '@/src/services/friends';
+import { useAppStore } from '@/src/store';
 import { Image } from 'expo-image';
 import { MessageCircle } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
@@ -96,14 +98,31 @@ interface Props {
 }
 
 export function FeedPostCard({ post, sessionToken }: Props) {
+  const backendUserId = useAppStore((s) => s.backendUserId);
+  const showToast = useAppStore((s) => s.showToast);
   const firstAsset = post.assets?.[0];
   const initial = post.user_id.slice(0, 1).toUpperCase();
+  const canSendFriendRequest = Boolean(backendUserId && backendUserId !== post.user_id);
 
   const [selectedReaction, setSelectedReaction] = useState<ReactionKey | null>(
     post.has_reacted ? 'fired' : null,
   );
   const [reactionCount, setReactionCount] = useState(post.reaction_count ?? 0);
   const [reacting, setReacting] = useState(false);
+  const [requestState, setRequestState] = useState<'idle' | 'sending' | 'sent'>('idle');
+
+  const handleSendFriendRequest = async () => {
+    if (!canSendFriendRequest || requestState !== 'idle') return;
+    setRequestState('sending');
+    try {
+      await apiSendFriendRequest(sessionToken, post.user_id);
+      setRequestState('sent');
+      showToast('Friend request sent', 'success');
+    } catch {
+      setRequestState('idle');
+      showToast('Unable to send request', 'error');
+    }
+  };
 
   const handleReaction = async (key: ReactionKey) => {
     if (reacting) return;
@@ -151,6 +170,18 @@ export function FeedPostCard({ post, sessionToken }: Props) {
           <Text className="text-xs font-bold text-foreground">Community Member</Text>
           <Text className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</Text>
         </View>
+        {canSendFriendRequest && (
+          <TouchableOpacity
+            onPress={handleSendFriendRequest}
+            disabled={requestState !== 'idle'}
+            className={`px-3 py-1.5 rounded-xl border ${requestState === 'sent' ? 'border-green-500 bg-green-50' : 'border-border bg-muted'}`}
+            activeOpacity={0.75}
+          >
+            <Text className={`text-xs font-semibold ${requestState === 'sent' ? 'text-green-700' : 'text-muted-foreground'}`}>
+              {requestState === 'sending' ? 'Sending...' : requestState === 'sent' ? 'Requested' : 'Add Friend'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Image */}

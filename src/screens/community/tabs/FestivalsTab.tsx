@@ -2,8 +2,15 @@
 // Exported as ChallengesTab — houses monthly challenges + the seasonal festival
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
+import {
+    apiListChallenges,
+    apiSubmitChallengeEntry,
+    apiWithdrawChallengeEntry,
+    type BackendChallenge,
+} from '@/src/services/challenges';
+import { useAppStore } from '@/src/store';
 import { Award, CheckCircle, ChevronDown, ChevronUp, Flame, Trophy, Vote } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import { ConfirmSheet } from '../../../components/AppSheets';
 import { FestivalSignUpSheet } from '../components/FestivalSignUpSheet';
@@ -38,22 +45,65 @@ const HOW_IT_WORKS = [
 ];
 
 export function ChallengesTab() {
+  const sessionToken = useAppStore((s) => s.sessionToken);
+  const showToast = useAppStore((s) => s.showToast);
+
   // Festival state
   const [signUpOpen, setSignUpOpen] = useState(false);
   const [dropOutOpen, setDropOutOpen] = useState(false);
   const [enrolledTrackId, setEnrolledTrackId] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
 
-  // Monthly challenge state
-  const [challengeJoined, setChallengeJoined] = useState(false);
+  // Monthly challenge state (API-backed)
+  const [challengeApi, setChallengeApi] = useState<BackendChallenge | null>(null);
+  const [challengeLoading, setChallengeLoading] = useState(false);
+  const [challengeSubmitting, setChallengeSubmitting] = useState(false);
+  const [challengeEntryId, setChallengeEntryId] = useState<string | null>(null);
   const [challengeDropOpen, setChallengeDropOpen] = useState(false);
 
   // Submit sheet — which context triggered it
   const [submitFor, setSubmitFor] = useState<'challenge' | 'festival' | null>(null);
 
   const festival = ACTIVE_FESTIVAL;
-  const challenge = ACTIVE_CHALLENGE;
+  const challenge = useMemo(() => {
+    if (!challengeApi) return ACTIVE_CHALLENGE;
+    return {
+      ...ACTIVE_CHALLENGE,
+      title: challengeApi.title || ACTIVE_CHALLENGE.title,
+      description: challengeApi.description || ACTIVE_CHALLENGE.description,
+      joined: challengeApi.participant_count ?? ACTIVE_CHALLENGE.joined,
+    };
+  }, [challengeApi]);
+  const challengeJoined = challengeEntryId !== null;
   const enrolledTrack = festival.tracks.find(t => t.id === enrolledTrackId);
+
+  useEffect(() => {
+    if (!sessionToken) return;
+    let mounted = true;
+    setChallengeLoading(true);
+    apiListChallenges(sessionToken)
+      .then((items) => {
+        if (!mounted) return;
+        const active = items?.[0] ?? null;
+        setChallengeApi(active);
+
+        const maybeEntryId = ((active as unknown as { my_entry_id?: string | null })?.my_entry_id) ?? null;
+        if (maybeEntryId) {
+          setChallengeEntryId(maybeEntryId);
+        }
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setChallengeApi(null);
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setChallengeLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [sessionToken]);
 
   const handleJoinFestival = (trackId: string) => {
     setEnrolledTrackId(trackId);
@@ -63,6 +113,52 @@ export function ChallengesTab() {
   const handleDropOutFestival = () => {
     setEnrolledTrackId(null);
     setDropOutOpen(false);
+  };
+
+  const handleSubmitChallengeEntry = async (payload?: { note: string; hasPhoto: boolean }) => {
+    if (!sessionToken) {
+      setSubmitFor(null);
+      showToast('Please sign in to join challenges', 'error');
+      return;
+    }
+    if (!challengeApi?.id) {
+      setSubmitFor(null);
+      showToast('No active challenge available', 'error');
+      return;
+    }
+
+    setChallengeSubmitting(true);
+    try {
+      const entry = await apiSubmitChallengeEntry(sessionToken, challengeApi.id, {
+        note: payload?.note || 'Submitted from app challenge flow',
+      });
+      setChallengeEntryId(entry.id);
+      setSubmitFor(null);
+      showToast('Challenge entry submitted', 'success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not submit entry';
+      showToast(message, 'error');
+    } finally {
+      setChallengeSubmitting(false);
+    }
+  };
+
+  const handleLeaveChallenge = async () => {
+    if (!sessionToken || !challengeApi?.id || !challengeEntryId) {
+      setChallengeDropOpen(false);
+      return;
+    }
+
+    try {
+      await apiWithdrawChallengeEntry(sessionToken, challengeApi.id, challengeEntryId);
+      setChallengeEntryId(null);
+      showToast('Challenge entry withdrawn', 'success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not leave challenge';
+      showToast(message, 'error');
+    } finally {
+      setChallengeDropOpen(false);
+    }
   };
 
   return (
@@ -113,9 +209,10 @@ export function ChallengesTab() {
                 className="py-2.5 rounded-xl items-center mt-3"
                 style={{ backgroundColor: challenge.accentColor }}
                 activeOpacity={0.85}
+                disabled={challengeSubmitting}
                 onPress={() => setSubmitFor('challenge')}
               >
-                <Text className="text-white text-xs font-bold">Submit My Entry</Text>
+                <Text className="text-white text-xs font-bold">{challengeSubmitting ? 'Submitting...' : 'Submit My Entry'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 className="items-center mt-2.5"
@@ -130,9 +227,12 @@ export function ChallengesTab() {
               className="py-3 rounded-xl items-center"
               style={{ backgroundColor: challenge.accentColor }}
               activeOpacity={0.85}
-              onPress={() => setChallengeJoined(true)}
+              disabled={challengeLoading || challengeSubmitting}
+              onPress={() => setSubmitFor('challenge')}
             >
-              <Text className="text-white text-sm font-bold">Take the Challenge</Text>
+              <Text className="text-white text-sm font-bold">
+                {challengeLoading ? 'Loading challenge...' : challengeSubmitting ? 'Submitting...' : 'Take the Challenge'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -338,7 +438,13 @@ export function ChallengesTab() {
         contextName={submitFor === 'challenge' ? challenge.title : festival.name}
         contextSubtitle={submitFor === 'challenge' ? challenge.label : (enrolledTrack?.title ?? '')}
         accentColor={festival.accentColor}
-        onSubmit={() => setSubmitFor(null)}
+        onSubmit={(payload) => {
+          if (submitFor === 'challenge') {
+            void handleSubmitChallengeEntry(payload);
+            return;
+          }
+          setSubmitFor(null);
+        }}
         onClose={() => setSubmitFor(null)}
       />
 
@@ -358,7 +464,7 @@ export function ChallengesTab() {
         body="You can rejoin any time before the deadline."
         confirmLabel="Leave Challenge"
         destructive
-        onConfirm={() => { setChallengeJoined(false); setChallengeDropOpen(false); }}
+        onConfirm={() => { void handleLeaveChallenge(); }}
         onCancel={() => setChallengeDropOpen(false)}
       />
     </>

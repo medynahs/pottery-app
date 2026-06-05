@@ -11,6 +11,10 @@ import React from 'react';
 import { ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import type { Firing, FiringResult } from '../../../types/kiln';
 import { FIRING_TYPE_LABELS } from '../constants';
+import {
+    useDeleteFiringMutation,
+    useUpdateFiringMutation,
+} from '../hooks/useFiringsSync';
 import { FiringDetailContent } from './FiringDetailContent';
 
 interface FiringDetailModalProps {
@@ -31,6 +35,8 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const completeFiring = useAppStore((state) => state.completeFiring);
   const deleteFiring = useAppStore((state) => state.deleteFiring);
   const updateFiring = useAppStore((state) => state.updateFiring);
+  const deleteFiringMutation = useDeleteFiringMutation();
+  const updateFiringMutation = useUpdateFiringMutation();
 
   const liveFiring = useAppStore((state) => state.firings.find((currentFiring) => currentFiring.id === firing?.id));
 
@@ -74,6 +80,15 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
 
   const handleComplete = () => {
     completeFiring(liveFiring.id, selectedResult, resultNotes);
+    const now = new Date().toISOString();
+    updateFiringMutation.mutate({
+      ...liveFiring,
+      state: 'completed',
+      completedAt: now,
+      notes: liveFiring.notes,
+      result: selectedResult,
+      resultNotes,
+    });
     setShowCompletionForm(false);
     if (selectedResult === 'success') {
       setFiringCeremonyName(liveFiring.name);
@@ -87,11 +102,17 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
 
   const toggleAssignPiece = (pieceId: number) => {
     if (assignedPieceIdSet.has(pieceId)) {
-      updateFiring({ ...liveFiring, pieceIds: liveFiring.pieceIds.filter((id) => id !== pieceId) });
+      const next = { ...liveFiring, pieceIds: liveFiring.pieceIds.filter((id) => id !== pieceId) };
+      updateFiring(next);
+      updateFiringMutation.mutate(next);
       return;
     }
 
     assignPiecesToFiring(liveFiring.id, [pieceId]);
+    updateFiringMutation.mutate({
+      ...liveFiring,
+      pieceIds: Array.from(new Set([...liveFiring.pieceIds, pieceId])),
+    });
   };
 
   return (
@@ -102,7 +123,12 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
       body={`Delete "${liveFiring.name}"? This cannot be undone.`}
       confirmLabel="Delete"
       destructive
-      onConfirm={() => { deleteFiring(liveFiring.id); setConfirmDeleteOpen(false); onClose(); }}
+      onConfirm={() => {
+        deleteFiring(liveFiring.id);
+        deleteFiringMutation.mutate(liveFiring);
+        setConfirmDeleteOpen(false);
+        onClose();
+      }}
       onCancel={() => setConfirmDeleteOpen(false)}
     />
     <CeremonyOverlay

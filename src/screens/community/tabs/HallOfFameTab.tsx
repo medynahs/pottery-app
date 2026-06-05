@@ -2,9 +2,10 @@
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import {
-    apiGetHallOfFame,
-    type BackendHallOfFameEntry,
-} from '@/src/services/community';
+    apiGetChallengeLeaderboard,
+    apiListChallenges,
+    type BackendChallengeLeaderboardEntry,
+} from '@/src/services/challenges';
 import { useAppStore } from '@/src/store';
 import { Crown, Star, Trophy } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -49,11 +50,39 @@ function EntrySkeleton() {
 const PODIUM_HEIGHTS = [96, 68, 50]; // 1st, 2nd, 3rd
 const AVATAR_SIZES  = [64, 48, 44];
 
+type HallOfFameEntry = {
+  id: string;
+  name: string;
+  points: number;
+  rank: number;
+};
+
+function normalizeLeaderboardEntries(
+  entries: BackendChallengeLeaderboardEntry[],
+): HallOfFameEntry[] {
+  const sorted = [...entries].sort((a, b) => {
+    const rankA = a.rank ?? Number.MAX_SAFE_INTEGER;
+    const rankB = b.rank ?? Number.MAX_SAFE_INTEGER;
+    if (rankA !== rankB) return rankA - rankB;
+
+    const pointsA = a.score ?? 0;
+    const pointsB = b.score ?? 0;
+    return pointsB - pointsA;
+  });
+
+  return sorted.map((entry, index) => ({
+    id: `${entry.user_id}-${entry.rank ?? index + 1}`,
+    name: entry.user_name?.trim() || `Potter #${index + 1}`,
+    points: entry.score ?? 0,
+    rank: entry.rank ?? index + 1,
+  }));
+}
+
 function PodiumEntry({
   entry,
   rank,
 }: {
-  entry: BackendHallOfFameEntry;
+  entry: HallOfFameEntry;
   rank: number;
 }) {
   const idx     = rank - 1;
@@ -105,7 +134,7 @@ function PodiumEntry({
         style={{ backgroundColor: `${medal.border}30` }}
       >
         <Text className="text-xs font-bold" style={{ color: medal.color }}>
-          {entry.challenge_wins}W
+          {entry.points} pts
         </Text>
       </View>
 
@@ -127,7 +156,7 @@ function PodiumEntry({
 
 // ─── Runner-up row (4th+) ─────────────────────────────────────────────────────
 
-function RankRow({ entry, rank }: { entry: BackendHallOfFameEntry; rank: number }) {
+function RankRow({ entry, rank }: { entry: HallOfFameEntry; rank: number }) {
   return (
     <View className="flex-row items-center gap-3 py-3 border-b border-border/40 last:border-0">
       <Text className="text-sm font-bold text-muted-foreground w-5 text-right">
@@ -145,14 +174,12 @@ function RankRow({ entry, rank }: { entry: BackendHallOfFameEntry; rank: number 
 
       <View className="flex-1">
         <Text className="text-sm font-semibold text-foreground">{entry.name}</Text>
-        <Text className="text-xs text-muted-foreground mt-0.5">
-          {entry.piece_count} pieces · {Math.round(entry.survival_rate)}% survival
-        </Text>
+        <Text className="text-xs text-muted-foreground mt-0.5">Challenge score</Text>
       </View>
 
       <View className="rounded-full px-2.5 py-0.5" style={{ backgroundColor: '#FEF3C7' }}>
         <Text className="text-xs font-bold" style={{ color: '#92400E' }}>
-          {entry.challenge_wins}W
+          {entry.points} pts
         </Text>
       </View>
     </View>
@@ -164,16 +191,34 @@ function RankRow({ entry, rank }: { entry: BackendHallOfFameEntry; rank: number 
 export function HallOfFameTab() {
   const sessionToken = useAppStore((s) => s.sessionToken)!;
 
-  const [entries, setEntries] = useState<BackendHallOfFameEntry[]>([]);
+  const [entries, setEntries] = useState<HallOfFameEntry[]>([]);
+  const [challengeTitle, setChallengeTitle] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (!sessionToken) {
+      setEntries([]);
+      setChallengeTitle(null);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiGetHallOfFame(sessionToken);
-      setEntries(data ?? []);
+      const challenges = await apiListChallenges(sessionToken);
+      const activeChallenge = challenges?.[0] ?? null;
+
+      if (!activeChallenge?.id) {
+        setEntries([]);
+        setChallengeTitle(null);
+        return;
+      }
+
+      const leaderboard = await apiGetChallengeLeaderboard(sessionToken, activeChallenge.id);
+      setEntries(normalizeLeaderboardEntries(leaderboard));
+      setChallengeTitle(activeChallenge.title ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load Hall of Fame');
     } finally {
@@ -209,12 +254,14 @@ export function HallOfFameTab() {
         <View className="flex-row items-center gap-2 mb-2">
           <Trophy size={17} color="#D97706" />
           <Text className="text-xs font-bold tracking-widest uppercase" style={{ color: '#D97706' }}>
-            All-Time Rankings
+            Challenge Leaderboard
           </Text>
         </View>
         <Text className="text-2xl font-bold text-foreground">Hall of Fame</Text>
         <Text className="text-sm text-muted-foreground mt-1 leading-relaxed">
-          Top potters ranked by challenge victories, updated daily.
+          {challengeTitle
+            ? `${challengeTitle} standings from the current challenge leaderboard.`
+            : 'Top potters from the current challenge leaderboard.'}
         </Text>
       </View>
 
@@ -281,7 +328,7 @@ export function HallOfFameTab() {
           </Text>
           <Card className="px-4 py-0">
             {rest.map((entry, i) => (
-              <RankRow key={entry.id} entry={entry} rank={i + 4} />
+              <RankRow key={entry.id} entry={entry} rank={entry.rank || i + 4} />
             ))}
           </Card>
         </View>

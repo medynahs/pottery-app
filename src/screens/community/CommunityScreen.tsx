@@ -12,7 +12,6 @@ import { EventsTab } from './tabs/EventsTab';
 import { ChallengesTab } from './tabs/FestivalsTab';
 import { ForYouFeed } from './tabs/ForYouFeed';
 import { HallOfFameTab } from './tabs/HallOfFameTab';
-import { MissionsTab } from './tabs/MissionsTab';
 import type { FilterTab } from './types';
 
 // ─── Create post sheet ───────────────────────────────────────────────────────
@@ -37,7 +36,6 @@ function CreatePostSheet({
     setPosting(true);
     try {
       const created = await apiCreatePost(sessionToken, { content: content.trim() });
-      console.log('[CreatePost] response:', JSON.stringify(created));
       setContent('');
       onClose();
       onPosted();
@@ -186,7 +184,6 @@ export default function CommunityScreen() {
   const renderTab = () => {
     switch (activeFilter) {
       case 'Challenges':   return <ChallengesTab />;
-      case 'Missions':     return <MissionsTab />;
       case 'Hall of Fame': return <HallOfFameTab />;
       case 'Events':       return <EventsTab />;
       default:

@@ -6,10 +6,10 @@ import React, { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { TabBar } from '../../../config/TabBar';
 import { ProfileHeader } from './components/ProfileHeader';
-import type { Tab } from './mockedData/data';
 import { JourneyTab } from './tabs/JourneyTab';
 import { PortfolioTab } from './tabs/PortfolioTab';
 import { PostsTab } from './tabs/PostsTab';
+import type { Tab } from './types';
 
 export default function ProfileScreen() {
   const router = useRouter();

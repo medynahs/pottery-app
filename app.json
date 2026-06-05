@@ -25,7 +25,6 @@
         "NSCameraUsageDescription": "This app needs access to your camera to take photos.",
         "NSLocationWhenInUseUsageDescription": "This app needs access to your location to provide location-based features.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to your location to provide location-based features.",
-        "NSContactsUsageDescription": "This app needs access to your contacts to help you connect with friends.",
         "NSUserTrackingUsageDescription": "This app needs permission to track your activity across other apps and websites."
       }
     },
@@ -42,9 +41,7 @@
         "ACCESS_MEDIA_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
-        "READ_CONTACTS",
-        "WRITE_CONTACTS"
+        "ACCESS_BACKGROUND_LOCATION"
       ]
     },
     "web": {

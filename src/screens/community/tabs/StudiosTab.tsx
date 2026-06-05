@@ -4,18 +4,23 @@ import { Text } from '@/src/components/ui/text';
 import {
     apiAcceptJoinRequest,
     apiAcceptStudioInvite,
+    apiAddStudioMember,
     apiCreateStudio,
     apiDeleteStudio,
+    apiInviteToStudio,
     apiLeaveStudio,
     apiListIncomingJoinRequests,
     apiListIncomingStudioInvites,
     apiListMemberStudios,
     apiListOwnedStudios,
+    apiListStudioMembers,
     apiRejectJoinRequest,
     apiRejectStudioInvite,
+    apiRequestToJoinStudio,
     type BackendStudio,
     type BackendStudioInvite,
-    type BackendStudioJoinRequest
+    type BackendStudioJoinRequest,
+    type BackendUser
 } from '@/src/services/studios';
 import { useAppStore } from '@/src/store';
 import {
@@ -24,6 +29,7 @@ import {
     ChevronRight,
     Crown,
     DoorOpen,
+    Mail,
     Plus,
     Trash2,
     Users,
@@ -93,6 +99,29 @@ function StudioAvatar({ name, size = 44 }: { name: string; size?: number }) {
       <Text className="font-bold text-primary" style={{ fontSize: size * 0.36 }}>
         {studioInitials(name)}
       </Text>
+    </View>
+  );
+}
+
+function MemberPreviewCard({ user }: { user: BackendUser }) {
+  const initials = user.name
+    .split(' ')
+    .slice(0, 2)
+    .map((chunk) => chunk[0]?.toUpperCase() ?? '')
+    .join('');
+
+  return (
+    <View className="flex-row items-center gap-3 rounded-xl border border-border bg-background p-2.5">
+      <View className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center">
+        <Text className="text-xs font-bold text-primary">{initials || 'U'}</Text>
+      </View>
+      <View className="flex-1">
+        <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>{user.name || 'Unnamed user'}</Text>
+        <View className="flex-row items-center gap-1">
+          <Mail size={11} color="hsl(0 0% 50%)" />
+          <Text className="text-xs text-muted-foreground" numberOfLines={1}>{user.email || user.id}</Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -444,11 +473,21 @@ function CollapsibleSection({
 
 export function StudiosTab() {
   const sessionToken = useAppStore((s) => s.sessionToken)!;
+  const showToast = useAppStore((s) => s.showToast);
 
   const [owned, setOwned] = useState<BackendStudio[]>([]);
   const [member, setMember] = useState<BackendStudio[]>([]);
   const [invites, setInvites] = useState<BackendStudioInvite[]>([]);
   const [joinRequests, setJoinRequests] = useState<BackendStudioJoinRequest[]>([]);
+  const [selectedOwnedStudioId, setSelectedOwnedStudioId] = useState('');
+  const [studioToJoinId, setStudioToJoinId] = useState('');
+  const [joiningStudio, setJoiningStudio] = useState(false);
+  const [inviteUserId, setInviteUserId] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [memberUserId, setMemberUserId] = useState('');
+  const [addingMember, setAddingMember] = useState(false);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [members, setMembers] = useState<BackendUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -475,6 +514,15 @@ export function StudiosTab() {
   }, [sessionToken]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (!selectedOwnedStudioId && owned.length > 0) {
+      setSelectedOwnedStudioId(owned[0].id);
+    }
+    if (selectedOwnedStudioId && !owned.some((s) => s.id === selectedOwnedStudioId)) {
+      setSelectedOwnedStudioId(owned[0]?.id ?? '');
+    }
+  }, [owned, selectedOwnedStudioId]);
 
   const handleCreate = useCallback(
     async (name: string) => {
@@ -534,6 +582,73 @@ export function StudiosTab() {
     [sessionToken],
   );
 
+  const handleRequestToJoin = useCallback(async () => {
+    const studioId = studioToJoinId.trim();
+    if (!studioId || joiningStudio) return;
+    setJoiningStudio(true);
+    try {
+      await apiRequestToJoinStudio(sessionToken, studioId);
+      setStudioToJoinId('');
+      showToast('Join request sent', 'success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to request join';
+      showToast(message, 'error');
+    } finally {
+      setJoiningStudio(false);
+    }
+  }, [joiningStudio, sessionToken, showToast, studioToJoinId]);
+
+  const handleInviteToStudio = useCallback(async () => {
+    const studioId = selectedOwnedStudioId.trim();
+    const userId = inviteUserId.trim();
+    if (!studioId || !userId || inviting) return;
+    setInviting(true);
+    try {
+      await apiInviteToStudio(sessionToken, studioId, userId);
+      setInviteUserId('');
+      showToast('Invite sent', 'success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to send invite';
+      showToast(message, 'error');
+    } finally {
+      setInviting(false);
+    }
+  }, [inviteUserId, inviting, selectedOwnedStudioId, sessionToken, showToast]);
+
+  const handleAddMember = useCallback(async () => {
+    const studioId = selectedOwnedStudioId.trim();
+    const userId = memberUserId.trim();
+    if (!studioId || !userId || addingMember) return;
+    setAddingMember(true);
+    try {
+      await apiAddStudioMember(sessionToken, studioId, userId);
+      setMemberUserId('');
+      showToast('Member added', 'success');
+      const updatedMembers = await apiListStudioMembers(sessionToken, studioId);
+      setMembers(updatedMembers ?? []);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to add member';
+      showToast(message, 'error');
+    } finally {
+      setAddingMember(false);
+    }
+  }, [addingMember, memberUserId, selectedOwnedStudioId, sessionToken, showToast]);
+
+  const handleRefreshMembers = useCallback(async () => {
+    const studioId = selectedOwnedStudioId.trim();
+    if (!studioId || membersLoading) return;
+    setMembersLoading(true);
+    try {
+      const updatedMembers = await apiListStudioMembers(sessionToken, studioId);
+      setMembers(updatedMembers ?? []);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load members';
+      showToast(message, 'error');
+    } finally {
+      setMembersLoading(false);
+    }
+  }, [membersLoading, selectedOwnedStudioId, sessionToken, showToast]);
+
   if (isLoading) {
     return (
       <>
@@ -579,6 +694,135 @@ export function StudiosTab() {
         <Plus size={16} color="hsl(15 65% 50%)" />
         <Text className="text-sm font-semibold text-primary">Create a new studio</Text>
       </TouchableOpacity>
+
+      {/* ── Join studio by ID ─── */}
+      <Card className="p-4 gap-2">
+        <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Join a studio</Text>
+        <TextInput
+          value={studioToJoinId}
+          onChangeText={setStudioToJoinId}
+          placeholder="Studio ID"
+          className="border border-border rounded-xl px-4 py-3 text-sm text-foreground bg-background"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <TouchableOpacity
+          onPress={handleRequestToJoin}
+          disabled={joiningStudio || !studioToJoinId.trim()}
+          className="rounded-xl items-center py-2.5 bg-primary"
+          activeOpacity={0.8}
+          style={{ opacity: joiningStudio || !studioToJoinId.trim() ? 0.6 : 1 }}
+        >
+          {joiningStudio
+            ? <ActivityIndicator size="small" color="white" />
+            : <Text className="text-sm font-semibold text-white">Request to join</Text>
+          }
+        </TouchableOpacity>
+      </Card>
+
+      {/* ── Owner tools ─── */}
+      {owned.length > 0 && (
+        <Card className="p-4 gap-2">
+          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Owner tools</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {owned.map((studio) => {
+              const selected = selectedOwnedStudioId === studio.id;
+              return (
+                <TouchableOpacity
+                  key={studio.id}
+                  onPress={() => setSelectedOwnedStudioId(studio.id)}
+                  activeOpacity={0.8}
+                  className="px-3 py-2 rounded-xl border"
+                  style={{
+                    borderColor: selected ? 'hsl(15 65% 50%)' : 'hsl(0 0% 85%)',
+                    backgroundColor: selected ? 'hsl(15 65% 95%)' : 'white',
+                  }}
+                >
+                  <Text
+                    className="text-xs font-semibold"
+                    style={{ color: selected ? 'hsl(15 65% 45%)' : 'hsl(0 0% 35%)' }}
+                  >
+                    {studio.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          {selectedOwnedStudioId ? (
+            <Text className="text-[11px] text-muted-foreground">
+              Selected studio ID: {selectedOwnedStudioId}
+            </Text>
+          ) : null}
+          <TextInput
+            value={inviteUserId}
+            onChangeText={setInviteUserId}
+            placeholder="User ID to invite"
+            className="border border-border rounded-xl px-4 py-3 text-sm text-foreground bg-background"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <TouchableOpacity
+            onPress={handleInviteToStudio}
+            disabled={inviting || !selectedOwnedStudioId.trim() || !inviteUserId.trim()}
+            className="rounded-xl items-center py-2.5 bg-muted"
+            activeOpacity={0.8}
+            style={{ opacity: inviting || !selectedOwnedStudioId.trim() || !inviteUserId.trim() ? 0.6 : 1 }}
+          >
+            {inviting
+              ? <ActivityIndicator size="small" color="#8B6A2A" />
+              : <Text className="text-sm font-semibold text-foreground">Invite user</Text>
+            }
+          </TouchableOpacity>
+
+          <TextInput
+            value={memberUserId}
+            onChangeText={setMemberUserId}
+            placeholder="User ID to add directly"
+            className="border border-border rounded-xl px-4 py-3 text-sm text-foreground bg-background"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <TouchableOpacity
+            onPress={handleAddMember}
+            disabled={addingMember || !selectedOwnedStudioId.trim() || !memberUserId.trim()}
+            className="rounded-xl items-center py-2.5 bg-muted"
+            activeOpacity={0.8}
+            style={{ opacity: addingMember || !selectedOwnedStudioId.trim() || !memberUserId.trim() ? 0.6 : 1 }}
+          >
+            {addingMember
+              ? <ActivityIndicator size="small" color="#8B6A2A" />
+              : <Text className="text-sm font-semibold text-foreground">Add member directly</Text>
+            }
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleRefreshMembers}
+            disabled={membersLoading || !selectedOwnedStudioId.trim()}
+            className="rounded-xl items-center py-2.5 border border-border"
+            activeOpacity={0.8}
+            style={{ opacity: membersLoading || !selectedOwnedStudioId.trim() ? 0.6 : 1 }}
+          >
+            {membersLoading
+              ? <ActivityIndicator size="small" color="#8B6A2A" />
+              : <Text className="text-sm font-semibold text-muted-foreground">Refresh members</Text>
+            }
+          </TouchableOpacity>
+
+          {members.length > 0 && (
+            <View className="gap-2 pt-1">
+              <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Members ({members.length})
+              </Text>
+              {members.slice(0, 4).map((u) => (
+                <MemberPreviewCard key={u.id} user={u} />
+              ))}
+              {members.length > 4 && (
+                <Text className="text-xs text-muted-foreground">+{members.length - 4} more members</Text>
+              )}
+            </View>
+          )}
+        </Card>
+      )}
 
       {/* ── Invites ─── */}
       {invites.length > 0 && (

@@ -34,6 +34,21 @@ interface BadgeContext {
   soldPieces: number;
 }
 
+interface KeyStat {
+  label: string;
+  value: string;
+  icon: BadgeIconComponent;
+  color: string;
+  bg: string;
+}
+
+interface TimelineMilestone {
+  year: string;
+  label: string;
+  color: string;
+  date: Date;
+}
+
 const BADGE_REGISTRY: BadgeDef[] = [
   // ── Firings ──────────────────────────────────────────────
   {
@@ -271,8 +286,77 @@ export function JourneyTab() {
     [ctx]
   );
 
-  const unlocked = badges.filter((b) => b.unlocked);
-  const locked = badges.filter((b) => !b.unlocked);
+  const survivalRate = useMemo(() => {
+    if (ctx.totalPieces === 0) return 0;
+    const survived = Math.max(0, ctx.totalPieces - ctx.failedPieces);
+    return Math.round((survived / ctx.totalPieces) * 100);
+  }, [ctx.failedPieces, ctx.totalPieces]);
+
+  const keyStats = useMemo<KeyStat[]>(() => [
+    { label: 'Total Pieces', value: `${ctx.totalPieces}`, icon: Layers, color: 'hsl(213 80% 55%)', bg: 'bg-blue-50' },
+    { label: 'Survival Rate', value: `${survivalRate}%`, icon: TrendingUp, color: 'hsl(145 50% 45%)', bg: 'bg-emerald-50' },
+    { label: 'Firings', value: `${ctx.totalFirings}`, icon: Flame, color: 'hsl(25 90% 55%)', bg: 'bg-orange-50' },
+    { label: 'Finished', value: `${ctx.finishedPieces}`, icon: Award, color: 'hsl(100 40% 45%)', bg: 'bg-green-50' },
+  ], [ctx.finishedPieces, ctx.totalFirings, ctx.totalPieces, survivalRate]);
+
+  const achievements = badges;
+  const unlocked = achievements.filter((b) => b.unlocked);
+  const locked = achievements.filter((b) => !b.unlocked);
+
+  const timeline = useMemo<TimelineMilestone[]>(() => {
+    const timestamps = pieces.flatMap((piece) => {
+      const values = [piece.createdAt, ...piece.timeline.map((entry) => entry.timestamp)];
+      return values
+        .map((raw) => new Date(raw))
+        .filter((date) => !Number.isNaN(date.getTime()));
+    });
+
+    const startDate = timestamps.length
+      ? new Date(Math.min(...timestamps.map((date) => date.getTime())))
+      : null;
+
+    const milestones: TimelineMilestone[] = [];
+
+    if (startDate) {
+      milestones.push({
+        year: `${startDate.getFullYear()}`,
+        label: 'Started pottery journey',
+        color: 'bg-green-400',
+        date: startDate,
+      });
+    }
+
+    const now = new Date();
+
+    if (ctx.totalPieces > 0) {
+      milestones.push({
+        year: `${now.getFullYear()}`,
+        label: `Reached ${ctx.totalPieces} total pieces`,
+        color: 'bg-primary',
+        date: now,
+      });
+    }
+
+    if (ctx.totalFirings > 0) {
+      milestones.push({
+        year: `${now.getFullYear()}`,
+        label: `Logged ${ctx.totalFirings} kiln firings`,
+        color: 'bg-orange-400',
+        date: now,
+      });
+    }
+
+    if (ctx.totalPieces > 0) {
+      milestones.push({
+        year: `${now.getFullYear()}`,
+        label: `Current survival rate is ${survivalRate}%`,
+        color: 'bg-emerald-400',
+        date: now,
+      });
+    }
+
+    return milestones.sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [ctx.totalFirings, ctx.totalPieces, pieces, survivalRate]);
 
   return (
     <View className="px-6">
@@ -287,12 +371,7 @@ export function JourneyTab() {
       {/* Live stats row */}
       <Text className="text-base font-serif font-bold text-foreground mb-3">Craft Stats</Text>
       <View className="flex-row flex-wrap gap-3 mb-5">
-        {[
-          { label: 'Total Pieces', value: ctx.totalPieces, icon: Layers, color: 'hsl(213 80% 55%)', bg: 'bg-blue-50' },
-          { label: 'Finished', value: ctx.finishedPieces, icon: Award, color: 'hsl(100 40% 45%)', bg: 'bg-green-50' },
-          { label: 'Firings', value: ctx.totalFirings, icon: Flame, color: 'hsl(25 90% 55%)', bg: 'bg-orange-50' },
-          { label: 'With Notes', value: ctx.piecesWithNotes, icon: BookOpen, color: 'hsl(213 70% 45%)', bg: 'bg-sky-50' },
-        ].map(({ label, value, icon: Icon, color, bg }) => (
+        {keyStats.map(({ label, value, icon: Icon, color, bg }) => (
           <View key={label} className={`rounded-2xl border border-border p-4 ${bg}`} style={{ width: '47%' }}>
             <Icon size={18} color={color} style={{ marginBottom: 6 }} />
             <Text className="text-2xl font-serif font-bold text-foreground">{value}</Text>
@@ -349,6 +428,23 @@ export function JourneyTab() {
                       style={{ width: `${Math.round(progress * 100)}%` }}
                     />
                   </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+
+      {timeline.length > 0 && (
+        <>
+          <Text className="text-base font-serif font-bold text-foreground mb-3">Milestones</Text>
+          <View className="gap-2.5 mb-6">
+            {timeline.map((item, index) => (
+              <View key={`${item.label}-${index}`} className="rounded-2xl border border-border bg-card px-4 py-3 flex-row items-start gap-3">
+                <View className={`w-2.5 h-2.5 rounded-full mt-1.5 ${item.color}`} />
+                <View className="flex-1">
+                  <Text className="text-xs font-semibold text-muted-foreground mb-0.5">{item.year}</Text>
+                  <Text className="text-sm text-foreground">{item.label}</Text>
                 </View>
               </View>
             ))}

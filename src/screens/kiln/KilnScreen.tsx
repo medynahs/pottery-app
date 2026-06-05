@@ -41,7 +41,7 @@ export default function KilnScreen() {
     handleSaveKiln,
     handleStartFiringFromKiln,
     handleDeleteKiln,
-    addFiring,
+    handleCreateFiring,
   } = useKilnScreen();
   const kilnsById = React.useMemo(() => new Map(kilns.map((kiln) => [kiln.id, kiln] as const)), [kilns]);
   const getKilnName = React.useCallback(
@@ -376,7 +376,7 @@ export default function KilnScreen() {
       <StartFiringModal
         visible={startFiringOpen}
         onClose={() => setStartFiringOpen(false)}
-        onStart={addFiring}
+        onStart={handleCreateFiring}
         defaultKilnId={startFiringDefaultKilnId}
       />
       <FiringDetailModal
