@@ -170,7 +170,7 @@ export default function KilnScreen() {
 
           {sectionMode === 'sessions' ? (
             <View className="mb-8">
-              <SectionHeader title="Firing Sessions" icon={<Flame size={18} color="hsl(15 80% 52%)" />} />
+              <SectionHeader title="Firing Sessions" icon={<Flame size={18} />} />
 
               {featuredActiveFiring ? (
                 <ActiveFiringCard firing={featuredActiveFiring} onPress={() => setDetailFiring(featuredActiveFiring)} />
