@@ -1,36 +1,28 @@
-﻿import { Button } from '@/src/components/ui/button';
+import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
-import { Check, FlameKindling, PackageCheck } from 'lucide-react-native';
+import { Check, FlameKindling, Image as ImageIcon } from 'lucide-react-native';
 import React from 'react';
 import { Image, TextInput, TouchableOpacity, View } from 'react-native';
 import type { Firing, FiringResult, Kiln } from '../../../types/kiln';
 import type { Piece } from '../../../types/pieces';
 import {
-  FIRING_LOCATION_LABELS,
-  FIRING_TYPE_LABELS,
-  KILN_TYPE_LABELS,
+    FIRING_LOCATION_LABELS,
+    FIRING_TYPE_LABELS,
+    KILN_TYPE_LABELS,
 } from '../constants';
 import {
-  type AutoFiringStatus,
-  getAutoFiringStatus,
-  getCalculatedTimeline,
+    type AutoFiringStatus,
+    getAutoFiringStatus,
+    getCalculatedTimeline,
 } from '../firingEstimations';
 import { formatMoney } from '../utils/kilnUtils';
 
-const AUTO_STATUS_COLOR: Record<AutoFiringStatus, string> = {
-  waiting:   'hsl(220 80% 56%)',
-  firing:    'hsl(15 80% 52%)',
-  cooling:   'hsl(195 70% 45%)',
-  ready:     'hsl(142 60% 40%)',
-  completed: 'hsl(142 60% 40%)',
-};
-
 const AUTO_STATUS_LABEL: Record<AutoFiringStatus, string> = {
-  waiting:   'In Queue',
-  firing:    'Firing',
-  cooling:   'Cooling Down',
-  ready:     'Ready for Pickup',
+  waiting: 'In Queue',
+  firing: 'Firing',
+  cooling: 'Cooling Down',
+  ready: 'Ready for Pickup',
   completed: 'Completed',
 };
 
@@ -52,6 +44,8 @@ interface FiringDetailContentProps {
   pieceRows: Piece[];
   assignedPieceIdSet: Set<number>;
   showPiecePicker: boolean;
+  onPreviewPieceImage: (piece: Piece) => void;
+  onOpenPieceJournal: (piece: Piece) => void;
   onTogglePiecePicker: () => void;
   onToggleAssignPiece: (pieceId: number) => void;
   showCompletionForm: boolean;
@@ -61,7 +55,6 @@ interface FiringDetailContentProps {
   onChangeResultNotes: (notes: string) => void;
   onCancelCompletion: () => void;
   onComplete: () => void;
-  /** Called when user taps "Mark as Picked Up" (auto-status = ready) */
   onMarkPickedUp: () => void;
 }
 
@@ -75,6 +68,8 @@ export function FiringDetailContent({
   pieceRows,
   assignedPieceIdSet,
   showPiecePicker,
+  onPreviewPieceImage,
+  onOpenPieceJournal,
   onTogglePiecePicker,
   onToggleAssignPiece,
   showCompletionForm,
@@ -88,7 +83,8 @@ export function FiringDetailContent({
 }: FiringDetailContentProps) {
   const autoStatus = getAutoFiringStatus(liveFiring, kiln);
   const timeline = getCalculatedTimeline(liveFiring, kiln);
-  const statusColor = AUTO_STATUS_COLOR[autoStatus];
+  const timelineStepIndex =
+    autoStatus === 'waiting' ? 0 : autoStatus === 'firing' || autoStatus === 'cooling' ? 1 : 2;
 
   const resultOptions: { value: FiringResult; label: string; color: string }[] = [
     { value: 'success', label: '✓ Success', color: 'hsl(142 60% 40%)' },
@@ -98,7 +94,6 @@ export function FiringDetailContent({
 
   return (
     <>
-      {/* ── Kiln card ── */}
       {kiln && (
         <Card className="p-4 mb-4 bg-card/60">
           {kiln.imageUri ? (
@@ -114,14 +109,13 @@ export function FiringDetailContent({
             </View>
           )}
           <Text className="text-xs font-semibold text-muted-foreground mb-1">
-            {kiln.name} — {KILN_TYPE_LABELS[kiln.type]}
+            {kiln.name} - {KILN_TYPE_LABELS[kiln.type]}
             {kiln.location ? `  ·  ${kiln.location}` : ''}
           </Text>
-          {kiln.notes ? <Text className="text-xs text-muted-foreground italic">{`"${kiln.notes}"`}</Text> : null}
+          {kiln.notes ? <Text className="text-xs text-muted-foreground italic">"{kiln.notes}"</Text> : null}
         </Card>
       )}
 
-      {/* ── Session snapshot ── */}
       <Card className="p-4 mb-4 bg-card/60">
         <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Session</Text>
         <Text className="text-sm text-foreground">
@@ -138,52 +132,65 @@ export function FiringDetailContent({
         ) : null}
       </Card>
 
-      {/* ── Auto-calculated timeline ── */}
       {!isCompleted ? (
         <Card className="p-4 mb-4 bg-card/60">
-          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Timeline</Text>
-
-          {/* Current status badge */}
-          <View className="flex-row items-center gap-2 mb-3">
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: statusColor }} />
-            <Text style={{ fontSize: 13, fontWeight: '700', color: statusColor }}>
-              {AUTO_STATUS_LABEL[autoStatus]}
-            </Text>
-          </View>
-
-          {/* Three milestone rows */}
-          {[
-            { label: 'Submitted', date: timeline.submittedLabel, done: true },
-            { label: 'Fires ~', date: timeline.firesOnLabel, done: autoStatus === 'firing' || autoStatus === 'cooling' || autoStatus === 'ready' || autoStatus === 'completed' },
-            { label: 'Ready ~', date: timeline.readyOnLabel, done: autoStatus === 'ready' || autoStatus === 'completed' },
-          ].map(({ label, date, done }, i) => (
-            <View key={label} className="flex-row items-center gap-3 mb-2">
-              <View
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 9,
-                  backgroundColor: done ? statusColor : palette.muted,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {done ? <Check size={10} color="white" strokeWidth={3} /> : null}
-              </View>
-              <Text style={{ fontSize: 12, color: done ? palette.foreground : palette.mutedForeground, flex: 1 }}>
-                {label} <Text style={{ fontWeight: '600' }}>{date}</Text>
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Timeline</Text>
+            <View className="px-2.5 py-1 rounded-full border border-border bg-muted/30">
+              <Text className="text-[11px] font-semibold text-foreground">
+                {AUTO_STATUS_LABEL[autoStatus]}
               </Text>
             </View>
-          ))}
+          </View>
+
+          <View className="rounded-xl border border-border bg-background/40 px-3 py-2">
+            {[
+              { label: 'Submitted', date: timeline.submittedLabel },
+              { label: 'Fires', date: timeline.firesOnLabel },
+              { label: 'Ready', date: timeline.readyOnLabel },
+            ].map((step, index, arr) => {
+              const isDone = index <= timelineStepIndex;
+              const isCurrent = index === timelineStepIndex;
+
+              return (
+                <View key={step.label} className="flex-row items-start">
+                  <View className="items-center mr-3" style={{ width: 18 }}>
+                    <View
+                      className="w-[14px] h-[14px] rounded-full items-center justify-center"
+                      style={{
+                        backgroundColor: isDone ? palette.foreground : palette.muted,
+                      }}
+                    >
+                      {isDone ? <Check size={9} color={palette.background} strokeWidth={3} /> : null}
+                    </View>
+                    {index < arr.length - 1 ? (
+                      <View
+                        className="w-[2px] mt-1"
+                        style={{
+                          height: 22,
+                          backgroundColor: isDone ? palette.border : palette.muted,
+                        }}
+                      />
+                    ) : null}
+                  </View>
+                  <View className="flex-1" style={{ paddingBottom: index < arr.length - 1 ? 10 : 2 }}>
+                    <Text className="text-[12px] font-semibold" style={{ color: isCurrent ? palette.foreground : palette.mutedForeground }}>
+                      {step.label}
+                    </Text>
+                    <Text className="text-[11px] text-muted-foreground mt-0.5">{step.date}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
         </Card>
       ) : null}
 
-      {/* ── Ready for pickup CTA ── */}
       {!isCompleted && autoStatus === 'ready' && !showCompletionForm ? (
         <Card className="p-4 mb-4" style={{ borderColor: 'hsl(142 60% 65%)', borderWidth: 1.5, backgroundColor: 'hsl(142 45% 97%)' }}>
-          <Text className="text-sm font-semibold text-foreground mb-1">Pieces are ready 🎉</Text>
+          <Text className="text-sm font-semibold text-foreground mb-1">Pieces are ready</Text>
           <Text className="text-xs text-muted-foreground mb-3">
-            The estimated ready date has passed. Mark this firing as complete when you've collected your pieces.
+            The estimated ready date has passed. Mark this firing as complete when you have collected your pieces.
           </Text>
           <Button onPress={onMarkPickedUp} className="w-full">
             <Text className="font-semibold text-primary-foreground">Mark as Picked Up</Text>
@@ -191,7 +198,6 @@ export function FiringDetailContent({
         </Card>
       ) : null}
 
-      {/* ── Completed result ── */}
       {isCompleted && liveFiring.result ? (
         <Card className="p-4 mb-4 bg-card/60">
           <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Result</Text>
@@ -199,18 +205,23 @@ export function FiringDetailContent({
             className="text-sm font-semibold"
             style={{
               color:
-                liveFiring.result === 'success' ? 'hsl(142 60% 40%)' :
-                liveFiring.result === 'issues'  ? 'hsl(39 80% 50%)'  :
-                                                   'hsl(0 70% 50%)',
+                liveFiring.result === 'success'
+                  ? 'hsl(142 60% 40%)'
+                  : liveFiring.result === 'issues'
+                    ? 'hsl(39 80% 50%)'
+                    : 'hsl(0 70% 50%)',
             }}
           >
-            {liveFiring.result === 'success' ? '✓ Success' : liveFiring.result === 'issues' ? '⚡ Issues Reported' : '✕ Failure'}
+            {liveFiring.result === 'success'
+              ? '✓ Success'
+              : liveFiring.result === 'issues'
+                ? '⚡ Issues Reported'
+                : '✕ Failure'}
           </Text>
           {liveFiring.resultNotes ? <Text className="text-sm text-muted-foreground mt-1">{liveFiring.resultNotes}</Text> : null}
         </Card>
       ) : null}
 
-      {/* ── Notes ── */}
       {liveFiring.notes ? (
         <Card className="p-4 mb-4 bg-card/60">
           <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Notes</Text>
@@ -218,7 +229,6 @@ export function FiringDetailContent({
         </Card>
       ) : null}
 
-      {/* ── Pieces ── */}
       <View className="flex-row justify-between items-center mb-2">
         <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Pieces ({assignedPiecesCount})
@@ -236,6 +246,8 @@ export function FiringDetailContent({
         <Card className="overflow-hidden mb-4">
           {pieceRows.map((piece, index, arr) => {
             const isAssigned = assignedPieceIdSet.has(piece.id);
+            const imageUri = piece.photo ?? piece.imgUrl;
+
             return (
               <TouchableOpacity
                 key={piece.id}
@@ -254,18 +266,42 @@ export function FiringDetailContent({
                     {isAssigned ? <Check size={11} color="white" /> : null}
                   </View>
                 ) : null}
-                <PackageCheck size={14} color={palette.mutedForeground} />
+
+                {imageUri ? (
+                  <TouchableOpacity
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      onPreviewPieceImage(piece);
+                    }}
+                    className="w-11 h-11 rounded-xl overflow-hidden"
+                  >
+                    <Image source={{ uri: imageUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  </TouchableOpacity>
+                ) : (
+                  <View className="w-11 h-11 rounded-xl border border-border bg-muted/30 items-center justify-center">
+                    <ImageIcon size={14} color={palette.mutedForeground} />
+                  </View>
+                )}
+
                 <View className="flex-1">
                   <Text className="text-sm font-medium text-foreground">{piece.name}</Text>
                   <Text className="text-xs text-muted-foreground">{piece.stage} · {piece.clay}</Text>
                 </View>
+
+                {!showPiecePicker ? (
+                  <TouchableOpacity
+                    onPress={() => onOpenPieceJournal(piece)}
+                    className="px-2.5 py-1.5 rounded-lg border border-border bg-background"
+                  >
+                    <Text className="text-[11px] font-semibold text-primary">Journal</Text>
+                  </TouchableOpacity>
+                ) : null}
               </TouchableOpacity>
             );
           })}
         </Card>
       )}
 
-      {/* ── Completion form ── */}
       {showCompletionForm ? (
         <Card className="p-4 mb-4 border-primary/30">
           <Text className="text-sm font-semibold text-foreground mb-3">Mark as Completed</Text>

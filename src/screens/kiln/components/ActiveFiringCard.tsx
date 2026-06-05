@@ -8,8 +8,8 @@ import { Image, TouchableOpacity, View } from 'react-native';
 import type { Firing, FiringState } from '../../../types/kiln';
 import { FIRING_TYPE_LABELS } from '../constants';
 import {
-  getAutoFiringStatus,
-  getCalculatedTimeline
+    getAutoFiringStatus,
+    getCalculatedTimeline
 } from '../firingEstimations';
 import { FIRING_STATE_COLOR } from '../utils/kilnUtils';
 
@@ -126,7 +126,7 @@ export function ActiveFiringCard({ firing, onPress }: ActiveFiringCardProps) {
     <TouchableOpacity onPress={onPress} activeOpacity={0.88} className="mb-3">
       <Card
         className="overflow-hidden"
-        style={{ borderWidth: 1.25, borderColor: accentColor, padding: 0 }}
+        style={{ borderWidth: 1, borderColor: 'hsl(24 15% 82%)', padding: 0 }}
       >
         <LinearGradient
           colors={gradient}

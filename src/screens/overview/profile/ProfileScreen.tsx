@@ -1,7 +1,7 @@
 ﻿import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
-import { Crown } from 'lucide-react-native';
+import { CalendarDays, Crown } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { TabBar } from '../../../config/TabBar';
@@ -62,6 +62,47 @@ export default function ProfileScreen() {
           <Text style={{ fontSize: 12, color: 'hsl(24, 20%, 45%)' }}>Unlock all features →</Text>
         </TouchableOpacity>
       )}
+
+      <TouchableOpacity
+        onPress={() => router.push('/profile/studio-rhythm')}
+        activeOpacity={0.8}
+        style={{
+          marginHorizontal: 16,
+          marginBottom: 10,
+          borderRadius: 16,
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          backgroundColor: 'hsl(213 55% 96%)',
+          borderWidth: 1,
+          borderColor: 'hsl(213 35% 84%)',
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 12,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'hsl(213 70% 92%)',
+              }}
+            >
+              <CalendarDays size={18} color="hsl(213 70% 45%)" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: 'hsl(24 25% 15%)' }}>
+                Studio Rhythm
+              </Text>
+              <Text style={{ fontSize: 12, color: 'hsl(24 20% 45%)', marginTop: 2 }}>
+                Tune your weekly cadence and daily checklist
+              </Text>
+            </View>
+          </View>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: 'hsl(213 70% 45%)' }}>Open →</Text>
+        </View>
+      </TouchableOpacity>
 
       <TabBar active={activeTab} onSelect={setActiveTab} />
       {activeTab === 'portfolio' && <PortfolioTab />}

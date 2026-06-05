@@ -6,10 +6,12 @@ import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useAppStore } from '@/src/store';
+import { useRouter } from 'expo-router';
 import { Trash2, X } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Image, Modal, ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import type { Firing, FiringResult } from '../../../types/kiln';
+import type { Piece } from '../../../types/pieces';
 import { FIRING_TYPE_LABELS } from '../constants';
 import {
     useDeleteFiringMutation,
@@ -24,6 +26,7 @@ interface FiringDetailModalProps {
 }
 
 export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModalProps) {
+  const router = useRouter();
   const { height } = useWindowDimensions();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
@@ -47,6 +50,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
   const [firingCeremonyVisible, setFiringCeremonyVisible] = React.useState(false);
   const [firingCeremonyName, setFiringCeremonyName] = React.useState('');
+  const [piecePhotoPreview, setPiecePhotoPreview] = React.useState<{ uri: string; name: string } | null>(null);
 
   React.useEffect(() => {
     if (!visible) {
@@ -58,6 +62,20 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
     setShowCompletionForm(false);
     setShowPiecePicker(false);
   }, [visible]);
+
+  const handlePreviewPieceImage = (piece: Piece) => {
+    const uri = piece.photo ?? piece.imgUrl;
+    if (!uri) return;
+    setPiecePhotoPreview({ uri, name: piece.name });
+  };
+
+  const handleOpenPieceJournal = (piece: Piece) => {
+    onClose();
+    router.push({
+      pathname: '/(tabs)/pieces',
+      params: { openJournalPieceId: String(piece.id) },
+    });
+  };
 
   const assignedPieceIdSet = React.useMemo(() => new Set(liveFiring?.pieceIds ?? []), [liveFiring?.pieceIds]);
   const assignedPieces = React.useMemo(
@@ -182,6 +200,8 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
               pieceRows={pieceRows}
               assignedPieceIdSet={assignedPieceIdSet}
               showPiecePicker={showPiecePicker}
+              onPreviewPieceImage={handlePreviewPieceImage}
+              onOpenPieceJournal={handleOpenPieceJournal}
               onTogglePiecePicker={() => setShowPiecePicker((current) => !current)}
               onToggleAssignPiece={toggleAssignPiece}
               showCompletionForm={showCompletionForm}
@@ -198,6 +218,40 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
 
       </ModalCard>
     </ModalShell>
+
+    <Modal
+      visible={piecePhotoPreview !== null}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setPiecePhotoPreview(null)}
+    >
+      <View className="flex-1 justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}>
+        <Pressable
+          onPress={() => setPiecePhotoPreview(null)}
+          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+        />
+        <View className="mx-5 rounded-2xl overflow-hidden bg-card border border-border">
+          {piecePhotoPreview ? (
+            <Image
+              source={{ uri: piecePhotoPreview.uri }}
+              style={{ width: '100%', height: 340 }}
+              resizeMode="cover"
+            />
+          ) : null}
+          <View className="px-4 py-3 flex-row items-center justify-between">
+            <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>
+              {piecePhotoPreview?.name ?? 'Piece'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setPiecePhotoPreview(null)}
+              className="px-3 py-1.5 rounded-lg border border-border bg-background"
+            >
+              <Text className="text-xs font-semibold text-muted-foreground">Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
     </>
   );
 }

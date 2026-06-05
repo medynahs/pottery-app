@@ -1,7 +1,7 @@
 // src/screens/kiln/components/FiringRows.tsx
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, Clock3, Package, Receipt } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import type { Firing } from '../../../types/kiln';
@@ -42,7 +42,39 @@ interface ScheduledFiringRowProps {
   kilnName: string;
   statusLabel?: string;
   expectedReadyLabel?: string;
+  currencySymbol?: string;
   onPress: () => void;
+}
+
+function getStatusColors(statusLabel: string) {
+  const value = statusLabel.toLowerCase();
+  if (value.includes('waiting')) return { bg: 'hsl(210 55% 90%)', fg: 'hsl(214 70% 38%)' };
+  if (value.includes('firing')) return { bg: 'hsl(22 85% 89%)', fg: 'hsl(18 80% 35%)' };
+  if (value.includes('cooling')) return { bg: 'hsl(196 65% 90%)', fg: 'hsl(197 70% 34%)' };
+  if (value.includes('ready')) return { bg: 'hsl(153 45% 88%)', fg: 'hsl(152 55% 32%)' };
+  return { bg: 'hsl(34 30% 88%)', fg: 'hsl(24 20% 40%)' };
+}
+
+function MiniStat({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+  label: string;
+  value: string;
+}) {
+  const Icon = icon;
+
+  return (
+    <View className="flex-1 min-w-[86px] rounded-xl bg-muted/35 px-2.5 py-2">
+      <View className="flex-row items-center gap-1 mb-1">
+        <Icon size={11} color="hsl(24 20% 45%)" />
+        <Text className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Text>
+      </View>
+      <Text className="text-xs font-semibold text-foreground" numberOfLines={1}>{value}</Text>
+    </View>
+  );
 }
 
 export function ScheduledFiringRow({
@@ -50,27 +82,46 @@ export function ScheduledFiringRow({
   kilnName,
   statusLabel = 'Scheduled',
   expectedReadyLabel,
+  currencySymbol = '$',
   onPress,
 }: ScheduledFiringRowProps) {
+  const statusColors = getStatusColors(statusLabel);
+
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-      <Card className="p-4 flex-row items-center justify-between mb-2">
-        <View className="flex-1">
-          <Text className="font-semibold text-sm text-foreground">{firing.name}</Text>
-          <Text className="text-xs text-muted-foreground mt-0.5">
-            {kilnName} · {FIRING_TYPE_LABELS[firing.type]} · Cone {firing.cone}
-          </Text>
-          <Text className="text-xs text-muted-foreground">
-            {firing.pieceIds.length} piece{firing.pieceIds.length !== 1 ? 's' : ''} assigned
-          </Text>
-          {expectedReadyLabel ? (
-            <Text className="text-xs text-muted-foreground mt-0.5">Expected ready: {expectedReadyLabel}</Text>
-          ) : null}
-        </View>
-        <View className="flex-row items-center gap-2">
-          <View className="bg-blue-100 px-2.5 py-1 rounded-full">
-            <Text className="text-xs font-semibold text-blue-700">{statusLabel}</Text>
+      <Card className="p-4 mb-2.5 border border-border">
+        <View className="flex-row items-start justify-between mb-2">
+          <View className="flex-1 pr-3">
+            <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>{firing.name}</Text>
+            <Text className="text-xs text-muted-foreground mt-0.5" numberOfLines={1}>
+              {kilnName} · {FIRING_TYPE_LABELS[firing.type]} · Cone {firing.cone}
+            </Text>
           </View>
+          <View className="px-2.5 py-1 rounded-full" style={{ backgroundColor: statusColors.bg }}>
+            <Text className="text-[10px] font-semibold" style={{ color: statusColors.fg }}>{statusLabel}</Text>
+          </View>
+        </View>
+
+        <View className="flex-row flex-wrap gap-2">
+          <MiniStat
+            icon={Package}
+            label="Pieces"
+            value={`${firing.pieceIds.length} assigned`}
+          />
+          <MiniStat
+            icon={Clock3}
+            label="Expected"
+            value={expectedReadyLabel ?? 'Pending'}
+          />
+          <MiniStat
+            icon={Receipt}
+            label="Est. cost"
+            value={firing.estimatedTotalCost != null ? `${currencySymbol}${firing.estimatedTotalCost.toFixed(0)}` : '—'}
+          />
+        </View>
+
+        <View className="flex-row items-center justify-end gap-1 mt-2">
+          <Text className="text-[11px] font-semibold text-primary">Open details</Text>
           <ChevronRight size={14} color="hsl(24 20% 40%)" />
         </View>
       </Card>

@@ -66,10 +66,13 @@ export default function KilnScreen() {
   const [readyFilter, setReadyFilter] = React.useState<'bisque' | 'glaze'>('bisque');
   const [readySort, setReadySort] = React.useState<'longest' | 'newest'>('longest');
   const [showAllReadyPieces, setShowAllReadyPieces] = React.useState(false);
+  const [showAllSessions, setShowAllSessions] = React.useState(false);
   const [photoPreview, setPhotoPreview] = React.useState<{ uri: string; name: string } | null>(null);
   const [pendingDeleteKiln, setPendingDeleteKiln] = React.useState<Kiln | null>(null);
-  const visibleSessionRows = sessionRows.slice(0, 2);
+  const visibleSessionRows = showAllSessions ? sessionRows : sessionRows.slice(0, 4);
+  const hiddenSessionCount = Math.max(0, sessionRows.length - visibleSessionRows.length);
   const hasOpenSessionContent = featuredActiveFiring !== null || sessionRows.length > 0;
+  const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
 
   const getQueueEnteredAt = React.useCallback((piece: Piece, queueStage: 'bone-dry' | 'glazing') => {
     for (let index = piece.timeline.length - 1; index >= 0; index -= 1) {
@@ -197,14 +200,22 @@ export default function KilnScreen() {
                         kilnName={getKilnName(firing.kilnId)}
                         statusLabel={statusLabel}
                         expectedReadyLabel={formatReadyDate(expectedReady)}
+                        currencySymbol={currencySymbol}
                         onPress={() => setDetailFiring(firing)}
                       />
                     );
                   })}
-                  {sessionRows.length > 2 ? (
-                    <Text className="text-[11px] text-muted-foreground mt-1.5">
-                      Showing latest 2 sessions.
-                    </Text>
+                  {hiddenSessionCount > 0 ? (
+                    <TouchableOpacity onPress={() => setShowAllSessions(true)} className="self-start mt-1">
+                      <Text className="text-[11px] font-semibold text-primary">
+                        Show all {sessionRows.length} session cards
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                  {showAllSessions && sessionRows.length > 4 ? (
+                    <TouchableOpacity onPress={() => setShowAllSessions(false)} className="self-start mt-1">
+                      <Text className="text-[11px] font-semibold text-muted-foreground">Show less</Text>
+                    </TouchableOpacity>
                   ) : null}
                 </>
               ) : (

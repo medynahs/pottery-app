@@ -221,6 +221,20 @@ Notification text uses `getKilnkinVoiceLine(companion, message)` — tone matche
 
 ---
 
+## 🔔 Notifications — Completion Backlog (5)
+
+These tickets close the remaining reliability + production-delivery gaps after local notification triggers were implemented.
+
+| # | Ticket | Acceptance Criteria |
+|---|---|---|
+| 86 | **[FE/BE] Notifications — Device push token sync + rotation handling** | FE registers Expo push token after permission grant and sends it to BE (`POST /users/me/push-tokens`). BE stores multiple device tokens per user with platform + updatedAt. Token refresh and logout de-registration are handled. Duplicate tokens are deduped server-side. |
+| 87 | **[BE] Notifications — Joined challenge contract endpoint** | `GET /challenges` (or companion endpoint) includes an explicit joined/submitted contract for current user (`isJoined`, `hasSubmitted`, `submissionDeadline`). FE no longer relies on ad-hoc fields like `my_entry_id` casting. API contract documented and covered by integration test. |
+| 88 | **[FE] Notifications — Trigger/unit test coverage** | Add Jest tests for notification trigger behavior: per-event dedupe, stage-overage thresholding, daily mission scheduling, weekly summary scheduling, challenge reminder window, and cancellation on toggle-off. Include timezone boundary tests (midnight/day rollover). |
+| 89 | **[FE] Notifications — App lifecycle reschedule guard** | On app foreground/resume, reconcile scheduled notifications against current state to prevent stale reminders and missed reminders after long background periods. Ensure no duplicate schedules across repeated resumes. Add logging guard behind dev flag only. |
+| 90 | **[FE] Notifications — Delivery controls (quiet hours + deep links)** | Add notification settings for quiet hours window and reminder time customization (daily mission). Notification taps deep-link to relevant screens: kiln, piece detail/stage, missions, challenge. Respect quiet hours for non-urgent local reminders. |
+
+---
+
 ## 🧪 Testing (6)
 
 | # | Ticket | Acceptance Criteria |
