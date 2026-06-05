@@ -8,17 +8,15 @@ import { useAppStore, type AppModule } from '@/src/store/appStore';
 import { PRICING_USER_TYPE_LABELS } from '@/src/types/pricing';
 import { useRouter } from 'expo-router';
 import {
-    Box,
-    Calculator,
-    Database,
-    Flame,
-    Hammer,
-    Layers,
-    LayoutGrid,
-    Moon,
-    Palette,
-    Users,
-    Zap
+  Box,
+  Calculator,
+  Database,
+  Flame,
+  Hammer,
+  Layers,
+  LayoutGrid,
+  Users,
+  Zap
 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
@@ -86,12 +84,6 @@ export default function AppCustomizationScreen() {
               isLast={i === MODULE_OPTIONS.length - 1}
             />
           ))}
-        </SettingsGroup>
-
-        <SectionLabel title="Preferences" />
-        <SettingsGroup>
-          <SettingsRow icon={Moon} iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50" label="Theme" value="Light" />
-          <SettingsRow icon={Palette} iconColor="hsl(15 50% 50%)" iconBg="bg-red-50" label="Accent Color" value="Terracotta" isLast />
         </SettingsGroup>
 
         <View className="mb-10" />

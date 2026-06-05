@@ -48,7 +48,7 @@ export const AVAILABLE_KILNKIN_COMPANIONS: KilnkinCompanion[] = [
     personality: 'air',
     element: 'air',
     bornOn: '2026-03-08',
-    notificationToneLabel: 'Playful & Curious',
+    notificationToneLabel: 'Light & Unhurried',
     favoriteSnack: 'Biscuit crumbs and morning studio air',
     napSpot: 'On the sunny corner of the drying shelf',
     loves: 'Surprise glazes and spontaneous experiments',
@@ -61,7 +61,7 @@ export const AVAILABLE_KILNKIN_COMPANIONS: KilnkinCompanion[] = [
     personality: 'water',
     element: 'water',
     bornOn: '2026-03-08',
-    notificationToneLabel: 'Calm & Reflective',
+    notificationToneLabel: 'Playful & Whimsical',
     favoriteSnack: 'Chamomile steam and stories from old kilns',
     napSpot: 'Beside the finished cabinet in soft morning light',
     loves: 'Slow-dry days and thoughtful glaze layers',
@@ -75,14 +75,14 @@ export const DEFAULT_KILNKIN_COMPANION = AVAILABLE_KILNKIN_COMPANIONS[1];
 function getPrefix(personality: KilnkinPersonality) {
   switch (personality) {
     case 'fire':
-      return 'Yes! Time to act:';
+      return 'Heads up. Move now:';
     case 'air':
-      return 'Oh! Something fun:';
+      return 'No rush. Just so you know:';
     case 'water':
-      return 'Gently, a reminder:';
+      return 'Bloop. Tiny update:';
     case 'earth':
     default:
-      return 'Worth noting:';
+      return 'Steady reminder:';
   }
 }
 

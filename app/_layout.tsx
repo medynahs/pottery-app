@@ -16,16 +16,17 @@ import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
 import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
 import { ToastOverlay } from '@/src/components/ui/toast-overlay';
 import { configureRevenueCat } from '@/src/hooks/useEntitlements';
+import { useNotificationTriggers } from '@/src/hooks/useNotificationTriggers';
 import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
 import {
-  DMSans_400Regular,
-  DMSans_500Medium,
+    DMSans_400Regular,
+    DMSans_500Medium,
 } from '@expo-google-fonts/dm-sans';
 import {
-  Fraunces_600SemiBold,
-  Fraunces_700Bold,
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
 
 // Required on iOS: tells ASWebAuthenticationSession that the OAuth redirect was
@@ -88,6 +89,7 @@ function AppOnboardingGuard() {
 
 function AppShell() {
   useOfflineSync();
+  useNotificationTriggers();
   const backendUsersStatus = useAppStore((state) => state.backendUsersStatus);
   const loadBackendUsers = useAppStore((state) => state.loadBackendUsers);
 

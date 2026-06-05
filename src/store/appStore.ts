@@ -4,8 +4,8 @@ import { INITIAL_GLAZES, INITIAL_GLAZE_TESTS } from '../screens/glazes/data';
 import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
 import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
 import {
-  DEFAULT_KILNKIN_COMPANION,
-  type KilnkinCompanion,
+    DEFAULT_KILNKIN_COMPANION,
+    type KilnkinCompanion,
 } from '../screens/overview/kilnkin/kilnkinCompanion';
 import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import type { DryingTimers, Ritual, StageDay, StudioEvent, StudioRhythm, StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRythm/studioRhythm';
@@ -16,12 +16,12 @@ import { fetchUsers, type BackendUser } from '../services';
 import type { Firing, FiringState, Kiln, KilnChecklist, KilnType } from '../types/kiln';
 import type { Piece } from '../types/pieces';
 import {
-  applyPricingUserTypePreset,
-  buildDefaultPricingSettings,
-  type PricingFiringMode,
-  type PricingSettings,
-  type PricingTier,
-  type PricingUserType,
+    applyPricingUserTypePreset,
+    buildDefaultPricingSettings,
+    type PricingFiringMode,
+    type PricingSettings,
+    type PricingTier,
+    type PricingUserType,
 } from '../types/pricing';
 import type { AppNotification, Studio, StudioMember } from '../types/studio';
 import { clearSecureAuth, loadSecureAuth, saveSecureAuth } from './secureStorage';
@@ -155,6 +155,8 @@ export type NotificationPrefs = {
   pieceDrying: boolean;
   achievement: boolean;
   weeklySummary: boolean;
+  dailyMission: boolean;
+  challengeDeadline: boolean;
 };
 
 const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
@@ -162,7 +164,16 @@ const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   pieceDrying: true,
   achievement: true,
   weeklySummary: false,
+  dailyMission: false,
+  challengeDeadline: false,
 };
+
+function normalizeNotificationPrefs(prefs?: Partial<NotificationPrefs>): NotificationPrefs {
+  return {
+    ...DEFAULT_NOTIFICATION_PREFS,
+    ...prefs,
+  };
+}
 
 export type PrivacyPrefs = {
   analyticsEnabled: boolean;
@@ -1321,11 +1332,13 @@ export const useAppStore = create<AppState>()(
 
         const onboardingProfile = normalizeOnboardingProfile(state.onboardingProfile);
         const enabledModules = normalizeModuleList(state.enabledModules);
+        const notificationPrefs = normalizeNotificationPrefs(state.notificationPrefs);
 
         return {
           ...state,
           onboardingProfile,
           enabledModules: enabledModules.length > 0 ? enabledModules : onboardingProfile.activeModules,
+          notificationPrefs,
         };
       },
       merge: (persistedState, currentState) => {
@@ -1334,12 +1347,14 @@ export const useAppStore = create<AppState>()(
         };
         const onboardingProfile = normalizeOnboardingProfile(state.onboardingProfile);
         const enabledModules = normalizeModuleList(state.enabledModules);
+        const notificationPrefs = normalizeNotificationPrefs(state.notificationPrefs);
 
         return {
           ...currentState,
           ...state,
           onboardingProfile,
           enabledModules: enabledModules.length > 0 ? enabledModules : onboardingProfile.activeModules,
+          notificationPrefs,
         };
       },
       storage: zustandStorage,
