@@ -1,4 +1,6 @@
 import { ModalCard, ModalShell } from '@/src/components/AppSheets';
+import { Banner } from '@/src/components/Banner';
+import { UserAvatar } from '@/src/components/UserAvatar';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
@@ -7,7 +9,7 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useUploadAvatar } from '@/src/hooks/useCurrentUser';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { useAppStore } from '@/src/store/appStore';
-import { Camera, CheckCircle2, ImageIcon, X } from 'lucide-react-native';
+import { Camera, ImageIcon, X } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
@@ -109,10 +111,7 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const avatarInitial = ((name.trim() || user.name || 'U')[0] ?? 'U').toUpperCase();
 
   return (
-    <>
-      {avatarPicker.PhotoPickerSheets}
-      {coverPicker.PhotoPickerSheets}
-      <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
+    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
       <ModalCard maxHeight={screenHeight * 0.92}>
 
             {/* Title row */}
@@ -129,15 +128,10 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
               showsVerticalScrollIndicator={false}
             >
               {uploadError ? (
-                <View className="rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 mb-4">
-                  <Text className="text-xs text-red-600">{uploadError}</Text>
-                </View>
+                <Banner message={uploadError} className="mb-4" />
               ) : null}
               {uploadSuccess ? (
-                <View className="rounded-xl bg-green-50 border border-green-200 px-4 py-2.5 mb-4 flex-row items-center gap-2">
-                  <CheckCircle2 size={14} color="hsl(135 45% 35%)" />
-                  <Text className="text-xs text-green-700">Avatar updated successfully</Text>
-                </View>
+                <Banner intent="success" message="Avatar updated successfully" className="mb-4" />
               ) : null}
               {/* Cover photo picker */}
               <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
@@ -171,21 +165,14 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
               </Text>
               <View className="flex-row items-center gap-4 mb-5">
                 <TouchableOpacity activeOpacity={0.8} onPress={pickAvatar} className="relative">
-                  <View
-                    className="rounded-full items-center justify-center border-4 border-background"
-                    style={{ width: 80, height: 80, backgroundColor: avatarImageUri ? 'transparent' : 'hsl(15 50% 50%)' }}
-                  >
-                    {avatarImageUri ? (
-                      <Image
-                        source={{ uri: avatarImageUri }}
-                        style={{ width: 72, height: 72, borderRadius: 36 }}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <Text className="text-white font-serif font-bold" style={{ fontSize: 32 }}>
-                        {avatarInitial}
-                      </Text>
-                    )}
+                  <View className="rounded-full border-4 border-background overflow-hidden">
+                    <UserAvatar
+                      name={name}
+                      initial={avatarInitial}
+                      imageUri={avatarImageUri}
+                      size={80}
+                      serif
+                    />
                   </View>
                   <View className="absolute bottom-0 right-0 bg-black/50 rounded-full p-1.5 border-2 border-background">
                     <Camera size={12} color="white" />
@@ -260,6 +247,5 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
             </View>
       </ModalCard>
     </ModalShell>
-    </>
   );
 }

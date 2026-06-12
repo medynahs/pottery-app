@@ -1,9 +1,11 @@
 // src/screens/PiecesScreen.tsx
 import { ConfirmSheet, PickSheet } from '@/src/components/AppSheets';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
+import { EmptyState } from '@/src/components/EmptyState';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store';
+import { countPiecePhotos } from '@/src/utils/premiumGate';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronUp, Layers, Plus, Search, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
@@ -277,9 +279,23 @@ export default function PiecesScreen() {
           </Animated.View>
 
           {filteredPieces.length === 0 && (
-            <View className="items-center py-16">
-              <Text className="text-muted-foreground text-sm">No pieces found.</Text>
-            </View>
+            pieces.length === 0 ? (
+              <EmptyState
+                icon={Layers}
+                title="Your shelf is waiting"
+                description="Every potter starts with a first lump of clay. Log a piece to track it from wet clay to glazed and fired."
+                ctaLabel="Add your first piece"
+                ctaIcon={Plus}
+                onCtaPress={() => setAddOpen(true)}
+              />
+            ) : (
+              <EmptyState
+                title="No pieces match"
+                description={search.trim() || activeFilterCount > 0
+                  ? 'Try a different search or loosen your filters.'
+                  : 'Nothing at this stage right now — your pieces are busy elsewhere in the studio.'}
+              />
+            )
           )}
         </View>
       </ScrollView>
@@ -345,6 +361,17 @@ export default function PiecesScreen() {
       />
       <StageAdvanceFlowModal
         request={advanceRequest}
+        piecePhotoCount={
+          advanceRequest
+            ? Math.max(
+                0,
+                ...advanceRequest.pieceIds.map((id) => {
+                  const p = pieces.find((piece) => piece.id === id);
+                  return p ? countPiecePhotos(p) : 0;
+                }),
+              )
+            : 0
+        }
         stageLookup={stageLookup}
         defaultBisqueTemp={defaultBisqueTemp}
         defaultGlazeTemp={defaultGlazeTemp}

@@ -23,7 +23,7 @@ export const POLL_OPTIONS: PollOption[] = [
 export const POLL_TOTAL = 144;
 
 export const FOLLOW_CREATORS: Creator[] = [
-  { name: 'Tariq B.', avatar: 'T', specialty: 'Iron Red', color: 'hsl(25 90% 55%)' },
+  { name: 'Tariq B.', avatar: 'T', specialty: 'Iron Red', color: 'hsl(39 57% 51%)' },
   { name: 'Yuki R.', avatar: 'Y', specialty: 'Soda Firing', color: 'hsl(213 80% 55%)' },
   { name: 'Mara L.', avatar: 'M', specialty: 'Sculptural', color: 'hsl(340 75% 50%)' },
   { name: 'Adele K.', avatar: 'A', specialty: 'Handbuilding', color: 'hsl(270 60% 55%)' },

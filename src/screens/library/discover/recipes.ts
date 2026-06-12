@@ -1,7 +1,5 @@
 import type { DiscoverRecipe, RecipeIngredient } from './types';
 
-// Material price reference: approximate USD per lb, US suppliers 2025.
-// Used only for cost estimation -- not authoritative for purchasing.
 const PRICE_PER_LB: Record<string, number> = {
   'Custer Feldspar': 0.70,
   'Minspar 200': 0.65,
@@ -16,21 +14,25 @@ const PRICE_PER_LB: Record<string, number> = {
   'Titanium Dioxide': 3.50,
   'Red Iron Oxide': 2.20,
   'Cobalt Carbonate': 28.00,
-  'Cobalt Oxide': 22.00,
   'Rutile': 3.00,
   'Spodumene': 2.80,
   'Soda Ash': 0.65,
-  'Lithium Carbonate': 8.00,
   'Tin Oxide': 14.00,
-  'Zircopax': 1.80,
-  'Strontium Carbonate': 2.50,
-  'Manganese Dioxide': 3.20,
-  'Copper Carbonate': 8.50,
 };
 
 const G_PER_LB = 453.592;
 
-/** Compute USD cost for a ~100 g batch given the recipe ingredient list. */
+/** Curated ceramic / glaze swatch photos (Unsplash, stable IDs). */
+const PREVIEW = {
+  blue: 'https://images.unsplash.com/photo-1610701596007-d2f5ddfa5b0e?w=480&q=80',
+  amber: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=480&q=80',
+  red: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=480&q=80',
+  white: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=480&q=80',
+  green: 'https://images.unsplash.com/photo-1598300047939-4eb6c8e798c2?w=480&q=80',
+  black: 'https://images.unsplash.com/photo-1578743527088-29667b16934e?w=480&q=80',
+  satin: 'https://images.unsplash.com/photo-1610701596007-d2f5ddfa5b0e?w=480&q=80',
+} as const;
+
 function costPer100g(ingredients: RecipeIngredient[]): number {
   const total = ingredients.reduce((s, i) => s + i.percentage, 0);
   const cost = ingredients.reduce((s, i) => {
@@ -49,13 +51,14 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
   make({
     id: 'rec-floating-blue',
     name: 'Floating Blue',
-    author: 'Community Classic',
+    author: 'Classic Cone 6',
     colorFamily: 'blue',
     finish: 'glossy',
     cone: 'cone-6',
     coneLabel: 'Cone 6',
     colorHex: '#7BA7CC',
-    description: 'A beloved cone 6 blue that pools beautifully at texture, breaks lighter on edges.',
+    previewUri: PREVIEW.blue,
+    description: 'Beloved cone 6 blue that pools at texture and breaks lighter on edges.',
     savedCount: 1240,
     ingredients: [
       { material: 'Custer Feldspar', percentage: 30 },
@@ -70,13 +73,14 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
   make({
     id: 'rec-oatmeal-matte',
     name: 'Oatmeal Matte',
-    author: 'Community Classic',
+    author: 'Classic Cone 6',
     colorFamily: 'amber',
     finish: 'matte',
     cone: 'cone-6',
     coneLabel: 'Cone 6',
     colorHex: '#D4B88C',
-    description: 'Warm, buttery matte. Works on nearly every clay body. Great layering base.',
+    previewUri: PREVIEW.amber,
+    description: 'Warm buttery matte. Works on nearly every clay body. Great layering base.',
     savedCount: 876,
     ingredients: [
       { material: 'Custer Feldspar', percentage: 40 },
@@ -88,15 +92,56 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     ],
   }),
   make({
+    id: 'rec-clear-liner',
+    name: 'Clear Liner Glaze',
+    author: 'Studio Staple',
+    colorFamily: 'white',
+    finish: 'glossy',
+    cone: 'cone-6',
+    coneLabel: 'Cone 6',
+    colorHex: '#EFEBE0',
+    previewUri: PREVIEW.white,
+    description: 'Clean clear for interiors. Stays true over slips and underglazes.',
+    savedCount: 2100,
+    ingredients: [
+      { material: 'Custer Feldspar', percentage: 30 },
+      { material: 'Silica', percentage: 30 },
+      { material: 'Whiting', percentage: 20 },
+      { material: 'EPK Kaolin', percentage: 15 },
+      { material: 'Zinc Oxide', percentage: 5 },
+    ],
+  }),
+  make({
+    id: 'rec-sea-glass',
+    name: 'Sea Glass Satin',
+    author: 'Mid-Fire Favorite',
+    colorFamily: 'green',
+    finish: 'satin',
+    cone: 'cone-6',
+    coneLabel: 'Cone 6',
+    colorHex: '#8FBFA0',
+    previewUri: PREVIEW.green,
+    description: 'Soft green satin with subtle breaking on rims. Stable on stoneware and porcelain.',
+    savedCount: 542,
+    ingredients: [
+      { material: 'Nepheline Syenite', percentage: 32 },
+      { material: 'Silica', percentage: 28 },
+      { material: 'Whiting', percentage: 18 },
+      { material: 'EPK Kaolin', percentage: 14 },
+      { material: 'Talc', percentage: 8 },
+    ],
+  }),
+  make({
     id: 'rec-iron-red',
     name: 'Bauer Iron Red',
-    author: 'Community Classic',
+    author: 'High Fire Classic',
     colorFamily: 'red',
     finish: 'glossy',
     cone: 'cone-10',
     coneLabel: 'Cone 10',
     colorHex: '#C45C5C',
-    description: 'Classic reduction iron red. Needs thick application -- thinner areas go amber.',
+    previewUri: PREVIEW.red,
+    description: 'Reduction iron red. Needs thick application — thin areas go amber.',
     savedCount: 654,
     ingredients: [
       { material: 'Custer Feldspar', percentage: 40 },
@@ -108,33 +153,15 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     ],
   }),
   make({
-    id: 'rec-clear-liner',
-    name: 'Clear Liner Glaze',
-    author: 'Studio Staple',
-    colorFamily: 'white',
-    finish: 'glossy',
-    cone: 'cone-6',
-    coneLabel: 'Cone 6',
-    colorHex: '#EFEBE0',
-    description: 'A clean, food-safe clear for interiors. Stays true over slips and underglazes.',
-    savedCount: 2100,
-    ingredients: [
-      { material: 'Custer Feldspar', percentage: 30 },
-      { material: 'Silica', percentage: 30 },
-      { material: 'Whiting', percentage: 20 },
-      { material: 'EPK Kaolin', percentage: 15 },
-      { material: 'Zinc Oxide', percentage: 5 },
-    ],
-  }),
-  make({
     id: 'rec-shino',
     name: 'Malcolm Davis Shino',
-    author: 'Community Classic',
+    author: 'High Fire Classic',
     colorFamily: 'amber',
     finish: 'matte',
     cone: 'cone-10',
     coneLabel: 'Cone 10',
     colorHex: '#C48B5A',
+    previewUri: PREVIEW.amber,
     description: 'Carbon-trapping shino. Orange flashing in reduction. Apply thick over texture.',
     savedCount: 988,
     ingredients: [
@@ -147,12 +174,13 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
   make({
     id: 'rec-tenmoku',
     name: 'Simple Tenmoku',
-    author: 'Studio Staple',
+    author: 'High Fire Staple',
     colorFamily: 'black',
     finish: 'glossy',
     cone: 'cone-10',
     coneLabel: 'Cone 10',
     colorHex: '#3A2810',
+    previewUri: PREVIEW.black,
     description: 'Deep iron black that breaks rust-brown on edges and ridges.',
     savedCount: 432,
     ingredients: [
@@ -161,6 +189,46 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
       { material: 'Whiting', percentage: 20 },
       { material: 'EPK Kaolin', percentage: 10 },
       { material: 'Red Iron Oxide', percentage: 10, isAddition: true },
+    ],
+  }),
+  make({
+    id: 'rec-celadon',
+    name: 'Pale Celadon',
+    author: 'Mid-Fire Favorite',
+    colorFamily: 'green',
+    finish: 'glossy',
+    cone: 'cone-6',
+    coneLabel: 'Cone 6',
+    colorHex: '#A8CBB7',
+    previewUri: PREVIEW.green,
+    description: 'Soft translucent green. Best on white stoneware with a thin dip.',
+    savedCount: 715,
+    ingredients: [
+      { material: 'Custer Feldspar', percentage: 35 },
+      { material: 'Silica', percentage: 30 },
+      { material: 'Whiting', percentage: 15 },
+      { material: 'EPK Kaolin', percentage: 15 },
+      { material: 'Talc', percentage: 5 },
+    ],
+  }),
+  make({
+    id: 'rec-obsidian',
+    name: 'Obsidian Gloss',
+    author: 'Mid-Fire Favorite',
+    colorFamily: 'black',
+    finish: 'glossy',
+    cone: 'cone-6',
+    coneLabel: 'Cone 6',
+    colorHex: '#2A2018',
+    previewUri: PREVIEW.black,
+    description: 'Near-black gloss with brown breaks. Reliable on textured surfaces.',
+    savedCount: 389,
+    ingredients: [
+      { material: 'Nepheline Syenite', percentage: 34 },
+      { material: 'Silica', percentage: 26 },
+      { material: 'Whiting', percentage: 16 },
+      { material: 'EPK Kaolin', percentage: 14 },
+      { material: 'Red Iron Oxide', percentage: 6, isAddition: true },
     ],
   }),
 ];
@@ -172,11 +240,14 @@ export const RECIPE_SUCCESS_RATES: Record<string, number> = {
   'rec-clear-liner': 95,
   'rec-shino': 72,
   'rec-tenmoku': 76,
+  'rec-sea-glass': 84,
+  'rec-celadon': 79,
+  'rec-obsidian': 82,
 };
 
 export const TRENDING_IDS = new Set(
   [...DISCOVER_RECIPES]
     .sort((a, b) => b.savedCount - a.savedCount)
-    .slice(0, 2)
+    .slice(0, 3)
     .map((r) => r.id),
 );

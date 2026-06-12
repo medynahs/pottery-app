@@ -12,12 +12,14 @@ import 'react-native-reanimated';
 import '../global.css';
 
 import { ErrorBoundary } from '@/src/components/error-boundary';
+import { PhotoPickerProvider } from '@/src/components/PhotoPickerProvider';
 import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
 import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
 import { ToastOverlay } from '@/src/components/ui/toast-overlay';
 import { configureRevenueCat } from '@/src/hooks/useEntitlements';
 import { useNotificationTriggers } from '@/src/hooks/useNotificationTriggers';
 import { useOfflineSync } from '@/src/hooks/useOfflineSync';
+import { usePiecesSync } from '@/src/screens/pieces/hooks/usePiecesSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
 import {
@@ -89,6 +91,7 @@ function AppOnboardingGuard() {
 
 function AppShell() {
   useOfflineSync();
+  usePiecesSync();
   useNotificationTriggers();
   const backendUsersStatus = useAppStore((state) => state.backendUsersStatus);
   const loadBackendUsers = useAppStore((state) => state.loadBackendUsers);
@@ -120,6 +123,7 @@ function AppShell() {
         <Stack.Screen name="bisque-cone" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="glaze-cone" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="glaze-library" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="discover-recipe" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="library-roadmaps" options={{ headerShown: false }} />
         <Stack.Screen name="library-glazes" options={{ headerShown: false }} />
         <Stack.Screen name="library-tools" options={{ headerShown: false }} />
@@ -136,6 +140,8 @@ function AppShell() {
         <Stack.Screen name="kiln-history" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="register" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="forgot-password" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="change-password" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="friends" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="studios" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="notifications" options={{ headerShown: false, presentation: 'card' }} />
@@ -170,17 +176,19 @@ export default function RootLayout() {
   }, [isAppReady]);
 
   if (!isAppReady) {
-    return <View style={{ flex: 1, backgroundColor: '#D7682D' }} />;
+    return <View style={{ flex: 1, backgroundColor: '#C4A052' }} />;
   }
 
   return (
     <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#D7682D' }} onLayout={onLayoutRootView}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#C4A052' }} onLayout={onLayoutRootView}>
         <QueryClientProvider client={queryClient}>
           <UIThemeProvider>
-            <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#D7682D' } }}>
+            <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#C4A052' } }}>
               <StageConfigProvider>
-                <AppShell />
+                <PhotoPickerProvider>
+                  <AppShell />
+                </PhotoPickerProvider>
               </StageConfigProvider>
             </ThemeProvider>
           </UIThemeProvider>

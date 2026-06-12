@@ -15,7 +15,7 @@ export function formatMoney(currencySymbol: string, value?: number | null) {
 export const FIRING_STATE_COLOR: Record<FiringState, string> = {
   scheduled: 'hsl(220 80% 56%)',
   loading: 'hsl(39 80% 50%)',
-  firing: 'hsl(15 80% 52%)',
+  firing: 'hsl(39 57% 51%)',
   cooling: 'hsl(195 70% 45%)',
   unloading: 'hsl(142 60% 40%)',
   completed: 'hsl(142 60% 40%)',

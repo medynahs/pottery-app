@@ -1,5 +1,6 @@
+import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
-import { useAppStore } from '@/src/store/appStore';
+import { useVisiblePieces, useAppStore } from '@/src/store/appStore';
 import { Piece } from '@/src/types/pieces';
 import { DollarSign, ImageIcon, Package, Sparkles, X } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -170,7 +171,7 @@ function DetailChip({ label, value }: { label: string; value: string }) {
 
 export function PortfolioTab() {
   const { width } = useWindowDimensions();
-  const pieces = useAppStore((s) => s.pieces);
+  const pieces = useVisiblePieces();
   const [selected, setSelected] = useState<Piece | null>(null);
 
   const active = pieces.filter(p => p.stage !== 'cemetery');
@@ -183,10 +184,11 @@ export function PortfolioTab() {
     <View>
       {/* Full photo grid */}
       {active.length === 0 ? (
-        <View className="items-center justify-center py-16 gap-3">
-          <Package size={40} color="hsl(24 20% 60%)" />
-          <Text className="text-sm text-muted-foreground font-medium">No pieces yet</Text>
-        </View>
+        <EmptyState
+          icon={Package}
+          title="No pieces yet"
+          description="Photos of your pieces will appear here as you log them in your studio."
+        />
       ) : (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
           {active.map(piece => (

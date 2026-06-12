@@ -63,10 +63,11 @@ export function useAddPieceForm(
   initialPiece?: Piece,
   onEdit?: (piece: Piece) => void,
 ) {
-  const { openPickSheet, PhotoPickerSheets } = usePhotoPicker({ aspect: [1, 1] });
+  const { openPickSheet } = usePhotoPicker({ aspect: [1, 1] });
 
   const clayBodies = useAppStore((s) => s.clayBodies);
   const defaultClayBodyId = useAppStore((s) => s.defaultClayBodyId);
+  const defaultNewPieceStage = useAppStore((s) => s.defaultNewPieceStage);
   const pricingSettingsState = useAppStore((s) => s.pricingSettings);
   const pricingSettings = React.useMemo(() => normalizePricingSettings(pricingSettingsState), [pricingSettingsState]);
 
@@ -77,6 +78,7 @@ export function useAddPieceForm(
 
     return {
       ...EMPTY_FORM,
+      stage: defaultNewPieceStage || 'idea',
       clay: defaultClay,
       firingFeeMode: pricingSettings.defaultMode,
       salePriceMode: 'retail',
@@ -85,7 +87,7 @@ export function useAddPieceForm(
       costOther: pricingSettings.defaultOtherCost > 0 ? pricingSettings.defaultOtherCost.toFixed(2) : '',
       markupPct: String(pricingSettings.defaultMarkupPct),
     };
-  }, [clayBodies, defaultClayBodyId, pricingSettings]);
+  }, [clayBodies, defaultClayBodyId, defaultNewPieceStage, pricingSettings]);
 
   const [form, setForm] = React.useState<PieceForm>(initialPiece ? pieceToForm(initialPiece) : buildEmptyForm());
 
@@ -259,5 +261,5 @@ export function useAddPieceForm(
     setForm(buildEmptyForm());
   }, [buildEmptyForm, buildSavedPiece, form, initialPiece, onEdit]);
 
-  return { form, set, handleClose, pickImage, handleAdd, handleEdit, PhotoPickerSheets };
+  return { form, set, handleClose, pickImage, handleAdd, handleEdit };
 }

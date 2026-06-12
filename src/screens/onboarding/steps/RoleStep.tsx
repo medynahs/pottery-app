@@ -1,24 +1,7 @@
-import { IllustrationSlot } from '@/src/components/IllustrationSlot';
 import { Input } from '@/src/components/ui/input.ios';
-import { Pressable } from '@/src/components/ui/pressable';
-import { Text } from '@/src/components/ui/text';
 import type { AppModule, OnboardingUserType, PracticeMode, UserRole } from '@/src/store/appStore';
-import { Building2 } from 'lucide-react-native';
 import React, { useRef } from 'react';
-import { Animated, View } from 'react-native';
-
-// Roles where the user owns/names their own studio space
-const STUDIO_NAME_ROLES: OnboardingUserType[] = [
-  'studio-owner-technician',
-  'home-potter',
-  'business-owner',
-];
-
-const STUDIO_NAME_LABEL: Partial<Record<OnboardingUserType, { label: string; placeholder: string }>> = {
-  'studio-owner-technician': { label: 'Studio name', placeholder: 'e.g. The Kiln Room' },
-  'home-potter':             { label: 'Home studio name (optional)', placeholder: 'e.g. The Clay Nook' },
-  'business-owner':          { label: 'Brand or studio name (optional)', placeholder: 'e.g. Ember Ceramics' },
-};
+import { Animated, Pressable, Text, View } from 'react-native';
 
 interface UserTypeConfig {
   label: string;
@@ -38,8 +21,22 @@ interface RoleStepProps {
   USER_TYPE_CONFIG: Record<OnboardingUserType, UserTypeConfig>;
 }
 
-// Keep studioCode only when switching to roles that have a code input
-const STUDIO_CODE_ROLES: OnboardingUserType[] = ['studio-potter', 'studio-owner-technician'];
+// Short single-line descriptions for compact cards
+const SHORT_DESC: Record<OnboardingUserType, string> = {
+  'home-potter':              'Personal practice · home kiln & piece tracking',
+  'studio-potter':            'Shared studio · piece flow & firing context',
+  'studio-owner-technician':  'Kiln management · member ops & scheduling',
+  'business-owner':           'Production tracking · pricing & sales tools',
+  'not-sure':                 'Everything enabled · refine your setup later',
+};
+
+// Roles that collect a studio/brand name
+const STUDIO_NAME_ROLES: OnboardingUserType[] = ['studio-owner-technician', 'home-potter', 'business-owner'];
+const STUDIO_NAME_META: Partial<Record<OnboardingUserType, { label: string; placeholder: string }>> = {
+  'studio-owner-technician': { label: 'Studio name',                  placeholder: 'e.g. The Kiln Room' },
+  'home-potter':             { label: 'Home studio name (optional)',   placeholder: 'e.g. The Clay Nook' },
+  'business-owner':          { label: 'Brand or studio name (optional)', placeholder: 'e.g. Ember Ceramics' },
+};
 
 export const RoleStep: React.FC<RoleStepProps> = ({ draft, updateDraft, USER_TYPE_CONFIG }) => {
   const scaleAnims = useRef(
@@ -50,111 +47,181 @@ export const RoleStep: React.FC<RoleStepProps> = ({ draft, updateDraft, USER_TYP
 
   const handleSelect = (key: OnboardingUserType) => {
     Animated.sequence([
-      Animated.spring(scaleAnims[key], { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 4 }),
-      Animated.spring(scaleAnims[key], { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 8 }),
+      Animated.spring(scaleAnims[key], { toValue: 0.97, useNativeDriver: true, speed: 60, bounciness: 0 }),
+      Animated.spring(scaleAnims[key], { toValue: 1,    useNativeDriver: true, speed: 20, bounciness: 10 }),
     ]).start();
 
     updateDraft({
       userType: key,
       pricingUserType: USER_TYPE_CONFIG[key].pricingUserType,
       activeModules: USER_TYPE_CONFIG[key].defaultModules,
-      studioCode: STUDIO_CODE_ROLES.includes(key) ? draft.studioCode : '',
+      studioCode: '',
     });
   };
 
-  return (
-    <View>
-      <IllustrationSlot imageSource={require('../../../../assets/images/pottery-wheel.png')} />
+  const studioNameMeta = STUDIO_NAME_META[draft.userType as OnboardingUserType];
 
-      <View className="px-6 pt-5 pb-2">
-        <Text className="text-3xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold', lineHeight: 38 }}>
-          Who are you in your pottery practice?
+  return (
+    <View style={{ paddingBottom: 8 }}>
+      {/* Heading */}
+      <View style={{ paddingHorizontal: 24, paddingTop: 22, paddingBottom: 20 }}>
+        <Text
+          style={{
+            fontFamily: 'Fraunces_700Bold',
+            fontSize: 28,
+            lineHeight: 36,
+            color: 'hsl(24 30% 12%)',
+          }}
+        >
+          Your pottery practice
         </Text>
-        <Text className="text-sm text-muted-foreground mt-2 leading-6">
-          Pick the role that fits best — this shapes your defaults and modules.
+        <Text
+          style={{
+            fontSize: 14,
+            color: 'hsl(24 15% 50%)',
+            marginTop: 8,
+            lineHeight: 22,
+          }}
+        >
+          This personalises your defaults. You can change it anytime in settings.
         </Text>
       </View>
 
-      <View className="px-6 gap-3">
+      {/* Role cards */}
+      <View style={{ paddingHorizontal: 24, gap: 8 }}>
         {(Object.entries(USER_TYPE_CONFIG) as Array<[OnboardingUserType, UserTypeConfig]>).map(([key, option]) => {
           const Icon = option.icon;
           const active = draft.userType === key;
           return (
-            <React.Fragment key={key}>
-              <Animated.View style={{ transform: [{ scale: scaleAnims[key] }] }}>
-                <Pressable
-                  onPress={() => handleSelect(key)}
-                  className={`rounded-3xl border p-4 ${active ? 'border-foreground bg-card' : 'border-border bg-card/80'}`}
+            <Animated.View key={key} style={{ transform: [{ scale: scaleAnims[key] }] }}>
+              <Pressable
+                onPress={() => handleSelect(key)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 14,
+                  borderRadius: 18,
+                  borderWidth: 1.5,
+                  borderColor: active ? 'hsl(24 25% 22%)' : 'hsl(24 10% 86%)',
+                  backgroundColor: active ? 'hsl(34 30% 96%)' : 'hsl(34 20% 99%)',
+                  padding: 14,
+                }}
+              >
+                {/* Icon */}
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 13,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: active ? 'hsl(24 30% 18%)' : 'hsl(24 10% 91%)',
+                  }}
                 >
-                  <View className="flex-row items-start gap-3">
-                    <View className={`w-11 h-11 rounded-2xl items-center justify-center ${active ? 'bg-foreground' : 'bg-muted'}`}>
-                      <Icon size={18} color={active ? 'hsl(34 35% 92%)' : 'hsl(24 20% 40%)'} />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-base text-foreground" style={{ fontFamily: 'Fraunces_600SemiBold' }}>{option.label}</Text>
-                      <Text className="text-xs text-muted-foreground mt-1 leading-5">{option.description}</Text>
-                      <Text className="text-[11px] text-primary mt-2">{option.help}</Text>
-                    </View>
-                  </View>
-                </Pressable>
-              </Animated.View>
-
-              {key === 'not-sure' && active && (
-                <View className="rounded-3xl border border-dashed border-border bg-muted/40 px-4 py-3 -mt-1">
-                  <Text className="text-xs text-muted-foreground leading-5">
-                    You'll get all modules enabled with balanced defaults. You can change your role and tweak everything from your profile settings at any time.
-                  </Text>
-                </View>
-              )}
-
-              {key === 'studio-potter' && active && (
-                <View className="rounded-3xl border border-blue-200 bg-blue-50/60 px-4 pt-4 pb-5 -mt-1">
-                  <View className="flex-row items-center gap-2 mb-1">
-                    <Building2 size={13} color="hsl(213 70% 45%)" />
-                    <Text className="text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ color: 'hsl(213 70% 45%)' }}>
-                      Does your studio use PotteryNook?
-                    </Text>
-                  </View>
-                  <Text className="text-xs text-muted-foreground mb-3 leading-5">
-                    Enter your studio's code to link up — your owner will see your pieces ready for firing.
-                  </Text>
-                  <Input
-                    value={draft.studioCode}
-                    onChangeText={(value: string) => updateDraft({ studioCode: value.toUpperCase() })}
-                    placeholder="e.g. CLAY-4821"
-                    autoCapitalize="characters"
-                    autoCorrect={false}
+                  <Icon
+                    size={17}
+                    color={active ? 'hsl(34 35% 90%)' : 'hsl(24 20% 42%)'}
                   />
-                  <Text className="text-[11px] text-muted-foreground mt-2">Leave blank if your studio isn't on PotteryNook yet.</Text>
                 </View>
-              )}
-            </React.Fragment>
+
+                {/* Label + description */}
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontFamily: 'Fraunces_600SemiBold',
+                      fontSize: 14,
+                      color: 'hsl(24 30% 12%)',
+                      lineHeight: 19,
+                    }}
+                  >
+                    {option.label}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: 'hsl(24 12% 52%)',
+                      marginTop: 2,
+                      lineHeight: 17,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {SHORT_DESC[key]}
+                  </Text>
+                </View>
+
+                {/* Radio dot */}
+                <View
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
+                    borderWidth: 2,
+                    borderColor: active ? 'hsl(24 25% 22%)' : 'hsl(24 10% 78%)',
+                    backgroundColor: active ? 'hsl(24 25% 22%)' : 'transparent',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {active && (
+                    <View
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: 'white',
+                      }}
+                    />
+                  )}
+                </View>
+              </Pressable>
+            </Animated.View>
           );
         })}
       </View>
 
-      {/* Conditional studio name — only for roles that own a space */}
-      {STUDIO_NAME_ROLES.includes(draft.userType) && (() => {
-        const meta = STUDIO_NAME_LABEL[draft.userType as OnboardingUserType]!;
-        return (
-          <View className="px-6 mt-3">
-            <View className="rounded-[28px] border border-border bg-card px-5 pt-4 pb-5">
-              <Text className="text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground mb-1.5">
-                {meta.label}
-              </Text>
-              <Input
-                value={draft.studioName}
-                onChangeText={(value: string) => updateDraft({ studioName: value })}
-                placeholder={meta.placeholder}
-              />
-              <Text className="text-xs text-muted-foreground mt-2 leading-5">
-                Shown on your overview. You can change it anytime.
-              </Text>
-            </View>
+      {/* Studio / brand name — only for roles that own a space */}
+      {STUDIO_NAME_ROLES.includes(draft.userType) && studioNameMeta && (
+        <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
+          <View
+            style={{
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: 'hsl(24 10% 86%)',
+              backgroundColor: 'hsl(34 20% 99%)',
+              paddingHorizontal: 16,
+              paddingTop: 14,
+              paddingBottom: 16,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: '600',
+                color: 'hsl(24 15% 50%)',
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                marginBottom: 8,
+              }}
+            >
+              {studioNameMeta.label}
+            </Text>
+            <Input
+              value={draft.studioName}
+              onChangeText={(value: string) => updateDraft({ studioName: value })}
+              placeholder={studioNameMeta.placeholder}
+            />
+            <Text
+              style={{
+                fontSize: 11,
+                color: 'hsl(24 10% 60%)',
+                marginTop: 6,
+              }}
+            >
+              Shown on your overview. You can change it anytime.
+            </Text>
           </View>
-        );
-      })()}
+        </View>
+      )}
     </View>
   );
 };
-

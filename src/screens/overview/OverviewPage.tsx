@@ -1,17 +1,19 @@
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { Text } from '@/src/components/ui/text';
 import { useCurrentUser } from '@/src/hooks/useCurrentUser';
+import { usePremiumGate } from '@/src/hooks/usePremiumGate';
+import { PremiumFeature } from '@/src/utils/premiumGate';
 import { getKilnkinVoiceLine } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
 import { generateSetupQuests, type SetupQuestKey } from '@/src/screens/overview/setupQuests/generateSetupQuests';
 import { generateStudioRhythmSuggestions } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
-import { STAGE_CONFIG, getDateKey } from '@/src/screens/overview/studioRythm/studioRhythm';
+import { STAGE_CONFIG, getDateKey, isStudioRhythmConfigured } from '@/src/screens/overview/studioRythm/studioRhythm';
 import { getStudioSignals } from '@/src/screens/overview/utils/getStudioSignals';
 import { mapPiecesToStudioPositions, type StudioPiecePositions } from '@/src/screens/overview/utils/mapPiecesToStudioPositions';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
-import { useAppStore } from '@/src/store';
+import { useVisiblePieces, useAppStore } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
 import { useRouter } from 'expo-router';
-import { BarChart2, CalendarDays, Check, ChevronDown, ChevronUp, Flame, Hammer, MessageSquarePlus, Plus, Scissors, Sparkles, Trophy, Wallet } from 'lucide-react-native';
+import { BarChart2, Calculator, CalendarDays, Check, ChevronDown, ChevronRight, ChevronUp, Database, Flame, Hammer, Layers, LayoutGrid, MessageSquarePlus, Plus, Scissors, Sparkles, Trophy, Zap } from 'lucide-react-native';
 import React from 'react';
 import { Animated, Easing, Image, ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,7 +22,7 @@ import { FeedbackModal } from './components/FeedbackModal';
 
 type MissionIcon = React.ComponentType<{ size?: number; color?: string }>;
 const MISSION_META: Record<string, { title: string; Icon: MissionIcon; iconColor: string; chipClassName: string }> = {
-  trim: { title: 'Trim Watch', Icon: Scissors, iconColor: 'hsl(24 75% 45%)', chipClassName: 'bg-orange-50' },
+  trim: { title: 'Trim Watch', Icon: Scissors, iconColor: 'hsl(39 57% 51%)', chipClassName: 'bg-primary/10' },
   reclaim: { title: 'Reclaim Loop', Icon: Hammer, iconColor: 'hsl(35 65% 42%)', chipClassName: 'bg-amber-50' },
   'wheel-practice': { title: 'Wheel Focus', Icon: Sparkles, iconColor: 'hsl(270 55% 52%)', chipClassName: 'bg-purple-50' },
   'kiln-check': { title: 'Kiln Check', Icon: Flame, iconColor: 'hsl(16 78% 52%)', chipClassName: 'bg-red-50' },
@@ -28,11 +30,17 @@ const MISSION_META: Record<string, { title: string; Icon: MissionIcon; iconColor
   'goal-focus': { title: 'Weekly Goal', Icon: Trophy, iconColor: 'hsl(44 70% 45%)', chipClassName: 'bg-yellow-50' },
 };
 
-const SETUP_QUEST_META: Record<SetupQuestKey, { Icon: MissionIcon; iconColor: string; chipClassName: string }> = {
-  'pricing-profile': { Icon: Wallet, iconColor: 'hsl(44 70% 45%)', chipClassName: 'bg-yellow-50' },
-  'studio-rhythm': { Icon: CalendarDays, iconColor: 'hsl(213 70% 45%)', chipClassName: 'bg-blue-50' },
-  'add-kiln': { Icon: Flame, iconColor: 'hsl(16 78% 52%)', chipClassName: 'bg-red-50' },
-  'log-first-piece': { Icon: Plus, iconColor: 'hsl(135 45% 35%)', chipClassName: 'bg-green-50' },
+const SETUP_QUEST_META: Record<SetupQuestKey, { Icon: MissionIcon; iconColor: string; iconBg: string }> = {
+  'customize-stages': { Icon: Layers, iconColor: 'hsl(213 55% 42%)', iconBg: 'hsl(213 50% 92%)' },
+  'set-clay-bodies': { Icon: Database, iconColor: 'hsl(32 45% 38%)', iconBg: 'hsl(35 46% 88%)' },
+  'set-bisque-cone': { Icon: Flame, iconColor: 'hsl(24 65% 42%)', iconBg: 'hsl(24 60% 90%)' },
+  'set-glaze-cone': { Icon: Zap, iconColor: 'hsl(39 57% 45%)', iconBg: 'hsl(44 70% 88%)' },
+  'set-pricing': { Icon: Calculator, iconColor: 'hsl(32 40% 38%)', iconBg: 'hsl(35 42% 88%)' },
+  'configure-modules': { Icon: LayoutGrid, iconColor: 'hsl(32 40% 38%)', iconBg: 'hsl(35 42% 88%)' },
+  'studio-rhythm': { Icon: CalendarDays, iconColor: 'hsl(160 40% 38%)', iconBg: 'hsl(150 35% 90%)' },
+  'add-kiln': { Icon: Flame, iconColor: 'hsl(16 65% 42%)', iconBg: 'hsl(16 60% 90%)' },
+  'log-first-piece': { Icon: Plus, iconColor: 'hsl(130 40% 36%)', iconBg: 'hsl(130 35% 90%)' },
+  'create-glaze-recipe': { Icon: Sparkles, iconColor: 'hsl(270 40% 48%)', iconBg: 'hsl(270 35% 92%)' },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -134,18 +142,17 @@ function WidgetCard({
 }: WidgetCardProps) {
   return (
     <View
-      className="rounded-2xl border overflow-hidden mb-4"
+      className="rounded-2xl overflow-hidden mb-4"
       style={{
-        borderColor: 'hsl(30 26% 66%)',
-        backgroundColor: 'hsl(36 55% 98%)',
+        backgroundColor: 'hsl(40 30% 99%)',
         shadowColor: '#3f2a12',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
+        shadowOpacity: 0.08,
         shadowRadius: 6,
         elevation: 2,
       }}
     >
-      <View className="px-4 py-3" style={{ borderBottomWidth: expanded ? 1 : 0, borderBottomColor: 'hsl(34 25% 86%)' }}>
+      <View className="px-4 py-3" style={{ backgroundColor: 'hsl(38 28% 96%)' }}>
         <View className="flex-row items-center justify-between">
           <View className="flex-1 pr-2">
             <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.9, color: accentColor, textTransform: 'uppercase' }}>{title}</Text>
@@ -170,7 +177,7 @@ function WidgetCard({
             onPress={onPrimaryAction}
             activeOpacity={0.82}
             className="rounded-full px-3 py-1.5 flex-row items-center gap-1 self-start mt-2"
-            style={{ backgroundColor: 'hsl(35 42% 80%)', borderWidth: 1, borderColor: 'hsl(34 32% 62%)' }}
+            style={{ backgroundColor: 'hsl(35 42% 80%)' }}
           >
             <Plus size={12} color="hsl(33 42% 32%)" />
             <Text style={{ fontSize: 11, fontWeight: '600', color: 'hsl(33 42% 32%)' }}>{primaryActionLabel}</Text>
@@ -295,25 +302,47 @@ export function OverviewPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   useCurrentUser();
+  const { requestAccess, PaywallGate } = usePremiumGate();
   const user = useAppStore((state) => state.user);
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
   const kilns = useAppStore((state) => state.kilns);
+  const onboardingProfile = useAppStore((state) => state.onboardingProfile);
+  const setupProgress = useAppStore((state) => state.setupProgress);
   const pricingOnboardingCompleted = useAppStore((state) => state.pricingOnboardingCompleted);
-  const pieces = useAppStore((state) => state.pieces);
+  const glazes = useAppStore((state) => state.glazes);
+  const pieces = useVisiblePieces();
   const firings = useAppStore((state) => state.firings);
   const rhythm = useAppStore((state) => state.studioRhythm);
+  const rhythmConfigured = isStudioRhythmConfigured(rhythm);
   const dailyMissionCompletion = useAppStore((state) => state.dailyMissionCompletion);
   const toggleDailyMissionCompletion = useAppStore((state) => state.toggleDailyMissionCompletion);
   const todayMissionKey = getTodayMissionKey();
   const [feedbackOpen, setFeedbackOpen] = React.useState(false);
-  const [showSetupWidget, setShowSetupWidget] = React.useState(false);
   const [showJournalWidget, setShowJournalWidget] = React.useState(false);
   const [draftTodo, setDraftTodo] = React.useState('');
   const [showAddTodoComposer, setShowAddTodoComposer] = React.useState(false);
   const [customTodosByDay, setCustomTodosByDay] = React.useState<Record<string, CustomTodo[]>>({});
   const [showAllMissionTasks, setShowAllMissionTasks] = React.useState(false);
 
+  const setupQuests = React.useMemo(
+    () => generateSetupQuests({
+      kilnCount: kilns.length,
+      studioRhythmConfigured: rhythmConfigured,
+      pieceCount: pieces.length,
+      hasOwnKiln: onboardingProfile.hasOwnKiln,
+      userType: onboardingProfile.userType,
+      setupProgress,
+      pricingOnboardingCompleted,
+      glazeIds: glazes.map((g) => g.id),
+    }),
+    [kilns.length, rhythmConfigured, pieces.length, onboardingProfile.hasOwnKiln, onboardingProfile.userType, setupProgress, pricingOnboardingCompleted, glazes]
+  );
+  const isSetupMode = setupQuests.length > 0;
+
   const missionsSummary = React.useMemo(() => {
+    if (!rhythmConfigured) {
+      return { total: 0, completedCount: 0, all: [], remaining: [], topMission: null };
+    }
     const suggestions = generateStudioRhythmSuggestions({ pieces, firings, rhythm });
     const completed = dailyMissionCompletion[todayMissionKey] ?? [];
     const total = suggestions.length;
@@ -321,25 +350,18 @@ export function OverviewPage() {
     const all = suggestions.map((s) => ({ ...s, completed: completed.includes(s.type) }));
     const remaining = all.filter((s) => !s.completed);
     return { total, completedCount, all, remaining, topMission: remaining[0] ?? null };
-  }, [pieces, firings, rhythm, dailyMissionCompletion, todayMissionKey]);
-
-  const setupQuests = React.useMemo(
-    () => generateSetupQuests({
-      kilnCount: kilns.length,
-      studioRhythmConfigured: rhythm.stageDays.length > 0,
-      pricingOnboardingCompleted,
-      pieceCount: pieces.length,
-    }),
-    [kilns.length, rhythm.stageDays.length, pricingOnboardingCompleted, pieces.length]
-  );
+  }, [pieces, firings, rhythm, rhythmConfigured, dailyMissionCompletion, todayMissionKey]);
 
   const todayRhythm = React.useMemo(() => {
+    if (!rhythmConfigured) {
+      return { stages: [], events: [], isEmpty: true };
+    }
     const dow = (new Date().getDay() + 6) % 7;
     const todayKey = getDateKey();
     const stages = rhythm.stageDays.filter((sd) => sd.days.includes(dow)).map((sd) => sd.stage);
     const events = rhythm.events.filter((e) => e.date.slice(0, 10) === todayKey);
     return { stages, events, isEmpty: stages.length === 0 && events.length === 0 };
-  }, [rhythm]);
+  }, [rhythm, rhythmConfigured]);
 
   const stagePositions = React.useMemo(() => mapPiecesToStudioPositions(pieces), [pieces]);
   const studioSignals = React.useMemo(() => getStudioSignals({ pieces, firings }), [pieces, firings]);
@@ -531,16 +553,7 @@ export function OverviewPage() {
   const personalizedGreeting = user.name ? `${greeting}, ${user.name.split(' ')[0]}` : greeting;
   const DOW_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const todayLabel = DOW_LABELS[(new Date().getDay() + 6) % 7];
-  const totalTasks = setupQuests.length + missionsSummary.total;
-  const totalDone = missionsSummary.completedCount;
   const customTodos = customTodosByDay[todayMissionKey] ?? [];
-  const nextSuggestedMission = missionsSummary.all.find((m) => !m.completed) ?? null;
-  const nextCustomTodo = customTodos.find((t) => !t.completed) ?? null;
-  const nextTodoLabel = nextSuggestedMission
-    ? `${MISSION_META[nextSuggestedMission.type]?.title ?? 'Mission'} · ${nextSuggestedMission.text}`
-    : nextCustomTodo
-      ? nextCustomTodo.title
-      : null;
 
   const addCustomTodo = React.useCallback(() => {
     const title = draftTodo.trim();
@@ -602,7 +615,9 @@ export function OverviewPage() {
             <Text className="text-xs font-medium" style={{ color: 'hsl(32 45% 52%)' }}>{greeting}</Text>
             <Text className="text-[31px] font-serif font-bold text-foreground mt-0.5">Studio Ledger</Text>
             <View className="flex-row flex-wrap items-center gap-1.5 mt-2">
-              {todayRhythm.isEmpty ? (
+              {isSetupMode ? (
+                <Text className="text-xs text-muted-foreground">{todayLabel} · Let&apos;s get your studio set up</Text>
+              ) : todayRhythm.isEmpty ? (
                 <View className="flex-row items-center gap-1">
                   <Text style={{ fontSize: 13 }}>☕</Text>
                   <Text className="text-xs text-muted-foreground">{todayLabel} · Rest day</Text>
@@ -628,7 +643,11 @@ export function OverviewPage() {
           </View>
           <View className="flex-row items-center gap-2">
             <TouchableOpacity
-              onPress={() => router.push('/analytics' as never)}
+              onPress={() => {
+                if (requestAccess(PremiumFeature.Analytics)) {
+                  router.push('/analytics' as never);
+                }
+              }}
               activeOpacity={0.8}
               className="h-9 w-9 rounded-full items-center justify-center bg-card border border-border"
               accessibilityRole="button"
@@ -657,14 +676,152 @@ export function OverviewPage() {
       {/* ── Main feed ── */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: insets.bottom + 110, backgroundColor: 'hsl(35 62% 93%)' }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 110, backgroundColor: 'hsl(35 62% 93%)' }}
       >
+        {isSetupMode ? (
+          <Animated.View
+            style={{
+              opacity: heroReveal,
+              transform: [{
+                translateY: heroReveal.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [16, 0],
+                }),
+              }],
+            }}
+          >
+            {/* Welcome — same visual language as Live Studio State */}
+            <View
+              className="rounded-[28px] mb-4 overflow-hidden"
+              style={{
+                backgroundColor: 'hsl(34 66% 89%)',
+                shadowColor: '#4d3314',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              <View style={{ position: 'absolute', right: -18, top: -24, width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255, 248, 228, 0.75)' }} />
+              <View style={{ position: 'absolute', left: -22, bottom: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(205, 172, 117, 0.22)' }} />
+
+              <View className="px-4 pt-5 pb-4">
+                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 1, color: 'hsl(32 48% 36%)', textTransform: 'uppercase' }}>
+                  Your Studio
+                </Text>
+                <Text className="font-serif text-[28px] leading-8 text-foreground mt-2">
+                  {user.name ? `Welcome, ${user.name.split(' ')[0]}` : 'Welcome to your studio'}
+                </Text>
+                <Text className="text-[13px] leading-5 mt-2" style={{ color: 'hsl(31 34% 40%)' }}>
+                  A few quick steps to shape the app around how you actually work.
+                </Text>
+                <View className="flex-row items-center gap-2 mt-4">
+                  <View className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'hsl(35 40% 78%)' }}>
+                    <View
+                      className="h-full rounded-full"
+                      style={{
+                        backgroundColor: 'hsl(39 57% 51%)',
+                        width: `${Math.max(8, Math.round((1 - setupQuests.length / 10) * 100))}%`,
+                      }}
+                    />
+                  </View>
+                  <Text className="text-[11px] font-semibold" style={{ color: 'hsl(32 40% 38%)' }}>
+                    {setupQuests.length} left
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Checklist — single warm panel */}
+            <View
+              className="rounded-[24px] mb-4 overflow-hidden"
+              style={{ backgroundColor: 'hsl(36 55% 98%)', shadowColor: '#3f2a12', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}
+            >
+              <View className="px-4 pt-4 pb-2">
+                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.9, color: 'hsl(32 48% 36%)', textTransform: 'uppercase' }}>
+                  Setup checklist
+                </Text>
+                <Text style={{ fontSize: 11, color: 'hsl(32 30% 42%)', marginTop: 3 }}>
+                  Tap a step when you&apos;re ready — no rush.
+                </Text>
+              </View>
+
+              {setupQuests.map((quest, idx) => {
+                const meta = SETUP_QUEST_META[quest.key];
+                const Icon = meta.Icon;
+                return (
+                  <TouchableOpacity
+                    key={quest.key}
+                    onPress={() => router.push(quest.route as never)}
+                    activeOpacity={0.78}
+                    className="flex-row items-center gap-3 px-4 py-3.5"
+                    style={{ backgroundColor: idx % 2 === 0 ? 'hsl(38 50% 97%)' : 'hsl(36 55% 98%)' }}
+                    accessibilityRole="button"
+                  >
+                    <View
+                      className="w-10 h-10 rounded-2xl items-center justify-center"
+                      style={{ backgroundColor: meta.iconBg }}
+                    >
+                      <Icon size={17} color={meta.iconColor} />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-sm font-semibold text-foreground">{quest.title}</Text>
+                      <Text className="text-[11px] text-muted-foreground mt-0.5 leading-4" numberOfLines={2}>{quest.text}</Text>
+                    </View>
+                    <ChevronRight size={16} color="hsl(32 35% 55%)" />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Kilnkin — matches live-studio note card */}
+            <View className="rounded-[24px] px-4 py-3.5 mb-2" style={{ backgroundColor: 'rgba(255, 252, 245, 0.92)' }}>
+              <View className="flex-row items-start gap-3">
+                <TouchableOpacity
+                  onPress={() => router.push('/kilnkin' as never)}
+                  onLongPress={handlePat}
+                  delayLongPress={400}
+                  activeOpacity={0.85}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'hsl(35 35% 90%)',
+                  }}
+                >
+                  <Image
+                    source={require('../../../assets/images/clay-pet.png')}
+                    style={{ width: 22, height: 22 }}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+                <View className="flex-1">
+                  <Text className="text-[10px] uppercase" style={{ letterSpacing: 0.8, color: 'hsl(32 35% 46%)' }}>Kilnkin note</Text>
+                  <Text className="text-[12px] mt-1 leading-5 text-foreground">
+                    Hi — I&apos;m {kilnkinCompanion.name}. I&apos;ll be right here while you get settled in.
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => router.push('/kilnkin' as never)}
+                    activeOpacity={0.8}
+                    className="self-start mt-2 rounded-full px-2.5 py-1"
+                    style={{ backgroundColor: 'hsl(35 54% 87%)' }}
+                  >
+                    <Text className="text-[11px] font-medium" style={{ color: 'hsl(33 45% 30%)' }}>Visit {kilnkinCompanion.name}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Animated.View>
+        ) : null}
+
         {/* Live studio state hero */}
+        {!isSetupMode ? (
         <Animated.View
-          className="rounded-[28px] border mb-4 overflow-hidden"
+          className="rounded-[28px] mb-4 overflow-hidden"
           style={{
             backgroundColor: 'hsl(34 66% 89%)',
-            borderColor: 'hsl(34 44% 74%)',
             shadowColor: '#4d3314',
             shadowOffset: { width: 0, height: 6 },
             shadowOpacity: 0.12,
@@ -682,10 +839,12 @@ export function OverviewPage() {
           <View style={{ position: 'absolute', right: -18, top: -24, width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255, 248, 228, 0.75)' }} />
           <View style={{ position: 'absolute', left: -22, bottom: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(205, 172, 117, 0.22)' }} />
 
-          <View className="px-4 pt-4 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: 'hsl(34 42% 78%)' }}>
-            <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 1, color: 'hsl(32 48% 36%)', textTransform: 'uppercase' }}>Live Studio State</Text>
+          <View className="px-4 pt-4 pb-3">
+            <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 1, color: 'hsl(32 48% 36%)', textTransform: 'uppercase' }}>
+              Live Studio State
+            </Text>
             <View className="flex-row items-start gap-3 mt-2">
-              <View className="w-11 h-11 rounded-2xl items-center justify-center" style={{ backgroundColor: oneThingCard ? oneThingCard.accentBg : 'hsl(36 54% 85%)', borderWidth: 1, borderColor: oneThingCard ? oneThingCard.accentBorder : 'hsl(35 40% 72%)' }}>
+              <View className="w-11 h-11 rounded-2xl items-center justify-center" style={{ backgroundColor: oneThingCard ? oneThingCard.accentBg : 'hsl(36 54% 85%)' }}>
                 <Text style={{ fontSize: 21 }}>{oneThingCard?.emoji ?? '🏺'}</Text>
               </View>
               <View className="flex-1">
@@ -713,7 +872,7 @@ export function OverviewPage() {
           <View className="px-4 py-3">
             <View className="flex-row items-center justify-between mb-2">
               <Text className="text-[10px] uppercase" style={{ letterSpacing: 0.8, color: 'hsl(32 34% 44%)' }}>Now · Next · Blocked</Text>
-              <Text className="text-[11px]" style={{ color: 'hsl(32 32% 42%)' }}>{totalDone}/{Math.max(totalTasks, 1)} done</Text>
+              <Text className="text-[11px]" style={{ color: 'hsl(32 32% 42%)' }}>{missionsSummary.completedCount}/{Math.max(missionsSummary.total, 1)} done</Text>
             </View>
 
             <View className="flex-row flex-wrap gap-1.5 mb-2.5">
@@ -736,7 +895,7 @@ export function OverviewPage() {
               ))}
             </View>
 
-            <View className="rounded-2xl px-3 py-2.5" style={{ backgroundColor: 'rgba(255, 252, 245, 0.72)', borderWidth: 1, borderColor: 'hsl(34 40% 80%)' }}>
+            <View className="rounded-2xl px-3 py-2.5 mt-1" style={{ backgroundColor: 'rgba(255, 252, 245, 0.88)' }}>
               <View className="flex-row items-start justify-between gap-3">
                 <View className="flex-1">
                   <Text className="text-[10px] uppercase" style={{ letterSpacing: 0.8, color: 'hsl(32 35% 46%)' }}>Kilnkin note</Text>
@@ -806,7 +965,9 @@ export function OverviewPage() {
             </View>
           </View>
         </Animated.View>
+        ) : null}
 
+        {!isSetupMode ? (
         <Animated.View
           style={{
             opacity: focusReveal,
@@ -818,27 +979,20 @@ export function OverviewPage() {
             }],
           }}
         >
+          {missionChecklistCount > 0 ? (
           <View style={{ height: 5, borderRadius: 3, backgroundColor: 'hsl(35 35% 83%)', marginBottom: 14, overflow: 'hidden' }}>
             <View style={{ height: '100%', borderRadius: 3, backgroundColor: 'hsl(39 57% 51%)', width: `${Math.round((missionChecklistDone / Math.max(missionChecklistCount, 1)) * 100)}%` }} />
           </View>
+          ) : null}
 
           <WidgetCard
             title="Today Missions"
-            status={`${missionChecklistDone}/${Math.max(missionChecklistCount, 0)} complete`}
-            description="Your task-focused to-do widget"
+            status={missionChecklistCount > 0 ? `${missionChecklistDone}/${missionChecklistCount} complete` : 'No missions yet'}
+            description={rhythmConfigured ? 'Your task-focused to-do widget' : 'Set up Studio Rhythm to get a daily checklist'}
             primaryActionLabel="Add task"
             onPrimaryAction={() => setShowAddTodoComposer((v) => !v)}
             accentColor="hsl(32 48% 36%)"
           >
-            {nextTodoLabel ? (
-              <View className="rounded-2xl px-3 py-2.5 mb-2 mx-3 mt-3" style={{ borderWidth: 1, borderColor: 'hsl(30 36% 56%)', backgroundColor: 'hsl(35 72% 90%)' }}>
-                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: 'hsl(32 42% 40%)', textTransform: 'uppercase' }}>Next up</Text>
-                <View style={{ marginTop: 5, borderLeftWidth: 3, borderLeftColor: 'hsl(31 56% 42%)', paddingLeft: 8 }}>
-                  <Text style={{ fontSize: 12, color: 'hsl(20 28% 16%)', fontWeight: '600' }} numberOfLines={2}>{nextTodoLabel}</Text>
-                </View>
-              </View>
-            ) : null}
-
             {visibleMissions.map((mission, idx) => {
               const meta = MISSION_META[mission.type];
               if (!meta) return null;
@@ -958,74 +1112,26 @@ export function OverviewPage() {
                 </View>
               </View>
             ) : null}
+
+            {!rhythmConfigured && missionChecklistCount === 0 ? (
+              <TouchableOpacity
+                onPress={() => router.push('/profile/studio-rhythm' as never)}
+                activeOpacity={0.86}
+                className="flex-row items-center gap-3 px-4 py-4"
+                style={{ borderTopWidth: 1, borderTopColor: 'hsl(34 25% 86%)', backgroundColor: 'hsl(44 70% 96%)' }}
+                accessibilityRole="button"
+                accessibilityLabel="Set up Studio Rhythm"
+              >
+                <CalendarDays size={18} color="hsl(32 60% 40%)" />
+                <View className="flex-1">
+                  <Text className="text-xs font-semibold text-foreground mb-0.5">No rhythm set yet</Text>
+                  <Text className="text-[11px] text-muted-foreground leading-4">Set up Studio Rhythm to get a daily checklist.</Text>
+                </View>
+              </TouchableOpacity>
+            ) : null}
           </WidgetCard>
         </Animated.View>
-
-        {/* Empty state */}
-        {totalTasks === 0 ? (
-          <TouchableOpacity
-            onPress={() => router.push('/profile/studio-rhythm' as never)}
-            activeOpacity={0.86}
-            className="flex-row items-center gap-3 rounded-2xl px-4 py-3.5 mb-4 border border-dashed border-amber-300 bg-amber-50/80"
-            accessibilityRole="button"
-            accessibilityLabel="Set up Studio Rhythm"
-          >
-            <Text style={{ fontSize: 22 }}>🏺</Text>
-            <View className="flex-1">
-              <Text className="text-xs font-semibold text-foreground mb-0.5">Nothing planned yet</Text>
-              <Text className="text-[11px] text-muted-foreground leading-4">Set up your Studio Rhythm to get a daily checklist.</Text>
-            </View>
-            <CalendarDays size={16} color="hsl(32 60% 40%)" />
-          </TouchableOpacity>
         ) : null}
-
-        <Animated.View
-          style={{
-            opacity: secondaryReveal,
-            transform: [{
-              translateY: secondaryReveal.interpolate({
-                inputRange: [0, 1],
-                outputRange: [12, 0],
-              }),
-            }],
-          }}
-        >
-          {/* Setup quests widget */}
-          {setupQuests.length > 0 ? (
-            <WidgetCard
-              title="Studio Setup"
-              status={`${setupQuests.length} left`}
-              description="Finish launch steps when you have time"
-              expanded={showSetupWidget}
-              onToggleExpand={() => setShowSetupWidget((v) => !v)}
-              accentColor="hsl(213 55% 36%)"
-            >
-              {setupQuests.map((quest, i) => {
-                const meta = SETUP_QUEST_META[quest.key];
-                const Icon = meta.Icon;
-                return (
-                  <TouchableOpacity
-                    key={quest.key}
-                    onPress={() => router.push(quest.route as never)}
-                    activeOpacity={0.75}
-                    className={`flex-row items-center gap-3 px-4 py-3 bg-blue-50/60${i < setupQuests.length - 1 ? ' border-b border-blue-200' : ''}`}
-                    accessibilityRole="button"
-                  >
-                    <View className={`w-8 h-8 rounded-xl items-center justify-center border border-border ${meta.chipClassName}`}>
-                      <Icon size={15} color={meta.iconColor} />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-xs font-semibold text-foreground">{quest.title}</Text>
-                      <Text className="text-[10px] text-muted-foreground" numberOfLines={1}>{quest.text}</Text>
-                    </View>
-                    <Text className="text-xs font-semibold text-blue-500">→</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </WidgetCard>
-          ) : null}
-
-        </Animated.View>
 
         <Animated.View
           style={{
@@ -1039,7 +1145,7 @@ export function OverviewPage() {
           }}
         >
           {/* Studio journal widget */}
-          {activityFeed.length > 0 ? (
+          {!isSetupMode && activityFeed.length > 0 ? (
             <WidgetCard
               title="Studio Journal"
               status={`${activityFeed.length} recent`}
@@ -1111,6 +1217,7 @@ export function OverviewPage() {
       </TouchableOpacity>
 
       <FeedbackModal visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      {PaywallGate}
     </View>
   );
 }

@@ -12,8 +12,14 @@ export default function GlazeConeScreen() {
   const insets = useSafeAreaInsets();
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
   const setDefaultGlazeTemp = useAppStore((s) => s.setDefaultGlazeTemp);
+  const markSetupProgress = useAppStore((s) => s.markSetupProgress);
+
+  React.useEffect(() => {
+    markSetupProgress('glazeConeReviewed');
+  }, [markSetupProgress]);
 
   function handleSelect(cone: string) {
+    markSetupProgress('glazeConeReviewed');
     setDefaultGlazeTemp(defaultGlazeTemp === cone ? null : cone);
   }
 

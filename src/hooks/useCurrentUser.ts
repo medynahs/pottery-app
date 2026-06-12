@@ -1,27 +1,43 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { avatarDataUri, fetchMe, uploadAvatar } from '../services/api';
+import { ApiError, avatarDataUri, fetchMe, uploadAvatar } from '../services/api';
 import { useAppStore } from '../store/appStore';
 
 export const ME_QUERY_KEY = ['me'] as const;
+
+function isSessionExpired(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401;
+}
 
 /**
  * Fetches /users/me whenever a session token is present.
  * Automatically syncs the result into Zustand (user.name, user.avatarImageUri,
  * backendUserId) so all existing components update reactively.
+ * A 401 means the Ory session token is no longer valid — the user is signed
+ * out locally so they land back on the auth screens instead of seeing
+ * silently-failing requests.
  */
 export function useCurrentUser() {
   const sessionToken    = useAppStore((s) => s.sessionToken);
   const setUser         = useAppStore((s) => s.setUser);
   const setBackendUserId = useAppStore((s) => s.setBackendUserId);
+  const clearSession    = useAppStore((s) => s.clearSession);
+  const showToast       = useAppStore((s) => s.showToast);
 
   const query = useQuery({
     queryKey: ME_QUERY_KEY,
     queryFn: () => fetchMe(sessionToken!),
     enabled: !!sessionToken,
     staleTime: 5 * 60 * 1000, // re-use cached data for 5 min
-    retry: 2,
+    retry: (failureCount, error) => !isSessionExpired(error) && failureCount < 2,
   });
+
+  useEffect(() => {
+    if (sessionToken && isSessionExpired(query.error)) {
+      clearSession();
+      showToast('Your session has expired. Please sign in again.', 'error');
+    }
+  }, [query.error, sessionToken]);
 
   useEffect(() => {
     if (!query.data) return;

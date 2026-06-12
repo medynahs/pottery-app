@@ -1,7 +1,14 @@
 /**
  * PremiumUpgradeScreen — personal-tone upgrade / subscription management screen
  */
+import { Banner } from '@/src/components/Banner';
 import { Text } from '@/src/components/ui/text';
+import {
+  PREMIUM_ANNUAL_PRICE_EUR,
+  PREMIUM_ANNUAL_SAVINGS_LABEL,
+  PREMIUM_MONTHLY_PRICE_EUR,
+  premiumDisplayPrice,
+} from '@/src/constants/premium';
 import { presentCustomerCenter, useEntitlements } from '@/src/hooks/useEntitlements';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -15,7 +22,7 @@ import {
 import type { PurchasesPackage } from 'react-native-purchases';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-type PlanKey = 'lifetime' | 'annual' | 'monthly';
+type PlanKey = 'annual' | 'monthly';
 
 const FEATURES = [
   { icon: '📸', label: 'Unlimited photos per piece' },
@@ -44,21 +51,12 @@ export default function PremiumUpgradeScreen() {
     perPeriod: string;
   }> = [
     {
-      key: 'lifetime',
-      label: 'Lifetime',
-      badge: '✦ Pay once',
-      description: 'One payment, yours forever',
-      pkg: offering?.lifetime ?? undefined,
-      price: offering?.lifetime?.product.priceString ?? '—',
-      perPeriod: '',
-    },
-    {
       key: 'annual',
       label: 'Yearly',
-      badge: 'Save 42%',
+      badge: PREMIUM_ANNUAL_SAVINGS_LABEL,
       description: 'Full access, renewed yearly',
       pkg: offering?.annual ?? undefined,
-      price: offering?.annual?.product.priceString ?? '—',
+      price: premiumDisplayPrice(offering?.annual ?? undefined, PREMIUM_ANNUAL_PRICE_EUR),
       perPeriod: '/ year',
     },
     {
@@ -67,7 +65,7 @@ export default function PremiumUpgradeScreen() {
       badge: null,
       description: 'Flexible, cancel anytime',
       pkg: offering?.monthly ?? undefined,
-      price: offering?.monthly?.product.priceString ?? '—',
+      price: premiumDisplayPrice(offering?.monthly ?? undefined, PREMIUM_MONTHLY_PRICE_EUR),
       perPeriod: '/ month',
     },
   ];
@@ -192,7 +190,7 @@ export default function PremiumUpgradeScreen() {
               style={{
                 borderRadius: 16,
                 borderWidth: isSelected ? 2 : 1,
-                borderColor: isSelected ? 'hsl(24 75% 45%)' : '#DDD0B8',
+                borderColor: isSelected ? 'hsl(39 57% 51%)' : '#DDD0B8',
                 backgroundColor: isSelected ? '#FFF4E8' : '#FDFAF4',
                 padding: 16,
                 marginBottom: 10,
@@ -204,7 +202,7 @@ export default function PremiumUpgradeScreen() {
               <View style={{
                 width: 20, height: 20, borderRadius: 10,
                 borderWidth: isSelected ? 6 : 2,
-                borderColor: isSelected ? 'hsl(24 75% 45%)' : '#C9B48C',
+                borderColor: isSelected ? 'hsl(39 57% 51%)' : '#C9B48C',
                 marginRight: 14,
               }} />
 
@@ -213,7 +211,7 @@ export default function PremiumUpgradeScreen() {
                   <Text style={{ fontSize: 15, fontWeight: '700', color: 'hsl(24 25% 15%)' }}>{plan.label}</Text>
                   {plan.badge ? (
                     <View style={{
-                      backgroundColor: isSelected ? 'hsl(24 75% 45%)' : '#F0E6CF',
+                      backgroundColor: isSelected ? 'hsl(39 57% 51%)' : '#F0E6CF',
                       borderRadius: 99,
                       paddingHorizontal: 8, paddingVertical: 2,
                     }}>
@@ -227,7 +225,7 @@ export default function PremiumUpgradeScreen() {
               </View>
 
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: isSelected ? 'hsl(24 75% 45%)' : 'hsl(24 25% 30%)' }}>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: isSelected ? 'hsl(39 57% 51%)' : 'hsl(24 25% 30%)' }}>
                   {plan.price}
                 </Text>
                 {plan.perPeriod ? (
@@ -241,11 +239,7 @@ export default function PremiumUpgradeScreen() {
         <View style={{ height: 6 }} />
 
         {/* Error */}
-        {!!error && (
-          <View style={{ backgroundColor: '#FEE2E2', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 14 }}>
-            <Text style={{ color: '#991B1B', fontSize: 13, textAlign: 'center' }}>{error}</Text>
-          </View>
-        )}
+        {!!error && <Banner message={error} className="mb-3.5" />}
 
         {/* CTA */}
         <TouchableOpacity
@@ -253,7 +247,7 @@ export default function PremiumUpgradeScreen() {
           disabled={isLoading || busy || !selectedPlan?.pkg}
           onPress={handlePurchase}
           style={{
-            backgroundColor: isLoading || busy ? '#C9B48C' : 'hsl(24 75% 45%)',
+            backgroundColor: isLoading || busy ? '#C9B48C' : 'hsl(39 57% 51%)',
             borderRadius: 18,
             paddingVertical: 17,
             alignItems: 'center',
@@ -282,7 +276,7 @@ export default function PremiumUpgradeScreen() {
 
         {/* Legal */}
         <Text style={{ fontSize: 11, color: 'hsl(24 20% 62%)', textAlign: 'center', marginTop: 16, lineHeight: 16 }}>
-          Subscriptions renew automatically. Cancel anytime from your subscription settings.
+          {PREMIUM_MONTHLY_PRICE_EUR}/month · {PREMIUM_ANNUAL_PRICE_EUR}/year. Subscriptions renew automatically — cancel anytime from your subscription settings.
         </Text>
 
         {/* Maybe later */}

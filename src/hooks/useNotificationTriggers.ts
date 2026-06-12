@@ -8,7 +8,7 @@ import {
     scheduleKilnkinNotification,
     scheduleWeeklySummaryNotification,
 } from '../services/notifications';
-import { useAppStore } from '../store/appStore';
+import { useVisiblePieces, useAppStore } from '../store/appStore';
 
 const DRYING_THRESHOLD_DAYS = 3;
 const STAGE_OVERAGE_DAYS = 7;
@@ -52,7 +52,7 @@ export function useNotificationTriggers() {
   const kilnkinCompanion = useAppStore((s) => s.kilnkinCompanion);
   const sessionToken = useAppStore((s) => s.sessionToken);
   const firings = useAppStore((s) => s.firings);
-  const pieces = useAppStore((s) => s.pieces);
+  const pieces = useVisiblePieces();
   const rhythm = useAppStore((s) => s.studioRhythm);
   const dailyMissionCompletion = useAppStore((s) => s.dailyMissionCompletion);
 

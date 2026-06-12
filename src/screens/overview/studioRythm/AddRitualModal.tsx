@@ -77,7 +77,7 @@ export function AddRitualModal({ visible, onClose, editRitual }: Props) {
             <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
               <View className="flex-row items-center gap-2">
                 <View className="w-8 h-8 rounded-xl items-center justify-center bg-amber-50 border border-amber-100">
-                  <Repeat2 size={16} color="hsl(24 75% 45%)" />
+                  <Repeat2 size={16} color="hsl(39 57% 51%)" />
                 </View>
                 <Text className="text-base font-semibold text-foreground">
                   {editRitual ? 'Edit Ritual' : 'New Ritual'}

@@ -163,7 +163,7 @@ export const FIRING_TYPES = [
 export const EMPTY_FORM = {
   name: '',
   clay: '',
-  stage: 'forming',
+  stage: 'idea',
   status: '',
   photo: undefined,
   location: '',

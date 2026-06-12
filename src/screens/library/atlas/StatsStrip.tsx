@@ -5,48 +5,29 @@ import { View } from 'react-native';
 export function StatsStrip({
   glazeCount,
   testCount,
-  collectionCount,
 }: {
   glazeCount: number;
   testCount: number;
-  collectionCount: number;
+  collectionCount?: number;
 }) {
   const stats = [
     { label: 'Glazes', value: glazeCount },
-    { label: 'Tests', value: testCount },
-    { label: 'Collections', value: collectionCount },
+    { label: 'Tests logged', value: testCount },
   ];
 
   return (
-    <View
-      style={{
-        marginHorizontal: 24,
-        marginTop: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 20,
-      }}
-    >
+    <View className="mx-6 mt-4 flex-row items-center gap-6">
       {stats.map(({ label, value }, i) => (
         <React.Fragment key={label}>
           <View>
-            <Text style={{ fontFamily: 'Fraunces_700Bold', fontSize: 24, color: '#3A2810' }}>
+            <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
               {value}
             </Text>
-            <Text
-              style={{
-                fontSize: 10,
-                color: '#A68555',
-                textTransform: 'uppercase',
-                letterSpacing: 1.2,
-              }}
-            >
+            <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {label}
             </Text>
           </View>
-          {i < stats.length - 1 && (
-            <View style={{ width: 1, height: 30, backgroundColor: '#D9C9A8' }} />
-          )}
+          {i < stats.length - 1 ? <View className="w-px h-8 bg-border" /> : null}
         </React.Fragment>
       ))}
     </View>

@@ -1,7 +1,8 @@
 import { Text } from '@/src/components/ui/text';
+import { Image } from 'expo-image';
 import { BookmarkPlus, ChevronDown, ChevronUp, Flame, Star } from 'lucide-react-native';
 import React from 'react';
-import { Image, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import type { DiscoverRecipe, RecipeIngredient } from './types';
 
 // ─── Ingredient bar row ───────────────────────────────────────────────────────

@@ -1,120 +1,73 @@
 // src/screens/community/tabs/StudiosTab.tsx
+import { EmptyState } from '@/src/components/EmptyState';
+import { InlineErrorCard } from '@/src/components/InlineErrorCard';
+import { CollapsibleSection } from '@/src/components/SectionHeader';
+import { SkeletonStudioCard } from '@/src/components/Skeleton';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
+import { UserAvatar } from '@/src/components/UserAvatar';
+import { BrandColors } from '@/src/constants/theme';
 import {
-    apiAcceptJoinRequest,
-    apiAcceptStudioInvite,
-    apiAddStudioMember,
-    apiCreateStudio,
-    apiDeleteStudio,
-    apiInviteToStudio,
-    apiLeaveStudio,
-    apiListIncomingJoinRequests,
-    apiListIncomingStudioInvites,
-    apiListMemberStudios,
-    apiListOwnedStudios,
-    apiListStudioMembers,
-    apiRejectJoinRequest,
-    apiRejectStudioInvite,
-    apiRequestToJoinStudio,
-    type BackendStudio,
-    type BackendStudioInvite,
-    type BackendStudioJoinRequest,
-    type BackendUser
+  apiAcceptJoinRequest,
+  apiAcceptStudioInvite,
+  apiAddStudioMember,
+  apiCreateStudio,
+  apiDeleteStudio,
+  apiInviteToStudio,
+  apiLeaveStudio,
+  apiListIncomingJoinRequests,
+  apiListIncomingStudioInvites,
+  apiListMemberStudios,
+  apiListOwnedStudios,
+  apiListStudioMembers,
+  apiRejectJoinRequest,
+  apiRejectStudioInvite,
+  apiRequestToJoinStudio,
+  type BackendStudio,
+  type BackendStudioInvite,
+  type BackendStudioJoinRequest,
+  type BackendUser
 } from '@/src/services/studios';
 import { useAppStore } from '@/src/store';
 import {
-    Check,
-    ChevronDown,
-    ChevronRight,
-    Crown,
-    DoorOpen,
-    Mail,
-    Plus,
-    Trash2,
-    Users,
-    X,
+  Check,
+  ChevronRight,
+  Crown,
+  DoorOpen,
+  Mail,
+  Plus,
+  Trash2,
+  Users,
+  X,
 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function studioInitials(name: string) {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
-}
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function CardSkeleton() {
-  return (
-    <View className="rounded-2xl border border-border bg-card p-4 gap-2">
-      <View className="flex-row items-center gap-3">
-        <View className="w-11 h-11 rounded-xl bg-muted" />
-        <View className="flex-1 gap-1.5">
-          <View className="h-3.5 w-36 rounded bg-muted" />
-          <View className="h-2.5 w-20 rounded bg-muted" />
-        </View>
-      </View>
-    </View>
-  );
-}
-
-// ─── Section header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ label, count }: { label: string; count?: number }) {
-  return (
-    <View className="flex-row items-center gap-2 mb-1">
-      <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        {label}
-      </Text>
-      {count !== undefined && (
-        <View className="px-1.5 py-0.5 rounded-full bg-muted">
-          <Text className="text-xs font-bold text-muted-foreground">{count}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
 
 // ─── Studio avatar ────────────────────────────────────────────────────────────
 
 function StudioAvatar({ name, size = 44 }: { name: string; size?: number }) {
   return (
-    <View
-      className="rounded-xl bg-primary/10 items-center justify-center"
-      style={{ width: size, height: size }}
-    >
-      <Text className="font-bold text-primary" style={{ fontSize: size * 0.36 }}>
-        {studioInitials(name)}
-      </Text>
-    </View>
+    <UserAvatar
+      name={name}
+      size={size}
+      shape="rounded"
+      backgroundColor="hsl(39 57% 95%)"
+      textColor={BrandColors.primary}
+    />
   );
 }
 
 function MemberPreviewCard({ user }: { user: BackendUser }) {
-  const initials = user.name
-    .split(' ')
-    .slice(0, 2)
-    .map((chunk) => chunk[0]?.toUpperCase() ?? '')
-    .join('');
-
   return (
     <View className="flex-row items-center gap-3 rounded-xl border border-border bg-background p-2.5">
-      <View className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center">
-        <Text className="text-xs font-bold text-primary">{initials || 'U'}</Text>
-      </View>
+      <UserAvatar name={user.name} size={36} shape="circle" backgroundColor="hsl(39 57% 95%)" textColor={BrandColors.primary} />
       <View className="flex-1">
         <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>{user.name || 'Unnamed user'}</Text>
         <View className="flex-row items-center gap-1">
@@ -259,7 +212,7 @@ function InviteRow({
   return (
     <View className="rounded-2xl border border-border bg-card p-3 flex-row items-center gap-3">
       <View className="w-10 h-10 rounded-xl bg-primary/10 items-center justify-center">
-        <Users size={16} color="hsl(15 65% 50%)" />
+        <Users size={16} color="hsl(39 57% 51%)" />
       </View>
       <View className="flex-1">
         <Text className="text-sm font-semibold text-foreground">Studio invite</Text>
@@ -315,7 +268,7 @@ function JoinRequestRow({
   return (
     <View className="rounded-2xl border border-border bg-card p-3 flex-row items-center gap-3">
       <View className="w-10 h-10 rounded-xl bg-muted items-center justify-center">
-        <ChevronRight size={16} color="hsl(15 50% 55%)" />
+        <ChevronRight size={16} color="hsl(39 57% 55%)" />
       </View>
       <View className="flex-1">
         <Text className="text-sm font-semibold text-foreground">Join request</Text>
@@ -427,45 +380,6 @@ function CreateStudioModal({
         </View>
       </View>
     </Modal>
-  );
-}
-
-// ─── Collapsible section ──────────────────────────────────────────────────────
-
-function CollapsibleSection({
-  label,
-  count,
-  children,
-  defaultOpen = true,
-}: {
-  label: string;
-  count?: number;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <View className="gap-2">
-      <TouchableOpacity
-        onPress={() => setOpen((v) => !v)}
-        className="flex-row items-center gap-2"
-        activeOpacity={0.7}
-      >
-        <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">
-          {label}
-        </Text>
-        {count !== undefined && (
-          <View className="px-1.5 py-0.5 rounded-full bg-muted">
-            <Text className="text-xs font-bold text-muted-foreground">{count}</Text>
-          </View>
-        )}
-        {open
-          ? <ChevronDown size={14} color="hsl(0 0% 60%)" />
-          : <ChevronRight size={14} color="hsl(0 0% 60%)" />
-        }
-      </TouchableOpacity>
-      {open && children}
-    </View>
   );
 }
 
@@ -652,26 +566,15 @@ export function StudiosTab() {
   if (isLoading) {
     return (
       <>
-        <CardSkeleton />
-        <CardSkeleton />
-        <CardSkeleton />
+        <SkeletonStudioCard />
+        <SkeletonStudioCard />
+        <SkeletonStudioCard />
       </>
     );
   }
 
   if (error) {
-    return (
-      <Card className="p-5 items-center gap-3">
-        <Text className="text-sm text-muted-foreground text-center">{error}</Text>
-        <TouchableOpacity
-          onPress={load}
-          className="px-5 py-2 rounded-xl bg-primary"
-          activeOpacity={0.8}
-        >
-          <Text className="text-sm font-semibold text-white">Retry</Text>
-        </TouchableOpacity>
-      </Card>
-    );
+    return <InlineErrorCard message={error} onRetry={load} />;
   }
 
   const noStudios = owned.length === 0 && member.length === 0;
@@ -691,7 +594,7 @@ export function StudiosTab() {
         className="flex-row items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-primary/40 bg-primary/5"
         activeOpacity={0.8}
       >
-        <Plus size={16} color="hsl(15 65% 50%)" />
+        <Plus size={16} color="hsl(39 57% 51%)" />
         <Text className="text-sm font-semibold text-primary">Create a new studio</Text>
       </TouchableOpacity>
 
@@ -734,13 +637,13 @@ export function StudiosTab() {
                   activeOpacity={0.8}
                   className="px-3 py-2 rounded-xl border"
                   style={{
-                    borderColor: selected ? 'hsl(15 65% 50%)' : 'hsl(0 0% 85%)',
-                    backgroundColor: selected ? 'hsl(15 65% 95%)' : 'white',
+                    borderColor: selected ? 'hsl(39 57% 51%)' : 'hsl(0 0% 85%)',
+                    backgroundColor: selected ? 'hsl(39 57% 95%)' : 'white',
                   }}
                 >
                   <Text
                     className="text-xs font-semibold"
-                    style={{ color: selected ? 'hsl(15 65% 45%)' : 'hsl(0 0% 35%)' }}
+                    style={{ color: selected ? 'hsl(39 57% 45%)' : 'hsl(0 0% 35%)' }}
                   >
                     {studio.name}
                   </Text>
@@ -872,13 +775,11 @@ export function StudiosTab() {
 
       {/* ── Empty state ─── */}
       {noStudios && noActivity && (
-        <Card className="p-6 items-center gap-2">
-          <Users size={36} color="hsl(15 30% 70%)" />
-          <Text className="text-sm font-semibold text-foreground text-center mt-1">No studios yet</Text>
-          <Text className="text-xs text-muted-foreground text-center leading-relaxed">
-            Create your own studio or ask a studio owner for an invite link to join one.
-          </Text>
-        </Card>
+        <EmptyState
+          icon={Users}
+          title="No studios yet"
+          description="Create your own studio or ask a studio owner for an invite link to join one."
+        />
       )}
     </>
   );

@@ -24,6 +24,26 @@ export interface BackendPiece {
   status: ApiPieceStatus;
   created_at: string;
   updated_at: string;
+  client_ref?: string;
+  is_deleted?: boolean;
+}
+
+/** Snapshot sent to POST /users/me/pieces/sync — identity is client_ref only. */
+export interface PieceSyncSnapshot {
+  client_ref: string;
+  name: string;
+  status?: ApiPieceStatus;
+  description?: string;
+  deleted?: boolean;
+}
+
+export interface SyncPiecesRequest {
+  pieces: PieceSyncSnapshot[];
+}
+
+export interface SyncPiecesResponse {
+  pieces: BackendPiece[];
+  client_ref_map: Record<string, string>;
 }
 
 export interface BackendPieceAsset {
@@ -115,6 +135,23 @@ export async function apiListPieces(sessionToken: string): Promise<BackendPiece[
   const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces`);
   if (!res.ok) throw new Error(`listPieces failed (${res.status})`);
   return res.json() as Promise<BackendPiece[]>;
+}
+
+/**
+ * POST /users/me/pieces/sync — push local snapshots; server returns the
+ * authoritative alive list plus a client_ref → backend id map.
+ */
+export async function apiSyncPieces(
+  sessionToken: string,
+  payload: SyncPiecesRequest,
+): Promise<SyncPiecesResponse> {
+  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces/sync`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`syncPieces failed (${res.status})`);
+  return res.json() as Promise<SyncPiecesResponse>;
 }
 
 /** DELETE /users/me/pieces/{piece_id} — permanently remove a piece. */

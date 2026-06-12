@@ -2,7 +2,7 @@ import { Text } from '@/src/components/ui/text';
 import { Kilnkin } from '@/src/screens/overview/components/Kilnkin';
 import { getStudioSignals } from '@/src/screens/overview/utils/getStudioSignals';
 import { mapPiecesToStudioPositions, type StudioPiecePositions } from '@/src/screens/overview/utils/mapPiecesToStudioPositions';
-import { useAppStore } from '@/src/store';
+import { useVisiblePieces, useAppStore } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -234,7 +234,7 @@ export function StudioScene({ height }: StudioSceneProps) {
   const toteHitboxSizeRef = useRef({ width: 1, height: 1 });
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
-  const pieces = useAppStore((state) => state.pieces);
+  const pieces = useVisiblePieces();
   const firings = useAppStore((state) => state.firings);
   const studioHotspots = useMemo(() => getStudioHotspots(kilnkinCompanion.name), [kilnkinCompanion.name]);
   const studioPiecePositions = useMemo(() => mapPiecesToStudioPositions(pieces), [pieces]);
@@ -407,7 +407,7 @@ export function StudioScene({ height }: StudioSceneProps) {
         />
         <Animated.View
           pointerEvents="none"
-          className="absolute right-8 bottom-12 h-44 w-44 rounded-full bg-orange-100/35"
+          className="absolute right-8 bottom-12 h-44 w-44 rounded-full bg-primary/15/35"
           style={{ opacity: ambientGlowOpacity }}
         />
 

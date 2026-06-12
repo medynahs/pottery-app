@@ -1,8 +1,3 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
 export const Colors = {
   light: {
     background: 'hsl(34 35% 92%)',
@@ -47,3 +42,12 @@ export const Colors = {
     ring: 'hsl(216 12.2% 83.9%)',
   },
 };
+
+/** Brand gold — use for inline styles where Tailwind `text-primary` / `bg-primary` isn't available. */
+export const BrandColors = {
+  primary: 'hsl(39 57% 51%)',
+  primaryHex: '#C4A052',
+  primaryMuted: 'hsl(39 40% 45%)',
+  primarySoft: 'hsl(39 57% 95%)',
+  primarySoftBorder: 'hsl(39 40% 80%)',
+} as const;

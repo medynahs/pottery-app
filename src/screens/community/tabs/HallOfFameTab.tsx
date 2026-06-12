@@ -1,15 +1,19 @@
 // src/screens/community/tabs/HallOfFameTab.tsx
+import { EmptyState } from '@/src/components/EmptyState';
+import { InlineErrorCard } from '@/src/components/InlineErrorCard';
+import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
+import { UserAvatar } from '@/src/components/UserAvatar';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import {
-    apiGetChallengeLeaderboard,
-    apiListChallenges,
-    type BackendChallengeLeaderboardEntry,
+  apiGetChallengeLeaderboard,
+  apiListChallenges,
+  type BackendChallengeLeaderboardEntry,
 } from '@/src/services/challenges';
 import { useAppStore } from '@/src/store';
 import { Crown, Star, Trophy } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { View } from 'react-native';
 
 // ─── Medal config ──────────────────────────────────────────────────────────────
 
@@ -19,31 +23,6 @@ const MEDALS = [
   { color: '#92400E', bg: '#FEF3C7', border: '#B45309' }, // bronze
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
-}
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function EntrySkeleton() {
-  return (
-    <View className="flex-row items-center gap-3 py-3 px-4 border-b border-border/40">
-      <View className="w-6 h-6 rounded bg-muted" />
-      <View className="w-9 h-9 rounded-full bg-muted" />
-      <View className="flex-1 gap-1.5">
-        <View className="h-3 w-24 rounded bg-muted" />
-        <View className="h-2.5 w-36 rounded bg-muted" />
-      </View>
-      <View className="w-8 h-5 rounded-full bg-muted" />
-    </View>
-  );
-}
 
 // ─── Podium entry (top 3) ─────────────────────────────────────────────────────
 
@@ -101,23 +80,15 @@ function PodiumEntry({
       )}
 
       {/* Avatar */}
-      <View
-        className="rounded-full items-center justify-center"
-        style={{
-          width: avatarSize,
-          height: avatarSize,
-          backgroundColor: medal.bg,
-          borderWidth: 2.5,
-          borderColor: medal.border,
-        }}
-      >
-        <Text
-          className="font-black"
-          style={{ fontSize: isFirst ? 20 : 14, color: medal.color }}
-        >
-          {getInitials(entry.name)}
-        </Text>
-      </View>
+      <UserAvatar
+        name={entry.name}
+        size={avatarSize}
+        backgroundColor={medal.bg}
+        borderColor={medal.border}
+        borderWidth={2.5}
+        textColor={medal.color}
+        serif
+      />
 
       {/* Name */}
       <Text
@@ -163,14 +134,7 @@ function RankRow({ entry, rank }: { entry: HallOfFameEntry; rank: number }) {
         {rank}
       </Text>
 
-      <View
-        className="w-9 h-9 rounded-full items-center justify-center"
-        style={{ backgroundColor: 'hsl(25 30% 90%)' }}
-      >
-        <Text className="text-xs font-bold" style={{ color: 'hsl(25 40% 45%)' }}>
-          {getInitials(entry.name)}
-        </Text>
-      </View>
+      <UserAvatar name={entry.name} size={36} backgroundColor="hsl(39 57% 95%)" textColor="hsl(39 40% 45%)" />
 
       <View className="flex-1">
         <Text className="text-sm font-semibold text-foreground">{entry.name}</Text>
@@ -268,35 +232,22 @@ export function HallOfFameTab() {
       {/* ── Loading ── */}
       {isLoading && (
         <Card className="py-2 px-0 overflow-hidden">
-          {[0, 1, 2, 3, 4].map((i) => <EntrySkeleton key={i} />)}
+          {[0, 1, 2, 3, 4].map((i) => <SkeletonLeaderboardRow key={i} />)}
         </Card>
       )}
 
       {/* ── Error ── */}
       {!isLoading && error && (
-        <Card className="p-5 items-center gap-3">
-          <Text className="text-sm text-muted-foreground text-center">{error}</Text>
-          <TouchableOpacity
-            onPress={load}
-            className="px-5 py-2 rounded-xl bg-primary"
-            activeOpacity={0.8}
-          >
-            <Text className="text-sm font-semibold text-white">Retry</Text>
-          </TouchableOpacity>
-        </Card>
+        <InlineErrorCard message={error} onRetry={load} />
       )}
 
       {/* ── Empty ── */}
       {!isLoading && !error && entries.length === 0 && (
-        <Card className="p-6 items-center gap-2">
-          <Trophy size={32} color="#D97706" />
-          <Text className="text-sm font-semibold text-foreground text-center mt-1">
-            No entries yet
-          </Text>
-          <Text className="text-xs text-muted-foreground text-center leading-relaxed">
-            Complete a challenge to appear in the Hall of Fame.
-          </Text>
-        </Card>
+        <EmptyState
+          icon={Trophy}
+          title="No entries yet"
+          description="Complete a challenge to appear in the Hall of Fame."
+        />
       )}
 
       {/* ── Podium (top 3) ── */}

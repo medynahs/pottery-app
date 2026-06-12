@@ -78,8 +78,8 @@ export function KilnCard({ kiln, firingCount, onEdit, onDelete, onViewHistory }:
       {timingSummary.length > 0 ? (
         <View className="flex-row flex-wrap gap-2 mb-3">
           {timingSummary.map((item) => (
-            <View key={item.label} className="bg-orange-50 rounded-xl px-3 py-1.5 border border-orange-100">
-              <Text className="text-xs text-orange-700">
+            <View key={item.label} className="bg-primary/10 rounded-xl px-3 py-1.5 border border-primary/20">
+              <Text className="text-xs text-primary">
                 {item.label} {item.value}d
               </Text>
             </View>

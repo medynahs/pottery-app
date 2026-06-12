@@ -1,38 +1,75 @@
-import { Text } from '@/src/components/ui/text';
-import { ImagePlus } from 'lucide-react-native';
-import React from 'react';
-import { TouchableOpacity } from 'react-native';
-
-export function MediaSlot({
-  label,
-  uri,
-  onPress,
-}: {
-  label: string;
-  uri?: string;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.82}
-      style={{
-        flex: 1,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#E8D9BE',
-        overflow: 'hidden',
-        minHeight: 100,
-        backgroundColor: uri ? 'rgba(234,223,206,0.85)' : 'rgba(249,245,238,0.92)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 12,
-      }}
-    >
-      <ImagePlus size={18} color="#A68555" />
-      <Text style={{ fontSize: 10, color: '#A68555', marginTop: 6, textAlign: 'center' }}>
-        {uri ? `${label} ready` : label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
+import { Text } from '@/src/components/ui/text';
+import { Image } from 'expo-image';
+import { Camera } from 'lucide-react-native';
+import React from 'react';
+import { Pressable, View } from 'react-native';
+
+export function MediaSlot({
+  label,
+  uri,
+  onPress,
+  large,
+}: {
+  label: string;
+  uri?: string;
+  onPress: () => void;
+  large?: boolean;
+}) {
+  const height = large ? 160 : 100;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      className={`overflow-hidden rounded-2xl border border-border bg-muted/30 ${large ? 'w-full' : 'flex-1'}`}
+      style={({ pressed }) => ({
+        height,
+        opacity: pressed ? 0.82 : 1,
+      })}
+    >
+      {uri ? (
+        <Image source={{ uri }} style={{ width: '100%', height }} contentFit="cover" />
+      ) : (
+        <View className="flex-1 items-center justify-center px-3 py-4">
+          <Camera size={large ? 24 : 18} color="hsl(24 20% 45%)" />
+          <Text className="text-[11px] text-muted-foreground mt-2 text-center">{label}</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+export function GlazeThumbnail({
+  uri,
+  colorHex,
+  size = 72,
+  rounded = 16,
+}: {
+  uri?: string;
+  colorHex: string;
+  size?: number;
+  rounded?: number;
+}) {
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        style={{ width: size, height: size, borderRadius: rounded }}
+        contentFit="cover"
+      />
+    );
+  }
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: rounded,
+        backgroundColor: colorHex,
+      }}
+    />
+  );
+}
+

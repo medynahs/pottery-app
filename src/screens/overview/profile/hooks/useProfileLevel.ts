@@ -1,4 +1,4 @@
-import { useAppStore } from '@/src/store/appStore';
+import { useVisiblePieces, useAppStore } from '@/src/store/appStore';
 import { useMemo } from 'react';
 
 interface BadgeContext {
@@ -77,7 +77,7 @@ function getNextTitle(earned: number) {
 }
 
 export function useProfileLevel() {
-  const pieces = useAppStore((s) => s.pieces);
+  const pieces = useVisiblePieces();
   const firings = useAppStore((s) => s.firings);
 
   return useMemo(() => {

@@ -1,5 +1,5 @@
 import { Text } from '@/src/components/ui/text';
-import { useAppStore } from '@/src/store/appStore';
+import { useVisiblePieces, useAppStore } from '@/src/store/appStore';
 import { Award, BookOpen, Camera, Crown, Disc, Flame, FlaskConical, Gem, Gift, Hammer, Layers, Medal, ShoppingBag, Sparkles, Star, Tag, TrendingUp, Trophy } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
@@ -56,9 +56,9 @@ const BADGE_REGISTRY: BadgeDef[] = [
     name: 'First Fire',
     desc: '1 bisque firing',
     icon: Flame,
-    iconColor: 'hsl(25 90% 55%)',
-    bg: 'bg-orange-50',
-    border: 'border-orange-200',
+    iconColor: 'hsl(39 57% 51%)',
+    bg: 'bg-primary/10',
+    border: 'border-primary/25',
     current: (ctx) => ctx.bisqueFirings,
     target: 1,
   },
@@ -257,7 +257,7 @@ const BADGE_REGISTRY: BadgeDef[] = [
 
 export function JourneyTab() {
   const user = useAppStore((s) => s.user);
-  const pieces = useAppStore((s) => s.pieces);
+  const pieces = useVisiblePieces();
   const firings = useAppStore((s) => s.firings);
 
   const ctx = useMemo<BadgeContext>(() => ({
@@ -295,7 +295,7 @@ export function JourneyTab() {
   const keyStats = useMemo<KeyStat[]>(() => [
     { label: 'Total Pieces', value: `${ctx.totalPieces}`, icon: Layers, color: 'hsl(213 80% 55%)', bg: 'bg-blue-50' },
     { label: 'Survival Rate', value: `${survivalRate}%`, icon: TrendingUp, color: 'hsl(145 50% 45%)', bg: 'bg-emerald-50' },
-    { label: 'Firings', value: `${ctx.totalFirings}`, icon: Flame, color: 'hsl(25 90% 55%)', bg: 'bg-orange-50' },
+    { label: 'Firings', value: `${ctx.totalFirings}`, icon: Flame, color: 'hsl(39 57% 51%)', bg: 'bg-primary/10' },
     { label: 'Finished', value: `${ctx.finishedPieces}`, icon: Award, color: 'hsl(100 40% 45%)', bg: 'bg-green-50' },
   ], [ctx.finishedPieces, ctx.totalFirings, ctx.totalPieces, survivalRate]);
 
@@ -341,7 +341,7 @@ export function JourneyTab() {
       milestones.push({
         year: `${now.getFullYear()}`,
         label: `Logged ${ctx.totalFirings} kiln firings`,
-        color: 'bg-orange-400',
+        color: 'bg-primary',
         date: now,
       });
     }

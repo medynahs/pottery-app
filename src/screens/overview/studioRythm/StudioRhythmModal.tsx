@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RhythmType, StageKey } from './studioRhythm';
-import { STAGE_CONFIG } from './studioRhythm';
+import { STAGE_CONFIG, SUGGESTED_WEEKLY_STAGE_DAYS } from './studioRhythm';
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const STAGE_ORDER: StageKey[] = ['throw', 'trim', 'glaze', 'bisque'];
@@ -33,6 +33,7 @@ export function StudioRhythmModal({ visible, onClose }: Props) {
 
   const studioRhythm    = useAppStore((s) => s.studioRhythm);
   const setType         = useAppStore((s) => s.setStudioRhythmType);
+  const setStageDays    = useAppStore((s) => s.setStudioRhythmStageDays);
   const toggleDay       = useAppStore((s) => s.toggleStageDayDay);
   const setDrying       = useAppStore((s) => s.setStudioRhythmDryingTimers);
   const setSprintLength     = useAppStore((s) => s.setSprintLength);
@@ -81,7 +82,7 @@ export function StudioRhythmModal({ visible, onClose }: Props) {
             <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
               <View className="flex-row items-center gap-2">
                 <View className="w-8 h-8 rounded-xl items-center justify-center bg-amber-50 border border-amber-100">
-                  <CalendarCheck2 size={16} color="hsl(24 75% 45%)" />
+                  <CalendarCheck2 size={16} color="hsl(39 57% 51%)" />
                 </View>
                 <Text className="text-base font-semibold text-foreground">Edit Rhythm</Text>
               </View>
@@ -130,9 +131,20 @@ export function StudioRhythmModal({ visible, onClose }: Props) {
               {/* Stage Day Grid (only for weekly / sprint) */}
               {studioRhythm.type !== 'freeform' && (
                 <>
-                  <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    Stage Days
-                  </Text>
+                  <View className="flex-row items-center justify-between mb-3">
+                    <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Stage Days
+                    </Text>
+                    {studioRhythm.stageDays.every((sd) => sd.days.length === 0) ? (
+                      <TouchableOpacity
+                        onPress={() => setStageDays(SUGGESTED_WEEKLY_STAGE_DAYS)}
+                        activeOpacity={0.8}
+                        className="rounded-full px-2.5 py-1 bg-amber-50 border border-amber-200"
+                      >
+                        <Text className="text-[10px] font-semibold text-amber-800">Use suggested week</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
 
                   {/* Day-of-week header */}
                   <View className="flex-row mb-1 pl-16">

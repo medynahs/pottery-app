@@ -80,7 +80,7 @@ export function FeedbackModal({ visible, onClose }: Props) {
               style={{ backgroundColor: '#FDF3DC', borderWidth: 1, borderColor: '#E8D9BE' }}
             >
               <View className="flex-row items-center gap-2">
-                <MessageSquarePlus size={15} color="hsl(24 75% 45%)" />
+                <MessageSquarePlus size={15} color="hsl(39 57% 51%)" />
                 <Text className="text-sm font-serif font-bold" style={{ color: '#6B4E2A' }}>
                   Write to Pottery Nook team
                 </Text>

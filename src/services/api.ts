@@ -1,5 +1,14 @@
 import { API_BASE_URL as API_BASE } from './index';
 
+/** HTTP error from the app backend — carries the status code so callers can
+ *  react to specific failures (e.g. 401 → expired session → sign out). */
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 export interface BackendProfile {
   id: string;
   ory_id: string;
@@ -21,8 +30,23 @@ export async function fetchMe(sessionToken: string): Promise<BackendProfile> {
     credentials: 'omit',
     headers: { 'X-Session-Token': sessionToken },
   });
-  if (!res.ok) throw new Error(`fetchMe failed (${res.status})`);
+  if (!res.ok) throw new ApiError(`fetchMe failed (${res.status})`, res.status);
   return res.json() as Promise<BackendProfile>;
+}
+
+/**
+ * Permanently deletes the signed-in user's account and all associated data.
+ * The backend cascades to pieces, firings, glazes and removes the Ory identity.
+ * Throws on any non-2xx response — callers must NOT clear the local session
+ * unless this succeeds, otherwise deletion silently degrades to a sign-out.
+ */
+export async function deleteAccount(sessionToken: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/users/me`, {
+    method: 'DELETE',
+    credentials: 'omit',
+    headers: { 'X-Session-Token': sessionToken },
+  });
+  if (!res.ok) throw new ApiError(`Account deletion failed (${res.status})`, res.status);
 }
 
 export async function uploadAvatar(

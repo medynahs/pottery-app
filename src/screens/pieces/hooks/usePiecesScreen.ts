@@ -1,5 +1,5 @@
 import { useStageConfig } from '@/src/hooks/useStageConfig';
-import { useAppStore } from '@/src/store';
+import { useVisiblePieces, useAppStore } from '@/src/store';
 import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
@@ -10,14 +10,14 @@ import type { StageAdvanceCelebration } from '../modals/StageAdvanceCelebrationM
 import type { StageAdvanceCapture, StageAdvanceRequest } from '../modals/StageAdvanceFlowModal';
 import { FINISHED_STAGE_ID, getAdvanceOrder, getConfiguredNextStage } from '../utils/stageFlow';
 import { STAGE_ICONS, resolveStageIcon } from '../utils/stageIconUtils';
-import { useCreatePieceMutation, useDeletePieceMutation, usePiecesSync, useUpdatePieceMutation } from './usePiecesSync';
+import { schedulePiecesSync, usePiecesSyncStatus } from './usePiecesSync';
 
 function getSetName(name: string) {
   return name.replace(/\s+\d+$/, '');
 }
 
 export function usePiecesScreen() {
-  const pieces = useAppStore((s) => s.pieces);
+  const pieces = useVisiblePieces();
   const addPieces = useAppStore((s) => s.addPieces);
   const updatePiece = useAppStore((s) => s.updatePiece);
   const deletePiece = useAppStore((s) => s.deletePiece);
@@ -31,10 +31,7 @@ export function usePiecesScreen() {
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
 
   // ── Backend sync ────────────────────────────────────────────────────────────
-  const syncQuery = usePiecesSync();
-  const { mutate: createPiece } = useCreatePieceMutation();
-  const { mutate: syncPieceUpdate } = useUpdatePieceMutation();
-  const { mutate: deletePieceRemote } = useDeletePieceMutation();
+  const { isSyncing, refetchPieces } = usePiecesSyncStatus();
 
   const [activeStage, setActiveStage] = React.useState('all');
   const [search, setSearch] = React.useState('');
@@ -176,10 +173,7 @@ export function usePiecesScreen() {
   const handleAdd = (newPieces: Piece[]) => {
     addPieces(newPieces);
     setAddOpen(false);
-    // Persist each new piece to the backend (fire-and-forget; backendId stamped on success)
-    for (const localPiece of newPieces) {
-      createPiece({ localPiece });
-    }
+    schedulePiecesSync();
   };
 
   const handleUpdatePiece = React.useCallback((updated: Piece) => {
@@ -187,11 +181,8 @@ export function usePiecesScreen() {
     setJournalPiece((current) => (current?.id === updated.id ? updated : current));
     setActionSheetPiece((current) => (current?.id === updated.id ? updated : current));
     setEditPiece((current) => (current?.id === updated.id ? updated : current));
-    // Sync name/description/status changes to the backend if the piece is already registered
-    if (updated.backendId) {
-      syncPieceUpdate(updated);
-    }
-  }, [updatePiece, syncPieceUpdate]);
+    schedulePiecesSync();
+  }, [updatePiece]);
 
   const handleEditPiece = React.useCallback((updated: Piece) => {
     handleUpdatePiece(updated);
@@ -206,20 +197,21 @@ export function usePiecesScreen() {
 
   const confirmDeletePiece = React.useCallback(() => {
     if (pendingDeletePieceId == null) return;
-    const piece = pieces.find(p => p.id === pendingDeletePieceId);
     deletePiece(pendingDeletePieceId);
-    if (piece) deletePieceRemote(piece);
+    schedulePiecesSync();
     setPendingDeletePieceId(null);
-  }, [pendingDeletePieceId, deletePiece, deletePieceRemote, pieces]);
+  }, [pendingDeletePieceId, deletePiece]);
 
   const clearPendingDelete = React.useCallback(() => setPendingDeletePieceId(null), []);
 
   const handleDuplicate = React.useCallback((piece: Piece) => {
     duplicatePiece(piece);
+    schedulePiecesSync();
   }, [duplicatePiece]);
 
   const handleDuplicateBatch = React.useCallback((batchId: string) => {
     duplicateBatch(batchId);
+    schedulePiecesSync();
   }, [duplicateBatch]);
 
   const handleUpdateJournalEntry = React.useCallback(
@@ -381,6 +373,8 @@ export function usePiecesScreen() {
       });
     }
 
+    schedulePiecesSync();
+
     onAdvanced?.({
       fromStage: advanceRequest.fromStage,
       toStage: advanceRequest.toStage,
@@ -407,6 +401,7 @@ export function usePiecesScreen() {
     memorial: { epitaph?: string; causeOfDeath?: string }
   ) => {
     sendToCemetery(pieceId, memorial);
+    schedulePiecesSync();
     setCemeteryPiece((current) => (current?.id === pieceId ? null : current));
   }, [sendToCemetery]);
 
@@ -414,8 +409,8 @@ export function usePiecesScreen() {
     pieces,
     filteredPieces,
     displayItems,
-    isSyncing: syncQuery.isFetching,
-    refetchPieces: syncQuery.refetch,
+    isSyncing,
+    refetchPieces,
     stageTabs,
     stageLookup,
     progressStageOrder,

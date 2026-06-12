@@ -13,7 +13,7 @@
     "splash": {
       "image": "./assets/images/logoa.png",
       "resizeMode": "cover",
-      "backgroundColor": "#D7682D"
+      "backgroundColor": "#C4A052"
     },
     "ios": {
       "supportsTablet": true,
@@ -32,7 +32,7 @@
       "package": "com.ariane.potterylife",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logoa.png",
-        "backgroundColor": "#D7682D"
+        "backgroundColor": "#C4A052"
       },
       "permissions": [
         "CAMERA",
@@ -57,7 +57,7 @@
           "image": "../assets/images/logoa.png",
           "imageWidth": 400,
           "resizeMode": "contain",
-          "backgroundColor": "#D7682D"
+          "backgroundColor": "#C4A052"
         }
       ],
       "expo-web-browser",

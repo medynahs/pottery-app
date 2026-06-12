@@ -1,79 +1,33 @@
 // src/screens/community/tabs/FriendsTab.tsx
-import { Card } from '@/src/components/ui/card';
+import { EmptyState } from '@/src/components/EmptyState';
+import { InlineErrorCard } from '@/src/components/InlineErrorCard';
+import { SectionHeader } from '@/src/components/SectionHeader';
+import { SkeletonListRow } from '@/src/components/Skeleton';
+import { UserAvatar } from '@/src/components/UserAvatar';
 import { Text } from '@/src/components/ui/text';
 import {
-    apiAcceptFriendRequest,
-    apiCancelFriendRequest,
-    apiDeclineFriendRequest,
-    apiListFriends,
-    apiListIncomingFriendRequests,
-    apiListOutgoingFriendRequests,
-    apiRemoveFriend,
-    type BackendFriendRequest,
-    type BackendUser,
+  apiAcceptFriendRequest,
+  apiCancelFriendRequest,
+  apiDeclineFriendRequest,
+  apiListFriends,
+  apiListIncomingFriendRequests,
+  apiListOutgoingFriendRequests,
+  apiRemoveFriend,
+  type BackendFriendRequest,
+  type BackendUser,
 } from '@/src/services/friends';
 import { useAppStore } from '@/src/store';
 import { Check, UserMinus, UserPlus, Users, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    RefreshControl,
-    ScrollView,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
-
-function Avatar({ name, avatarUrl, size = 40 }: { name: string; avatarUrl: string | null; size?: number }) {
-  const initials = name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
-  return (
-    <View
-      className="rounded-full bg-muted items-center justify-center"
-      style={{ width: size, height: size }}
-    >
-      <Text className="font-bold text-muted-foreground" style={{ fontSize: size * 0.38 }}>
-        {initials}
-      </Text>
-    </View>
-  );
-}
-
-// ─── Section header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ label, count }: { label: string; count?: number }) {
-  return (
-    <View className="flex-row items-center gap-2 mb-1">
-      <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        {label}
-      </Text>
-      {count !== undefined && (
-        <View className="px-1.5 py-0.5 rounded-full bg-muted">
-          <Text className="text-xs font-bold text-muted-foreground">{count}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function RowSkeleton() {
-  return (
-    <View className="flex-row items-center gap-3 py-3 px-4 bg-card rounded-2xl border border-border">
-      <View className="w-10 h-10 rounded-full bg-muted" />
-      <View className="flex-1 gap-1.5">
-        <View className="h-3 w-32 rounded bg-muted" />
-        <View className="h-2.5 w-20 rounded bg-muted" />
-      </View>
-    </View>
-  );
-}
 
 // ─── Friend row ───────────────────────────────────────────────────────────────
 
@@ -110,7 +64,7 @@ function FriendRow({
 
   return (
     <View className="flex-row items-center gap-3 p-3 bg-card rounded-2xl border border-border">
-      <Avatar name={user.name} avatarUrl={user.avatar_url} />
+      <UserAvatar name={user.name} imageUri={user.avatar_url} size={40} />
       <View className="flex-1">
         <Text className="text-sm font-semibold text-foreground">{user.name}</Text>
         <Text className="text-xs text-muted-foreground">{user.email}</Text>
@@ -146,7 +100,7 @@ function IncomingRequestRow({
   return (
     <View className="flex-row items-center gap-3 p-3 bg-card rounded-2xl border border-border">
       <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-        <UserPlus size={18} color="hsl(15 65% 50%)" />
+        <UserPlus size={18} color="hsl(39 57% 51%)" />
       </View>
       <View className="flex-1">
         <Text className="text-sm font-semibold text-foreground">Friend request</Text>
@@ -200,7 +154,7 @@ function OutgoingRequestRow({
   return (
     <View className="flex-row items-center gap-3 p-3 bg-card rounded-2xl border border-border">
       <View className="w-10 h-10 rounded-full bg-muted items-center justify-center">
-        <UserPlus size={18} color="hsl(15 50% 60%)" />
+        <UserPlus size={18} color="hsl(39 50% 60%)" />
       </View>
       <View className="flex-1">
         <Text className="text-sm font-semibold text-foreground">Pending request</Text>
@@ -300,26 +254,15 @@ export function FriendsTab() {
   if (isLoading) {
     return (
       <>
-        <RowSkeleton />
-        <RowSkeleton />
-        <RowSkeleton />
+        <SkeletonListRow />
+        <SkeletonListRow />
+        <SkeletonListRow />
       </>
     );
   }
 
   if (error) {
-    return (
-      <Card className="p-5 items-center gap-3">
-        <Text className="text-sm text-muted-foreground text-center">{error}</Text>
-        <TouchableOpacity
-          onPress={() => load()}
-          className="px-5 py-2 rounded-xl bg-primary"
-          activeOpacity={0.8}
-        >
-          <Text className="text-sm font-semibold text-white">Retry</Text>
-        </TouchableOpacity>
-      </Card>
-    );
+    return <InlineErrorCard message={error} onRetry={() => load()} />;
   }
 
   const isEmpty = friends.length === 0 && incoming.length === 0 && outgoing.length === 0;
@@ -370,13 +313,11 @@ export function FriendsTab() {
 
         {/* ── Empty state ─── */}
         {isEmpty && (
-          <Card className="p-6 items-center gap-2">
-            <Users size={36} color="hsl(15 30% 70%)" />
-            <Text className="text-sm font-semibold text-foreground text-center mt-1">No friends yet</Text>
-            <Text className="text-xs text-muted-foreground text-center leading-relaxed">
-              Find potters in the feed and send them a friend request to start connecting.
-            </Text>
-          </Card>
+          <EmptyState
+            icon={Users}
+            title="No friends yet"
+            description="Find potters in the feed and send them a friend request to start connecting."
+          />
         )}
       </View>
     </ScrollView>

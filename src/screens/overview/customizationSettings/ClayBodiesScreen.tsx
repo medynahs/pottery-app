@@ -192,6 +192,11 @@ function AddClayBodyRow({ onAdd }: { onAdd: (name: string) => void }) {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function ClayBodiesScreen() {
+  const markSetupProgress = useAppStore((s) => s.markSetupProgress);
+
+  React.useEffect(() => {
+    markSetupProgress('clayBodiesReviewed');
+  }, [markSetupProgress]);
   const router = useRouter();
   const clayBodies = useAppStore((s) => s.clayBodies);
   const defaultClayBodyId = useAppStore((s) => s.defaultClayBodyId);

@@ -1,7 +1,11 @@
 // src/screens/community/tabs/ForYouFeed.tsx
+import { EmptyState } from '@/src/components/EmptyState';
+import { InlineErrorCard } from '@/src/components/InlineErrorCard';
+import { SkeletonFeedPost } from '@/src/components/Skeleton';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store';
+import { Users } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import {
@@ -12,25 +16,6 @@ import {
   type BackendPoll,
 } from '../../../services/community';
 import { FeedPostCard } from '../components/FeedPostCard';
-
-// ─── Skeleton placeholder card ────────────────────────────────────────────────
-
-function PostSkeleton() {
-  return (
-    <View className="rounded-2xl border border-border bg-card p-4">
-      <View className="flex-row items-center gap-3 mb-3">
-        <View className="w-9 h-9 rounded-full bg-muted" />
-        <View className="flex-1 gap-1.5">
-          <View className="h-3 w-28 rounded bg-muted" />
-          <View className="h-2.5 w-16 rounded bg-muted" />
-        </View>
-      </View>
-      <View className="h-3 w-full rounded bg-muted mb-2" />
-      <View className="h-3 w-3/4 rounded bg-muted mb-2" />
-      <View className="h-3 w-1/2 rounded bg-muted" />
-    </View>
-  );
-}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -96,7 +81,7 @@ function PollCard({
                     style={{
                       width: `${pct}%`,
                       backgroundColor: isVoted
-                        ? 'hsl(15 65% 50% / 0.15)'
+                        ? 'hsl(39 57% 51% / 0.15)'
                         : 'hsl(0 0% 0% / 0.04)',
                     }}
                   />
@@ -108,7 +93,7 @@ function PollCard({
                       className="text-sm flex-1"
                       style={{
                         fontWeight: isVoted ? '700' : '400',
-                        color: isVoted ? 'hsl(15 65% 45%)' : undefined,
+                        color: isVoted ? 'hsl(39 57% 45%)' : undefined,
                       }}
                     >
                       {opt.label}
@@ -213,33 +198,22 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
 
       {isLoading && (
         <>
-          <PostSkeleton />
-          <PostSkeleton />
-          <PostSkeleton />
+          <SkeletonFeedPost />
+          <SkeletonFeedPost />
+          <SkeletonFeedPost />
         </>
       )}
 
       {!isLoading && error && (
-        <Card className="p-5 items-center gap-3">
-          <Text className="text-sm text-muted-foreground text-center">{error}</Text>
-          <TouchableOpacity
-            onPress={() => fetchFeed()}
-            className="px-5 py-2 rounded-xl bg-primary"
-            activeOpacity={0.8}
-          >
-            <Text className="text-sm font-semibold text-white">Retry</Text>
-          </TouchableOpacity>
-        </Card>
+        <InlineErrorCard message={error} onRetry={() => fetchFeed()} />
       )}
 
       {!isLoading && !error && posts.length === 0 && (
-        <Card className="p-6 items-center gap-2">
-          <Text style={{ fontSize: 36 }}>🏺</Text>
-          <Text className="text-sm font-semibold text-foreground text-center">Nothing here yet</Text>
-          <Text className="text-xs text-muted-foreground text-center leading-relaxed">
-            Follow other potters to see their work in your feed.
-          </Text>
-        </Card>
+        <EmptyState
+          icon={Users}
+          title="Nothing here yet"
+          description="Follow other potters to see their work in your feed — or share your first piece with the community."
+        />
       )}
 
       {posts.map((post) => (

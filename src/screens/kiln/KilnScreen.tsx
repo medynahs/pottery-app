@@ -1,8 +1,7 @@
 ﻿// src/screens/KilnScreen.tsx
 import { ConfirmSheet } from '@/src/components/AppSheets';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
-import { Button } from '@/src/components/ui/button';
-import { Card } from '@/src/components/ui/card';
+import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
@@ -219,22 +218,14 @@ export default function KilnScreen() {
                   ) : null}
                 </>
               ) : (
-                <Card className="p-8 items-center">
-                  <View className="w-14 h-14 rounded-2xl bg-muted items-center justify-center mb-4">
-                    <FlameKindling size={28} color="hsl(15 80% 52%)" />
-                  </View>
-                  <Text className="text-sm font-semibold text-foreground text-center">Nothing in the kiln</Text>
-                  <Text className="text-xs text-muted-foreground mt-1.5 text-center leading-relaxed">
-                    Start a bisque or glaze firing to track progress, timeline, and piece outcomes automatically.
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => setStartFiringOpen(true)}
-                    className="mt-5 flex-row items-center gap-2 px-4 py-2.5 rounded-xl bg-primary"
-                  >
-                    <FlameKindling size={14} color="white" />
-                    <Text className="text-xs font-semibold text-primary-foreground">Start a Firing</Text>
-                  </TouchableOpacity>
-                </Card>
+                <EmptyState
+                  icon={FlameKindling}
+                  title="Nothing in the kiln"
+                  description="Start a bisque or glaze firing to track progress, timeline, and piece outcomes automatically."
+                  ctaLabel="Start a Firing"
+                  ctaIcon={FlameKindling}
+                  onCtaPress={() => setStartFiringOpen(true)}
+                />
               )}
             </View>
 
@@ -308,12 +299,11 @@ export default function KilnScreen() {
               ) : null}
 
               {waitingCount === 0 ? (
-                <Card className="p-6 items-center mt-2">
-                  <Text className="text-sm font-semibold text-foreground">Queue is empty</Text>
-                  <Text className="text-xs text-muted-foreground mt-1 text-center">
-                    Move pieces to bone-dry or glazing to see them here.
-                  </Text>
-                </Card>
+                <EmptyState
+                  icon={Layers}
+                  title="Queue is empty"
+                  description="Move pieces to bone-dry or glazing and they'll line up here, ready to fire."
+                />
               ) : null}
             </View>
 
@@ -334,16 +324,14 @@ export default function KilnScreen() {
               />
 
               {kilns.length === 0 ? (
-                <Card className="p-6 items-center">
-                  <FlameKindling size={32} color="hsl(24 20% 60%)" />
-                  <Text className="text-sm font-semibold text-foreground mt-3 mb-1">No kilns yet</Text>
-                  <Text className="text-xs text-muted-foreground text-center mb-4">
-                    Add your kiln to start tracking firings, piece history, and quirks.
-                  </Text>
-                  <Button onPress={() => setAddKilnOpen(true)} variant="outline" className="w-full">
-                    <Text className="text-sm font-semibold">Add Your First Kiln</Text>
-                  </Button>
-                </Card>
+                <EmptyState
+                  icon={Thermometer}
+                  title="No kilns yet"
+                  description="Add your kiln to start tracking firings, piece history, and quirks."
+                  ctaLabel="Add your first kiln"
+                  ctaIcon={Plus}
+                  onCtaPress={() => setAddKilnOpen(true)}
+                />
               ) : (
                 kilns.map((kiln) => (
                   <KilnCard

@@ -1,4 +1,5 @@
 import { Text } from '@/src/components/ui/text';
+import { UserAvatar } from '@/src/components/UserAvatar';
 import { apiListFriends } from '@/src/services/friends';
 import { apiListMemberStudios, apiListOwnedStudios } from '@/src/services/studios';
 import { useAppStore } from '@/src/store/appStore';
@@ -93,19 +94,14 @@ export function ProfileHeader({
               />
             </Svg>
             {/* Avatar circle inset inside the ring */}
-            <View
-              style={{
-                position: 'absolute', top: 6, left: 6, width: 84, height: 84,
-                borderRadius: 42, overflow: 'hidden',
-                backgroundColor: user.avatarImageUri ? 'transparent' : 'hsl(15 50% 50%)',
-                alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              {user.avatarImageUri ? (
-                <Image source={{ uri: user.avatarImageUri }} style={{ width: 84, height: 84, borderRadius: 42 }} resizeMode="cover" />
-              ) : (
-                <Text className="text-white font-serif font-bold" style={{ fontSize: 34 }}>{user.avatarInitial}</Text>
-              )}
+            <View style={{ position: 'absolute', top: 6, left: 6 }}>
+              <UserAvatar
+                name={user.name}
+                initial={user.avatarInitial}
+                imageUri={user.avatarImageUri}
+                size={84}
+                serif
+              />
             </View>
             {/* Title badge — sits on the bottom of the ring */}
             <TouchableOpacity
@@ -131,7 +127,7 @@ export function ProfileHeader({
               className="flex-row items-center gap-1.5 px-4 py-2 rounded-xl border border-border bg-card"
               activeOpacity={0.75}
             >
-              <Edit3 size={14} color="hsl(15 50% 50%)" />
+              <Edit3 size={14} color="hsl(39 57% 51%)" />
               <Text className="text-sm font-medium text-foreground">Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity

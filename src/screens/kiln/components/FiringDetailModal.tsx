@@ -5,7 +5,7 @@ import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { useAppStore } from '@/src/store';
+import { useVisiblePieces, useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Trash2, X } from 'lucide-react-native';
 import React from 'react';
@@ -32,7 +32,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const colors = Colors[colorScheme];
 
   const kilns = useAppStore((state) => state.kilns);
-  const pieces = useAppStore((state) => state.pieces);
+  const pieces = useVisiblePieces();
   const currencySymbol = useAppStore((state) => state.pricingSettings.currencySymbol);
   const assignPiecesToFiring = useAppStore((state) => state.assignPiecesToFiring);
   const completeFiring = useAppStore((state) => state.completeFiring);

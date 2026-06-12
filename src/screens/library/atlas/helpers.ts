@@ -1,3 +1,4 @@
+import { normalizeGlazeCollections } from './collections';
 import { COLOR_FAMILY_HEX } from './constants';
 import type { GlazeDraft, TestDraft } from './types';
 
@@ -43,16 +44,20 @@ export function createEmptyGlazeDraft(
     batchSize: '',
     recipeNotes: '',
     tags: '',
-    collections: defaultCollections.length > 0 ? [defaultCollections[0]] : ['My Glazes'],
+    collections: normalizeGlazeCollections(),
     favorite: false,
     production: false,
   };
 }
 
-export function createEmptyTestDraft(glazeId: string, defaultCone: string | null): TestDraft {
+export function createEmptyTestDraft(
+  glazeId: string,
+  defaultCone: string | null,
+  defaultClayBody = '',
+): TestDraft {
   return {
     glazeId,
-    clayBody: '',
+    clayBody: defaultClayBody,
     cone: defaultCone ?? 'Cone 6',
     kilnName: '',
     kilnType: 'electric',

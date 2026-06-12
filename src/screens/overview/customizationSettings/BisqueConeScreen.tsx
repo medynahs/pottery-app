@@ -12,9 +12,14 @@ export default function BisqueConeScreen() {
   const insets = useSafeAreaInsets();
   const defaultBisqueTemp = useAppStore((s) => s.defaultBisqueTemp);
   const setDefaultBisqueTemp = useAppStore((s) => s.setDefaultBisqueTemp);
+  const markSetupProgress = useAppStore((s) => s.markSetupProgress);
+
+  React.useEffect(() => {
+    markSetupProgress('bisqueConeReviewed');
+  }, [markSetupProgress]);
 
   function handleSelect(cone: string) {
-    // Tap the currently selected cone to deselect (clear default)
+    markSetupProgress('bisqueConeReviewed');
     setDefaultBisqueTemp(defaultBisqueTemp === cone ? null : cone);
   }
 
@@ -43,9 +48,9 @@ export default function BisqueConeScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
       >
         {/* Info note */}
-        <View className="bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3 mb-4 flex-row items-start gap-3">
-          <Flame size={16} color="hsl(25 90% 55%)" className="mt-0.5" />
-          <Text className="text-xs text-orange-700 flex-1 leading-relaxed">
+        <View className="bg-primary/10 border border-primary/20 rounded-2xl px-4 py-3 mb-4 flex-row items-start gap-3">
+          <Flame size={16} color="hsl(39 57% 51%)" className="mt-0.5" />
+          <Text className="text-xs text-primary flex-1 leading-relaxed">
             This cone will be pre-selected when you add a new piece. You can still override it per piece.
           </Text>
         </View>
@@ -62,15 +67,15 @@ export default function BisqueConeScreen() {
                 activeOpacity={0.7}
                 className={`flex-row items-center px-4 py-3.5 ${!isLast ? 'border-b border-border' : ''}`}
               >
-                <View className="w-9 h-9 rounded-xl items-center justify-center bg-orange-50 mr-3">
-                  <Flame size={16} color="hsl(25 90% 55%)" />
+                <View className="w-9 h-9 rounded-xl items-center justify-center bg-primary/10 mr-3">
+                  <Flame size={16} color="hsl(39 57% 51%)" />
                 </View>
                 <View className="flex-1">
                   <Text className="text-sm font-medium text-foreground">{cone}</Text>
                   <Text className="text-xs text-muted-foreground">{CONE_TEMPS_CELSIUS[cone]}°C</Text>
                 </View>
                 {selected && (
-                  <View className="w-6 h-6 rounded-full bg-orange-500 items-center justify-center">
+                  <View className="w-6 h-6 rounded-full bg-primary/100 items-center justify-center">
                     <Check size={14} color="#fff" strokeWidth={3} />
                   </View>
                 )}

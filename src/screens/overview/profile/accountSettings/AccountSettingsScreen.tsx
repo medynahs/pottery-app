@@ -1,4 +1,5 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { KilnkinCompanionPickerSheet } from '@/src/components/KilnkinCompanionPickerSheet';
 import { SectionLabel } from '@/src/components/SectionLabel';
 import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { SettingsRow } from '@/src/components/SettingsRow';
@@ -6,7 +7,10 @@ import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
 import { ME_QUERY_KEY } from '@/src/hooks/useCurrentUser';
 import { presentCustomerCenter } from '@/src/hooks/useEntitlements';
+import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { AVAILABLE_KILNKIN_COMPANIONS, type KilnkinCompanion } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
+import { PremiumFeature } from '@/src/utils/premiumGate';
+import { deleteAccount } from '@/src/services/api';
 import { oryLogout } from '@/src/services/auth';
 import type { NotificationEventKind } from '@/src/services/notificationMessages';
 import { ensureNotificationPermission, scheduleKilnkinNotification } from '@/src/services/notifications';
@@ -24,6 +28,7 @@ import {
   Lock,
   LogOut,
   Mail,
+  PawPrint,
   Shield,
   Skull,
   Trophy
@@ -37,15 +42,18 @@ export default function AccountSettingsScreen() {
   const notificationPrefs = useAppStore((s) => s.notificationPrefs);
   const setNotificationPref = useAppStore((s) => s.setNotificationPref);
   const kilnkinCompanion = useAppStore((s) => s.kilnkinCompanion);
+  const setKilnkinCompanion = useAppStore((s) => s.setKilnkinCompanion);
   const sessionToken  = useAppStore((s) => s.sessionToken);
   const oryEmail      = useAppStore((s) => s.oryEmail);
   const clearSession  = useAppStore((s) => s.clearSession);
   const showToast     = useAppStore((s) => s.showToast);
   const isPremium     = useAppStore((s) => s.isPremium);
   const isAuthenticated = !!sessionToken;
+  const { requestAccess, PaywallGate } = usePremiumGate();
 
   type Sheet = 'signout' | 'delete1' | 'delete2' | null;
   const [sheet, setSheet] = useState<Sheet>(null);
+  const [companionPickerOpen, setCompanionPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
 
@@ -65,18 +73,27 @@ export default function AccountSettingsScreen() {
   }
 
   async function doDeleteAccount() {
+    if (!sessionToken) return;
     setBusy(true);
     try {
-      if (sessionToken) await oryLogout(sessionToken);
+      await deleteAccount(sessionToken);
     } catch {
-      // swallow
-    } finally {
-      clearSession();
-      queryClient.removeQueries({ queryKey: ME_QUERY_KEY });
       setBusy(false);
       setSheet(null);
-      router.back();
+      showToast('Could not delete your account. Please check your connection and try again.', 'error');
+      return;
     }
+    try {
+      await oryLogout(sessionToken);
+    } catch {
+      // The identity may already be gone server-side — local cleanup is enough.
+    }
+    clearSession();
+    queryClient.removeQueries({ queryKey: ME_QUERY_KEY });
+    setBusy(false);
+    setSheet(null);
+    router.back();
+    showToast('Your account has been deleted', 'success');
   }
 
   const toggleNotificationPref = async (key: keyof typeof notificationPrefs) => {
@@ -211,8 +228,20 @@ export default function AccountSettingsScreen() {
             iconBg="bg-amber-50"
             label={isPremium ? 'Manage Subscription' : 'Upgrade to Premium'}
             value={isPremium ? 'Premium' : undefined}
-            isLast
             onPress={isPremium ? () => void presentCustomerCenter() : () => router.push('/premium')}
+          />
+          <SettingsRow
+            icon={PawPrint}
+            iconColor="hsl(39 57% 51%)"
+            iconBg="bg-primary/10"
+            label="Your Kilnkin"
+            value={`${kilnkinCompanion.name} · ${kilnkinCompanion.element}`}
+            isLast
+            onPress={() => {
+              if (requestAccess(PremiumFeature.CompanionSwap)) {
+                setCompanionPickerOpen(true);
+              }
+            }}
           />
         </SettingsGroup>
 
@@ -222,8 +251,10 @@ export default function AccountSettingsScreen() {
           <>
             {/* Signed-in card */}
             <SettingsGroup>
-              <SettingsRow icon={Mail}   iconColor="hsl(100 40% 45%)" iconBg="bg-green-50"  label="Change Email" />
-              <SettingsRow icon={Lock}   iconColor="hsl(38 80% 50%)"  iconBg="bg-amber-50"  label="Change Password" />
+              {oryEmail ? (
+                <SettingsRow icon={Mail} iconColor="hsl(100 40% 45%)" iconBg="bg-green-50" label="E-Mail" value={oryEmail} />
+              ) : null}
+              <SettingsRow icon={Lock}   iconColor="hsl(38 80% 50%)"  iconBg="bg-amber-50"  label="Change Password" onPress={() => router.push('/change-password')} />
               <SettingsRow icon={Globe}  iconColor="hsl(24 30% 45%)"  iconBg="bg-stone-100" label="Language" value="English" />
               <SettingsRow icon={Shield} iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50"   label="Privacy Settings" isLast onPress={() => router.push('/privacy-settings')} />
             </SettingsGroup>
@@ -239,7 +270,7 @@ export default function AccountSettingsScreen() {
 
         <SectionLabel title="Notifications" />
         <View className="mx-6 bg-card rounded-2xl border border-border px-4 mb-4">
-          <ToggleRow icon={Flame} iconColor="hsl(25 90% 55%)" iconBg="bg-orange-50" label="Kiln Finished" value={notificationPrefs.kilnFinished} onToggle={() => void toggleNotificationPref('kilnFinished')} />
+          <ToggleRow icon={Flame} iconColor="hsl(39 57% 51%)" iconBg="bg-primary/10" label="Kiln Finished" value={notificationPrefs.kilnFinished} onToggle={() => void toggleNotificationPref('kilnFinished')} />
           <ToggleRow icon={Clock} iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50" label="Drying Alert" value={notificationPrefs.pieceDrying} onToggle={() => void toggleNotificationPref('pieceDrying')} />
           <ToggleRow icon={Trophy} iconColor="hsl(100 40% 45%)" iconBg="bg-green-50" label="Achievements" value={notificationPrefs.achievement} onToggle={() => void toggleNotificationPref('achievement')} />
           <ToggleRow icon={Bell} iconColor="hsl(270 60% 55%)" iconBg="bg-purple-50" label="Weekly Summary" value={notificationPrefs.weeklySummary} onToggle={() => void toggleNotificationPref('weeklySummary')} />
@@ -320,6 +351,17 @@ export default function AccountSettingsScreen() {
           <Text className="text-xs text-muted-foreground text-center">Pottery Nook v1.0.0</Text>
         </View>
       </ScrollView>
+
+      <KilnkinCompanionPickerSheet
+        visible={companionPickerOpen}
+        currentCompanionId={kilnkinCompanion.id}
+        onClose={() => setCompanionPickerOpen(false)}
+        onConfirm={(companion) => {
+          setKilnkinCompanion(companion);
+          showToast(`${companion.name} is now your companion`, 'success');
+        }}
+      />
+      {PaywallGate}
     </View>
   );
 }

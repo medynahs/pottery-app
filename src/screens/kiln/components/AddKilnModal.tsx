@@ -37,7 +37,7 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
   const [showAdvancedTiming, setShowAdvancedTiming] = React.useState(false);
   const [infoSheet, setInfoSheet] = React.useState<{ title: string; body: string } | null>(null);
 
-  const { openPickSheet, PhotoPickerSheets } = usePhotoPicker({ aspect: [4, 3] });
+  const { openPickSheet } = usePhotoPicker({ aspect: [4, 3] });
 
   React.useEffect(() => {
     if (!visible) {
@@ -126,7 +126,6 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
       onDismiss={() => setInfoSheet(null)}
     />
     <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
-      {PhotoPickerSheets}
       <ModalCard maxHeight={height * 0.92}>
 
             <View className="flex-row justify-between items-center px-6 pb-4 border-b border-border">

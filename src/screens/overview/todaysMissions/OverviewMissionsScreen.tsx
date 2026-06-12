@@ -7,7 +7,7 @@ import {
   type StudioRhythmSuggestionType,
 } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
-import { useAppStore } from '@/src/store';
+import { useVisiblePieces, useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { CalendarDays, Check, Flame, Hammer, Scissors, Sparkles, Trophy } from 'lucide-react-native';
 import React from 'react';
@@ -26,8 +26,8 @@ const MISSION_META: Record<
   trim: {
     title: 'Trim Watch',
     Icon: Scissors,
-    iconColor: 'hsl(24 75% 45%)',
-    chipClassName: 'bg-orange-50',
+    iconColor: 'hsl(39 57% 51%)',
+    chipClassName: 'bg-primary/10',
   },
   reclaim: {
     title: 'Reclaim Loop',
@@ -69,7 +69,7 @@ function getProgressPct(current: number, total: number) {
 export default function OverviewMissionsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const pieces = useAppStore((state) => state.pieces);
+  const pieces = useVisiblePieces();
   const firings = useAppStore((state) => state.firings);
   const rhythm = useAppStore((state) => state.studioRhythm);
   const dailyMissionCompletion = useAppStore((state) => state.dailyMissionCompletion);

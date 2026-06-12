@@ -113,7 +113,7 @@ export function ActiveFiringCard({ firing, onPress }: ActiveFiringCardProps) {
 
   const gradientKey = AUTO_STATUS_GRADIENT[autoStatus] ?? 'scheduled';
   const gradient = FIRING_GRADIENT[gradientKey];
-  const accentColor = FIRING_STATE_COLOR[gradientKey] ?? 'hsl(15 80% 52%)';
+  const accentColor = FIRING_STATE_COLOR[gradientKey] ?? 'hsl(39 57% 51%)';
 
   const statusLabel =
     autoStatus === 'waiting'  ? 'In Queue' :

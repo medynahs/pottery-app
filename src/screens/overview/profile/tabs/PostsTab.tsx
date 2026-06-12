@@ -1,3 +1,5 @@
+import { EmptyState } from '@/src/components/EmptyState';
+import { InlineErrorCard } from '@/src/components/InlineErrorCard';
 import { Text } from '@/src/components/ui/text';
 import { apiListMyPosts, type BackendFeedPost } from '@/src/services/community';
 import { useAppStore } from '@/src/store/appStore';
@@ -92,23 +94,18 @@ export function PostsTab() {
 
   if (error) {
     return (
-      <View className="flex-1 items-center py-16 gap-4">
-        <Text className="text-sm text-muted-foreground">{error}</Text>
-        <TouchableOpacity onPress={load} className="px-5 py-2.5 bg-card border border-border rounded-full">
-          <Text className="text-sm font-medium text-foreground">Retry</Text>
-        </TouchableOpacity>
+      <View className="py-8 px-4">
+        <InlineErrorCard message={error} onRetry={load} />
       </View>
     );
   }
 
   if (posts.length === 0) {
     return (
-      <View className="flex-1 items-center py-16 px-8 gap-2">
-        <Text className="text-base font-semibold text-foreground">No posts yet</Text>
-        <Text className="text-sm text-muted-foreground text-center">
-          Share updates, finished pieces, and discoveries with the community.
-        </Text>
-      </View>
+      <EmptyState
+        title="No posts yet"
+        description="Share updates, finished pieces, and discoveries with the community."
+      />
     );
   }
 

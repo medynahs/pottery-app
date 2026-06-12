@@ -5,7 +5,7 @@ import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { useAppStore } from '@/src/store';
+import { useVisiblePieces, useAppStore } from '@/src/store';
 import { X } from 'lucide-react-native';
 import React from 'react';
 import {
@@ -36,7 +36,7 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
   const colors = Colors[colorScheme];
 
   const kilns = useAppStore((s) => s.kilns);
-  const pieces = useAppStore((s) => s.pieces);
+  const pieces = useVisiblePieces();
   const firings = useAppStore((s) => s.firings);
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
 

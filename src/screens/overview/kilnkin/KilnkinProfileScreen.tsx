@@ -1,6 +1,6 @@
 import { Text } from '@/src/components/ui/text';
 import { getKilnkinVoiceLine } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
-import { useAppStore } from '@/src/store';
+import { useVisiblePieces, useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { BellRing, FlaskConical, MoonStar, PawPrint, Scroll, Soup } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
@@ -48,7 +48,7 @@ function TraitCard({ icon, label, value }: { icon: React.ReactNode; label: strin
 export default function KilnkinProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const pieces = useAppStore((state) => state.pieces);
+  const pieces = useVisiblePieces();
   const companion = useAppStore((state) => state.kilnkinCompanion);
 
   const [activeTab, setActiveTab] = useState<ProfileTab>('bond');

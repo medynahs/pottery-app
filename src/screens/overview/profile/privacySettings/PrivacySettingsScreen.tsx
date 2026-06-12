@@ -74,8 +74,8 @@ export default function PrivacySettingsScreen() {
           />
           <ToggleRow
             icon={Image}
-            iconColor="hsl(24 75% 45%)"
-            iconBg="bg-orange-50"
+            iconColor="hsl(39 57% 51%)"
+            iconBg="bg-primary/10"
             label="Show Pieces Publicly"
             value={privacyPrefs.piecesPublic}
             onToggle={() => setPrivacyPref('piecesPublic', !privacyPrefs.piecesPublic)}

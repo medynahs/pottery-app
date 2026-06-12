@@ -5,9 +5,8 @@ import { useEffect } from 'react';
 export default function Index() {
   const reopenGeneralOnboarding = useAppStore((s) => s.reopenGeneralOnboarding);
 
-  // DEV ONLY: reset onboarding so steps are always visible during development
   useEffect(() => {
-    reopenGeneralOnboarding();
+    if (__DEV__) reopenGeneralOnboarding();
   }, []);
 
   return <Redirect href="/(tabs)/overview" />;

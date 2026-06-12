@@ -2,7 +2,7 @@ import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { getStudioAlerts } from '@/src/screens/overview/notifications/getStudioAlerts';
-import { useAppStore } from '@/src/store';
+import { useVisiblePieces, useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { BellRing, CalendarDays, Flame, Gift, PackageOpen } from 'lucide-react-native';
 import React from 'react';
@@ -13,14 +13,14 @@ const ALERT_META = {
   kiln: { Icon: Flame, iconColor: 'hsl(16 78% 52%)', chipClassName: 'bg-red-50' },
   planner: { Icon: CalendarDays, iconColor: 'hsl(213 70% 45%)', chipClassName: 'bg-blue-50' },
   seasonal: { Icon: Gift, iconColor: 'hsl(36 72% 45%)', chipClassName: 'bg-amber-50' },
-  piece: { Icon: PackageOpen, iconColor: 'hsl(24 45% 40%)', chipClassName: 'bg-orange-50' },
+  piece: { Icon: PackageOpen, iconColor: 'hsl(24 45% 40%)', chipClassName: 'bg-primary/10' },
 } as const;
 
 export default function OverviewAlertsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const companion = useAppStore((state) => state.kilnkinCompanion);
-  const pieces = useAppStore((state) => state.pieces);
+  const pieces = useVisiblePieces();
   const firings = useAppStore((state) => state.firings);
   const studioRhythmConfig = useAppStore((state) => state.studioRhythmConfig);
 

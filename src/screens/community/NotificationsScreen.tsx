@@ -1,4 +1,5 @@
 // src/screens/community/NotificationsScreen.tsx
+import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
 import {
     apiAcceptFriendRequest,
@@ -172,21 +173,17 @@ export default function NotificationsScreen() {
           {/* Loading */}
           {isLoading && (
             <View className="py-16 items-center">
-              <ActivityIndicator size="large" color="hsl(15 65% 50%)" />
+              <ActivityIndicator size="large" color="hsl(39 57% 51%)" />
             </View>
           )}
 
           {/* Empty */}
           {isEmpty && (
-            <View className="py-16 items-center gap-3">
-              <View className="w-16 h-16 rounded-full bg-muted items-center justify-center">
-                <Bell size={28} color="hsl(0 0% 60%)" />
-              </View>
-              <Text className="text-base font-semibold text-foreground mt-1">All caught up</Text>
-              <Text className="text-sm text-muted-foreground text-center leading-relaxed px-8">
-                No pending requests or invites right now.
-              </Text>
-            </View>
+            <EmptyState
+              icon={Bell}
+              title="All caught up"
+              description="No pending requests or invites right now."
+            />
           )}
 
           {/* Friend requests */}
@@ -195,7 +192,7 @@ export default function NotificationsScreen() {
               {friendRequests.map((r) => (
                 <NotifRow
                   key={r.id}
-                  icon={<UserPlus size={17} color="hsl(15 65% 50%)" />}
+                  icon={<UserPlus size={17} color="hsl(39 57% 51%)" />}
                   title="Friend request"
                   subtitle={`From user ${r.requester_id.slice(0, 8)}…`}
                   onAccept={async () => {

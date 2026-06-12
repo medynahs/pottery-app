@@ -38,6 +38,10 @@ export type Piece = {
   id: number;
   /** UUID assigned by the backend after the piece is first synced. */
   backendId?: string;
+  /** Tombstone — hidden from UI until the delete is confirmed by sync. */
+  deleted?: boolean;
+  /** Local edits not yet pushed via POST /users/me/pieces/sync. */
+  syncDirty?: boolean;
   name: string;
   stage: string;          // physical state (Stage)
   status?: string;        // outcome / condition (PieceStatus)

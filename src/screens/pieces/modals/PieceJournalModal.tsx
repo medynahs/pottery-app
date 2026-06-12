@@ -1,6 +1,9 @@
+import { PhotoPickerOverlay } from '@/src/components/PhotoPickerOverlay';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
+import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
+import { canAddPiecePhoto, PremiumFeature } from '@/src/utils/premiumGate';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ChevronLeft,
@@ -63,7 +66,8 @@ export function PieceJournalModal({
 
   // Custom hook for drafts
   const { drafts, setDrafts, updateNotes, updatePhotoAt, deletePhotoAt } = useJournalDrafts(piece, visible);
-  const { openPickSheet, PhotoPickerSheets } = usePhotoPicker({ aspect: [4, 3] });
+  const { openPickSheet } = usePhotoPicker({ aspect: [4, 3] });
+  const { requestAccess, PaywallGate } = usePremiumGate();
 
   React.useEffect(() => {
     if (visible && piece) {
@@ -134,6 +138,10 @@ export function PieceJournalModal({
   const pickPhoto = React.useCallback((entryIndex: number, photoIndex: number) => {
     if (!piece) return;
     const existingUri = drafts[entryIndex]?.photos?.[photoIndex];
+    if (!canAddPiecePhoto(piece, !!existingUri)) {
+      requestAccess(PremiumFeature.UnlimitedPhotos);
+      return;
+    }
     openPickSheet(
       (uri) => {
         updatePhotoAt(entryIndex, photoIndex, uri);
@@ -147,7 +155,7 @@ export function PieceJournalModal({
         onUpdateEntry(piece.id, entryIndex, { photos: currentPhotos });
       } : undefined,
     );
-  }, [piece, updatePhotoAt, deletePhotoAt, drafts, onUpdateEntry, openPickSheet]);
+  }, [piece, updatePhotoAt, deletePhotoAt, drafts, onUpdateEntry, openPickSheet, requestAccess]);
 
   const goToPage = (index: number) => {
     const clamped = Math.max(0, Math.min(index, spreads.length - 1));
@@ -179,7 +187,7 @@ export function PieceJournalModal({
 
   return (
     <Modal visible={visible} animationType="fade" transparent={false} onRequestClose={onClose} statusBarTranslucent>
-      {PhotoPickerSheets}
+      {PaywallGate}
       <LinearGradient
         colors={['#2D221C', '#4C3226', '#6C4433']}
         start={{ x: 0, y: 0 }}
@@ -283,6 +291,7 @@ export function PieceJournalModal({
           </KeyboardAvoidingView>
         </View>
       </LinearGradient>
+      {visible ? <PhotoPickerOverlay /> : null}
     </Modal>
   );
 }

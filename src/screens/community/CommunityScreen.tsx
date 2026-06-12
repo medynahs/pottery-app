@@ -1,4 +1,5 @@
 // src/screens/community/CommunityScreen.tsx
+import { UnauthenticatedGate } from '@/src/components/UnauthenticatedGate';
 import { Text } from '@/src/components/ui/text';
 import { apiCreatePost } from '@/src/services/community';
 import { useAppStore } from '@/src/store';
@@ -30,13 +31,15 @@ function CreatePostSheet({
   const [content, setContent] = useState('');
   const [posting, setPosting] = useState(false);
   const showToast = useAppStore((s) => s.showToast);
+  const markPostCreated = useAppStore((s) => s.markPostCreated);
 
   const submit = async () => {
     if (!content.trim() || posting) return;
     setPosting(true);
     try {
-      const created = await apiCreatePost(sessionToken, { content: content.trim() });
+      await apiCreatePost(sessionToken, { content: content.trim() });
       setContent('');
+      markPostCreated();
       onClose();
       onPosted();
       showToast('Post shared!', 'success');
@@ -79,7 +82,7 @@ function CreatePostSheet({
                 maxHeight: 200,
                 fontSize: 15,
                 lineHeight: 22,
-                color: 'hsl(15 10% 20%)',
+                color: 'hsl(24 25% 15%)',
                 textAlignVertical: 'top',
               }}
             />
@@ -112,46 +115,16 @@ function CreatePostSheet({
 
 // ─── Unauthenticated gate ─────────────────────────────────────────────────────
 
-function UnauthenticatedGate() {
-  const router = useRouter();
+function CommunityUnauthenticatedGate() {
   return (
-    <View className="flex-1 bg-background">
-      <MainTabHeader title="Community" description="Your pottery world, together" />
-      <View className="flex-1 items-center justify-center px-8 gap-6">
-        <View className="w-20 h-20 rounded-full bg-primary/10 items-center justify-center">
-          <Users size={36} color="hsl(15 65% 50%)" />
-        </View>
-        <View className="items-center gap-2">
-          <Text className="text-xl font-serif font-bold text-foreground text-center">
-            Join the potter community
-          </Text>
-          <Text className="text-sm text-muted-foreground text-center leading-relaxed">
-            Connect with potters around the world, share your work, join seasonal challenges, and grow together.
-          </Text>
-        </View>
-        <View className="w-full gap-3">
-          <TouchableOpacity
-            onPress={() => router.push('/register')}
-            className="w-full py-3.5 rounded-2xl bg-primary items-center"
-            activeOpacity={0.85}
-          >
-            <Text className="text-base font-bold text-white">Create a free account</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push('/login')}
-            className="w-full py-3.5 rounded-2xl border border-border bg-card items-center"
-            activeOpacity={0.8}
-          >
-            <Text className="text-base font-semibold text-foreground">Sign in</Text>
-          </TouchableOpacity>
-        </View>
-        <View className="flex-row flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
-          {['Share your pieces', 'Monthly challenges', 'Friend connections', 'Studio groups'].map((f) => (
-            <Text key={f} className="text-xs text-muted-foreground">✦ {f}</Text>
-          ))}
-        </View>
-      </View>
-    </View>
+    <UnauthenticatedGate
+      tabTitle="Community"
+      tabDescription="Your pottery world, together"
+      icon={Users}
+      title="Join the potter community"
+      description="Connect with potters around the world, share your work, join seasonal challenges, and grow together."
+      features={['Share your pieces', 'Monthly challenges', 'Friend connections', 'Studio groups']}
+    />
   );
 }
 
@@ -169,7 +142,7 @@ export default function CommunityScreen() {
     setFeedRefreshKey((k) => k + 1);
   }, []);
 
-  if (!sessionToken) return <UnauthenticatedGate />;
+  if (!sessionToken) return <CommunityUnauthenticatedGate />;
 
   const BellButton = (
     <TouchableOpacity
@@ -229,7 +202,7 @@ export default function CommunityScreen() {
           width: 52,
           height: 52,
           borderRadius: 26,
-          backgroundColor: 'hsl(15 65% 50%)',
+          backgroundColor: 'hsl(39 57% 51%)',
           alignItems: 'center',
           justifyContent: 'center',
           shadowColor: '#000',

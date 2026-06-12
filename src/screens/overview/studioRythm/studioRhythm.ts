@@ -127,18 +127,52 @@ export const DEFAULT_RITUALS: Ritual[] = [
   { id: 'ritual-test-tiles',     label: 'Test tile review',     emoji: '🔬', enabled: false, cadence: 'monthly' },
 ];
 
+/** Suggested weekly rhythm shown as a template in the rhythm editor — not applied until the user configures it. */
+export const SUGGESTED_WEEKLY_STAGE_DAYS: StageDay[] = [
+  { stage: 'throw',  days: [0, 2] },
+  { stage: 'trim',   days: [2, 4] },
+  { stage: 'glaze',  days: [4]    },
+  { stage: 'bisque', days: []     },
+];
+
 export const DEFAULT_STUDIO_RHYTHM: StudioRhythm = {
   type: 'weekly',
-  stageDays: [
-    { stage: 'throw',  days: [0, 2] },
-    { stage: 'trim',   days: [2, 4] },
-    { stage: 'glaze',  days: [4]    },
-    { stage: 'bisque', days: []     },
-  ],
+  stageDays: [],
   dryingTimers: { leatherHardDays: 2, boneDryDays: 5, glazeDryingHours: 8, postBisqueCoolingHours: 12 },
   rituals: DEFAULT_RITUALS,
   events: [],
 };
+
+const LEGACY_AUTO_SEEDED_STAGE_DAYS: StageDay[] = [
+  { stage: 'throw',  days: [0, 2] },
+  { stage: 'trim',   days: [2, 4] },
+  { stage: 'glaze',  days: [4]    },
+  { stage: 'bisque', days: []     },
+];
+
+function stageDaysMatch(a: StageDay[], b: StageDay[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((entry, index) => {
+    const other = b[index];
+    return entry.stage === other.stage
+      && entry.days.length === other.days.length
+      && entry.days.every((day, dayIndex) => day === other.days[dayIndex]);
+  });
+}
+
+export function isStudioRhythmConfigured(rhythm: StudioRhythm): boolean {
+  if (rhythm.type === 'freeform') return true;
+  const hasAssignedDays = rhythm.stageDays.some((sd) => sd.days.length > 0);
+  if (!hasAssignedDays) return false;
+
+  const looksLikeLegacyDefault =
+    rhythm.type === 'weekly'
+    && rhythm.events.length === 0
+    && rhythm.rituals.every((ritual) => !ritual.enabled)
+    && stageDaysMatch(rhythm.stageDays, LEGACY_AUTO_SEEDED_STAGE_DAYS);
+
+  return !looksLikeLegacyDefault;
+}
 
 export function getDateKey(date: Date | string = new Date()) {
   const parsed = typeof date === 'string' ? new Date(date) : date;

@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { INITIAL_GLAZES, INITIAL_GLAZE_TESTS } from '../screens/glazes/data';
+import { useShallow } from 'zustand/react/shallow';
 import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
+import {
+  LEGACY_SEED_GLAZE_IDS,
+  LEGACY_SEED_TEST_IDS,
+  normalizeGlazeCollections,
+} from '../screens/library/atlas/collections';
 import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
 import {
     DEFAULT_KILNKIN_COMPANION,
@@ -24,6 +29,7 @@ import {
     type PricingUserType,
 } from '../types/pricing';
 import type { AppNotification, Studio, StudioMember } from '../types/studio';
+import { oryGetSession, OryHttpError } from '../services/auth';
 import { clearSecureAuth, loadSecureAuth, saveSecureAuth } from './secureStorage';
 import { zustandStorage } from './storage';
 
@@ -125,6 +131,22 @@ export interface PieceFormOption {
   id: string;
   name: string;
 }
+
+export type SetupProgress = {
+  stagesReviewed: boolean;
+  clayBodiesReviewed: boolean;
+  bisqueConeReviewed: boolean;
+  glazeConeReviewed: boolean;
+  modulesReviewed: boolean;
+};
+
+export const DEFAULT_SETUP_PROGRESS: SetupProgress = {
+  stagesReviewed: false,
+  clayBodiesReviewed: false,
+  bisqueConeReviewed: false,
+  glazeConeReviewed: false,
+  modulesReviewed: false,
+};
 
 export const DEFAULT_PIECE_FORM_OPTIONS: PieceFormOption[] = [
   { id: 'bowl',        name: 'Bowl' },
@@ -424,6 +446,14 @@ interface AppState {
   setDefaultBisqueTemp: (cone: string | null) => void;
   defaultGlazeTemp: string | null;
   setDefaultGlazeTemp: (cone: string | null) => void;
+  defaultNewPieceStage: string;
+  setDefaultNewPieceStage: (stage: string) => void;
+
+  // ── Setup progress ────────────────────────────────────────────
+  setupProgress: SetupProgress;
+  markSetupProgress: (key: keyof SetupProgress) => void;
+  hasCreatedPost: boolean;
+  markPostCreated: () => void;
 
   // ── Pricing Rules ───────────────────────────────────────────
   pricingSettings: PricingSettings;
@@ -573,7 +603,7 @@ export const useAppStore = create<AppState>()(
   isPremium: false,
   setSessionToken: (token, identityId, email) => {
     set({ sessionToken: token, oryIdentityId: identityId, oryEmail: email });
-    void saveSecureAuth(token, identityId);
+    void saveSecureAuth(token, identityId, email);
   },
   clearSession: () => {
     set({
@@ -594,9 +624,20 @@ export const useAppStore = create<AppState>()(
   initializeAuth: async () => {
     try {
       const auth = await loadSecureAuth();
-      if (auth) {
-        set({ sessionToken: auth.sessionToken, oryIdentityId: auth.oryIdentityId });
-      }
+      if (!auth) return;
+      set({
+        sessionToken: auth.sessionToken,
+        oryIdentityId: auth.oryIdentityId,
+        oryEmail: auth.oryEmail,
+      });
+      // Validate the restored token in the background (never blocks startup).
+      // Only an explicit 401 clears the session — network errors / offline
+      // cold starts must not sign the user out.
+      void oryGetSession(auth.sessionToken).catch((e: unknown) => {
+        if (e instanceof OryHttpError && e.status === 401) {
+          get().clearSession();
+        }
+      });
     } catch {
       // SecureStore unavailable (e.g. Expo Go simulator) — proceed without session
     }
@@ -826,16 +867,22 @@ export const useAppStore = create<AppState>()(
   pieces: [],
   setPieces: (pieces) => set({ pieces }),
   addPieces: (newPieces) => {
-    set((state) => ({ pieces: [...newPieces, ...state.pieces] }));
-    get().enqueueSyncOp({ type: 'addPieces', payload: newPieces });
+    const marked = newPieces.map((p) => ({ ...p, syncDirty: true }));
+    set((state) => ({ pieces: [...marked, ...state.pieces] }));
   },
   updatePiece: (piece) => {
-    set((state) => ({ pieces: state.pieces.map((p) => (p.id === piece.id ? piece : p)) }));
-    get().enqueueSyncOp({ type: 'updatePiece', payload: piece });
+    set((state) => ({
+      pieces: state.pieces.map((p) =>
+        p.id === piece.id ? { ...piece, syncDirty: true } : p,
+      ),
+    }));
   },
   deletePiece: (id) => {
-    set((state) => ({ pieces: state.pieces.filter((p) => p.id !== id) }));
-    get().enqueueSyncOp({ type: 'deletePiece', payload: id });
+    set((state) => ({
+      pieces: state.pieces.map((p) =>
+        p.id === id ? { ...p, deleted: true, syncDirty: true } : p,
+      ),
+    }));
   },
   duplicatePiece: (piece) => {
     const now = new Date().toISOString();
@@ -847,9 +894,11 @@ export const useAppStore = create<AppState>()(
       timeline: [{ stage: piece.stage, timestamp: now }],
       batchId: undefined,
       batchSize: undefined,
+      backendId: undefined,
+      deleted: undefined,
+      syncDirty: true,
     };
     set((state) => ({ pieces: [newPiece, ...state.pieces] }));
-    get().enqueueSyncOp({ type: 'duplicatePiece', payload: newPiece });
   },
   duplicateBatch: (batchId) => {
     const batch = get().pieces.filter((p) => p.batchId === batchId);
@@ -862,9 +911,11 @@ export const useAppStore = create<AppState>()(
       createdAt: now,
       timeline: [{ stage: p.stage, timestamp: now }],
       batchId: newBatchId,
+      backendId: undefined,
+      deleted: undefined,
+      syncDirty: true,
     }));
     set((state) => ({ pieces: [...newPieces, ...state.pieces] }));
-    get().enqueueSyncOp({ type: 'duplicateBatch', payload: { batchId, newPieces } });
   },
   updateJournalEntry: (pieceId, entryIndex, patch) => {
     set((state) => ({
@@ -876,7 +927,6 @@ export const useAppStore = create<AppState>()(
         };
       }),
     }));
-    get().enqueueSyncOp({ type: 'updateJournalEntry', payload: { pieceId, entryIndex, patch } });
   },
   advancePiece: (pieceId) => {
     const timestamp = new Date().toISOString();
@@ -885,10 +935,14 @@ export const useAppStore = create<AppState>()(
         if (p.id !== pieceId) return p;
         const next = getConfiguredNextStage(p.stage, state.stageConfig);
         if (!next) return p;
-        return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
+        return {
+          ...p,
+          stage: next,
+          syncDirty: true,
+          timeline: [...p.timeline, { stage: next, timestamp }],
+        };
       }),
     }));
-    get().enqueueSyncOp({ type: 'advancePiece', payload: pieceId });
   },
   advancePieceIds: (ids) => {
     const idSet = new Set(ids);
@@ -898,10 +952,14 @@ export const useAppStore = create<AppState>()(
         if (!idSet.has(p.id)) return p;
         const next = getConfiguredNextStage(p.stage, state.stageConfig);
         if (!next) return p;
-        return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
+        return {
+          ...p,
+          stage: next,
+          syncDirty: true,
+          timeline: [...p.timeline, { stage: next, timestamp }],
+        };
       }),
     }));
-    get().enqueueSyncOp({ type: 'advancePieceIds', payload: ids });
   },
   advanceBatch: (batchId, fromStage) => {
     const timestamp = new Date().toISOString();
@@ -910,10 +968,14 @@ export const useAppStore = create<AppState>()(
         if (p.batchId !== batchId || p.stage !== fromStage) return p;
         const next = getConfiguredNextStage(p.stage, state.stageConfig);
         if (!next) return p;
-        return { ...p, stage: next, timeline: [...p.timeline, { stage: next, timestamp }] };
+        return {
+          ...p,
+          stage: next,
+          syncDirty: true,
+          timeline: [...p.timeline, { stage: next, timestamp }],
+        };
       }),
     }));
-    get().enqueueSyncOp({ type: 'advanceBatch', payload: { batchId, fromStage } });
   },
   sendToCemetery: (pieceId, memorial) => {
     const timestamp = new Date().toISOString();
@@ -924,16 +986,13 @@ export const useAppStore = create<AppState>()(
           : {
               ...p,
               stage: 'cemetery',
+              syncDirty: true,
               epitaph: memorial?.epitaph,
               causeOfDeath: memorial?.causeOfDeath,
               timeline: [...p.timeline, { stage: 'cemetery', timestamp }],
-            }
+            },
       ),
     }));
-    get().enqueueSyncOp({
-      type: 'sendToCemetery',
-      payload: { pieceId, epitaph: memorial?.epitaph, causeOfDeath: memorial?.causeOfDeath },
-    });
   },
 
   // ── Stage Configuration ───────────────────────────────────────
@@ -1058,6 +1117,17 @@ export const useAppStore = create<AppState>()(
   setDefaultBisqueTemp: (cone) => set({ defaultBisqueTemp: cone }),
   defaultGlazeTemp: 'Cone 6',
   setDefaultGlazeTemp: (cone) => set({ defaultGlazeTemp: cone }),
+  defaultNewPieceStage: 'idea',
+  setDefaultNewPieceStage: (stage) => set({ defaultNewPieceStage: stage }),
+
+  // ── Setup progress ────────────────────────────────────────────
+  setupProgress: DEFAULT_SETUP_PROGRESS,
+  markSetupProgress: (key) =>
+    set((state) => ({
+      setupProgress: { ...state.setupProgress, [key]: true },
+    })),
+  hasCreatedPost: false,
+  markPostCreated: () => set({ hasCreatedPost: true }),
 
   // ── Pricing Rules ───────────────────────────────────────────
   pricingSettings: buildDefaultPricingSettings(),
@@ -1095,8 +1165,8 @@ export const useAppStore = create<AppState>()(
   resetPricingSettings: () => set({ pricingSettings: buildDefaultPricingSettings() }),
 
   // ── Glaze Library ───────────────────────────────────────────
-  glazes: INITIAL_GLAZES,
-  glazeTests: INITIAL_GLAZE_TESTS,
+  glazes: [],
+  glazeTests: [],
   addGlaze: (glaze) =>
     set((state) => ({
       glazes: [glaze, ...state.glazes],
@@ -1320,25 +1390,39 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'pottery-life-store',
-      version: 2,
-      migrate: (persistedState) => {
+      version: 3,
+      migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
         }
 
         const state = persistedState as Partial<AppState> & {
           onboardingProfile?: Partial<OnboardingProfile>;
+          glazes?: GlazeLibraryItem[];
+          glazeTests?: GlazeTestTile[];
         };
 
         const onboardingProfile = normalizeOnboardingProfile(state.onboardingProfile);
         const enabledModules = normalizeModuleList(state.enabledModules);
         const notificationPrefs = normalizeNotificationPrefs(state.notificationPrefs);
 
+        let glazes = state.glazes;
+        let glazeTests = state.glazeTests;
+
+        if (version < 3) {
+          glazes = (state.glazes ?? [])
+            .filter((g) => !LEGACY_SEED_GLAZE_IDS.has(g.id))
+            .map((g) => ({ ...g, collections: normalizeGlazeCollections() }));
+          glazeTests = (state.glazeTests ?? []).filter((t) => !LEGACY_SEED_TEST_IDS.has(t.id));
+        }
+
         return {
           ...state,
           onboardingProfile,
           enabledModules: enabledModules.length > 0 ? enabledModules : onboardingProfile.activeModules,
           notificationPrefs,
+          glazes,
+          glazeTests,
         };
       },
       merge: (persistedState, currentState) => {
@@ -1355,6 +1439,10 @@ export const useAppStore = create<AppState>()(
           onboardingProfile,
           enabledModules: enabledModules.length > 0 ? enabledModules : onboardingProfile.activeModules,
           notificationPrefs,
+          setupProgress: {
+            ...DEFAULT_SETUP_PROGRESS,
+            ...(state.setupProgress ?? {}),
+          },
         };
       },
       storage: zustandStorage,
@@ -1384,6 +1472,9 @@ export const useAppStore = create<AppState>()(
         glazeTests: state.glazeTests,
         pendingSyncOps: state.pendingSyncOps,
         studioRhythm: state.studioRhythm,
+        defaultNewPieceStage: state.defaultNewPieceStage,
+        setupProgress: state.setupProgress,
+        hasCreatedPost: state.hasCreatedPost,
         notificationPrefs: state.notificationPrefs,
         privacyPrefs: state.privacyPrefs,
         lastSyncedAt: state.lastSyncedAt,
@@ -1393,3 +1484,25 @@ export const useAppStore = create<AppState>()(
     }
   )
 );
+
+/** Pieces visible in the UI — excludes delete tombstones awaiting sync confirmation. */
+export const selectVisiblePieces = (state: AppState) =>
+  state.pieces.filter((p) => !p.deleted);
+
+/** Subscribes to visible pieces with referential stability when content is unchanged. */
+export function useVisiblePieces(): Piece[] {
+  return useAppStore(
+    useShallow((state) => state.pieces.filter((p) => !p.deleted)),
+  );
+}
+
+function piecesArrayEqual(a: Piece[], b: Piece[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((piece, index) => piece === b[index]);
+}
+
+export function setPiecesIfChanged(next: Piece[]): void {
+  const current = useAppStore.getState().pieces;
+  if (piecesArrayEqual(current, next)) return;
+  useAppStore.getState().setPieces(next);
+}

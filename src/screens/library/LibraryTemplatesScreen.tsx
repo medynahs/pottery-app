@@ -104,7 +104,7 @@ export default function LibraryTemplatesScreen() {
             <Card key={asset.title} className="p-4">
               <View className="flex-row items-center gap-3">
                 <View className="w-10 h-10 rounded-2xl bg-amber-50 items-center justify-center">
-                  <Thermometer size={16} color="hsl(25 90% 55%)" />
+                  <Thermometer size={16} color="hsl(39 57% 51%)" />
                 </View>
                 <View className="flex-1">
                   <Text className="text-sm text-foreground" style={{ fontFamily: 'Fraunces_600SemiBold' }}>{asset.title}</Text>

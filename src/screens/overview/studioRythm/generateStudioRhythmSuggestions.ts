@@ -1,4 +1,5 @@
 import type { StudioRhythm, StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '@/src/screens/overview/studioRythm/studioRhythm';
+import { isStudioRhythmConfigured } from '@/src/screens/overview/studioRythm/studioRhythm';
 import type { Firing } from '@/src/types/kiln';
 import type { Piece } from '@/src/types/pieces';
 import type { Href } from 'expo-router';
@@ -237,7 +238,7 @@ export function generateStudioRhythmSuggestions(
     });
   }
 
-  if (rhythm) {
+  if (rhythm && isStudioRhythmConfigured(rhythm)) {
     // v2 path: suggestions derived from today's stage assignments
     const todayDow = (now.getDay() + 6) % 7; // 0 = Mon
     const todayStages = rhythm.stageDays

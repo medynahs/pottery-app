@@ -74,6 +74,6 @@ export const headingByStep: Record<StepKey, string> = {
 
 export const subheadingByStep: Record<StepKey, string> = {
     welcome: 'Track, create, and celebrate every piece with calm guidance and playful support.',
-    role: 'Pick the role that fits best — this shapes your defaults and modules.',
+    role: 'This personalises your defaults. You can change it anytime in settings.',
     kilnkin: 'Pick the elemental companion that matches your studio energy.',
 };

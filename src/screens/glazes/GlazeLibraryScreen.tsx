@@ -1,7 +1,10 @@
 import { ConfirmSheet, ModalCard, ModalShell } from '@/src/components/AppSheets';
+import { EmptyState } from '@/src/components/EmptyState';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
+import { matchesCollectionFilter } from '@/src/screens/library/atlas/collections';
 import { useAppStore } from '@/src/store/appStore';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
   ChevronLeft,
@@ -199,7 +202,13 @@ function Pill({
   );
 }
 
-export default function GlazeLibraryScreen({ collectionFilter }: { collectionFilter?: string }) {
+export default function GlazeLibraryScreen({
+  collectionFilter,
+  initialGlazeId,
+}: {
+  collectionFilter?: string;
+  initialGlazeId?: string;
+}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const glazes = useAppStore((state) => state.glazes);
@@ -215,8 +224,14 @@ export default function GlazeLibraryScreen({ collectionFilter }: { collectionFil
   const [sortKey, setSortKey] = React.useState<SortKey>('recent');
   const [viewMode, setViewMode] = React.useState<ViewMode>('grid');
   const [showAdvancedControls, setShowAdvancedControls] = React.useState(false);
-  const [selectedGlazeId, setSelectedGlazeId] = React.useState<string | null>(null);
+  const [selectedGlazeId, setSelectedGlazeId] = React.useState<string | null>(initialGlazeId ?? null);
   const [pendingRemoveTest, setPendingRemoveTest] = React.useState<GlazeTestTile | null>(null);
+
+  React.useEffect(() => {
+    if (initialGlazeId) {
+      setSelectedGlazeId(initialGlazeId);
+    }
+  }, [initialGlazeId]);
 
   React.useEffect(() => {
     if (selectedGlazeId && !glazes.some((glaze) => glaze.id === selectedGlazeId)) {
@@ -228,7 +243,7 @@ export default function GlazeLibraryScreen({ collectionFilter }: { collectionFil
 
   const filteredGlazes = React.useMemo(() => {
     const result = glazes.filter((glaze) => {
-      const matchesCollection = !collectionFilter || glaze.collections.includes(collectionFilter);
+      const matchesCollection = matchesCollectionFilter(glaze, collectionFilter);
       const matchesSearch =
         search.trim() === '' ||
         glaze.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -400,14 +415,12 @@ export default function GlazeLibraryScreen({ collectionFilter }: { collectionFil
           </View>
 
           {filteredGlazes.length === 0 ? (
-            <View className="rounded-[28px] border border-dashed border-border bg-card px-6 py-10 items-center mb-4">
-              <Droplets size={28} color="hsl(24 20% 45%)" />
-              <Text className="text-lg text-foreground mt-3" style={{ fontFamily: 'Fraunces_600SemiBold' }}>
-                No glazes here yet
-              </Text>
-              <Text className="text-sm text-muted-foreground text-center mt-2 leading-6">
-                Add your first glaze from the Atlas main screen, then log the first tile.
-              </Text>
+            <View className="mb-4">
+              <EmptyState
+                icon={Droplets}
+                title="No glazes here yet"
+                description="Add your first glaze from the Atlas main screen, then log the first tile."
+              />
             </View>
           ) : (
             <View className="flex-row flex-wrap justify-between">
@@ -415,6 +428,7 @@ export default function GlazeLibraryScreen({ collectionFilter }: { collectionFil
                 const stats = statsByGlaze[glaze.id];
                 const lastTestLabel = formatRelativeDate(glaze.lastTestedAt);
                 const widthStyle = { width: viewMode === 'grid' ? '48%' : '100%' } as const;
+                const cardPhoto = glaze.bucketPhotoUri ?? glaze.testTilePhotoUris[0];
 
                 return (
                   <View key={glaze.id} style={widthStyle} className="mb-4">
@@ -424,9 +438,28 @@ export default function GlazeLibraryScreen({ collectionFilter }: { collectionFil
                           backgroundColor: glazeColor(glaze.colorFamily),
                           minHeight: viewMode === 'grid' ? 138 : 124,
                         }}
-                        className="px-4 py-4 justify-between"
+                        className="px-4 py-4 justify-between overflow-hidden"
                       >
-                        <View className="flex-row items-start justify-between gap-3">
+                        {cardPhoto ? (
+                          <Image
+                            source={{ uri: cardPhoto }}
+                            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                            contentFit="cover"
+                          />
+                        ) : null}
+                        {cardPhoto ? (
+                          <View
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              backgroundColor: 'rgba(0,0,0,0.28)',
+                            }}
+                          />
+                        ) : null}
+                        <View className="flex-row items-start justify-between gap-3" style={{ zIndex: 1 }}>
                           <View className="px-3 py-1 rounded-full bg-white/75 self-start">
                             <Text className="text-[10px] font-semibold uppercase tracking-[1.5px] text-foreground">
                               {GLAZE_FINISH_LABELS[glaze.finish]}
@@ -445,14 +478,14 @@ export default function GlazeLibraryScreen({ collectionFilter }: { collectionFil
                           </TouchableOpacity>
                         </View>
 
-                        <View>
+                        <View style={{ zIndex: 1 }}>
                           <Text
-                            className="text-lg text-foreground"
+                            className={`text-lg ${cardPhoto ? 'text-white' : 'text-foreground'}`}
                             style={{ fontFamily: 'Fraunces_600SemiBold' }}
                           >
                             {glaze.name}
                           </Text>
-                          <Text className="text-xs text-foreground/70 mt-1">
+                          <Text className={`text-xs mt-1 ${cardPhoto ? 'text-white/80' : 'text-foreground/70'}`}>
                             {glaze.colorFamily} · {glaze.coneRange}
                           </Text>
                         </View>

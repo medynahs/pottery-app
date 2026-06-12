@@ -6,6 +6,8 @@ import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
+import { usePremiumGate } from '@/src/hooks/usePremiumGate';
+import { checkPremium, PremiumFeature } from '@/src/utils/premiumGate';
 import type { LucideIcon } from 'lucide-react-native';
 import { ImagePlus, Sparkles, X } from 'lucide-react-native';
 import React from 'react';
@@ -38,6 +40,8 @@ type StageVisual = {
 
 interface StageAdvanceFlowModalProps {
   request: StageAdvanceRequest | null;
+  /** Total photos already on the piece (cover + journal). Used for free-tier photo gate. */
+  piecePhotoCount?: number;
   stageLookup: Record<string, StageVisual>;
   defaultBisqueTemp?: string | null;
   defaultGlazeTemp?: string | null;
@@ -64,6 +68,7 @@ function getPrompt(stageId: string) {
 
 export function StageAdvanceFlowModal({
   request,
+  piecePhotoCount = 0,
   stageLookup,
   defaultBisqueTemp,
   defaultGlazeTemp,
@@ -73,7 +78,8 @@ export function StageAdvanceFlowModal({
 }: StageAdvanceFlowModalProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
-  const { openPickSheet, PhotoPickerSheets } = usePhotoPicker({ aspect: [4, 3] });
+  const { openPickSheet } = usePhotoPicker({ aspect: [4, 3] });
+  const { requestAccess, PaywallGate } = usePremiumGate();
 
   const [photo, setPhoto] = React.useState<string | undefined>(undefined);
   const [notes, setNotes] = React.useState('');
@@ -99,8 +105,12 @@ export function StageAdvanceFlowModal({
   }, [request, defaultBisqueTemp, defaultGlazeTemp]);
 
   const pickPhoto = React.useCallback(() => {
+    if (!photo && piecePhotoCount >= 1 && !checkPremium(PremiumFeature.UnlimitedPhotos)) {
+      requestAccess(PremiumFeature.UnlimitedPhotos);
+      return;
+    }
     openPickSheet((uri) => setPhoto(uri));
-  }, [openPickSheet]);
+  }, [openPickSheet, piecePhotoCount, photo, requestAccess]);
 
   const handleConfirm = React.useCallback(() => {
     const capture: StageAdvanceCapture = {
@@ -124,7 +134,7 @@ export function StageAdvanceFlowModal({
 
   return (
     <>
-      {PhotoPickerSheets}
+      {PaywallGate}
       <ModalShell visible onClose={onClose} backdropColor="rgba(0,0,0,0.45)">
       <ModalCard>
 

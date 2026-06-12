@@ -1,6 +1,6 @@
-import LibraryGlazesScreen from '@/src/screens/library/LibraryGlazesScreen';
+import JournalScreen from '@/src/screens/library/JournalScreen';
 import React from 'react';
 
 export default function LibraryGlazesRoute() {
-  return <LibraryGlazesScreen />;
+  return <JournalScreen />;
 }

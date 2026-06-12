@@ -8,17 +8,14 @@ import {
   GLAZE_SOURCE_LABELS,
   GLAZE_SOURCE_OPTIONS,
 } from '@/src/screens/glazes/types';
+import { ChevronDown } from 'lucide-react-native';
 import React from 'react';
-import {
-  ScrollView,
-  TouchableOpacity,
-  View
-} from 'react-native';
-import { CollectionChip } from './CollectionChip';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { FormField } from './FormField';
 import { createEmptyGlazeDraft } from './helpers';
 import { MediaSlot } from './MediaSlot';
 import { Pill } from './Pill';
-import type { AddMode, GlazeDraft } from './types';
+import type { GlazeDraft } from './types';
 
 export function AddGlazeModal({
   visible,
@@ -33,139 +30,60 @@ export function AddGlazeModal({
   defaultCone: string | null;
   collections: string[];
 }) {
-  const [addMode, setAddMode] = React.useState<AddMode>('quick');
   const [draft, setDraft] = React.useState<GlazeDraft>(() =>
     createEmptyGlazeDraft(defaultCone, collections),
   );
-  const { openPickSheet, PhotoPickerSheets } = usePhotoPicker();
+  const [showDetails, setShowDetails] = React.useState(false);
+  const { openPickSheet } = usePhotoPicker();
 
   React.useEffect(() => {
     if (visible) {
       setDraft(createEmptyGlazeDraft(defaultCone, collections));
-      setAddMode('quick');
+      setShowDetails(false);
     }
-  }, [visible, defaultCone]);
+  }, [visible, defaultCone, collections]);
+
+  const canSave = draft.name.trim().length > 0;
 
   return (
-    <>
-      {PhotoPickerSheets}
-      <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.46)">
-      <ModalCard variant="pottery" radius={32} maxHeight={780}>
-            <View
-              style={{
-                paddingHorizontal: 24,
-                paddingBottom: 16,
-                borderBottomWidth: 1,
-                borderBottomColor: '#E8D9BE',
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 12,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: 'Fraunces_700Bold', fontSize: 22, color: '#3A2810' }}>
-                  Add Glaze
-                </Text>
-                <Text style={{ fontSize: 13, color: '#A68555', marginTop: 4 }}>
-                  Quick add keeps the barrier low. Advanced mode captures the full profile.
-                </Text>
-              </View>
-            </View>
+    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.46)">
+        <ModalCard radius={32} maxHeight={780}>
+          <View className="px-6 pb-4 border-b border-border">
+            <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
+              Add Glaze
+            </Text>
+            <Text className="text-sm text-muted-foreground mt-1">
+              Name it, snap a photo, save the recipe to your atlas.
+            </Text>
+          </View>
 
-            <ScrollView
-              style={{ paddingHorizontal: 24 }}
-              contentContainerStyle={{ paddingBottom: 28 }}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Mode toggle */}
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 20, marginBottom: 4 }}>
-                <Pill label="Quick" active={addMode === 'quick'} onPress={() => setAddMode('quick')} />
-                <Pill
-                  label="Advanced"
-                  active={addMode === 'advanced'}
-                  onPress={() => setAddMode('advanced')}
-                />
-              </View>
+          <ScrollView
+            className="px-6"
+            contentContainerStyle={{ paddingBottom: 24 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <FormField label="Glaze photo" hint="Bucket, test tile, or finished piece — add at least one." first>
+              <MediaSlot
+                label="Tap to add a photo"
+                uri={draft.bucketPhotoUri ?? draft.firstTilePhotoUri}
+                onPress={() =>
+                  openPickSheet((uri) => setDraft((d) => ({ ...d, bucketPhotoUri: uri })))
+                }
+                large
+              />
+            </FormField>
 
-              {/* Glaze name */}
-              <View style={{ marginTop: 16 }}>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    letterSpacing: 1.5,
-                    color: '#A68555',
-                    marginBottom: 6,
-                  }}
-                >
-                  Glaze name
-                </Text>
-                <Input
-                  value={draft.name}
-                  onChangeText={(v) => setDraft((d) => ({ ...d, name: v }))}
-                  placeholder="e.g. Quiet Satin Blue"
-                />
-              </View>
+            <FormField label="Name">
+              <Input
+                value={draft.name}
+                onChangeText={(v) => setDraft((d) => ({ ...d, name: v }))}
+                placeholder="Quiet Satin Blue"
+              />
+            </FormField>
 
-              {/* Cone row */}
-              <View style={{ flexDirection: 'row', gap: 12, marginTop: 14 }}>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: 1.5,
-                      color: '#A68555',
-                      marginBottom: 6,
-                    }}
-                  >
-                    Default cone
-                  </Text>
-                  <Input
-                    value={draft.defaultCone}
-                    onChangeText={(v) => setDraft((d) => ({ ...d, defaultCone: v }))}
-                    placeholder="Cone 6"
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: 1.5,
-                      color: '#A68555',
-                      marginBottom: 6,
-                    }}
-                  >
-                    Cone range
-                  </Text>
-                  <Input
-                    value={draft.coneRange}
-                    onChangeText={(v) => setDraft((d) => ({ ...d, coneRange: v }))}
-                    placeholder="Cone 5-6"
-                  />
-                </View>
-              </View>
-
-              {/* Finish */}
-              <Text
-                style={{
-                  fontSize: 10,
-                  fontWeight: '700',
-                  textTransform: 'uppercase',
-                  letterSpacing: 1.5,
-                  color: '#A68555',
-                  marginTop: 14,
-                  marginBottom: 8,
-                }}
-              >
-                Finish
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <FormField label="Finish">
+              <View className="flex-row flex-wrap gap-2">
                 {GLAZE_FINISH_OPTIONS.map((option) => (
                   <Pill
                     key={option}
@@ -175,22 +93,10 @@ export function AddGlazeModal({
                   />
                 ))}
               </View>
+            </FormField>
 
-              {/* Source */}
-              <Text
-                style={{
-                  fontSize: 10,
-                  fontWeight: '700',
-                  textTransform: 'uppercase',
-                  letterSpacing: 1.5,
-                  color: '#A68555',
-                  marginTop: 14,
-                  marginBottom: 8,
-                }}
-              >
-                Source
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <FormField label="Source">
+              <View className="flex-row flex-wrap gap-2">
                 {GLAZE_SOURCE_OPTIONS.map((option) => (
                   <Pill
                     key={option}
@@ -200,279 +106,103 @@ export function AddGlazeModal({
                   />
                 ))}
               </View>
+            </FormField>
 
-              {/* Save to collection */}
-              <Text
-                style={{
-                  fontSize: 10,
-                  fontWeight: '700',
-                  textTransform: 'uppercase',
-                  letterSpacing: 1.5,
-                  color: '#A68555',
-                  marginTop: 14,
-                  marginBottom: 8,
-                }}
-              >
-                Save to collection
-              </Text>
-              {collections.length === 0 ? (
-                <Text style={{ fontSize: 12, color: '#A68555' }}>
-                  No collections yet — glaze will be saved to "My Glazes".
-                </Text>
-              ) : (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                  {collections.map((col) => (
-                    <CollectionChip
-                      key={col}
-                      name={col}
-                      selected={draft.collections.includes(col)}
-                      onPress={() =>
-                        setDraft((d) => ({
-                          ...d,
-                          collections: d.collections.includes(col)
-                            ? d.collections.filter((c) => c !== col)
-                            : [...d.collections, col],
-                        }))
-                      }
-                    />
-                  ))}
-                </View>
-              )}
+            <FormField label="Firing cone">
+              <Input
+                value={draft.defaultCone}
+                onChangeText={(v) => setDraft((d) => ({ ...d, defaultCone: v, coneRange: v }))}
+                placeholder="Cone 6"
+              />
+            </FormField>
 
-              {/* Notes */}
-              <View style={{ marginTop: 14 }}>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    letterSpacing: 1.5,
-                    color: '#A68555',
-                    marginBottom: 6,
-                  }}
-                >
-                  Quick notes
-                </Text>
-                <Input
-                  value={draft.notes}
-                  onChangeText={(v) => setDraft((d) => ({ ...d, notes: v }))}
-                  placeholder="How this glaze usually behaves"
-                  multiline
-                  numberOfLines={3}
-                  style={{ minHeight: 80, textAlignVertical: 'top' }}
-                />
-              </View>
+            <FormField label="Notes">
+              <Input
+                value={draft.notes}
+                onChangeText={(v) => setDraft((d) => ({ ...d, notes: v }))}
+                placeholder="How this glaze behaves in your studio"
+                multiline
+                numberOfLines={3}
+                style={{ minHeight: 72, textAlignVertical: 'top' }}
+              />
+            </FormField>
 
-              {/* Advanced fields */}
-              {addMode === 'advanced' ? (
-                <>
-                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 14 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          letterSpacing: 1.5,
-                          color: '#A68555',
-                          marginBottom: 6,
-                        }}
-                      >
-                        Color family
-                      </Text>
+            <TouchableOpacity
+              onPress={() => setShowDetails((v) => !v)}
+              activeOpacity={0.8}
+              className="mt-5 flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3"
+            >
+              <Text className="text-sm font-semibold text-foreground">Recipe & collection details</Text>
+              <ChevronDown
+                size={16}
+                color="hsl(24 20% 40%)"
+                style={{ transform: [{ rotate: showDetails ? '180deg' : '0deg' }] }}
+              />
+            </TouchableOpacity>
+
+            {showDetails ? (
+              <View className="mt-3">
+                <View className="flex-row gap-3 mt-1">
+                  <View className="flex-1">
+                    <FormField label="Color family">
                       <Input
                         value={draft.colorFamily}
                         onChangeText={(v) => setDraft((d) => ({ ...d, colorFamily: v }))}
-                        placeholder="Blue Grey"
+                        placeholder="Blue grey"
                       />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          letterSpacing: 1.5,
-                          color: '#A68555',
-                          marginBottom: 6,
-                        }}
-                      >
-                        Supplier
-                      </Text>
+                    </FormField>
+                  </View>
+                  <View className="flex-1">
+                    <FormField label="Supplier">
                       <Input
                         value={draft.supplier}
                         onChangeText={(v) => setDraft((d) => ({ ...d, supplier: v }))}
-                        placeholder="Amaco, Mayco, Studio"
+                        placeholder="Amaco, studio mix"
                       />
-                    </View>
+                    </FormField>
                   </View>
+                </View>
 
-                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 14 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          letterSpacing: 1.5,
-                          color: '#A68555',
-                          marginBottom: 6,
-                        }}
-                      >
-                        Batch size
-                      </Text>
-                      <Input
-                        value={draft.batchSize}
-                        onChangeText={(v) => setDraft((d) => ({ ...d, batchSize: v }))}
-                        placeholder="5000 g batch"
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          letterSpacing: 1.5,
-                          color: '#A68555',
-                          marginBottom: 6,
-                        }}
-                      >
-                        Tags
-                      </Text>
-                      <Input
-                        value={draft.tags}
-                        onChangeText={(v) => setDraft((d) => ({ ...d, tags: v }))}
-                        placeholder="matte, blue, cone 6"
-                      />
-                    </View>
-                  </View>
+                <FormField label="Application notes">
+                  <Input
+                    value={draft.applicationNotes}
+                    onChangeText={(v) => setDraft((d) => ({ ...d, applicationNotes: v }))}
+                    placeholder="Brush thin, dip medium"
+                    multiline
+                    numberOfLines={2}
+                    style={{ minHeight: 64, textAlignVertical: 'top' }}
+                  />
+                </FormField>
 
-                  <View style={{ marginTop: 14 }}>
-                    <Text
-                      style={{
-                        fontSize: 10,
-                        fontWeight: '700',
-                        textTransform: 'uppercase',
-                        letterSpacing: 1.5,
-                        color: '#A68555',
-                        marginBottom: 6,
-                      }}
-                    >
-                      Application notes
-                    </Text>
-                    <Input
-                      value={draft.applicationNotes}
-                      onChangeText={(v) => setDraft((d) => ({ ...d, applicationNotes: v }))}
-                      placeholder="Brush thin, dip medium, watch the rim"
-                      multiline
-                      numberOfLines={3}
-                      style={{ minHeight: 80, textAlignVertical: 'top' }}
-                    />
-                  </View>
+                <View className="flex-row flex-wrap gap-2 mt-4">
+                  <Pill
+                    label="Add to Favorites"
+                    active={draft.favorite}
+                    onPress={() => setDraft((d) => ({ ...d, favorite: !d.favorite }))}
+                  />
+                  <Pill
+                    label="Production"
+                    active={draft.production}
+                    onPress={() => setDraft((d) => ({ ...d, production: !d.production }))}
+                  />
+                </View>
+              </View>
+            ) : null}
+          </ScrollView>
 
-                  <View style={{ marginTop: 14 }}>
-                    <Text
-                      style={{
-                        fontSize: 10,
-                        fontWeight: '700',
-                        textTransform: 'uppercase',
-                        letterSpacing: 1.5,
-                        color: '#A68555',
-                        marginBottom: 6,
-                      }}
-                    >
-                      Recipe notes
-                    </Text>
-                    <Input
-                      value={draft.recipeNotes}
-                      onChangeText={(v) => setDraft((d) => ({ ...d, recipeNotes: v }))}
-                      placeholder="Batch notes, sieve notes, weirdness"
-                      multiline
-                      numberOfLines={3}
-                      style={{ minHeight: 80, textAlignVertical: 'top' }}
-                    />
-                  </View>
-
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: 1.5,
-                      color: '#A68555',
-                      marginTop: 14,
-                      marginBottom: 8,
-                    }}
-                  >
-                    Starter media
-                  </Text>
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
-                    <MediaSlot
-                      label="Bucket photo"
-                      uri={draft.bucketPhotoUri}
-                      onPress={() =>
-                        openPickSheet((uri) => setDraft((d) => ({ ...d, bucketPhotoUri: uri })))
-                      }
-                    />
-                    <MediaSlot
-                      label="Test tile"
-                      uri={draft.firstTilePhotoUri}
-                      onPress={() =>
-                        openPickSheet((uri) => setDraft((d) => ({ ...d, firstTilePhotoUri: uri })))
-                      }
-                    />
-                    <MediaSlot
-                      label="Finished piece"
-                      uri={draft.firstPiecePhotoUri}
-                      onPress={() =>
-                        openPickSheet((uri) => setDraft((d) => ({ ...d, firstPiecePhotoUri: uri })))
-                      }
-                    />
-                  </View>
-
-                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-                    <Pill
-                      label="Favorite"
-                      active={draft.favorite}
-                      onPress={() => setDraft((d) => ({ ...d, favorite: !d.favorite }))}
-                    />
-                    <Pill
-                      label="Production"
-                      active={draft.production}
-                      onPress={() => setDraft((d) => ({ ...d, production: !d.production }))}
-                    />
-                  </View>
-                </>
-              ) : null}
-            </ScrollView>
-
-            <View
-              style={{
-                paddingHorizontal: 24,
-                paddingTop: 16,
-                paddingBottom: 32,
-                borderTopWidth: 1,
-                borderTopColor: '#E8D9BE',
+          <View className="px-6 pt-4 pb-8 border-t border-border">
+            <TouchableOpacity
+              onPress={() => {
+                if (canSave) onSave(draft);
               }}
+              activeOpacity={0.82}
+              disabled={!canSave}
+              className={`rounded-2xl bg-primary py-4 items-center ${canSave ? '' : 'opacity-45'}`}
             >
-              <TouchableOpacity
-                onPress={() => {
-                  if (draft.name.trim()) onSave(draft);
-                }}
-                activeOpacity={0.82}
-                style={{
-                  borderRadius: 18,
-                  backgroundColor: '#C9963A',
-                  paddingVertical: 16,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 14, fontWeight: '700', color: 'white' }}>Save Glaze</Text>
-              </TouchableOpacity>
-            </View>
-      </ModalCard>
-    </ModalShell>
-    </>
+              <Text className="text-sm font-semibold text-white">Save Glaze</Text>
+            </TouchableOpacity>
+          </View>
+        </ModalCard>
+      </ModalShell>
   );
 }

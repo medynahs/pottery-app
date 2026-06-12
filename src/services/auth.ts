@@ -6,7 +6,7 @@
 // Google OAuth uses Ory's "code exchange" pattern for native apps:
 //   1. Init a native flow with return_session_token_exchange_code=true
 //   2. Grab the request_url from the flow — open it in expo-web-browser
-//   3. Ory redirects to potterylife://auth-callback?code=xxx
+//   3. Ory redirects to potterynook://auth-callback?code=xxx
 //   4. Exchange the code for a session_token via /self-service/login/exchange-code
 
 import * as WebBrowser from 'expo-web-browser';
@@ -43,6 +43,33 @@ export interface OryRegistrationResult {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/** HTTP error from Ory — carries the status code so callers can distinguish
+ *  an invalid/expired session (401) from network failures or other errors. */
+export class OryHttpError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = 'OryHttpError';
+  }
+}
+
+/** Last-resort messages when Ory's response body carried no usable text. */
+function GENERIC_ERROR_BY_STATUS(status: number): string {
+  switch (status) {
+    case 400:
+    case 422:
+      return 'Some of the entered details were not accepted. Please check your E-Mail and password and try again.';
+    case 401:
+    case 403:
+      return 'You are not signed in or your session has expired. Please sign in again.';
+    case 429:
+      return 'Too many attempts. Please wait a moment and try again.';
+    default:
+      return status >= 500
+        ? 'The sign-in service is temporarily unavailable. Please try again in a moment.'
+        : `Something went wrong (error ${status}). Please try again.`;
+  }
+}
+
 async function oryFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${ORY_BASE}${path}`;
   let res: Response;
@@ -71,7 +98,12 @@ async function oryFetch<T>(path: string, init?: RequestInit): Promise<T> {
       if (__DEV__) console.warn(`[Ory] ${res.status} from ${path}:\n`, rawText.substring(0, 600));
       const body = JSON.parse(rawText) as {
         error?: { message?: string; reason?: string };
-        ui?: { messages?: { text: string }[] };
+        ui?: {
+          messages?: { text?: string; type?: string }[];
+          // Field-level validation errors (weak password, malformed email, …)
+          // are attached to the individual form nodes, not ui.messages.
+          nodes?: Array<{ messages?: { text?: string; type?: string }[] }>;
+        };
         message?: string;
         redirect_browser_to?: string;
       };
@@ -81,7 +113,14 @@ async function oryFetch<T>(path: string, init?: RequestInit): Promise<T> {
         (err as unknown as { redirectUrl: string }).redirectUrl = redirectTo;
         throw err;
       }
-      detail = body?.ui?.messages?.[0]?.text
+      const allMessages = [
+        ...(body?.ui?.messages ?? []),
+        ...(body?.ui?.nodes ?? []).flatMap((n) => n.messages ?? []),
+      ];
+      const uiMessage =
+        allMessages.find((m) => m.type === 'error' && m.text)?.text
+        ?? allMessages.find((m) => m.text)?.text;
+      detail = uiMessage
         ?? body?.error?.reason
         ?? body?.error?.message
         ?? body?.message
@@ -90,7 +129,7 @@ async function oryFetch<T>(path: string, init?: RequestInit): Promise<T> {
       if ((inner as Error).message === 'OIDC_REDIRECT') throw inner;
       // ignore json parse errors
     }
-    throw new Error(detail || `Request failed (${res.status})`);
+    throw new OryHttpError(detail || GENERIC_ERROR_BY_STATUS(res.status), res.status);
   }
 
   if (res.status === 204) return undefined as T;
@@ -134,6 +173,88 @@ export async function oryRegister(email: string, password: string): Promise<OryR
 export async function oryGetSession(sessionToken: string): Promise<OrySession> {
   return oryFetch<OrySession>('/sessions/whoami', {
     headers: { 'X-Session-Token': sessionToken },
+  });
+}
+
+// ─── Account recovery (password reset via emailed code) ─────────────────────
+//
+// Ory native recovery flow:
+//   1. Init:   GET  /self-service/recovery/api → flow id
+//   2. Email:  POST { method: 'code', email }  → Ory emails a 6-digit code
+//   3. Code:   POST { method: 'code', code }   → success returns continue_with
+//      containing a fresh ory_session_token (+ a settings flow id)
+//   4. Set the new password via the settings flow with that session token.
+// The recovery-issued session was just authenticated, so it is privileged to
+// change the password without re-entering the old one.
+
+interface OryRecoveryFlow {
+  id: string;
+  state?: string;
+  ui?: { messages?: OryUiMessage[] };
+  continue_with?: Array<{
+    action: string;
+    ory_session_token?: string;
+    flow?: { id: string };
+  }>;
+}
+
+/** Step 1+2: starts a recovery flow and sends the code email. Returns the flow id. */
+export async function oryRecoveryStart(email: string): Promise<string> {
+  const flow = await oryFetch<{ id: string }>('/self-service/recovery/api');
+  const result = await oryFetch<OryRecoveryFlow>(`/self-service/recovery?flow=${flow.id}`, {
+    method: 'POST',
+    body: JSON.stringify({ method: 'code', email: email.trim() }),
+  });
+  return result.id ?? flow.id;
+}
+
+export interface OryRecoveryResult {
+  sessionToken: string;
+  settingsFlowId: string | null;
+}
+
+/** Step 3: submits the emailed code. Returns a session token for the recovered account. */
+export async function oryRecoverySubmitCode(flowId: string, code: string): Promise<OryRecoveryResult> {
+  const result = await oryFetch<OryRecoveryFlow>(`/self-service/recovery?flow=${flowId}`, {
+    method: 'POST',
+    body: JSON.stringify({ method: 'code', code: code.trim() }),
+  });
+  const continueWith = result.continue_with ?? [];
+  const sessionToken = continueWith.find((c) => c.action === 'set_ory_session_token')?.ory_session_token;
+  if (!sessionToken) {
+    // Invalid/expired codes come back as 200 with the error inside ui.messages.
+    const message =
+      result.ui?.messages?.find((m) => m.type === 'error')?.text
+      ?? result.ui?.messages?.[0]?.text;
+    throw new Error(message || 'That code is invalid or has expired. Please try again.');
+  }
+  const settingsFlowId = continueWith.find((c) => c.action === 'show_settings_ui')?.flow?.id ?? null;
+  return { sessionToken, settingsFlowId };
+}
+
+// ─── Settings (password change) ──────────────────────────────────────────────
+
+/**
+ * Sets a new password for the session's identity via the native settings flow.
+ * Used both at the end of account recovery and for "Change Password".
+ * Throws OryHttpError 403 if the session is too old (privileged session expired).
+ */
+export async function orySetPassword(
+  sessionToken: string,
+  newPassword: string,
+  settingsFlowId?: string | null,
+): Promise<void> {
+  let flowId = settingsFlowId;
+  if (!flowId) {
+    const flow = await oryFetch<{ id: string }>('/self-service/settings/api', {
+      headers: { 'X-Session-Token': sessionToken },
+    });
+    flowId = flow.id;
+  }
+  await oryFetch<unknown>(`/self-service/settings?flow=${flowId}`, {
+    method: 'POST',
+    headers: { 'X-Session-Token': sessionToken },
+    body: JSON.stringify({ method: 'password', password: newPassword }),
   });
 }
 

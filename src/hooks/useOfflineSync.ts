@@ -1,15 +1,13 @@
-import { useEffect, useRef } from 'react';
+import { flushPiecesSync, hasPendingPiecesSync } from '../screens/pieces/hooks/usePiecesSync';
 import { useAppStore } from '../store/appStore';
 import { useNetworkConnection } from './useNetworkConnection';
+import { useEffect, useRef } from 'react';
 
 /**
- * Watches network state and flushes the offline sync queue whenever
- * the device comes back online.
+ * Watches network state and flushes pending piece sync whenever the device
+ * comes back online.
  *
  * Mount this once at the root of the app (in _layout.tsx).
- *
- * When a real backend is available, replace the `flushQueue` body with
- * actual API calls, processing `ops` one-by-one or in batch.
  */
 export function useOfflineSync() {
   const { isConnected, isInternetReachable } = useNetworkConnection();
@@ -17,45 +15,37 @@ export function useOfflineSync() {
 
   const pendingSyncOps = useAppStore((s) => s.pendingSyncOps);
   const clearSyncQueue = useAppStore((s) => s.clearSyncQueue);
-  const setIsSyncing = useAppStore((s) => s.setIsSyncing);
   const setLastSyncedAt = useAppStore((s) => s.setLastSyncedAt);
 
   const prevOnline = useRef(isOnline);
 
-  const flushQueue = async (ops: typeof pendingSyncOps) => {
-    if (ops.length === 0) return;
-    setIsSyncing(true);
-    try {
-      // ── TODO: replace with real API calls ─────────────────────
-      // for (const op of ops) { await api.sync(op); }
-      // ──────────────────────────────────────────────────────────
-      // Simulate network round-trip while no backend exists yet
-      await new Promise<void>((resolve) => setTimeout(resolve, 1200));
+  const flushQueue = async () => {
+    const hasPieces = hasPendingPiecesSync();
+    const hasLegacyOps = pendingSyncOps.length > 0;
+    if (!hasPieces && !hasLegacyOps) return;
+
+    if (hasPieces) {
+      await flushPiecesSync();
+    }
+    // Legacy queue — non-piece ops only
+    if (hasLegacyOps && !hasPendingPiecesSync()) {
       clearSyncQueue();
       setLastSyncedAt(new Date().toISOString());
-    } catch {
-      // Leave the queue intact so it can be retried next time
-    } finally {
-      setIsSyncing(false);
     }
   };
 
-  // Flush when connectivity is restored
   useEffect(() => {
     const cameOnline = !prevOnline.current && isOnline;
     prevOnline.current = isOnline;
 
-    if (cameOnline && pendingSyncOps.length > 0) {
-      flushQueue(pendingSyncOps);
+    if (cameOnline && (hasPendingPiecesSync() || pendingSyncOps.length > 0)) {
+      void flushQueue();
     }
   }, [isOnline]);
 
-  // Flush whenever a new op is enqueued and we're already online
-  // (covers continuous-online sessions where network never toggles)
   useEffect(() => {
     if (isOnline && pendingSyncOps.length > 0) {
-      flushQueue(pendingSyncOps);
+      void flushQueue();
     }
   }, [pendingSyncOps.length]);
-
 }

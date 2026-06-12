@@ -2,6 +2,7 @@ import { ConfirmSheet } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { CEMETERY_ID, type StageConfig, useStageConfig } from '@/src/hooks/useStageConfig';
 import { PICKABLE_ICONS, resolveStageIcon } from '@/src/screens/pieces/utils/stageIconUtils';
+import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import {
   ChevronDown,
@@ -28,7 +29,7 @@ const STAGE_COLORS: Record<string, { icon: string; bg: string }> = {
   trimming:       { icon: 'hsl(213 30% 55%)', bg: 'bg-slate-100' },
   drying:         { icon: 'hsl(195 70% 50%)', bg: 'bg-sky-50' },
   'bone-dry':     { icon: 'hsl(220 10% 60%)', bg: 'bg-gray-100' },
-  bisque:         { icon: 'hsl(25 90% 55%)',  bg: 'bg-orange-50' },
+  bisque:         { icon: 'hsl(39 57% 51%)',  bg: 'bg-primary/10' },
   glazing:        { icon: 'hsl(270 60% 55%)', bg: 'bg-purple-50' },
   'glaze-fired':  { icon: 'hsl(0 70% 55%)',   bg: 'bg-red-50' },
   finished:       { icon: 'hsl(142 60% 40%)', bg: 'bg-green-50' },
@@ -68,7 +69,7 @@ function StageRow({
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const Icon = resolveStageIcon(stage);
-  const colors = STAGE_COLORS[stage.id] ?? { icon: 'hsl(15 50% 50%)', bg: 'bg-orange-50' };
+  const colors = STAGE_COLORS[stage.id] ?? { icon: 'hsl(39 57% 51%)', bg: 'bg-primary/10' };
   const dim = !stage.enabled;
 
   function commitRename() {
@@ -115,7 +116,7 @@ function StageRow({
             activeOpacity={0.75}
             className={`w-9 h-9 rounded-xl items-center justify-center ${colors.bg}`}
             style={pickerOpen
-              ? { borderWidth: 2, borderColor: 'hsl(15 50% 50%)' }
+              ? { borderWidth: 2, borderColor: 'hsl(39 57% 51%)' }
               : { borderWidth: 2, borderColor: 'transparent' }}
           >
             <Icon size={17} color={colors.icon} />
@@ -186,7 +187,7 @@ function StageRow({
               if (stage.enabled && isOnlyEnabled) return;
               onToggle();
             }}
-            trackColor={{ false: 'hsl(34 25% 82%)', true: 'hsl(15 50% 50%)' }}
+            trackColor={{ false: 'hsl(34 25% 82%)', true: 'hsl(39 57% 51%)' }}
             thumbColor="white"
           />
         )}
@@ -207,9 +208,9 @@ function StageRow({
                   onPress={() => { onChangeIcon(key); setPickerOpen(false); }}
                   activeOpacity={0.7}
                   className={`w-10 h-10 rounded-xl items-center justify-center ${selected ? 'bg-primary/15' : 'bg-muted/60'}`}
-                  style={selected ? { borderWidth: 1.5, borderColor: 'hsl(15 50% 50%)' } : undefined}
+                  style={selected ? { borderWidth: 1.5, borderColor: 'hsl(39 57% 51%)' } : undefined}
                 >
-                  <PIcon size={18} color={selected ? 'hsl(15 50% 50%)' : 'hsl(24 20% 55%)'} />
+                  <PIcon size={18} color={selected ? 'hsl(39 57% 51%)' : 'hsl(24 20% 55%)'} />
                 </TouchableOpacity>
               );
             })}
@@ -241,7 +242,7 @@ function AddStageRow({ onAdd }: { onAdd: (label: string) => void }) {
         className="flex-row items-center gap-3 mx-5 mt-3 px-4 py-3.5 bg-card rounded-2xl border border-dashed border-border"
       >
         <View className="w-9 h-9 rounded-xl items-center justify-center bg-primary/10">
-          <Plus size={17} color="hsl(15 50% 50%)" />
+          <Plus size={17} color="hsl(39 57% 51%)" />
         </View>
         <Text className="text-sm font-medium text-primary">Add Custom Stage</Text>
       </TouchableOpacity>
@@ -251,7 +252,7 @@ function AddStageRow({ onAdd }: { onAdd: (label: string) => void }) {
   return (
     <View className="flex-row items-center gap-3 mx-5 mt-3 px-4 py-3 bg-card rounded-2xl border border-primary">
       <View className="w-9 h-9 rounded-xl items-center justify-center bg-primary/10">
-        <Plus size={17} color="hsl(15 50% 50%)" />
+        <Plus size={17} color="hsl(39 57% 51%)" />
       </View>
       <TextInput
         value={value}
@@ -280,8 +281,13 @@ function AddStageRow({ onAdd }: { onAdd: (label: string) => void }) {
 
 export default function StageCustomizationScreen() {
   const router = useRouter();
+  const markSetupProgress = useAppStore((s) => s.markSetupProgress);
   const { stages, enabledStages, toggleStage, renameStage, addStage, removeStage, changeStageIcon, moveUp, moveDown, resetToDefaults } =
     useStageConfig();
+
+  React.useEffect(() => {
+    markSetupProgress('stagesReviewed');
+  }, [markSetupProgress]);
 
   const movableStages = stages.filter(s => s.id !== CEMETERY_ID);
   const cemetery = stages.find(s => s.id === CEMETERY_ID);

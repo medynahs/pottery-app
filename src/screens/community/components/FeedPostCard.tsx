@@ -1,6 +1,7 @@
 // src/screens/community/components/FeedPostCard.tsx
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
+import { UserAvatar } from '@/src/components/UserAvatar';
 import { apiAddReaction, apiRemoveReaction } from '@/src/services/community';
 import { apiSendFriendRequest } from '@/src/services/friends';
 import { useAppStore } from '@/src/store';
@@ -15,7 +16,7 @@ import type { BackendFeedPost } from '../../../services/community';
 type ReactionKey = 'fired' | 'glazed' | 'centered' | 'thrown';
 
 const REACTIONS: { key: ReactionKey; emoji: string; label: string; activeColor: string }[] = [
-  { key: 'fired',    emoji: '🔥', label: 'Kiln it!',       activeColor: 'hsl(25 90% 50%)'  },
+  { key: 'fired',    emoji: '🔥', label: 'Kiln it!',       activeColor: 'hsl(39 57% 51%)'  },
   { key: 'glazed',   emoji: '✨', label: 'Glaze-mazing!',  activeColor: 'hsl(213 75% 52%)' },
   { key: 'centered', emoji: '🎯', label: 'Well Centered!', activeColor: 'hsl(145 50% 42%)' },
   { key: 'thrown',   emoji: '💫', label: 'Spin the Wheel!', activeColor: 'hsl(270 55% 52%)' },
@@ -160,12 +161,7 @@ export function FeedPostCard({ post, sessionToken }: Props) {
     <Card className="p-4">
       {/* Header */}
       <View className="flex-row items-center gap-3 mb-3">
-        <View
-          className="w-9 h-9 rounded-full items-center justify-center"
-          style={{ backgroundColor: 'hsl(24 35% 76%)' }}
-        >
-          <Text className="text-sm font-bold text-white">{initial}</Text>
-        </View>
+        <UserAvatar initial={initial} size={36} />
         <View className="flex-1">
           <Text className="text-xs font-bold text-foreground">Community Member</Text>
           <Text className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</Text>

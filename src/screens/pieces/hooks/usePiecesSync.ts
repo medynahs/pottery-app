@@ -2,58 +2,78 @@
  * usePiecesSync — React Query hooks that bridge the backend /users/me/pieces
  * endpoints with the local Zustand store.
  *
- * Responsibilities:
- *   - Fetch the user's pieces from the backend on mount (when signed in).
- *   - Merge backend pieces into the store (using backendId as the key).
- *   - Expose typed mutations for create, update, and asset operations that
- *     optimistically update the store and then sync to the API.
+ * Pull: GET /users/me/pieces on sign-in, merged into the store by client_ref /
+ * backendId.
+ * Push: POST /users/me/pieces/sync with local snapshots (debounced). Replaces
+ * per-op create/update/delete replay.
  */
 
-import { useAppStore } from '@/src/store';
+import { setPiecesIfChanged, useAppStore } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useIsFetching, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   API_TO_LOCAL_STAGE,
   LOCAL_STAGE_TO_API,
-  apiCreatePiece,
-  apiDeletePiece,
   apiDeletePieceAsset,
   apiListPieces,
-  apiUpdatePiece,
+  apiSyncPieces,
   apiUpdatePieceAsset,
   apiUploadPieceAsset,
   type ApiPieceStatus,
   type BackendPiece,
-  type CreatePiecePayload,
+  type PieceSyncSnapshot,
+  type SyncPiecesResponse,
   type UpdateAssetPayload,
 } from '../../../services/pieces';
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
-/** Base key — used for prefix invalidation (matches all user-scoped entries). */
 export const PIECES_QUERY_KEY = ['pieces'] as const;
-/** Scoped key — unique per user so different accounts never share a cache entry. */
 export const piecesQueryKey = (userId: string) =>
   [...PIECES_QUERY_KEY, userId] as const;
 export const pieceAssetsQueryKey = (pieceId: string) =>
   ['piece-assets', pieceId] as const;
 
+const SYNC_DEBOUNCE_MS = 800;
+const MAX_SYNC_BATCH = 500;
+
+// ─── Module-level push sync state ────────────────────────────────────────────
+
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+let syncInFlight = false;
+let initialPullMerged = false;
+let lastMergedAt = 0;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Convert a backend piece into the minimal fields needed to upsert into the
- * local store. We do not overwrite rich local-only fields (clay, formingMethod,
- * etc.) — those are preserved from the existing local record if one exists.
- */
-function backendToLocalPatch(
-  bp: BackendPiece,
-  existing?: Piece,
-): Piece {
+function pieceToSnapshot(piece: Piece): PieceSyncSnapshot {
+  const snapshot: PieceSyncSnapshot = {
+    client_ref: String(piece.id),
+    name: piece.name,
+    status: LOCAL_STAGE_TO_API[piece.stage] ?? 'idea',
+  };
+  if (piece.description) snapshot.description = piece.description;
+  if (piece.deleted) snapshot.deleted = true;
+  return snapshot;
+}
+
+/** Pieces that need to be included in the next push sync. */
+export function piecesNeedingSync(pieces: Piece[]): Piece[] {
+  return pieces.filter((p) => p.syncDirty || p.deleted || !p.backendId);
+}
+
+export function hasPendingPiecesSync(): boolean {
+  return piecesNeedingSync(useAppStore.getState().pieces).length > 0;
+}
+
+function backendToLocalPatch(bp: BackendPiece, existing?: Piece): Piece {
   const stage = API_TO_LOCAL_STAGE[bp.status] ?? bp.status;
+  const parsedId = bp.client_ref ? Number(bp.client_ref) : NaN;
+  const localId = existing?.id ?? (!Number.isNaN(parsedId) ? parsedId : Date.now() + Math.floor(Math.random() * 1_000));
 
   const base: Piece = existing ?? {
-    id: Date.now() + Math.floor(Math.random() * 1_000),
+    id: localId,
     name: bp.name,
     stage,
     createdAt: bp.created_at,
@@ -61,6 +81,14 @@ function backendToLocalPatch(
     timeline: [{ stage, timestamp: bp.created_at }],
     clay: '',
   };
+
+  if (existing?.syncDirty) {
+    return {
+      ...existing,
+      backendId: bp.id,
+      updatedAt: bp.updated_at,
+    };
+  }
 
   return {
     ...base,
@@ -72,25 +100,22 @@ function backendToLocalPatch(
   };
 }
 
-/**
- * Merge backend pieces into the local store.
- * - If a local piece already has a matching `backendId`, update it in place.
- * - If no match, prepend a new local record.
- */
-function mergePiecesIntoStore(
+function mergeBackendPiecesIntoLocal(
   backendPieces: BackendPiece[],
   localPieces: Piece[],
-  setPieces: (pieces: Piece[]) => void,
-) {
+): Piece[] {
   const byBackendId = new Map(
-    localPieces.filter(p => p.backendId).map(p => [p.backendId!, p]),
+    localPieces.filter((p) => p.backendId).map((p) => [p.backendId!, p]),
   );
+  const byClientRef = new Map(localPieces.map((p) => [String(p.id), p]));
 
   const updatedByBackendId = new Map<string, Piece>();
   const newPieces: Piece[] = [];
 
   for (const bp of backendPieces) {
-    const existing = byBackendId.get(bp.id);
+    const existing =
+      (bp.client_ref ? byClientRef.get(bp.client_ref) : undefined) ??
+      byBackendId.get(bp.id);
     const merged = backendToLocalPatch(bp, existing);
     if (existing) {
       updatedByBackendId.set(bp.id, merged);
@@ -99,27 +124,99 @@ function mergePiecesIntoStore(
     }
   }
 
-  const retained = localPieces.map(p =>
+  const retained = localPieces.map((p) =>
     p.backendId ? (updatedByBackendId.get(p.backendId) ?? p) : p,
   );
 
-  setPieces([...newPieces, ...retained]);
+  return [...newPieces, ...retained];
 }
 
-// ─── Main hook ────────────────────────────────────────────────────────────────
+function applySyncResponse(localPieces: Piece[], response: SyncPiecesResponse): Piece[] {
+  const { client_ref_map, pieces: backendPieces } = response;
+
+  let working = localPieces.filter(
+    (p) => !(p.deleted && client_ref_map[String(p.id)]),
+  );
+
+  working = working.map((p) => {
+    const backendId = client_ref_map[String(p.id)];
+    if (!backendId) return p;
+    return { ...p, backendId, syncDirty: false };
+  });
+
+  return mergeBackendPiecesIntoLocal(backendPieces, working);
+}
+
+function mergePiecesIntoStore(backendPieces: BackendPiece[], localPieces: Piece[]) {
+  setPiecesIfChanged(mergeBackendPiecesIntoLocal(backendPieces, localPieces));
+}
+
+// ─── Imperative push sync ─────────────────────────────────────────────────────
+
+export async function flushPiecesSync(): Promise<boolean> {
+  if (syncInFlight) return false;
+
+  const { sessionToken, pieces, setIsSyncing, setLastSyncedAt } =
+    useAppStore.getState();
+  if (!sessionToken) return false;
+
+  const toSync = piecesNeedingSync(pieces);
+  if (toSync.length === 0) return true;
+
+  syncInFlight = true;
+  setIsSyncing(true);
+
+  try {
+    const snapshots = toSync.slice(0, MAX_SYNC_BATCH).map(pieceToSnapshot);
+    if (__DEV__) console.log(`[pieces:sync] pushing ${snapshots.length} snapshot(s)`);
+
+    const response = await apiSyncPieces(sessionToken, { pieces: snapshots });
+    setPiecesIfChanged(applySyncResponse(useAppStore.getState().pieces, response));
+    setLastSyncedAt(new Date().toISOString());
+
+    if (__DEV__) {
+      console.log(
+        `[pieces:sync] ok — ${response.pieces.length} alive, ${Object.keys(response.client_ref_map).length} mapped`,
+      );
+    }
+    return true;
+  } catch (err) {
+    if (__DEV__) console.warn('[pieces:sync] push failed:', err);
+    useAppStore.getState().showToast('Could not sync pieces', 'error');
+    return false;
+  } finally {
+    syncInFlight = false;
+    setIsSyncing(false);
+  }
+}
+
+/** Debounce a push sync — call after any local piece mutation. */
+export function schedulePiecesSync() {
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    syncTimer = null;
+    void flushPiecesSync();
+  }, SYNC_DEBOUNCE_MS);
+}
+
+// ─── Main hook (mount once at app root) ───────────────────────────────────────
 
 /**
- * Loads pieces from the backend whenever the user is authenticated.
- * The result is merged into the Zustand store so all existing UI continues
- * to work without changes.
+ * Loads pieces from the backend whenever the user is authenticated, merges
+ * into the store, and schedules a push sync for any local-only changes.
  */
 export function usePiecesSync() {
-  const sessionToken = useAppStore(s => s.sessionToken);
-  const oryIdentityId = useAppStore(s => s.oryIdentityId);
+  const sessionToken = useAppStore((s) => s.sessionToken);
+  const oryIdentityId = useAppStore((s) => s.oryIdentityId);
+  const prevUserId = useRef(oryIdentityId);
 
   useEffect(() => {
-    if (__DEV__) console.log('[pieces:sync] sessionToken present:', !!sessionToken);
-  }, [sessionToken]);
+    if (prevUserId.current !== oryIdentityId) {
+      prevUserId.current = oryIdentityId;
+      initialPullMerged = false;
+      lastMergedAt = 0;
+    }
+  }, [oryIdentityId]);
 
   const query = useQuery({
     queryKey: piecesQueryKey(oryIdentityId ?? ''),
@@ -131,144 +228,41 @@ export function usePiecesSync() {
 
   useEffect(() => {
     if (!query.data) return;
+    if (query.dataUpdatedAt === lastMergedAt) return;
+
+    lastMergedAt = query.dataUpdatedAt;
     if (__DEV__) console.log(`[pieces:sync] fetched ${query.data.length} piece(s) from backend`);
-    const { pieces, setPieces } = useAppStore.getState();
-    mergePiecesIntoStore(query.data, pieces, setPieces);
-  }, [query.data]);
+    const { pieces } = useAppStore.getState();
+    mergePiecesIntoStore(query.data, pieces);
+
+    if (!initialPullMerged) {
+      initialPullMerged = true;
+      schedulePiecesSync();
+    }
+  }, [query.data, query.dataUpdatedAt]);
 
   return query;
 }
 
-// ─── Create mutation ─────────────────────────────────────────────────────────
-
-export interface CreatePieceOptions {
-  /** local piece that was already added optimistically via addPieces */
-  localPiece: Piece;
-}
-
-/**
- * After calling `store.addPieces([localPiece])` optimistically, call this
- * mutation to persist to the backend and stamp the returned UUID as backendId.
- */
-export function useCreatePieceMutation() {
-  const sessionToken = useAppStore(s => s.sessionToken);
-  const updatePiece = useAppStore(s => s.updatePiece);
+/** Sync status + manual refetch for the Pieces screen (no duplicate query hook). */
+export function usePiecesSyncStatus() {
+  const isSyncing = useAppStore((s) => s.isSyncing);
+  const oryIdentityId = useAppStore((s) => s.oryIdentityId);
+  const isFetching = useIsFetching({ queryKey: piecesQueryKey(oryIdentityId ?? '') }) > 0;
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({
-      localPiece,
-    }: CreatePieceOptions) => {
-      if (!sessionToken) throw new Error('Not signed in');
+  const refetchPieces = useCallback(async () => {
+    await queryClient.refetchQueries({ queryKey: piecesQueryKey(oryIdentityId ?? '') });
+    if (hasPendingPiecesSync()) schedulePiecesSync();
+  }, [queryClient, oryIdentityId]);
 
-      const apiStatus: ApiPieceStatus =
-        LOCAL_STAGE_TO_API[localPiece.stage] ?? 'idea';
-
-      const payload: CreatePiecePayload = {
-        name: localPiece.name,
-        status: apiStatus,
-        ...(localPiece.description ? { description: localPiece.description } : {}),
-      };
-
-      const bp = await apiCreatePiece(sessionToken, payload);
-      return { bp, localPiece };
-    },
-    onSuccess: ({ bp, localPiece }) => {
-      if (__DEV__) console.log(`[pieces:create] "${localPiece.name}" → backendId ${bp.id}`);
-      // Read the latest version of the piece from the store — the user may have
-      // edited it while the create request was in flight, so we must not clobber
-      // those changes with the stale localPiece snapshot.
-      const latest = useAppStore.getState().pieces.find(p => p.id === localPiece.id);
-      if (latest) updatePiece({ ...latest, backendId: bp.id });
-      void queryClient.invalidateQueries({ queryKey: PIECES_QUERY_KEY });
-      useAppStore.getState().showToast('Piece saved', 'success');
-    },
-    onError: (err, { localPiece }) => {
-      if (__DEV__) {
-        console.warn(
-          `[pieces:create] FAILED for "${localPiece.name}":`,
-          err,
-        );
-      }
-      useAppStore.getState().showToast('Could not save piece', 'error');
-    },
-  });
+  return {
+    isSyncing: isFetching || isSyncing,
+    refetchPieces,
+  };
 }
 
-// ─── Update mutation ─────────────────────────────────────────────────────────
-
-/**
- * Syncs a locally-updated piece to the backend.
- * The store should already be updated optimistically before calling this.
- */
-export function useUpdatePieceMutation() {
-  const sessionToken = useAppStore(s => s.sessionToken);
-
-  return useMutation({
-    mutationFn: async (piece: Piece) => {
-      if (!sessionToken) throw new Error('Not signed in');
-      if (!piece.backendId) {
-        if (__DEV__) console.log(`[pieces:update] "${piece.name}" skipped (no backendId yet)`);
-        return;
-      }
-      if (__DEV__) console.log(`[pieces:update] PUT ${piece.backendId} — stage: ${piece.stage}`);
-
-      const apiStatus: ApiPieceStatus =
-        LOCAL_STAGE_TO_API[piece.stage] ?? 'idea';
-
-      await apiUpdatePiece(sessionToken, piece.backendId, {
-        name: piece.name,
-        status: apiStatus,
-        ...(piece.description !== undefined ? { description: piece.description } : {}),
-      });
-    },
-    // No invalidation here — the store is already up to date from the optimistic
-    // update in usePiecesScreen, so triggering a refetch would just re-merge
-    // unchanged data.
-    onError: (err, piece) => {
-      if (__DEV__) {
-        console.warn(
-          `[pieces:update] FAILED for "${piece.name}":`,
-          err,
-        );
-      }
-      useAppStore.getState().showToast('Could not update piece', 'error');
-    },
-  });
-}
-
-// ─── Delete mutation ─────────────────────────────────────────────────────────
-
-/**
- * Deletes a piece on the backend. The store should already have the piece
- * removed optimistically before this is called.
- */
-export function useDeletePieceMutation() {
-  const sessionToken = useAppStore(s => s.sessionToken);
-
-  return useMutation({
-    mutationFn: async (piece: Piece) => {
-      if (!sessionToken) throw new Error('Not signed in');
-      if (!piece.backendId) {
-        if (__DEV__) console.log(`[pieces:delete] "${piece.name}" skipped (no backendId — local only)`);
-        return;
-      }
-      if (__DEV__) console.log(`[pieces:delete] DELETE ${piece.backendId}`);
-      await apiDeletePiece(sessionToken, piece.backendId);
-    },
-    onError: (err, piece) => {
-      if (__DEV__) {
-        console.warn(
-          `[pieces:delete] FAILED for "${piece.name}":`,
-          err,
-        );
-      }
-      useAppStore.getState().showToast('Could not delete piece', 'error');
-    },
-  });
-}
-
-// ─── Asset delete mutation ────────────────────────────────────────────────────
+// ─── Asset mutations (unchanged — still per-op) ───────────────────────────────
 
 export interface DeletePieceAssetOptions {
   pieceBackendId: string;
@@ -276,7 +270,7 @@ export interface DeletePieceAssetOptions {
 }
 
 export function useDeletePieceAssetMutation() {
-  const sessionToken = useAppStore(s => s.sessionToken);
+  const sessionToken = useAppStore((s) => s.sessionToken);
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -296,8 +290,6 @@ export function useDeletePieceAssetMutation() {
   });
 }
 
-// ─── Asset upload mutation ────────────────────────────────────────────────────
-
 export interface UploadPieceAssetOptions {
   pieceBackendId: string;
   file: { uri: string; name: string; type: string };
@@ -306,7 +298,7 @@ export interface UploadPieceAssetOptions {
 }
 
 export function useUploadPieceAssetMutation() {
-  const sessionToken = useAppStore(s => s.sessionToken);
+  const sessionToken = useAppStore((s) => s.sessionToken);
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -327,8 +319,6 @@ export function useUploadPieceAssetMutation() {
   });
 }
 
-// ─── Asset update mutation ────────────────────────────────────────────────────
-
 export interface UpdatePieceAssetOptions {
   pieceBackendId: string;
   assetId: string;
@@ -336,7 +326,7 @@ export interface UpdatePieceAssetOptions {
 }
 
 export function useUpdatePieceAssetMutation() {
-  const sessionToken = useAppStore(s => s.sessionToken);
+  const sessionToken = useAppStore((s) => s.sessionToken);
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -349,4 +339,3 @@ export function useUpdatePieceAssetMutation() {
     },
   });
 }
-

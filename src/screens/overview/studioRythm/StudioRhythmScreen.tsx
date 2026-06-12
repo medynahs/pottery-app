@@ -1,7 +1,7 @@
 import { Card } from '@/src/components/ui/card';
 import { Switch } from '@/src/components/ui/switch';
 import { Text } from '@/src/components/ui/text';
-import { useAppStore } from '@/src/store';
+import { useVisiblePieces, useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { CalendarDays, Plus, Trash2 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
@@ -23,7 +23,7 @@ export default function StudioRhythmScreen() {
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
   const rhythm  = useAppStore((s) => s.studioRhythm);
-  const pieces  = useAppStore((s) => s.pieces);
+  const pieces  = useVisiblePieces();
   const toggleRitual      = useAppStore((s) => s.toggleStudioRitual);
   const removeRitual       = useAppStore((s) => s.removeStudioRitual);
   const removeStudioEvent  = useAppStore((s) => s.removeStudioEvent);
@@ -53,7 +53,7 @@ export default function StudioRhythmScreen() {
       <View className="flex-row items-center justify-between px-6 pt-4 pb-3">
         <View className="flex-row items-center gap-2">
           <View className="w-9 h-9 rounded-xl items-center justify-center bg-amber-50 border border-amber-100">
-            <CalendarDays size={18} color="hsl(24 75% 45%)" />
+            <CalendarDays size={18} color="hsl(39 57% 51%)" />
           </View>
           <View>
             <Text className="text-base font-serif font-bold text-foreground">Rhythm Planner</Text>
@@ -95,7 +95,7 @@ export default function StudioRhythmScreen() {
             activeOpacity={0.8}
             className="flex-row items-center gap-1 bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-full"
           >
-            <Plus size={12} color="hsl(24 75% 45%)" />
+            <Plus size={12} color="hsl(39 57% 51%)" />
             <Text className="text-xs font-semibold text-primary">Add Event</Text>
           </TouchableOpacity>
         </View>
@@ -145,7 +145,7 @@ export default function StudioRhythmScreen() {
             activeOpacity={0.8}
             className="flex-row items-center gap-1 bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-full"
           >
-            <Plus size={12} color="hsl(24 75% 45%)" />
+            <Plus size={12} color="hsl(39 57% 51%)" />
             <Text className="text-xs font-semibold text-primary">Add Ritual</Text>
           </TouchableOpacity>
         </View>
