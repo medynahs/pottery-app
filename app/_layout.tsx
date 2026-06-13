@@ -19,6 +19,7 @@ import { ToastOverlay } from '@/src/components/ui/toast-overlay';
 import { configureRevenueCat } from '@/src/hooks/useEntitlements';
 import { useNotificationTriggers } from '@/src/hooks/useNotificationTriggers';
 import { useOfflineSync } from '@/src/hooks/useOfflineSync';
+import { useGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { usePiecesSync } from '@/src/screens/pieces/hooks/usePiecesSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
@@ -92,6 +93,7 @@ function AppOnboardingGuard() {
 function AppShell() {
   useOfflineSync();
   usePiecesSync();
+  useGlazesSync();
   useNotificationTriggers();
   const backendUsersStatus = useAppStore((state) => state.backendUsersStatus);
   const loadBackendUsers = useAppStore((state) => state.loadBackendUsers);

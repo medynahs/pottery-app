@@ -467,6 +467,10 @@ interface AppState {
   // ── Glaze Library ───────────────────────────────────────────
   glazes: GlazeLibraryItem[];
   glazeTests: GlazeTestTile[];
+  /** Synced glazes/tests deleted locally, parked until a sync pushes the
+   *  tombstone. Kept out of `glazes`/`glazeTests` so the UI stays live-only. */
+  pendingGlazeDeletions: GlazeLibraryItem[];
+  pendingGlazeTestDeletions: GlazeTestTile[];
   addGlaze: (glaze: GlazeLibraryItem) => void;
   updateGlaze: (glaze: GlazeLibraryItem) => void;
   deleteGlaze: (id: string) => void;
@@ -1165,30 +1169,47 @@ export const useAppStore = create<AppState>()(
   resetPricingSettings: () => set({ pricingSettings: buildDefaultPricingSettings() }),
 
   // ── Glaze Library ───────────────────────────────────────────
+  // Glazes/tests sync to the backend like pieces (see useGlazesSync): syncDirty
+  // marks unpushed local edits; deletes of already-synced items are parked in
+  // pendingGlaze(Test)Deletions until a sync confirms the server tombstone.
   glazes: [],
   glazeTests: [],
+  pendingGlazeDeletions: [],
+  pendingGlazeTestDeletions: [],
   addGlaze: (glaze) =>
     set((state) => ({
-      glazes: [glaze, ...state.glazes],
+      glazes: [{ ...glaze, syncDirty: true }, ...state.glazes],
     })),
   updateGlaze: (glaze) =>
     set((state) => ({
-      glazes: state.glazes.map((item) => (item.id === glaze.id ? glaze : item)),
+      glazes: state.glazes.map((item) => (item.id === glaze.id ? { ...glaze, syncDirty: true } : item)),
     })),
   deleteGlaze: (id) =>
-    set((state) => ({
-      glazes: state.glazes.filter((glaze) => glaze.id !== id),
-      glazeTests: state.glazeTests.filter((test) => test.glazeId !== id),
-    })),
+    set((state) => {
+      const removed = state.glazes.find((glaze) => glaze.id === id);
+      const orphanedTests = state.glazeTests.filter((test) => test.glazeId === id);
+      return {
+        glazes: state.glazes.filter((glaze) => glaze.id !== id),
+        glazeTests: state.glazeTests.filter((test) => test.glazeId !== id),
+        // Only items the server already knows about (have a backendId) need a tombstone.
+        pendingGlazeDeletions: removed?.backendId
+          ? [...state.pendingGlazeDeletions, removed]
+          : state.pendingGlazeDeletions,
+        pendingGlazeTestDeletions: [
+          ...state.pendingGlazeTestDeletions,
+          ...orphanedTests.filter((test) => test.backendId),
+        ],
+      };
+    }),
   toggleFavoriteGlaze: (id) =>
     set((state) => ({
       glazes: state.glazes.map((glaze) => (
-        glaze.id === id ? { ...glaze, favorite: !glaze.favorite } : glaze
+        glaze.id === id ? { ...glaze, favorite: !glaze.favorite, syncDirty: true } : glaze
       )),
     })),
   addGlazeTest: (test) =>
     set((state) => ({
-      glazeTests: [test, ...state.glazeTests],
+      glazeTests: [{ ...test, syncDirty: true }, ...state.glazeTests],
       glazes: state.glazes.map((glaze) => {
         if (glaze.id !== test.glazeId) return glaze;
 
@@ -1205,6 +1226,7 @@ export const useAppStore = create<AppState>()(
 
         return {
           ...glaze,
+          syncDirty: true,
           lastTestedAt: test.firingDate,
           clayBodiesUsed,
           kilnTypesUsed,
@@ -1214,9 +1236,15 @@ export const useAppStore = create<AppState>()(
       }),
     })),
   deleteGlazeTest: (id) =>
-    set((state) => ({
-      glazeTests: state.glazeTests.filter((test) => test.id !== id),
-    })),
+    set((state) => {
+      const removed = state.glazeTests.find((test) => test.id === id);
+      return {
+        glazeTests: state.glazeTests.filter((test) => test.id !== id),
+        pendingGlazeTestDeletions: removed?.backendId
+          ? [...state.pendingGlazeTestDeletions, removed]
+          : state.pendingGlazeTestDeletions,
+      };
+    }),
 
   // ── Kilns ─────────────────────────────────────────────────────
   kilns: [],
@@ -1470,6 +1498,8 @@ export const useAppStore = create<AppState>()(
         pricingOnboardingCompleted: state.pricingOnboardingCompleted,
         glazes: state.glazes,
         glazeTests: state.glazeTests,
+        pendingGlazeDeletions: state.pendingGlazeDeletions,
+        pendingGlazeTestDeletions: state.pendingGlazeTestDeletions,
         pendingSyncOps: state.pendingSyncOps,
         studioRhythm: state.studioRhythm,
         defaultNewPieceStage: state.defaultNewPieceStage,

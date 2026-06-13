@@ -15,6 +15,10 @@ export interface GlazeIngredient {
 
 export interface GlazeLibraryItem {
   id: string;
+  /** UUID assigned by the backend after the glaze is first synced. */
+  backendId?: string;
+  /** Local edits not yet pushed via POST /users/me/glazes/sync. */
+  syncDirty?: boolean;
   name: string;
   finish: GlazeFinish;
   colorFamily: string;
@@ -44,6 +48,10 @@ export interface GlazeLibraryItem {
 
 export interface GlazeTestTile {
   id: string;
+  /** UUID assigned by the backend after the test is first synced. */
+  backendId?: string;
+  /** Local edits not yet pushed via POST /users/me/glazes/sync. */
+  syncDirty?: boolean;
   glazeId: string;
   glazeNameSnapshot: string;
   clayBody: string;

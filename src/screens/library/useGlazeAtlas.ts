@@ -5,6 +5,7 @@ import React from 'react';
 import { DEFAULT_GLAZE_COLLECTIONS, normalizeGlazeCollections } from './atlas/collections';
 import { parseCommaList } from './atlas/helpers';
 import type { GlazeDraft, TestDraft } from './atlas/types';
+import { scheduleGlazesSync } from './useGlazesSync';
 
 export function useGlazeAtlas() {
   const glazes = useAppStore((state) => state.glazes);
@@ -67,6 +68,7 @@ export function useGlazeAtlas() {
       createdAt: new Date().toISOString(),
       lastTestedAt: undefined,
     });
+    scheduleGlazesSync();
     setAddOpen(false);
     showToast('Glaze saved', 'success');
   }, [addGlaze, showToast]);
@@ -98,6 +100,7 @@ export function useGlazeAtlas() {
       resultRating: testDraft.resultRating,
       defects: testDraft.defects,
     });
+    scheduleGlazesSync();
     setTestOpen(false);
     showToast('Test tile saved', 'success');
   }, [addGlazeTest, glazes, showToast]);
