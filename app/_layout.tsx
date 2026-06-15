@@ -123,6 +123,7 @@ function AppShell() {
         <Stack.Screen name="bisque-cone" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="glaze-cone" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="glaze-library" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="glaze/[id]" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="discover-recipe" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="library-roadmaps" options={{ headerShown: false }} />
         <Stack.Screen name="library-glazes" options={{ headerShown: false }} />

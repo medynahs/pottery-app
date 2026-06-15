@@ -1,13 +1,18 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
-import GlazeLibraryScreen from '@/src/screens/glazes/GlazeLibraryScreen';
 
+/** Legacy route — redirects to flat glaze detail or atlas tab. */
 export default function GlazeLibraryRoute() {
-  const { collection, glazeId } = useLocalSearchParams<{ collection?: string; glazeId?: string }>();
-  return (
-    <GlazeLibraryScreen
-      collectionFilter={collection}
-      initialGlazeId={typeof glazeId === 'string' ? glazeId : undefined}
-    />
-  );
+  const { glazeId } = useLocalSearchParams<{ glazeId?: string; collection?: string }>();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (typeof glazeId === 'string' && glazeId.length > 0) {
+      router.replace(`/glaze/${encodeURIComponent(glazeId)}` as never);
+      return;
+    }
+    router.replace('/(tabs)/library' as never);
+  }, [glazeId, router]);
+
+  return null;
 }

@@ -2,7 +2,6 @@ import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { Text } from '@/src/components/ui/text';
 import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { PremiumFeature } from '@/src/utils/premiumGate';
 import { getKilnkinVoiceLine } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
 import { generateSetupQuests, type SetupQuestKey } from '@/src/screens/overview/setupQuests/generateSetupQuests';
 import { generateStudioRhythmSuggestions } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
@@ -10,8 +9,9 @@ import { STAGE_CONFIG, getDateKey, isStudioRhythmConfigured } from '@/src/screen
 import { getStudioSignals } from '@/src/screens/overview/utils/getStudioSignals';
 import { mapPiecesToStudioPositions, type StudioPiecePositions } from '@/src/screens/overview/utils/mapPiecesToStudioPositions';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
-import { useVisiblePieces, useAppStore } from '@/src/store';
+import { useAppStore, useVisiblePieces } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
+import { PremiumFeature } from '@/src/utils/premiumGate';
 import { useRouter } from 'expo-router';
 import { BarChart2, Calculator, CalendarDays, Check, ChevronDown, ChevronRight, ChevronUp, Database, Flame, Hammer, Layers, LayoutGrid, MessageSquarePlus, Plus, Scissors, Sparkles, Trophy, Zap } from 'lucide-react-native';
 import React from 'react';
@@ -709,7 +709,7 @@ export function OverviewPage() {
                 <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 1, color: 'hsl(32 48% 36%)', textTransform: 'uppercase' }}>
                   Your Studio
                 </Text>
-                <Text className="font-serif text-[28px] leading-8 text-foreground mt-2">
+                <Text className="font-serif text-[20px] leading-8 text-foreground mt-2">
                   {user.name ? `Welcome, ${user.name.split(' ')[0]}` : 'Welcome to your studio'}
                 </Text>
                 <Text className="text-[13px] leading-5 mt-2" style={{ color: 'hsl(31 34% 40%)' }}>
