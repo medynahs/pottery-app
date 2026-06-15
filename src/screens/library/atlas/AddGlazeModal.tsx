@@ -12,6 +12,7 @@ import { ChevronDown } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { FormField } from './FormField';
+import { CollectionPicker } from './CollectionPicker';
 import { createEmptyGlazeDraft } from './helpers';
 import { MediaSlot } from './MediaSlot';
 import { Pill } from './Pill';
@@ -23,12 +24,14 @@ export function AddGlazeModal({
   onSave,
   defaultCone,
   collections,
+  onCreateCollection,
 }: {
   visible: boolean;
   onClose: () => void;
   onSave: (draft: GlazeDraft) => void;
   defaultCone: string | null;
   collections: string[];
+  onCreateCollection: (name: string) => void;
 }) {
   const [draft, setDraft] = React.useState<GlazeDraft>(() =>
     createEmptyGlazeDraft(defaultCone, collections),
@@ -173,6 +176,15 @@ export function AddGlazeModal({
                     style={{ minHeight: 64, textAlignVertical: 'top' }}
                   />
                 </FormField>
+
+                <View className="mt-4">
+                  <CollectionPicker
+                    availableCollections={collections}
+                    selected={draft.collections}
+                    onChange={(next) => setDraft((d) => ({ ...d, collections: next }))}
+                    onCreateCollection={onCreateCollection}
+                  />
+                </View>
 
                 <View className="flex-row flex-wrap gap-2 mt-4">
                   <Pill

@@ -2,6 +2,7 @@ import { ConfirmSheet } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
 import { formatShortDate, glazeCardColor, parseCommaList } from '@/src/screens/library/atlas/helpers';
+import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { GlazeThumbnail } from '@/src/screens/library/atlas/MediaSlot';
 import type { TestDraft } from '@/src/screens/library/atlas/types';
 import { useAppStore } from '@/src/store';
@@ -83,6 +84,7 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
         resultRating: testDraft.resultRating,
         defects: testDraft.defects,
       });
+      scheduleGlazesSync();
       setLogTestOpen(false);
       showToast('Test tile saved', 'success');
     },
@@ -112,6 +114,7 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
         destructive
         onConfirm={() => {
           deleteGlaze(glaze.id);
+          scheduleGlazesSync();
           setConfirmDeleteGlaze(false);
           router.back();
         }}
@@ -128,7 +131,10 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
         confirmLabel="Remove"
         destructive
         onConfirm={() => {
-          if (pendingDeleteTest) deleteGlazeTest(pendingDeleteTest.id);
+          if (pendingDeleteTest) {
+            deleteGlazeTest(pendingDeleteTest.id);
+            scheduleGlazesSync();
+          }
           setPendingDeleteTest(null);
         }}
         onCancel={() => setPendingDeleteTest(null)}
@@ -182,7 +188,10 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
         <View className="px-6 pt-5">
           <View className="flex-row flex-wrap gap-2">
             <TouchableOpacity
-              onPress={() => toggleFavoriteGlaze(glaze.id)}
+              onPress={() => {
+                toggleFavoriteGlaze(glaze.id);
+                scheduleGlazesSync();
+              }}
               activeOpacity={0.85}
               className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-border bg-card"
             >
@@ -224,6 +233,16 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
 
           {glaze.supplier ? (
             <Text className="text-xs text-muted-foreground mt-4">Supplier: {glaze.supplier}</Text>
+          ) : null}
+
+          {glaze.collections.length > 0 ? (
+            <View className="flex-row flex-wrap gap-2 mt-4">
+              {glaze.collections.map((collection) => (
+                <View key={collection} className="px-3 py-1 rounded-full bg-muted border border-border">
+                  <Text className="text-[11px] font-semibold text-muted-foreground">{collection}</Text>
+                </View>
+              ))}
+            </View>
           ) : null}
 
           <View className="mt-8 mb-3 flex-row items-center justify-between">

@@ -115,6 +115,7 @@ export default function JournalScreen() {
         onSave={atlas.handleSaveGlaze}
         defaultCone={atlas.defaultGlazeTemp}
         collections={atlas.collections}
+        onCreateCollection={atlas.addGlazeCollection}
       />
 
       <LogTestModal

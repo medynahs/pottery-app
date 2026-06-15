@@ -1,4 +1,3 @@
-import { normalizeGlazeCollections } from './collections';
 import { COLOR_FAMILY_HEX } from './constants';
 import type { GlazeDraft, TestDraft } from './types';
 
@@ -44,7 +43,7 @@ export function createEmptyGlazeDraft(
     batchSize: '',
     recipeNotes: '',
     tags: '',
-    collections: normalizeGlazeCollections(),
+    collections: [],
     favorite: false,
     production: false,
   };

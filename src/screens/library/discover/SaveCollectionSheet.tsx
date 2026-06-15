@@ -31,8 +31,7 @@ export function SaveCollectionSheet({
   // Reset selections when a new recipe is targeted
   React.useEffect(() => {
     if (recipe) {
-      const defaultColl = collections.length > 0 ? [collections[0]] : ['My Glazes'];
-      setSelected(defaultColl);
+      setSelected([]);
       setNewInput('');
       setShowNewInput(false);
     }
@@ -54,7 +53,7 @@ export function SaveCollectionSheet({
     setShowNewInput(false);
   }
 
-  const displayCollections = collections.length === 0 ? ['My Glazes'] : collections;
+  const displayCollections = collections.length === 0 ? [] : collections;
 
   return (
     <Modal
@@ -118,7 +117,7 @@ export function SaveCollectionSheet({
           >
             {collections.length === 0 && (
               <Text style={{ fontSize: 12, color: '#A68555', marginBottom: 12 }}>
-                No collections yet — glaze will be saved to "My Glazes".
+                Optional — create a collection to group this glaze, or save without one.
               </Text>
             )}
 
@@ -240,7 +239,7 @@ export function SaveCollectionSheet({
             }}
           >
             <TouchableOpacity
-              onPress={() => onSave(selected.length > 0 ? selected : ['My Glazes'])}
+              onPress={() => onSave(selected)}
               activeOpacity={0.82}
               style={{
                 borderRadius: 16,

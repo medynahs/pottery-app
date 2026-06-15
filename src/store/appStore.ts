@@ -5,7 +5,8 @@ import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
 import {
   LEGACY_SEED_GLAZE_IDS,
   LEGACY_SEED_TEST_IDS,
-  normalizeGlazeCollections,
+  deriveCustomCollectionNames,
+  sanitizeCustomCollections,
 } from '../screens/library/atlas/collections';
 import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
 import {
@@ -467,6 +468,8 @@ interface AppState {
   // ── Glaze Library ───────────────────────────────────────────
   glazes: GlazeLibraryItem[];
   glazeTests: GlazeTestTile[];
+  /** User-created collection names (including empty collections). */
+  glazeCollectionNames: string[];
   /** Synced glazes/tests deleted locally, parked until a sync pushes the
    *  tombstone. Kept out of `glazes`/`glazeTests` so the UI stays live-only. */
   pendingGlazeDeletions: GlazeLibraryItem[];
@@ -477,6 +480,8 @@ interface AppState {
   toggleFavoriteGlaze: (id: string) => void;
   addGlazeTest: (test: GlazeTestTile) => void;
   deleteGlazeTest: (id: string) => void;
+  addGlazeCollection: (name: string) => void;
+  registerGlazeCollections: (names: string[]) => void;
 
   // ── Kilns ─────────────────────────────────────────────────────
   kilns: Kiln[];
@@ -1174,6 +1179,7 @@ export const useAppStore = create<AppState>()(
   // pendingGlaze(Test)Deletions until a sync confirms the server tombstone.
   glazes: [],
   glazeTests: [],
+  glazeCollectionNames: [],
   pendingGlazeDeletions: [],
   pendingGlazeTestDeletions: [],
   addGlaze: (glaze) =>
@@ -1244,6 +1250,23 @@ export const useAppStore = create<AppState>()(
           ? [...state.pendingGlazeTestDeletions, removed]
           : state.pendingGlazeTestDeletions,
       };
+    }),
+
+  addGlazeCollection: (name) =>
+    set((state) => {
+      const clean = sanitizeCustomCollections([name])[0];
+      if (!clean || state.glazeCollectionNames.includes(clean)) return state;
+      return { glazeCollectionNames: [...state.glazeCollectionNames, clean].sort((a, b) => a.localeCompare(b)) };
+    }),
+  registerGlazeCollections: (names) =>
+    set((state) => {
+      const incoming = sanitizeCustomCollections(names);
+      if (incoming.length === 0) return state;
+      const merged = [...new Set([...state.glazeCollectionNames, ...incoming])].sort((a, b) =>
+        a.localeCompare(b),
+      );
+      if (merged.length === state.glazeCollectionNames.length) return state;
+      return { glazeCollectionNames: merged };
     }),
 
   // ── Kilns ─────────────────────────────────────────────────────
@@ -1418,7 +1441,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'pottery-life-store',
-      version: 3,
+      version: 4,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
@@ -1428,6 +1451,7 @@ export const useAppStore = create<AppState>()(
           onboardingProfile?: Partial<OnboardingProfile>;
           glazes?: GlazeLibraryItem[];
           glazeTests?: GlazeTestTile[];
+          glazeCollectionNames?: string[];
         };
 
         const onboardingProfile = normalizeOnboardingProfile(state.onboardingProfile);
@@ -1436,12 +1460,21 @@ export const useAppStore = create<AppState>()(
 
         let glazes = state.glazes;
         let glazeTests = state.glazeTests;
+        let glazeCollectionNames = state.glazeCollectionNames ?? [];
 
         if (version < 3) {
           glazes = (state.glazes ?? [])
             .filter((g) => !LEGACY_SEED_GLAZE_IDS.has(g.id))
-            .map((g) => ({ ...g, collections: normalizeGlazeCollections() }));
+            .map((g) => ({ ...g, collections: [] }));
           glazeTests = (state.glazeTests ?? []).filter((t) => !LEGACY_SEED_TEST_IDS.has(t.id));
+        }
+
+        if (version < 4) {
+          glazes = (glazes ?? []).map((g) => ({
+            ...g,
+            collections: sanitizeCustomCollections(g.collections ?? []),
+          }));
+          glazeCollectionNames = deriveCustomCollectionNames(glazes, glazeCollectionNames);
         }
 
         return {
@@ -1451,6 +1484,7 @@ export const useAppStore = create<AppState>()(
           notificationPrefs,
           glazes,
           glazeTests,
+          glazeCollectionNames,
         };
       },
       merge: (persistedState, currentState) => {
@@ -1498,6 +1532,7 @@ export const useAppStore = create<AppState>()(
         pricingOnboardingCompleted: state.pricingOnboardingCompleted,
         glazes: state.glazes,
         glazeTests: state.glazeTests,
+        glazeCollectionNames: state.glazeCollectionNames,
         pendingGlazeDeletions: state.pendingGlazeDeletions,
         pendingGlazeTestDeletions: state.pendingGlazeTestDeletions,
         pendingSyncOps: state.pendingSyncOps,
