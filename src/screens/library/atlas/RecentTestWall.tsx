@@ -33,7 +33,7 @@ export function RecentTestWall({
           Test Log
         </Text>
         <Text className="text-xs text-muted-foreground mt-0.5">
-          A timeline of your firings — not a collection. Tap a card to open the glaze.
+          Recent firings across your studio — tap to open the glaze.
         </Text>
       </View>
 
