@@ -12,6 +12,7 @@ import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
 import { useAppStore, useVisiblePieces } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
 import { PremiumFeature } from '@/src/utils/premiumGate';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { BarChart2, Calculator, CalendarDays, Check, ChevronDown, ChevronRight, ChevronUp, Database, Flame, Hammer, Layers, LayoutGrid, MessageSquarePlus, Plus, Scissors, Sparkles, Trophy, Zap } from 'lucide-react-native';
 import React from 'react';
@@ -690,60 +691,67 @@ export function OverviewPage() {
               }],
             }}
           >
-            {/* Welcome — same visual language as Live Studio State */}
-            <View
-              className="rounded-[28px] mb-4 overflow-hidden"
+            {/* Welcome — deep clay hero for strong contrast */}
+            <LinearGradient
+              colors={['#B86A3C', '#7A4022']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
               style={{
-                backgroundColor: 'hsl(34 66% 89%)',
-                shadowColor: '#4d3314',
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.1,
-                shadowRadius: 12,
-                elevation: 3,
+                borderRadius: 28,
+                marginBottom: 16,
+                overflow: 'hidden',
+                shadowColor: '#3a2310',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.24,
+                shadowRadius: 16,
+                elevation: 6,
               }}
             >
-              <View style={{ position: 'absolute', right: -18, top: -24, width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255, 248, 228, 0.75)' }} />
-              <View style={{ position: 'absolute', left: -22, bottom: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(205, 172, 117, 0.22)' }} />
 
-              <View className="px-4 pt-5 pb-4">
-                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 1, color: 'hsl(32 48% 36%)', textTransform: 'uppercase' }}>
+              <View className="px-5 pt-5 pb-5">
+                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255, 244, 224, 0.85)', textTransform: 'uppercase' }}>
                   Your Studio
                 </Text>
-                <Text className="font-serif text-[20px] leading-8 text-foreground mt-2">
+                <Text className="font-serif text-[22px] leading-8 mt-2" style={{ color: '#FFF7EC' }}>
                   {user.name ? `Welcome, ${user.name.split(' ')[0]}` : 'Welcome to your studio'}
                 </Text>
-                <Text className="text-[13px] leading-5 mt-2" style={{ color: 'hsl(31 34% 40%)' }}>
+                <Text className="text-[13px] leading-5 mt-2" style={{ color: 'rgba(255, 244, 224, 0.80)' }}>
                   A few quick steps to shape the app around how you actually work.
                 </Text>
-                <View className="flex-row items-center gap-2 mt-4">
-                  <View className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'hsl(35 40% 78%)' }}>
+                <View className="flex-row items-center gap-2.5 mt-4">
+                  <View className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(0, 0, 0, 0.20)' }}>
                     <View
                       className="h-full rounded-full"
                       style={{
-                        backgroundColor: 'hsl(39 57% 51%)',
+                        backgroundColor: '#F2C25E',
                         width: `${Math.max(8, Math.round((1 - setupQuests.length / 10) * 100))}%`,
                       }}
                     />
                   </View>
-                  <Text className="text-[11px] font-semibold" style={{ color: 'hsl(32 40% 38%)' }}>
+                  <Text className="text-[11px] font-bold" style={{ color: '#FFEFD0' }}>
                     {setupQuests.length} left
                   </Text>
                 </View>
               </View>
-            </View>
+            </LinearGradient>
 
-            {/* Checklist — single warm panel */}
+            {/* Checklist — crisp white panel with defined edges */}
             <View
               className="rounded-[24px] mb-4 overflow-hidden"
-              style={{ backgroundColor: 'hsl(36 55% 98%)', shadowColor: '#3f2a12', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}
+              style={{ backgroundColor: 'hsl(40 50% 99%)', borderWidth: 1, borderColor: 'hsl(34 34% 84%)', shadowColor: '#3f2a12', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 }}
             >
-              <View className="px-4 pt-4 pb-2">
-                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.9, color: 'hsl(32 48% 36%)', textTransform: 'uppercase' }}>
-                  Setup checklist
-                </Text>
-                <Text style={{ fontSize: 11, color: 'hsl(32 30% 42%)', marginTop: 3 }}>
-                  Tap a step when you&apos;re ready — no rush.
-                </Text>
+              <View className="px-4 pt-4 pb-3 flex-row items-center justify-between" style={{ borderBottomWidth: 1, borderBottomColor: 'hsl(34 30% 90%)' }}>
+                <View className="flex-1 pr-3">
+                  <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.9, color: 'hsl(24 55% 32%)', textTransform: 'uppercase' }}>
+                    Setup checklist
+                  </Text>
+                  <Text style={{ fontSize: 11, color: 'hsl(32 28% 44%)', marginTop: 3 }}>
+                    Tap a step when you&apos;re ready — no rush.
+                  </Text>
+                </View>
+                <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: 'hsl(24 50% 30%)' }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFF3DF' }}>{setupQuests.length}</Text>
+                </View>
               </View>
 
               {setupQuests.map((quest, idx) => {
@@ -753,29 +761,31 @@ export function OverviewPage() {
                   <TouchableOpacity
                     key={quest.key}
                     onPress={() => router.push(quest.route as never)}
-                    activeOpacity={0.78}
+                    activeOpacity={0.7}
                     className="flex-row items-center gap-3 px-4 py-3.5"
-                    style={{ backgroundColor: idx % 2 === 0 ? 'hsl(38 50% 97%)' : 'hsl(36 55% 98%)' }}
+                    style={{ borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: 'hsl(34 28% 91%)' }}
                     accessibilityRole="button"
                   >
                     <View
                       className="w-10 h-10 rounded-2xl items-center justify-center"
-                      style={{ backgroundColor: meta.iconBg }}
+                      style={{ backgroundColor: meta.iconBg, borderWidth: 1, borderColor: 'rgba(60, 40, 20, 0.10)' }}
                     >
-                      <Icon size={17} color={meta.iconColor} />
+                      <Icon size={18} color={meta.iconColor} />
                     </View>
                     <View className="flex-1">
                       <Text className="text-sm font-semibold text-foreground">{quest.title}</Text>
                       <Text className="text-[11px] text-muted-foreground mt-0.5 leading-4" numberOfLines={2}>{quest.text}</Text>
                     </View>
-                    <ChevronRight size={16} color="hsl(32 35% 55%)" />
+                    <View className="w-7 h-7 rounded-full items-center justify-center" style={{ backgroundColor: 'hsl(34 38% 92%)' }}>
+                      <ChevronRight size={15} color="hsl(24 45% 38%)" />
+                    </View>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            {/* Kilnkin — matches live-studio note card */}
-            <View className="rounded-[24px] px-4 py-3.5 mb-2" style={{ backgroundColor: 'rgba(255, 252, 245, 0.92)' }}>
+            {/* Kilnkin — bordered note card */}
+            <View className="rounded-[24px] px-4 py-3.5 mb-2" style={{ backgroundColor: 'hsl(40 50% 99%)', borderWidth: 1, borderColor: 'hsl(34 34% 86%)' }}>
               <View className="flex-row items-start gap-3">
                 <TouchableOpacity
                   onPress={() => router.push('/kilnkin' as never)}
@@ -788,7 +798,7 @@ export function OverviewPage() {
                     borderRadius: 22,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: 'hsl(35 35% 90%)',
+                    backgroundColor: 'hsl(35 45% 86%)',
                   }}
                 >
                   <Image
