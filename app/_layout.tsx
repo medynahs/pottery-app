@@ -11,6 +11,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import '../global.css';
 
+import { AnimatedSplashScreen } from '@/src/components/AnimatedSplashScreen';
 import { ErrorBoundary } from '@/src/components/error-boundary';
 import { PhotoPickerProvider } from '@/src/components/PhotoPickerProvider';
 import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
@@ -160,6 +161,8 @@ function AppShell() {
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  const [nativeSplashHidden, setNativeSplashHidden] = useState(false);
+  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
   const [loaded] = useFonts({
     DMSans_400Regular,
     DMSans_500Medium,
@@ -170,13 +173,18 @@ export default function RootLayout() {
   const hydrated = useStoreHydration();
   const authReady = useAuthInitialization(hydrated);
   const isAppReady = loaded && hydrated && authReady;
+  const handleAnimatedSplashFinish = useCallback(() => {
+    setShowAnimatedSplash(false);
+  }, []);
 
   const onLayoutRootView = useCallback(() => {
     if (!isAppReady) return;
 
-    void SplashScreen.hideAsync().catch(() => {
-      // Ignore cases where the splash screen has already been dismissed.
-    });
+    void SplashScreen.hideAsync()
+      .catch(() => {
+        // Ignore cases where the splash screen has already been dismissed.
+      })
+      .finally(() => setNativeSplashHidden(true));
   }, [isAppReady]);
 
   if (!isAppReady) {
@@ -191,7 +199,12 @@ export default function RootLayout() {
             <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#C4A052' } }}>
               <StageConfigProvider>
                 <PhotoPickerProvider>
-                  <AppShell />
+                  <View style={{ flex: 1, backgroundColor: '#FBF0E0' }}>
+                    <AppShell />
+                    {nativeSplashHidden && showAnimatedSplash ? (
+                      <AnimatedSplashScreen onFinish={handleAnimatedSplashFinish} />
+                    ) : null}
+                  </View>
                 </PhotoPickerProvider>
               </StageConfigProvider>
             </ThemeProvider>

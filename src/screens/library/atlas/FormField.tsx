@@ -14,8 +14,8 @@ export function FormField({
   first?: boolean;
 }) {
   return (
-    <View className={first ? 'mt-5' : 'mt-4'}>
-      <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+    <View className={first ? 'mt-5' : 'mt-5'}>
+      <Text className="text-[12px] font-semibold text-foreground mb-2">
         {label}
       </Text>
       {hint ? (

@@ -2,8 +2,10 @@
 import { Text } from '@/src/components/ui/text';
 import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Sparkles,
 } from 'lucide-react-native';
@@ -28,6 +30,53 @@ const PET_SOURCE: Record<string, any> = {
   air:   require('../../../assets/animations/pet.gif'),
   water: require('../../../assets/animations/kilnPet.gif'),
 };
+
+const STEP_LABEL: Record<string, string> = {
+  welcome: 'Studio',
+  role: 'Profile',
+  kilnkin: 'Companion',
+};
+
+function StepPill({ active, reached, label }: { active: boolean; reached: boolean; label: string }) {
+  const anim = useRef(new Animated.Value(active ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: active ? 1 : 0,
+      duration: 340,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [active, anim]);
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <Animated.View
+        style={{
+          height: 7,
+          width: anim.interpolate({ inputRange: [0, 1], outputRange: [7, 25] }),
+          borderRadius: 4,
+          backgroundColor: reached ? 'hsl(25 36% 24%)' : 'rgba(94, 60, 36, 0.18)',
+        }}
+      />
+      <Animated.View
+        style={{
+          overflow: 'hidden',
+          marginLeft: anim.interpolate({ inputRange: [0, 1], outputRange: [0, 6] }),
+          maxWidth: anim.interpolate({ inputRange: [0, 1], outputRange: [0, 110] }),
+          opacity: anim,
+        }}
+      >
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: 'hsl(25 36% 24%)' }}
+        >
+          {label}
+        </Text>
+      </Animated.View>
+    </View>
+  );
+}
 
 export default function GeneralOnboardingScreen() {
   const {
@@ -82,7 +131,37 @@ export default function GeneralOnboardingScreen() {
         Animated.timing(textOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
       ]),
     ]).start();
-  }, [celebrationVisible]);
+  }, [
+    celebrationVisible,
+    ceremonyOpacity,
+    glowOpacity,
+    glowScale,
+    medallionScale,
+    medallionY,
+    sparkleRotate,
+    textOpacity,
+  ]);
+
+  // Per-step entrance transition (fade + slide up)
+  const scrollRef = useRef<ScrollView>(null);
+  const stepAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+    stepAnim.setValue(0);
+    Animated.timing(stepAnim, {
+      toValue: 1,
+      duration: 380,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [stepIndex, stepAnim]);
+
+  // Primary button press feedback
+  const btnScale = useRef(new Animated.Value(1)).current;
+  const handlePressIn = () =>
+    Animated.spring(btnScale, { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+  const handlePressOut = () =>
+    Animated.spring(btnScale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
 
   const renderCurrentStep = () => {
     if (currentStep === 'welcome') return <WelcomeStep draft={draft} updateDraft={updateDraft} />;
@@ -98,58 +177,117 @@ export default function GeneralOnboardingScreen() {
       : 'Continue';
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: '#fff7ea' }}>
+      <LinearGradient
+        colors={['#fffaf2', '#f3dfc4', '#fff8ed']}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
 
-        {/* Step pill progress */}
-        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, paddingTop: 18, paddingBottom: 4 }}>
-          {steps.map((_, i) => (
-            <View
-              key={i}
-              style={{
-                height: 4,
-                width: i === stepIndex ? 28 : 7,
-                borderRadius: 2,
-                backgroundColor: i <= stepIndex ? 'hsl(24 30% 20%)' : 'hsl(24 10% 82%)',
-              }}
-            />
-          ))}
+        <View style={{ paddingHorizontal: 22, paddingTop: 14, paddingBottom: 8 }}>
+          <View
+            style={{
+              alignSelf: 'center',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              borderRadius: 999,
+              backgroundColor: 'rgba(255, 252, 246, 0.78)',
+              borderWidth: 1,
+              borderColor: 'rgba(94, 60, 36, 0.1)',
+              paddingHorizontal: 12,
+              paddingVertical: 9,
+            }}
+          >
+            {steps.map((step, i) => (
+              <StepPill
+                key={step}
+                active={i === stepIndex}
+                reached={i <= stepIndex}
+                label={STEP_LABEL[step]}
+              />
+            ))}
+          </View>
         </View>
 
         <ScrollView
+          ref={scrollRef}
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: 160 }}
+          contentContainerStyle={{ paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {renderCurrentStep()}
+          <Animated.View
+            style={{
+              opacity: stepAnim,
+              transform: [
+                { translateY: stepAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) },
+              ],
+            }}
+          >
+            {renderCurrentStep()}
+          </Animated.View>
         </ScrollView>
 
         {/* Bottom navigation */}
-        <View className="px-6 pt-4 bg-background" style={{ paddingBottom: insets.bottom + 16 }}>
-          <Pressable
-            onPress={handleContinue}
-            disabled={isSubmitting}
-            className={`h-14 rounded-2xl items-center justify-center flex-row gap-2 ${isSubmitting ? 'bg-muted' : 'bg-foreground'}`}
-          >
-            {currentStep === 'kilnkin'
-              ? <CheckCircle2 size={15} color="hsl(34 35% 92%)" />
-              : <ChevronRight size={15} color="hsl(34 35% 92%)" />
-            }
-            <Text className="text-sm font-semibold text-background">
-              {primaryLabel}
-            </Text>
-          </Pressable>
+        <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: insets.bottom + 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            {stepIndex > 0 && (
+              <Pressable
+                onPress={handleBack}
+                disabled={isSubmitting}
+                style={{
+                  height: 52,
+                  paddingHorizontal: 18,
+                  borderRadius: 18,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  borderWidth: 1.5,
+                  borderColor: 'rgba(94, 60, 36, 0.18)',
+                  backgroundColor: 'rgba(255, 252, 246, 0.82)',
+                }}
+              >
+                <ChevronLeft size={17} color="hsl(25 30% 32%)" />
+                <Text style={{ fontSize: 14, fontWeight: '600', color: 'hsl(25 30% 32%)' }}>Back</Text>
+              </Pressable>
+            )}
 
-          {stepIndex > 0 && (
-            <Pressable
-              onPress={handleBack}
-              disabled={isSubmitting}
-              className="items-center py-3"
-            >
-              <Text className="text-sm text-muted-foreground">← Back</Text>
-            </Pressable>
-          )}
+            <Animated.View style={{ flex: 1, transform: [{ scale: btnScale }] }}>
+              <Pressable
+                onPress={handleContinue}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                disabled={isSubmitting}
+                style={{
+                  height: 52,
+                  borderRadius: 18,
+                  overflow: 'hidden',
+                  shadowColor: '#3f2412',
+                  shadowOffset: { width: 0, height: 10 },
+                  shadowOpacity: isSubmitting ? 0 : 0.2,
+                  shadowRadius: 14,
+                  elevation: isSubmitting ? 0 : 4,
+                }}
+              >
+                <LinearGradient
+                  colors={isSubmitting ? ['#c9b9a3', '#b9aa95'] : ['#3f2415', '#6f4226']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}
+                >
+                  <Text className="text-sm font-semibold text-background">
+                    {primaryLabel}
+                  </Text>
+                  {currentStep === 'kilnkin'
+                    ? <CheckCircle2 size={16} color="hsl(34 35% 92%)" />
+                    : <ChevronRight size={16} color="hsl(34 35% 92%)" />
+                  }
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+          </View>
         </View>
       </KeyboardAvoidingView>
 

@@ -17,7 +17,6 @@ import {
 } from '@/src/screens/glazes/types';
 import { GLAZE_TEMPS } from '@/src/screens/pieces/utils/constants';
 import { useAppStore } from '@/src/store';
-import { ChevronDown } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { FormField } from './FormField';
@@ -47,8 +46,6 @@ export function LogTestModal({
   const defaultClayBodyId = useAppStore((s) => s.defaultClayBodyId);
   const kilns = useAppStore((s) => s.kilns);
   const { openPickSheet } = usePhotoPicker();
-  const [showDetails, setShowDetails] = React.useState(false);
-
   const resolveDefaultClayBody = React.useCallback(() => {
     if (defaultClayBodyId) {
       const match = clayBodies.find((body) => body.id === defaultClayBodyId);
@@ -72,7 +69,6 @@ export function LogTestModal({
   React.useEffect(() => {
     if (visible) {
       setTestDraft(buildDraft());
-      setShowDetails(false);
     }
   }, [visible, buildDraft]);
 
@@ -217,115 +213,100 @@ export function LogTestModal({
               />
             </FormField>
 
-            <TouchableOpacity
-              onPress={() => setShowDetails((v) => !v)}
-              activeOpacity={0.8}
-              className="mt-4 flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3"
-            >
-              <Text className="text-sm font-semibold text-foreground">Kiln & application details</Text>
-              <ChevronDown
-                size={16}
-                color="hsl(24 20% 40%)"
-                style={{ transform: [{ rotate: showDetails ? '180deg' : '0deg' }] }}
-              />
-            </TouchableOpacity>
+            <View className="mt-6 border-t border-border" />
 
-            {showDetails ? (
-              <View className="mt-3">
-                {kilns.length > 0 ? (
-                  <FormField label="Kiln" first>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                      {kilns.map((kiln) => (
-                        <Pill
-                          key={kiln.id}
-                          label={kiln.name}
-                          active={testDraft.kilnName === kiln.name}
-                          onPress={() => setTestDraft((d) => ({ ...d, kilnName: kiln.name }))}
-                        />
-                      ))}
-                    </ScrollView>
-                  </FormField>
-                ) : (
-                  <FormField label="Kiln" first>
-                    <Input
-                      value={testDraft.kilnName}
-                      onChangeText={(v) => setTestDraft((d) => ({ ...d, kilnName: v }))}
-                      placeholder="Studio kiln"
+            {kilns.length > 0 ? (
+              <FormField label="Kiln">
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {kilns.map((kiln) => (
+                    <Pill
+                      key={kiln.id}
+                      label={kiln.name}
+                      active={testDraft.kilnName === kiln.name}
+                      onPress={() => setTestDraft((d) => ({ ...d, kilnName: kiln.name }))}
                     />
-                  </FormField>
-                )}
+                  ))}
+                </ScrollView>
+              </FormField>
+            ) : (
+              <FormField label="Kiln">
+                <Input
+                  value={testDraft.kilnName}
+                  onChangeText={(v) => setTestDraft((d) => ({ ...d, kilnName: v }))}
+                  placeholder="Studio kiln"
+                />
+              </FormField>
+            )}
 
-                <FormField label="Application">
-                  <View className="flex-row flex-wrap gap-2">
-                    {GLAZE_APPLICATION_METHOD_OPTIONS.map((option) => (
-                      <Pill
-                        key={option}
-                        label={GLAZE_APPLICATION_METHOD_LABELS[option]}
-                        active={testDraft.applicationMethod === option}
-                        onPress={() => setTestDraft((d) => ({ ...d, applicationMethod: option }))}
-                      />
-                    ))}
-                  </View>
-                </FormField>
-
-                <FormField label="Thickness">
-                  <View className="flex-row flex-wrap gap-2">
-                    {GLAZE_THICKNESS_OPTIONS.map((option) => (
-                      <Pill
-                        key={option}
-                        label={GLAZE_THICKNESS_LABELS[option]}
-                        active={testDraft.thickness === option}
-                        onPress={() => setTestDraft((d) => ({ ...d, thickness: option }))}
-                      />
-                    ))}
-                  </View>
-                </FormField>
-
-                <FormField label="Defects">
-                  <View className="flex-row flex-wrap gap-2">
-                    {GLAZE_DEFECT_OPTIONS.map((option) => {
-                      const active = testDraft.defects.includes(option);
-                      return (
-                        <Pill
-                          key={option}
-                          label={GLAZE_DEFECT_LABELS[option]}
-                          active={active}
-                          onPress={() =>
-                            setTestDraft((d) => ({
-                              ...d,
-                              defects: active
-                                ? d.defects.filter((item) => item !== option)
-                                : [...d.defects, option],
-                            }))
-                          }
-                        />
-                      );
-                    })}
-                  </View>
-                </FormField>
-
-                <FormField label="Layered with">
-                  <Input
-                    value={testDraft.layeredWith}
-                    onChangeText={(v) => setTestDraft((d) => ({ ...d, layeredWith: v }))}
-                    placeholder="Liner glaze, accent coat"
+            <FormField label="Application">
+              <View className="flex-row flex-wrap gap-2">
+                {GLAZE_APPLICATION_METHOD_OPTIONS.map((option) => (
+                  <Pill
+                    key={option}
+                    label={GLAZE_APPLICATION_METHOD_LABELS[option]}
+                    active={testDraft.applicationMethod === option}
+                    onPress={() => setTestDraft((d) => ({ ...d, applicationMethod: option }))}
                   />
-                </FormField>
-
-                <FormField label="Kiln type">
-                  <View className="flex-row flex-wrap gap-2">
-                    {GLAZE_KILN_TYPE_OPTIONS.map((option) => (
-                      <Pill
-                        key={option}
-                        label={GLAZE_KILN_TYPE_LABELS[option]}
-                        active={testDraft.kilnType === option}
-                        onPress={() => setTestDraft((d) => ({ ...d, kilnType: option }))}
-                      />
-                    ))}
-                  </View>
-                </FormField>
+                ))}
               </View>
-            ) : null}
+            </FormField>
+
+            <FormField label="Thickness">
+              <View className="flex-row flex-wrap gap-2">
+                {GLAZE_THICKNESS_OPTIONS.map((option) => (
+                  <Pill
+                    key={option}
+                    label={GLAZE_THICKNESS_LABELS[option]}
+                    active={testDraft.thickness === option}
+                    onPress={() => setTestDraft((d) => ({ ...d, thickness: option }))}
+                  />
+                ))}
+              </View>
+            </FormField>
+
+            <FormField label="Defects">
+              <View className="flex-row flex-wrap gap-2">
+                {GLAZE_DEFECT_OPTIONS.map((option) => {
+                  const active = testDraft.defects.includes(option);
+                  return (
+                    <Pill
+                      key={option}
+                      label={GLAZE_DEFECT_LABELS[option]}
+                      active={active}
+                      onPress={() =>
+                        setTestDraft((d) => ({
+                          ...d,
+                          defects: active
+                            ? d.defects.filter((item) => item !== option)
+                            : [...d.defects, option],
+                        }))
+                      }
+                    />
+                  );
+                })}
+              </View>
+            </FormField>
+
+            <FormField label="Layered with">
+              <Input
+                value={testDraft.layeredWith}
+                onChangeText={(v) => setTestDraft((d) => ({ ...d, layeredWith: v }))}
+                placeholder="Liner glaze, accent coat"
+              />
+            </FormField>
+
+            <FormField label="Kiln type">
+              <View className="flex-row flex-wrap gap-2">
+                {GLAZE_KILN_TYPE_OPTIONS.map((option) => (
+                  <Pill
+                    key={option}
+                    label={GLAZE_KILN_TYPE_LABELS[option]}
+                    active={testDraft.kilnType === option}
+                    onPress={() => setTestDraft((d) => ({ ...d, kilnType: option }))}
+                  />
+                ))}
+              </View>
+            </FormField>
           </ScrollView>
 
           <View className="px-6 pt-4 pb-8 border-t border-border">
