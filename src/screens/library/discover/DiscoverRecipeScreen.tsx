@@ -5,6 +5,7 @@ import {
   sanitizeCustomCollections,
 } from '@/src/screens/library/atlas/collections';
 import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
+import { ingredientsFromStructured, normalizeGlazeItem } from '@/src/screens/glazes/glazeItemHelpers';
 import { GLAZE_FINISH_LABELS } from '@/src/screens/glazes/types';
 import type { GlazeFinish } from '@/src/screens/glazes/types';
 import { useAppStore } from '@/src/store';
@@ -55,33 +56,42 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
     const customCollections = sanitizeCustomCollections(selectedCollections);
     registerGlazeCollections(customCollections);
 
-    addGlaze({
-      id: `discover-${recipe.id}-${Date.now()}`,
-      name: recipe.name,
-      finish: recipe.finish as GlazeFinish,
-      colorFamily: recipe.colorFamily,
-      coneRange: recipe.coneLabel,
-      defaultCone: recipe.coneLabel,
-      source: 'custom',
-      notes: recipe.description,
-      collections: customCollections,
-      tags: [],
-      recipeIngredients: recipe.ingredients.map((ing, i) => ({
-        id: `ing-${i}`,
-        material: ing.material,
-        percentage: String(ing.percentage),
-      })),
-      favorite: false,
-      production: false,
-      bucketPhotoUri: recipe.previewUri,
-      testTilePhotoUris: recipe.previewUri ? [recipe.previewUri] : [],
-      finishedPiecePhotoUris: [],
-      accidentPhotoUris: [],
-      clayBodiesUsed: [],
-      kilnTypesUsed: [],
-      conesTested: [],
-      createdAt: new Date().toISOString(),
-    });
+    const id = `discover-${recipe.id}-${Date.now()}`;
+    const recipeIngredients = recipe.ingredients.map((ing, i) => ({
+      id: `ing-${i}`,
+      material: ing.material,
+      percentage: String(ing.percentage),
+    }));
+
+    addGlaze(
+      normalizeGlazeItem({
+        id,
+        name: recipe.name,
+        finish: recipe.finish as GlazeFinish,
+        colorFamily: recipe.colorFamily,
+        coneRange: recipe.coneLabel,
+        defaultCone: recipe.coneLabel,
+        source: 'custom',
+        notes: recipe.description,
+        collections: customCollections,
+        tags: [],
+        ingredientsText: ingredientsFromStructured(recipeIngredients),
+        recipeIngredients,
+        status: 'experimental',
+        versionNumber: 1,
+        rootGlazeId: id,
+        favorite: false,
+        production: false,
+        bucketPhotoUri: recipe.previewUri,
+        testTilePhotoUris: recipe.previewUri ? [recipe.previewUri] : [],
+        finishedPiecePhotoUris: [],
+        accidentPhotoUris: [],
+        clayBodiesUsed: [],
+        kilnTypesUsed: [],
+        conesTested: [],
+        createdAt: new Date().toISOString(),
+      }),
+    );
     scheduleGlazesSync();
     setSaveSheetOpen(false);
     showToast(`${recipe.name} saved to My Glazes`, 'success');

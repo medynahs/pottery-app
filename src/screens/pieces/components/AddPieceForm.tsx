@@ -29,9 +29,11 @@ interface AddPieceFormProps {
   onPickImage: () => void;
   colors: { background: string; mutedForeground: string };
   isEditing?: boolean;
+  /** When true, ScrollView fills remaining sheet height (use inside tall ModalCard). */
+  fillHeight?: boolean;
 }
 
-export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddPieceFormProps) {
+export function AddPieceForm({ form, set, onPickImage, colors, isEditing, fillHeight }: AddPieceFormProps) {
   const { enabledStages } = useStageConfig();
   const clayBodies = useAppStore((s) => s.clayBodies);
   const formingMethods = useAppStore((s) => s.formingMethods);
@@ -80,6 +82,7 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing }: AddP
   return (
     <ScrollView
       className="px-6"
+      style={fillHeight ? { flex: 1, minHeight: 0 } : undefined}
       contentContainerStyle={{ paddingBottom: 24 }}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"

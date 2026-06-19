@@ -173,7 +173,16 @@ function SheetBtn({
   );
 }
 
-export { ModalCard, ModalShell } from '@/src/components/ModalShell';
+export {
+  ModalCard,
+  ModalShell,
+  ModalSheetFooter,
+  ModalSheetHeader,
+  MODAL_BACKDROP_COLOR,
+  MODAL_SHEET_HEIGHT_RATIO,
+  MODAL_SHEET_RADIUS,
+  useModalSheetHeight,
+} from '@/src/components/ModalShell';
 export type { ModalCardProps, ModalShellProps } from '@/src/components/ModalShell';
 
 // ─── ConfirmSheet ─────────────────────────────────────────────────────────────

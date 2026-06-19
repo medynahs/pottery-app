@@ -1,8 +1,12 @@
 import type {
+    GlazeAtmosphere,
+    GlazeClayType,
     GlazeDefect,
     GlazeFinish,
+    GlazeIngredient,
     GlazeLibraryItem,
     GlazeResultRating,
+    GlazeStatus,
     GlazeTestTile,
 } from '@/src/screens/glazes/types';
 
@@ -15,6 +19,12 @@ export type GlazeDraft = {
   coneRange: string;
   defaultCone: string;
   source: GlazeLibraryItem['source'];
+  recipeIngredients: GlazeIngredient[];
+  dateMixed: string;
+  status: GlazeStatus;
+  bestClayType?: GlazeClayType;
+  bestFiringTempC: string;
+  atmosphere?: GlazeAtmosphere;
   notes: string;
   applicationNotes: string;
   supplier: string;

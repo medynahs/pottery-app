@@ -1,5 +1,8 @@
 export type GlazeFinish = 'glossy' | 'matte' | 'satin' | 'crystalline';
 export type GlazeSource = 'store-bought' | 'custom';
+export type GlazeStatus = 'works_great' | 'experimental' | 'failed';
+export type GlazeAtmosphere = 'oxidation' | 'reduction' | 'both';
+export type GlazeClayType = 'stoneware' | 'earthenware' | 'porcelain';
 export type GlazeResultRating = 'bad' | 'interesting' | 'great';
 export type GlazeApplicationMethod = 'dip' | 'brush' | 'pour' | 'spray';
 export type GlazeThickness = 'thin' | 'medium' | 'thick';
@@ -11,6 +14,8 @@ export interface GlazeIngredient {
   material: string;
   percentage: string;
   supplier?: string;
+  /** Colorants / opacifiers listed above the base 100%. */
+  isAddition?: boolean;
 }
 
 export interface GlazeLibraryItem {
@@ -30,7 +35,20 @@ export interface GlazeLibraryItem {
   supplier?: string;
   batchSize?: string;
   recipeNotes?: string;
+  /** Free-form recipe text, e.g. "50% feldspar, 30% kaolin, 20% silica". */
+  ingredientsText?: string;
   recipeIngredients: GlazeIngredient[];
+  /** Auto-generated batch label, e.g. CB-2026-06-v1. */
+  batchId?: string;
+  /** YYYY-MM-DD when the batch was mixed. */
+  dateMixed?: string;
+  status?: GlazeStatus;
+  bestClayType?: GlazeClayType;
+  bestFiringTempC?: number;
+  atmosphere?: GlazeAtmosphere;
+  versionNumber?: number;
+  rootGlazeId?: string;
+  parentGlazeId?: string;
   tags: string[];
   collections: string[];
   favorite: boolean;
@@ -71,6 +89,9 @@ export interface GlazeTestTile {
 
 export const GLAZE_FINISH_OPTIONS: GlazeFinish[] = ['glossy', 'matte', 'satin', 'crystalline'];
 export const GLAZE_SOURCE_OPTIONS: GlazeSource[] = ['store-bought', 'custom'];
+export const GLAZE_STATUS_OPTIONS: GlazeStatus[] = ['works_great', 'experimental', 'failed'];
+export const GLAZE_ATMOSPHERE_OPTIONS: GlazeAtmosphere[] = ['oxidation', 'reduction', 'both'];
+export const GLAZE_CLAY_TYPE_OPTIONS: GlazeClayType[] = ['stoneware', 'earthenware', 'porcelain'];
 export const GLAZE_RESULT_OPTIONS: GlazeResultRating[] = ['bad', 'interesting', 'great'];
 export const GLAZE_APPLICATION_METHOD_OPTIONS: GlazeApplicationMethod[] = ['dip', 'brush', 'pour', 'spray'];
 export const GLAZE_THICKNESS_OPTIONS: GlazeThickness[] = ['thin', 'medium', 'thick'];
@@ -87,6 +108,30 @@ export const GLAZE_FINISH_LABELS: Record<GlazeFinish, string> = {
 export const GLAZE_SOURCE_LABELS: Record<GlazeSource, string> = {
   'store-bought': 'Store-Bought',
   custom: 'Custom',
+};
+
+export const GLAZE_STATUS_LABELS: Record<GlazeStatus, string> = {
+  works_great: 'Works Great',
+  experimental: 'Experimental',
+  failed: 'Failed',
+};
+
+export const GLAZE_STATUS_EMOJI: Record<GlazeStatus, string> = {
+  works_great: '🟢',
+  experimental: '🟡',
+  failed: '🔴',
+};
+
+export const GLAZE_ATMOSPHERE_LABELS: Record<GlazeAtmosphere, string> = {
+  oxidation: 'Oxidation',
+  reduction: 'Reduction',
+  both: 'Both',
+};
+
+export const GLAZE_CLAY_TYPE_LABELS: Record<GlazeClayType, string> = {
+  stoneware: 'Stoneware',
+  earthenware: 'Earthenware',
+  porcelain: 'Porcelain',
 };
 
 export const GLAZE_RESULT_LABELS: Record<GlazeResultRating, string> = {

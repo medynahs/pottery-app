@@ -1,4 +1,5 @@
 import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
+import { formatDateShort, todayDateIso } from '@/src/utils/dates';
 import { COLOR_FAMILY_HEX } from './constants';
 import type { GlazeDraft, TestDraft } from './types';
 
@@ -17,7 +18,7 @@ export function glazeCardColor(colorFamily: string): string {
 }
 
 export function formatShortDate(value: string): string {
-  return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return formatDateShort(value);
 }
 
 export function parseCommaList(value: string): string[] {
@@ -37,7 +38,13 @@ export function createEmptyGlazeDraft(
     colorFamily: '',
     coneRange: defaultCone ?? 'Cone 6',
     defaultCone: defaultCone ?? 'Cone 6',
-    source: 'store-bought',
+    source: 'custom',
+    recipeIngredients: [],
+    dateMixed: todayDateIso(),
+    status: 'experimental',
+    bestClayType: undefined,
+    bestFiringTempC: '',
+    atmosphere: undefined,
     notes: '',
     applicationNotes: '',
     supplier: '',
@@ -50,7 +57,19 @@ export function createEmptyGlazeDraft(
   };
 }
 
+function combineNotes(notes?: string, applicationNotes?: string): string {
+  const parts = [notes?.trim(), applicationNotes?.trim()].filter(Boolean);
+  return parts.join('\n\n');
+}
+
 export function glazeToEditDraft(glaze: GlazeLibraryItem): GlazeDraft {
+  const recipeIngredients =
+    glaze.recipeIngredients?.length
+      ? glaze.recipeIngredients.map((ing) => ({ ...ing }))
+      : glaze.ingredientsText
+        ? [{ id: `ing-legacy`, material: glaze.ingredientsText, percentage: '' }]
+        : [];
+
   return {
     name: glaze.name,
     finish: glaze.finish,
@@ -58,8 +77,14 @@ export function glazeToEditDraft(glaze: GlazeLibraryItem): GlazeDraft {
     coneRange: glaze.coneRange ?? '',
     defaultCone: glaze.defaultCone ?? glaze.coneRange ?? '',
     source: glaze.source,
-    notes: glaze.notes ?? '',
-    applicationNotes: glaze.applicationNotes ?? '',
+    recipeIngredients,
+    dateMixed: glaze.dateMixed ?? glaze.createdAt.slice(0, 10),
+    status: glaze.status ?? 'experimental',
+    bestClayType: glaze.bestClayType,
+    bestFiringTempC: glaze.bestFiringTempC != null ? String(glaze.bestFiringTempC) : '',
+    atmosphere: glaze.atmosphere,
+    notes: combineNotes(glaze.notes, glaze.applicationNotes),
+    applicationNotes: '',
     supplier: glaze.supplier ?? '',
     batchSize: glaze.batchSize ?? '',
     recipeNotes: glaze.recipeNotes ?? '',
@@ -88,7 +113,7 @@ export function createEmptyTestDraft(
     thickness: 'medium',
     layeredWith: '',
     shelfPosition: '',
-    firingDate: new Date().toISOString().slice(0, 10),
+    firingDate: todayDateIso(),
     notes: '',
     resultRating: 'interesting',
     defects: [],

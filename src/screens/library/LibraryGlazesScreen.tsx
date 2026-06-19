@@ -62,12 +62,18 @@ export default function LibraryGlazesScreen({
     let list = filterGlazesByCollection(glazes, activeCollection);
     const q = search.trim().toLowerCase();
     if (q) {
-      list = list.filter(
-        (g) =>
-          g.name.toLowerCase().includes(q) ||
-          (g.notes ?? '').toLowerCase().includes(q) ||
-          (g.coneRange ?? '').toLowerCase().includes(q),
-      );
+      list = list.filter((g) => {
+        const ingredientHaystack = (g.recipeIngredients ?? [])
+          .map((ing) => `${ing.material} ${ing.percentage}`)
+          .join(' ');
+        return (
+          g.name.toLowerCase().includes(q)
+          || (g.notes ?? '').toLowerCase().includes(q)
+          || (g.ingredientsText ?? '').toLowerCase().includes(q)
+          || ingredientHaystack.toLowerCase().includes(q)
+          || (g.coneRange ?? '').toLowerCase().includes(q)
+        );
+      });
     }
     return [...list].sort(
       (a, b) =>

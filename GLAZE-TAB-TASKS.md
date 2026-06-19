@@ -3,7 +3,7 @@
 **Purpose:** Bring the **Glaze Atlas** tab in line with the **GLAZE NOTES** spec — log glaze batches, link to pieces, track outcomes, and support version history.
 
 **Last updated:** June 19, 2026  
-**Current completion:** ~35–40% (catalog + test tiles exist; batch versioning, piece linking, and status UX do not)
+**Current completion:** ~50% (Phase 0 + Phase 1 form complete; library filters & piece linking next)
 
 ### Status legend
 
@@ -39,14 +39,14 @@ Foundation for everything else. Extend types before UI.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 0.1 | Add `GlazeStatus`: `works_great` \| `experimental` \| `failed` | ❌ | `src/screens/glazes/types.ts` |
-| 0.2 | Add `GlazeBatchMetadata` fields to `GlazeLibraryItem`: `batchId`, `dateMixed`, `status`, `bestClayType`, `bestFiringTempC`, `atmosphere` (`oxidation` \| `reduction` \| `both`) | ❌ | Keep `finish`; cone strings can coexist with °C |
-| 0.3 | Add versioning fields: `parentGlazeId?`, `versionNumber` (default 1), `rootGlazeId?` (stable group key) | ❌ | Enables "Cobalt Blue v3" + `CB-2026-06-v3` |
-| 0.4 | Add `ingredientsText` (free-form) or wire up existing `recipeIngredients` + UI | 🟡 | Model has `recipeIngredients[]`; spec wants free-form text |
+| 0.1 | Add `GlazeStatus`: `works_great` \| `experimental` \| `failed` | ✅ | `src/screens/glazes/types.ts` |
+| 0.2 | Add `GlazeBatchMetadata` fields to `GlazeLibraryItem`: `batchId`, `dateMixed`, `status`, `bestClayType`, `bestFiringTempC`, `atmosphere` (`oxidation` \| `reduction` \| `both`) | ✅ | Keep `finish`; cone strings can coexist with °C |
+| 0.3 | Add versioning fields: `parentGlazeId?`, `versionNumber` (default 1), `rootGlazeId?` (stable group key) | ✅ | Enables "Cobalt Blue v3" + `CB-2026-06-v3` |
+| 0.4 | Add `ingredientsText` (free-form) or wire up existing `recipeIngredients` + UI | ✅ | Model has `recipeIngredients[]`; spec wants free-form text |
 | 0.5 | Add `glazeId?: string` and `glazeOutcome?: string` to `Piece` | ❌ | `src/types/pieces.ts` |
-| 0.6 | Store actions: `createGlazeVersion(parentId)`, `getGlazeVersions(rootId)`, `linkPieceToGlaze`, batch ID generator | ❌ | `src/store/appStore.ts` |
-| 0.7 | Migration in persist layer for existing glazes (default `versionNumber: 1`, infer `dateMixed` from `createdAt`) | ❌ | Bump persist version |
-| 0.8 | Update `src/services/glazes.ts` mappers + sync payload for new fields | ❌ | Coordinate with backend if API exists |
+| 0.6 | Store actions: `createGlazeVersion(parentId)`, `getGlazeVersions(rootId)`, `linkPieceToGlaze`, batch ID generator | 🟡 | `generateGlazeBatchId` in `batchId.ts`; version actions deferred to Phase 5 |
+| 0.7 | Migration in persist layer for existing glazes (default `versionNumber: 1`, infer `dateMixed` from `createdAt`) | ✅ | Persist v5 |
+| 0.8 | Update `src/services/glazes.ts` mappers + sync payload for new fields | ✅ | Batch fields in sync payload; preserved on merge |
 
 **Acceptance:** New fields persist locally; existing glazes load without breakage.
 
@@ -56,12 +56,12 @@ Foundation for everything else. Extend types before UI.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 1.1 | Expand **create** flow: ingredients (required), date mixed (date picker, default today), notes | ❌ | Currently create = name + cone + finish + photo only |
-| 1.2 | Auto-generate `batchId` on save (e.g. initials + date + version) | ❌ | Spec: `CB-2026-06-v3` |
-| 1.3 | Add status picker on create/edit (works great / experimental / failed) | ❌ | Radio or pill group |
-| 1.4 | Add metadata fields: best clay type (dropdown), best firing temp (°C), atmosphere, surface finish (already have finish) | ❌ | Extend `AddGlazeModal` |
-| 1.5 | Show ingredients in edit modal (currently missing) | ❌ | Edit has notes but not recipe |
-| 1.6 | Validate: name + ingredients required before save | ❌ | |
+| 1.1 | Expand **create** flow: ingredients (required), date mixed (date picker, default today), notes | ✅ | Text date input (YYYY-MM-DD); notes on create |
+| 1.2 | Auto-generate `batchId` on save (e.g. initials + date + version) | ✅ | `src/screens/glazes/batchId.ts` |
+| 1.3 | Add status picker on create/edit (works great / experimental / failed) | ✅ | Pill group with emoji labels |
+| 1.4 | Add metadata fields: best clay type (dropdown), best firing temp (°C), atmosphere, surface finish (already have finish) | ✅ | Extend `AddGlazeModal` |
+| 1.5 | Show ingredients in edit modal (currently missing) | ✅ | Same form for create + edit |
+| 1.6 | Validate: name + ingredients required before save | ✅ | Save button disabled + toast on submit |
 
 **Acceptance:** User can create a full glaze record matching spec form fields.
 
@@ -71,10 +71,10 @@ Foundation for everything else. Extend types before UI.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 2.1 | Rename tab label **Glaze Atlas → Glaze Notes** (or keep Atlas — product decision) | ❌ | `app/(tabs)/_layout.tsx` |
+
 | 2.2 | Search: include **ingredients** text in filter | ❌ | Extend `LibraryGlazesScreen` search |
 | 2.3 | Status filter chips: All \| Works Great 🟢 \| Experimental 🟡 \| Failed 🔴 | ❌ | Replace or supplement collection chips |
-| 2.4 | Clay filter: "Works on…" dropdown (stoneware / earthenware / porcelain) | ❌ | V2 of library per spec |
+| 2.4 | Clay filter: "Works on…" dropdown (stoneware / earthenware / porcelain) 
 | 2.5 | Update card (`GlazePhotoTile` or list row): status badge, batch ID, days since mixed | ❌ | |
 | 2.6 | Card one-liner: "Best on stoneware at 1240°C" (clay + temp + finish) | ❌ | |
 | 2.7 | Swipe-to-delete on list cards (with confirm) | ❌ | Delete exists on detail only |

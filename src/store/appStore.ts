@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
 import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
+import { normalizeGlazeItem } from '../screens/glazes/glazeItemHelpers';
 import {
   LEGACY_SEED_GLAZE_IDS,
   LEGACY_SEED_TEST_IDS,
@@ -1452,7 +1453,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'pottery-life-store',
-      version: 4,
+      version: 5,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
@@ -1486,6 +1487,10 @@ export const useAppStore = create<AppState>()(
             collections: sanitizeCustomCollections(g.collections ?? []),
           }));
           glazeCollectionNames = deriveCustomCollectionNames(glazes, glazeCollectionNames);
+        }
+
+        if (version < 5) {
+          glazes = (glazes ?? []).map((g) => normalizeGlazeItem(g));
         }
 
         return {

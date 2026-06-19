@@ -1,4 +1,12 @@
-import { ModalCard, ModalShell } from '@/src/components/AppSheets';
+import {
+  ModalCard,
+  ModalSheetFooter,
+  ModalSheetHeader,
+  ModalShell,
+  MODAL_SHEET_RADIUS,
+  useModalSheetHeight,
+} from '@/src/components/AppSheets';
+import { DatePickerField } from '@/src/components/DatePickerField';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
@@ -46,6 +54,7 @@ export function LogTestModal({
   const defaultClayBodyId = useAppStore((s) => s.defaultClayBodyId);
   const kilns = useAppStore((s) => s.kilns);
   const { openPickSheet } = usePhotoPicker();
+  const sheetHeight = useModalSheetHeight();
   const resolveDefaultClayBody = React.useCallback(() => {
     if (defaultClayBodyId) {
       const match = clayBodies.find((body) => body.id === defaultClayBodyId);
@@ -94,19 +103,20 @@ export function LogTestModal({
   };
 
   return (
-    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.46)">
-        <ModalCard radius={32} maxHeight={760}>
-          <View className="px-6 pb-4 border-b border-border">
+    <ModalShell visible={visible} onClose={onClose}>
+        <ModalCard radius={MODAL_SHEET_RADIUS} height={sheetHeight} maxHeight={sheetHeight} withHandle={false}>
+          <ModalSheetHeader>
             <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
               Log Test Tile
             </Text>
             <Text className="text-sm text-muted-foreground mt-1">
               Photo, result, clay, and cone — the essentials for a useful record.
             </Text>
-          </View>
+          </ModalSheetHeader>
 
           <ScrollView
             className="px-6"
+            style={{ flex: 1, minHeight: 0 }}
             contentContainerStyle={{ paddingBottom: 24 }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -195,10 +205,13 @@ export function LogTestModal({
             ) : null}
 
             <FormField label="Firing date">
-              <Input
-                value={testDraft.firingDate}
-                onChangeText={(v) => setTestDraft((d) => ({ ...d, firingDate: v }))}
-                placeholder="2026-03-18"
+              <DatePickerField
+                valueIso={
+                  testDraft.firingDate.length >= 10
+                    ? testDraft.firingDate.slice(0, 10)
+                    : testDraft.firingDate
+                }
+                onChangeIso={(iso) => setTestDraft((d) => ({ ...d, firingDate: iso }))}
               />
             </FormField>
 
@@ -309,7 +322,7 @@ export function LogTestModal({
             </FormField>
           </ScrollView>
 
-          <View className="px-6 pt-4 pb-8 border-t border-border">
+          <ModalSheetFooter>
             <TouchableOpacity
               onPress={handleSavePress}
               activeOpacity={0.82}
@@ -318,7 +331,7 @@ export function LogTestModal({
             >
               <Text className="text-sm font-semibold text-white">Save Test Tile</Text>
             </TouchableOpacity>
-          </View>
+          </ModalSheetFooter>
         </ModalCard>
       </ModalShell>
   );

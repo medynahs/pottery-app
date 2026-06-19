@@ -1,15 +1,21 @@
 // src/screens/kiln/AddKilnModal.tsx
-import { InfoSheet, ModalCard, ModalShell } from '@/src/components/AppSheets';
+import {
+  InfoSheet,
+  ModalCard,
+  ModalSheetFooter,
+  ModalSheetHeader,
+  ModalShell,
+  MODAL_SHEET_RADIUS,
+  useModalSheetHeight,
+} from '@/src/components/AppSheets';
 import { Button } from '@/src/components/ui/button';
-import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { useAppStore } from '@/src/store';
-import { X } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView } from 'react-native';
 import type { Kiln } from '../../../types/kiln';
 import {
     AddKilnModalForm,
@@ -26,7 +32,7 @@ interface AddKilnModalProps {
 }
 
 export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModalProps) {
-  const { height } = useWindowDimensions();
+  const sheetHeight = useModalSheetHeight();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const isEditing = !!editKiln;
@@ -125,17 +131,18 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
       body={infoSheet?.body ?? ''}
       onDismiss={() => setInfoSheet(null)}
     />
-    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
-      <ModalCard maxHeight={height * 0.92}>
-
-            <View className="flex-row justify-between items-center px-6 pb-4 border-b border-border">
+    <ModalShell visible={visible} onClose={onClose}>
+      <ModalCard radius={MODAL_SHEET_RADIUS} height={sheetHeight} maxHeight={sheetHeight} withHandle={false}>
+            <ModalSheetHeader>
               <Text className="text-2xl font-serif font-bold text-foreground">{isEditing ? 'Edit Kiln' : 'Add Kiln'}</Text>
-              <Pressable onPress={onClose} className="p-1">
-                <X size={20} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
+            </ModalSheetHeader>
 
-            <ScrollView className="px-6 pt-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <ScrollView
+              className="px-6 pt-4"
+              style={{ flex: 1, minHeight: 0 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
               <AddKilnModalForm
                 form={form}
                 setForm={setForm}
@@ -155,11 +162,11 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
               />
             </ScrollView>
 
-            <View className="px-6 pb-8 pt-3 border-t border-border">
+            <ModalSheetFooter>
               <Button onPress={handleSave} disabled={!canSave} className="w-full">
                 <Text className="font-semibold">{isEditing ? 'Save Changes' : 'Add Kiln'}</Text>
               </Button>
-            </View>
+            </ModalSheetFooter>
       </ModalCard>
     </ModalShell>
     </>

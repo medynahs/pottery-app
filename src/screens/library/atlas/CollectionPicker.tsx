@@ -9,11 +9,16 @@ export function CollectionPicker({
   selected,
   onChange,
   onCreateCollection,
+  hideHeader = false,
+  hideFooterTip = false,
 }: {
   availableCollections: string[];
   selected: string[];
   onChange: (next: string[]) => void;
   onCreateCollection: (name: string) => void;
+  /** When true, omit title and intro — use with FormField. */
+  hideHeader?: boolean;
+  hideFooterTip?: boolean;
 }) {
   const [newInput, setNewInput] = React.useState('');
   const [showNewInput, setShowNewInput] = React.useState(false);
@@ -43,10 +48,14 @@ export function CollectionPicker({
 
   return (
     <View>
-      <Text className="text-sm font-semibold text-foreground mb-2">Collections</Text>
-      <Text className="text-xs text-muted-foreground mb-3 leading-5">
-        Every glaze lives in {MY_GLAZES_COLLECTION}. Add custom collections to group your studio.
-      </Text>
+      {!hideHeader ? (
+        <>
+          <Text className="text-sm font-semibold text-foreground mb-2">Collections</Text>
+          <Text className="text-xs text-muted-foreground mb-3 leading-5">
+            Every glaze lives in {MY_GLAZES_COLLECTION}. Add custom collections to group your studio.
+          </Text>
+        </>
+      ) : null}
 
       <View className="flex-row flex-wrap gap-2">
         {displayCollections.map((col) => {
@@ -101,9 +110,11 @@ export function CollectionPicker({
         </View>
       ) : null}
 
-      <Text className="text-[11px] text-muted-foreground mt-3">
-        Tip: star a glaze on its detail page to add it to {FAVORITES_COLLECTION}.
-      </Text>
+      {!hideFooterTip ? (
+        <Text className="text-[11px] text-muted-foreground mt-3">
+          Tip: star a glaze on its detail page to add it to {FAVORITES_COLLECTION}.
+        </Text>
+      ) : null}
     </View>
   );
 }

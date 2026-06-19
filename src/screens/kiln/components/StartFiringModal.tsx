@@ -1,16 +1,20 @@
 // src/screens/kiln/StartFiringModal.tsx
-import { ModalCard, ModalShell } from '@/src/components/AppSheets';
+import {
+  ModalCard,
+  ModalSheetFooter,
+  ModalSheetHeader,
+  ModalShell,
+  MODAL_SHEET_RADIUS,
+  useModalSheetHeight,
+} from '@/src/components/AppSheets';
 import { Button } from '@/src/components/ui/button';
-import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useVisiblePieces, useAppStore } from '@/src/store';
-import { X } from 'lucide-react-native';
 import React from 'react';
 import {
     ScrollView,
-    useWindowDimensions,
     View
 } from 'react-native';
 import type { Firing } from '../../../types/kiln';
@@ -31,7 +35,7 @@ interface StartFiringModalProps {
 }
 
 export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: StartFiringModalProps) {
-  const { height } = useWindowDimensions();
+  const sheetHeight = useModalSheetHeight();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
 
@@ -201,18 +205,15 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
   );
 
   return (
-    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
-      <ModalCard maxHeight={height * 0.92}>
-
-            <View className="flex-row justify-between items-center px-6 pb-4 border-b border-border">
+    <ModalShell visible={visible} onClose={onClose}>
+      <ModalCard radius={MODAL_SHEET_RADIUS} height={sheetHeight} maxHeight={sheetHeight} withHandle={false}>
+            <ModalSheetHeader>
               <Text className="text-2xl font-serif font-bold text-foreground">Start Firing</Text>
-              <Pressable onPress={onClose} className="p-1">
-                <X size={20} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
+            </ModalSheetHeader>
 
             <ScrollView
               className="px-6 pt-4"
+              style={{ flex: 1, minHeight: 0 }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
@@ -245,7 +246,7 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
               />
             </ScrollView>
 
-            <View className="px-6 pb-8 pt-3 border-t border-border">
+            <ModalSheetFooter>
               {step === 'setup' ? (
                 <>
                   <Button
@@ -271,7 +272,7 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
                   </Button>
                 </View>
               )}
-            </View>
+            </ModalSheetFooter>
       </ModalCard>
     </ModalShell>
   );

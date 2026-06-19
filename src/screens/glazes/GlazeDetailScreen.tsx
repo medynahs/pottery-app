@@ -12,6 +12,10 @@ import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { GlazeThumbnail } from '@/src/screens/library/atlas/MediaSlot';
 import type { GlazeDraft, TestDraft } from '@/src/screens/library/atlas/types';
 import { sanitizeCustomCollections, deriveCustomCollectionNames } from '@/src/screens/library/atlas/collections';
+import { hasValidRecipeIngredients } from '@/src/screens/library/atlas/GlazeRecipeBuilder';
+import { GlazeRecipeSummary } from '@/src/screens/library/atlas/GlazeRecipeSummary';
+import { glazeDraftToItem } from '@/src/screens/glazes/glazeItemHelpers';
+import { formatDateShort } from '@/src/utils/dates';
 import { useAppStore } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -20,9 +24,12 @@ import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
+  GLAZE_ATMOSPHERE_LABELS,
+  GLAZE_CLAY_TYPE_LABELS,
   GLAZE_FINISH_LABELS,
   GLAZE_RESULT_LABELS,
-  GLAZE_SOURCE_LABELS,
+  GLAZE_STATUS_EMOJI,
+  GLAZE_STATUS_LABELS,
   type GlazeTestTile,
 } from './types';
 
@@ -70,28 +77,18 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
   const handleEditGlaze = React.useCallback(
     (draft: GlazeDraft) => {
       if (!glaze) return;
+      if (!draft.name.trim() || !hasValidRecipeIngredients(draft.recipeIngredients)) {
+        showToast('Name and at least one ingredient row are required', 'error');
+        return;
+      }
       const customCollections = sanitizeCustomCollections(draft.collections);
       registerGlazeCollections(customCollections);
-      updateGlaze({
-        ...glaze,
-        name: draft.name.trim(),
-        finish: draft.finish,
-        colorFamily: draft.colorFamily.trim() || glaze.colorFamily,
-        coneRange: draft.coneRange.trim() || draft.defaultCone,
-        defaultCone: draft.defaultCone,
-        source: draft.source,
-        notes: draft.notes.trim() || undefined,
-        applicationNotes: draft.applicationNotes.trim() || undefined,
-        supplier: draft.supplier.trim() || undefined,
-        batchSize: draft.batchSize.trim() || undefined,
-        recipeNotes: draft.recipeNotes.trim() || undefined,
-        tags: parseCommaList(draft.tags),
-        collections: customCollections,
-        favorite: draft.favorite,
-        production: draft.production,
-        bucketPhotoUri: draft.bucketPhotoUri ?? glaze.bucketPhotoUri,
-        syncDirty: true,
-      });
+      updateGlaze(
+        glazeDraftToItem(
+          { ...draft, collections: customCollections },
+          { id: glaze.id, existing: glaze },
+        ),
+      );
       scheduleGlazesSync();
       setEditOpen(false);
       showToast('Glaze updated', 'success');
@@ -245,8 +242,9 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
               {glaze.name}
             </Text>
             <Text className="text-sm text-white/85 mt-1">
-              {glaze.defaultCone || glaze.coneRange} · {GLAZE_FINISH_LABELS[glaze.finish]} ·{' '}
-              {GLAZE_SOURCE_LABELS[glaze.source]}
+              {glaze.batchId ? `${glaze.batchId} · ` : ''}
+              {glaze.dateMixed ? `Mixed ${formatDateShort(glaze.dateMixed)} · ` : ''}
+              {glaze.defaultCone || glaze.coneRange} · {GLAZE_FINISH_LABELS[glaze.finish]}
             </Text>
           </View>
         </View>
@@ -295,6 +293,55 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
               <Text className="text-xs font-semibold text-rose-700">Delete</Text>
             </TouchableOpacity>
           </View>
+
+          {glaze.status ? (
+            <View className="mt-5 self-start flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border">
+              <Text className="text-xs">{GLAZE_STATUS_EMOJI[glaze.status]}</Text>
+              <Text className="text-xs font-semibold text-foreground">
+                {GLAZE_STATUS_LABELS[glaze.status]}
+              </Text>
+            </View>
+          ) : null}
+
+          {glaze.recipeIngredients?.length ? (
+            <View className="mt-5">
+              <GlazeRecipeSummary
+                ingredients={glaze.recipeIngredients}
+                batchSizeG={glaze.batchSize}
+              />
+            </View>
+          ) : glaze.ingredientsText ? (
+            <View className="mt-5 rounded-2xl border border-border bg-card px-4 py-3">
+              <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                Ingredients
+              </Text>
+              <Text className="text-sm text-foreground leading-5">{glaze.ingredientsText}</Text>
+            </View>
+          ) : null}
+
+          {(glaze.bestClayType || glaze.bestFiringTempC || glaze.atmosphere) ? (
+            <View className="mt-4 rounded-2xl border border-border bg-card px-4 py-3">
+              <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                Firing notes
+              </Text>
+              {glaze.bestClayType ? (
+                <Text className="text-sm text-foreground">
+                  Best on {GLAZE_CLAY_TYPE_LABELS[glaze.bestClayType]}
+                </Text>
+              ) : null}
+              {glaze.bestFiringTempC ? (
+                <Text className="text-sm text-foreground mt-1">
+                  {glaze.bestFiringTempC}°C
+                  {glaze.defaultCone ? ` (${glaze.defaultCone})` : ''}
+                </Text>
+              ) : null}
+              {glaze.atmosphere ? (
+                <Text className="text-sm text-foreground mt-1">
+                  {GLAZE_ATMOSPHERE_LABELS[glaze.atmosphere]} atmosphere
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
 
           {glaze.notes ? (
             <View className="mt-5 rounded-2xl border border-border bg-card px-4 py-3">

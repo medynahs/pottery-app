@@ -5,13 +5,26 @@ import {
   Easing,
   KeyboardAvoidingView,
   Modal,
+  PanResponder,
   Platform,
   Pressable,
   StyleSheet,
+  TouchableOpacity,
   useWindowDimensions,
   View,
   type ViewStyle,
 } from 'react-native';
+import { X } from 'lucide-react-native';
+
+/** Shared bottom-sheet defaults — use across form modals for consistency. */
+export const MODAL_BACKDROP_COLOR = 'rgba(22,14,10,0.52)';
+export const MODAL_SHEET_RADIUS = 32;
+export const MODAL_SHEET_HEIGHT_RATIO = 0.92;
+
+export function useModalSheetHeight(ratio = MODAL_SHEET_HEIGHT_RATIO) {
+  const { height } = useWindowDimensions();
+  return height * ratio;
+}
 
 export interface ModalShellProps {
   visible: boolean;
@@ -20,62 +33,146 @@ export interface ModalShellProps {
   backdropColor?: string;
 }
 
+type ModalSheetPanContextValue = {
+  panHandlers: ReturnType<typeof PanResponder.create>['panHandlers'];
+};
+
+export const ModalSheetPanContext = React.createContext<ModalSheetPanContextValue | null>(null);
+
+const ModalSheetCloseContext = React.createContext<(() => void) | null>(null);
+
 /** Full-screen bottom-sheet modal. Embeds the photo picker overlay when active. */
 export function ModalShell({
   visible,
   onClose,
   children,
-  backdropColor = 'rgba(22,14,10,0.52)',
+  backdropColor = MODAL_BACKDROP_COLOR,
 }: ModalShellProps) {
   const { height } = useWindowDimensions();
   const backdropOpacity = React.useRef(new Animated.Value(0)).current;
   const slideY = React.useRef(new Animated.Value(height)).current;
+  const dragY = React.useRef(new Animated.Value(0)).current;
+  const closingRef = React.useRef(false);
 
-  React.useEffect(() => {
-    if (visible) {
-      backdropOpacity.setValue(0);
-      slideY.setValue(height);
+  const runCloseAnimation = React.useCallback(
+    (afterClose?: () => void) => {
+      if (closingRef.current) return;
+      closingRef.current = true;
       Animated.parallel([
         Animated.timing(backdropOpacity, {
-          toValue: 1,
-          duration: 200,
-          easing: Easing.out(Easing.quad),
+          toValue: 0,
+          duration: 180,
+          easing: Easing.in(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(slideY, {
-          toValue: 0,
-          duration: 320,
-          easing: Easing.out(Easing.cubic),
+          toValue: height,
+          duration: 240,
+          easing: Easing.in(Easing.cubic),
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(({ finished }) => {
+        closingRef.current = false;
+        dragY.setValue(0);
+        if (finished) (afterClose ?? onClose)();
+      });
+    },
+    [backdropOpacity, slideY, dragY, height, onClose],
+  );
+
+  const runOpenAnimation = React.useCallback(() => {
+    backdropOpacity.setValue(0);
+    slideY.setValue(height);
+    dragY.setValue(0);
+    Animated.parallel([
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: 200,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideY, {
+        toValue: 0,
+        duration: 320,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [backdropOpacity, slideY, dragY, height]);
+
+  React.useEffect(() => {
+    if (visible) {
+      runOpenAnimation();
     }
-  }, [visible, backdropOpacity, slideY, height]);
+  }, [visible, runOpenAnimation]);
+
+  const panResponder = React.useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          gesture.dy > 8 && Math.abs(gesture.dy) > Math.abs(gesture.dx * 1.2),
+        onPanResponderMove: (_, gesture) => {
+          if (gesture.dy > 0) dragY.setValue(gesture.dy);
+        },
+        onPanResponderRelease: (_, gesture) => {
+          if (gesture.dy > 96 || gesture.vy > 1.1) {
+            runCloseAnimation();
+            return;
+          }
+          Animated.spring(dragY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 0,
+          }).start();
+        },
+        onPanResponderTerminate: () => {
+          Animated.spring(dragY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 0,
+          }).start();
+        },
+      }),
+    [dragY, runCloseAnimation],
+  );
+
+  const handleBackdropPress = React.useCallback(() => {
+    runCloseAnimation();
+  }, [runCloseAnimation]);
+
+  const sheetTranslateY = React.useMemo(
+    () => Animated.add(slideY, dragY),
+    [slideY, dragY],
+  );
 
   return (
-    <Modal visible={visible} animationType="none" transparent onRequestClose={onClose}>
-      <View style={{ flex: 1 }} pointerEvents="box-none">
-        <Animated.View
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFill, { backgroundColor: backdropColor, opacity: backdropOpacity }]}
-        />
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="Close modal"
-        />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1, justifyContent: 'flex-end' }}
-          pointerEvents="box-none"
-        >
-          <Animated.View style={{ transform: [{ translateY: slideY }] }} pointerEvents="box-none">
-            <View pointerEvents="auto">{children}</View>
-          </Animated.View>
-        </KeyboardAvoidingView>
-        {visible ? <PhotoPickerOverlay /> : null}
-      </View>
+    <Modal visible={visible} animationType="none" transparent onRequestClose={handleBackdropPress}>
+      <ModalSheetCloseContext.Provider value={handleBackdropPress}>
+        <ModalSheetPanContext.Provider value={{ panHandlers: panResponder.panHandlers }}>
+          <View style={{ flex: 1 }} pointerEvents="box-none">
+            <Animated.View
+              pointerEvents="none"
+              style={[StyleSheet.absoluteFill, { backgroundColor: backdropColor, opacity: backdropOpacity }]}
+            />
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={handleBackdropPress}
+              accessibilityRole="button"
+              accessibilityLabel="Close modal"
+            />
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={{ flex: 1, justifyContent: 'flex-end' }}
+              pointerEvents="box-none"
+            >
+              <Animated.View style={{ transform: [{ translateY: sheetTranslateY }] }} pointerEvents="box-none">
+                <View pointerEvents="auto">{children}</View>
+              </Animated.View>
+            </KeyboardAvoidingView>
+            {visible ? <PhotoPickerOverlay /> : null}
+          </View>
+        </ModalSheetPanContext.Provider>
+      </ModalSheetCloseContext.Provider>
     </Modal>
   );
 }
@@ -84,11 +181,74 @@ export interface ModalCardProps {
   children: React.ReactNode;
   variant?: 'default' | 'pottery';
   maxHeight?: ViewStyle['maxHeight'];
+  /** Set an explicit height so flex children (e.g. ScrollView) can fill the sheet. */
+  height?: ViewStyle['height'];
   radius?: number;
+  /** When false, omit the top drag handle (use ModalSheetHeader instead). */
+  withHandle?: boolean;
 }
 
-export function ModalCard({ children, variant = 'default', maxHeight, radius }: ModalCardProps) {
-  const topRadius = radius ?? (variant === 'pottery' ? 28 : 24);
+function ModalDragHandle() {
+  const pan = React.useContext(ModalSheetPanContext);
+
+  return (
+    <View {...(pan?.panHandlers ?? {})} accessibilityRole="adjustable" accessibilityLabel="Swipe down to close">
+      <View style={{ alignItems: 'center', paddingVertical: 14 }}>
+        <View className="w-10 h-1.5 bg-muted rounded-full" />
+      </View>
+    </View>
+  );
+}
+
+export function ModalSheetHeader({ children }: { children: React.ReactNode }) {
+  const requestClose = React.useContext(ModalSheetCloseContext);
+  const pan = React.useContext(ModalSheetPanContext);
+
+  return (
+    <View className="border-b border-border shrink-0" {...(pan?.panHandlers ?? {})}>
+      <View style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 4 }}>
+        <View className="w-10 h-1.5 bg-muted rounded-full" />
+      </View>
+      <View className="flex-row items-start px-6 pb-4 gap-2">
+        <View className="flex-1 min-w-0 pr-2">{children}</View>
+        <TouchableOpacity
+          onPress={requestClose ?? undefined}
+          hitSlop={12}
+          activeOpacity={0.7}
+          className="p-1 shrink-0"
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+        >
+          <X size={20} color="hsl(24 20% 55%)" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+/** Sticky footer for tall form sheets. */
+export function ModalSheetFooter({ children }: { children: React.ReactNode }) {
+  return (
+    <View className="px-6 pt-4 pb-8 border-t border-border shrink-0">
+      {children}
+    </View>
+  );
+}
+
+export function ModalCard({
+  children,
+  variant = 'default',
+  maxHeight,
+  height,
+  radius,
+  withHandle = true,
+}: ModalCardProps) {
+  const topRadius = radius ?? (variant === 'pottery' ? 28 : MODAL_SHEET_RADIUS);
+  const shellStyle = {
+    maxHeight,
+    height,
+    flexDirection: 'column' as const,
+  };
 
   if (variant === 'pottery') {
     return (
@@ -99,12 +259,10 @@ export function ModalCard({ children, variant = 'default', maxHeight, radius }: 
           backgroundColor: '#FFFBF2',
           borderTopWidth: 1,
           borderColor: '#E8D9BE',
-          maxHeight,
+          ...shellStyle,
         }}
       >
-        <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
-          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#C9B48C' }} />
-        </View>
+        {withHandle ? <ModalDragHandle /> : null}
         {children}
       </View>
     );
@@ -116,10 +274,10 @@ export function ModalCard({ children, variant = 'default', maxHeight, radius }: 
       style={{
         borderTopLeftRadius: topRadius,
         borderTopRightRadius: topRadius,
-        maxHeight,
+        ...shellStyle,
       }}
     >
-      <View className="w-9 h-1 bg-muted rounded-full self-center mt-4 mb-2" />
+      {withHandle ? <ModalDragHandle /> : null}
       {children}
     </View>
   );

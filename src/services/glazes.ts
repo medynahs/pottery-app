@@ -17,6 +17,7 @@ import type {
   GlazeTestTile,
   GlazeThickness,
 } from '../screens/glazes/types';
+import { normalizeGlazeItem } from '../screens/glazes/glazeItemHelpers';
 import { API_BASE_URL } from './index';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
@@ -101,6 +102,17 @@ export interface GlazeSyncItem {
   conesTested: string[];
   lastTestedAt?: string;
   deleted?: boolean;
+  /** Client-side batch metadata — server may ignore until supported. */
+  ingredientsText?: string;
+  batchId?: string;
+  dateMixed?: string;
+  status?: GlazeLibraryItem['status'];
+  bestClayType?: GlazeLibraryItem['bestClayType'];
+  bestFiringTempC?: number;
+  atmosphere?: GlazeLibraryItem['atmosphere'];
+  versionNumber?: number;
+  rootGlazeId?: string;
+  parentGlazeId?: string;
 }
 
 export interface GlazeTestSyncItem {
@@ -177,7 +189,7 @@ export function backendGlazeToLocal(b: BackendGlaze, existing?: GlazeLibraryItem
         accidentPhotoUris: existing.accidentPhotoUris,
       }
     : imagesToPhotoFields(b.images ?? []);
-  return {
+  return normalizeGlazeItem({
     ...(existing ?? {}),
     id,
     backendId: b.id,
@@ -204,7 +216,7 @@ export function backendGlazeToLocal(b: BackendGlaze, existing?: GlazeLibraryItem
     conesTested: b.conesTested ?? [],
     lastTestedAt: b.lastTestedAt,
     createdAt: b.createdAt,
-  };
+  });
 }
 
 export function localGlazeToSyncItem(g: GlazeLibraryItem, deleted = false): GlazeSyncItem {
@@ -230,6 +242,16 @@ export function localGlazeToSyncItem(g: GlazeLibraryItem, deleted = false): Glaz
     kilnTypesUsed: g.kilnTypesUsed ?? [],
     conesTested: g.conesTested ?? [],
     lastTestedAt: g.lastTestedAt,
+    ingredientsText: g.ingredientsText,
+    batchId: g.batchId,
+    dateMixed: g.dateMixed,
+    status: g.status,
+    bestClayType: g.bestClayType,
+    bestFiringTempC: g.bestFiringTempC,
+    atmosphere: g.atmosphere,
+    versionNumber: g.versionNumber,
+    rootGlazeId: g.rootGlazeId,
+    parentGlazeId: g.parentGlazeId,
     ...(deleted ? { deleted: true } : {}),
   };
 }

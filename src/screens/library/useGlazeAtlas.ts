@@ -1,9 +1,10 @@
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
+import { glazeDraftToItem } from '@/src/screens/glazes/glazeItemHelpers';
 import { useAppStore } from '@/src/store';
 import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
 import React from 'react';
 import { deriveCustomCollectionNames, sanitizeCustomCollections } from './atlas/collections';
-import { parseCommaList } from './atlas/helpers';
+import { hasValidRecipeIngredients } from './atlas/GlazeRecipeBuilder';
 import type { GlazeDraft, TestDraft } from './atlas/types';
 import { scheduleGlazesSync } from './useGlazesSync';
 
@@ -46,37 +47,21 @@ export function useGlazeAtlas() {
   }, [glazes.length, showToast, openAddGlaze]);
 
   const handleSaveGlaze = React.useCallback((draft: GlazeDraft) => {
+    if (!draft.name.trim() || !hasValidRecipeIngredients(draft.recipeIngredients)) {
+      showToast('Name and at least one ingredient row are required', 'error');
+      return;
+    }
+
     const customCollections = sanitizeCustomCollections(draft.collections);
     registerGlazeCollections(customCollections);
 
-    addGlaze({
-      id: `glaze-${Date.now()}`,
-      name: draft.name.trim(),
-      finish: draft.finish,
-      colorFamily: draft.colorFamily.trim() || 'Unsorted Surface',
-      coneRange: draft.coneRange.trim() || draft.defaultCone,
-      defaultCone: draft.defaultCone,
-      source: draft.source,
-      notes: draft.notes.trim() || undefined,
-      applicationNotes: draft.applicationNotes.trim() || undefined,
-      supplier: draft.supplier.trim() || undefined,
-      batchSize: draft.batchSize.trim() || undefined,
-      recipeNotes: draft.recipeNotes.trim() || undefined,
-      recipeIngredients: [],
-      tags: parseCommaList(draft.tags),
-      collections: customCollections,
-      favorite: draft.favorite,
-      production: draft.production,
-      bucketPhotoUri: draft.bucketPhotoUri,
-      testTilePhotoUris: draft.firstTilePhotoUri ? [draft.firstTilePhotoUri] : [],
-      finishedPiecePhotoUris: draft.firstPiecePhotoUri ? [draft.firstPiecePhotoUri] : [],
-      accidentPhotoUris: [],
-      clayBodiesUsed: [],
-      kilnTypesUsed: [],
-      conesTested: [],
-      createdAt: new Date().toISOString(),
-      lastTestedAt: undefined,
-    });
+    const id = `glaze-${Date.now()}`;
+    addGlaze(
+      glazeDraftToItem(
+        { ...draft, collections: customCollections },
+        { id },
+      ),
+    );
     scheduleGlazesSync();
     setAddOpen(false);
     showToast('Glaze saved', 'success');
@@ -131,4 +116,11 @@ export function useGlazeAtlas() {
     addGlazeCollection,
     PaywallGate,
   };
+}
+
+function parseCommaList(value: string): string[] {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 }

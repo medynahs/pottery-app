@@ -1,22 +1,25 @@
-import { ModalCard, ModalShell } from '@/src/components/AppSheets';
+import {
+  ModalCard,
+  ModalSheetFooter,
+  ModalSheetHeader,
+  ModalShell,
+  MODAL_SHEET_RADIUS,
+  useModalSheetHeight,
+} from '@/src/components/AppSheets';
 import { Banner } from '@/src/components/Banner';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
-import { Colors } from '@/src/constants/theme';
-import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useUploadAvatar, useUploadCover } from '@/src/hooks/useCurrentUser';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { useAppStore } from '@/src/store/appStore';
-import { Camera, ImageIcon, X } from 'lucide-react-native';
+import { Camera, ImageIcon } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
-  Pressable,
   ScrollView,
   TouchableOpacity,
-  useWindowDimensions,
   View
 } from 'react-native';
 
@@ -26,9 +29,7 @@ interface EditProfileModalProps {
 }
 
 export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
-  const { height: screenHeight } = useWindowDimensions();
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme];
+  const sheetHeight = useModalSheetHeight();
   const user = useAppStore((s) => s.user);
   const setUser = useAppStore((s) => s.setUser);
   const sessionToken = useAppStore((s) => s.sessionToken);
@@ -121,19 +122,15 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const avatarInitial = ((name.trim() || user.name || 'U')[0] ?? 'U').toUpperCase();
 
   return (
-    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
-      <ModalCard maxHeight={screenHeight * 0.92}>
-
-            {/* Title row */}
-            <View className="flex-row justify-between items-center px-6 pb-4 border-b border-border">
-              <Text className="text-2xl font-serif font-bold text-foreground">Edit Profile</Text>
-              <Pressable onPress={onClose} className="p-1" accessibilityLabel="Close" accessibilityRole="button">
-                <X size={20} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
+    <ModalShell visible={visible} onClose={onClose}>
+      <ModalCard radius={MODAL_SHEET_RADIUS} height={sheetHeight} maxHeight={sheetHeight} withHandle={false}>
+        <ModalSheetHeader>
+          <Text className="text-2xl font-serif font-bold text-foreground">Edit Profile</Text>
+        </ModalSheetHeader>
 
             <ScrollView
               keyboardShouldPersistTaps="handled"
+              style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 8 }}
               showsVerticalScrollIndicator={false}
             >
@@ -247,14 +244,13 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
               />
             </ScrollView>
 
-            {/* Footer */}
-            <View className="px-6 pt-4 pb-10 border-t border-border">
+            <ModalSheetFooter>
               <Button onPress={handleSave} disabled={!name.trim() || isSaving} className="w-full">
                 <Text className="text-primary-foreground font-semibold">
                   {isSaving ? 'Saving…' : 'Save Changes'}
                 </Text>
               </Button>
-            </View>
+            </ModalSheetFooter>
       </ModalCard>
     </ModalShell>
   );

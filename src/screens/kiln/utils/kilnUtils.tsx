@@ -1,10 +1,12 @@
-// src/screens/kiln/components/kilnUtils.tsx
 import { CheckCircle2, Flame, Layers, PackageCheck, Timer, Wind } from 'lucide-react-native';
 import React from 'react';
+import { formatDate as formatDateEuropean, formatDateShort } from '@/src/utils/dates';
 import type { FiringState } from '../../../types/kiln';
 
+export { formatDateShort };
+
 export function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return formatDateEuropean(iso, { year: undefined });
 }
 
 export function formatMoney(currencySymbol: string, value?: number | null) {
