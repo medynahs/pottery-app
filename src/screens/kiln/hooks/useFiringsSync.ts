@@ -21,7 +21,7 @@ export const firingsQueryKey = (userId: string) => [...FIRINGS_QUERY_KEY, userId
 function toLocalFiring(backend: BackendFiring, existing?: Firing): Firing {
   return {
     ...(existing ?? {
-      id: existing?.id ?? `firing-${backend.id}`,
+      id: `firing-${backend.id}`,
       kilnId: backend.kiln_id ?? '',
       name: backend.name,
       type: (backend.type as Firing['type']) ?? 'bisque',

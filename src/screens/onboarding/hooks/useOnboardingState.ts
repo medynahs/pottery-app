@@ -1,6 +1,6 @@
 import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
 import { AVAILABLE_KILNKIN_COMPANIONS } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
-import { useAppStore } from '@/src/store/appStore';
+import { useAppStore, type AppModule } from '@/src/store/appStore';
 import { OnboardingDraft, StepKey } from '@/src/types/user';
 import { useRouter } from 'expo-router';
 import React from 'react';

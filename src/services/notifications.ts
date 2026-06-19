@@ -105,6 +105,7 @@ export async function scheduleWeeklySummaryNotification(
     kind: 'weekly-summary',
     payload,
     trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
       seconds: 7 * 24 * 60 * 60,
       repeats: true,
       channelId: Platform.OS === 'android' ? 'kilnkin-default' : undefined,
