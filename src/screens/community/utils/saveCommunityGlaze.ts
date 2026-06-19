@@ -5,11 +5,16 @@ import {
 import { normalizeGlazeItem } from '@/src/screens/glazes/glazeItemHelpers';
 import type { CommunityGlazeRecipePayload } from '@/src/screens/glazes/shareGlazeRecipe/glazePostPayload';
 import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
-import { todayDateIso } from '@/src/utils/dates';
+
+export type CommunityGlazeProvenance = {
+  postId: string;
+  sourceUserId: string;
+  sourceStudioName: string;
+};
 
 export function communityGlazeToLibraryItem(
   payload: CommunityGlazeRecipePayload,
-  postId: string,
+  provenance: CommunityGlazeProvenance,
   selectedCollections: string[],
 ): GlazeLibraryItem {
   const collections = sanitizeCustomCollections([
@@ -27,7 +32,7 @@ export function communityGlazeToLibraryItem(
   const now = new Date().toISOString();
 
   return normalizeGlazeItem({
-    id: `community-${postId}-${Date.now()}`,
+    id: `community-${provenance.postId}-${Date.now()}`,
     name: payload.name,
     finish: payload.finish,
     colorFamily: payload.colorFamily || 'neutral',
@@ -44,6 +49,10 @@ export function communityGlazeToLibraryItem(
     favorite: false,
     production: false,
     versionNumber: 1,
+    communitySourcePostId: provenance.postId,
+    communitySourceUserId: provenance.sourceUserId,
+    communitySourceStudioName: provenance.sourceStudioName,
+    communitySavedAt: now,
     createdAt: now,
     testTilePhotoUris: [],
     finishedPiecePhotoUris: [],

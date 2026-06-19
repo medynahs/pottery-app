@@ -31,6 +31,7 @@ import { ShareGlazeFeedPreview } from '@/src/screens/glazes/shareGlazeRecipe/Sha
 import { apiSubmitChallengeEntry, apiListChallenges, type BackendChallenge } from '@/src/services/challenges';
 import { apiCreatePost } from '@/src/services/community';
 import { uploadPostPhotoAsset } from '@/src/services/communityUpload';
+import { useAnalytics } from '@/src/hooks/useAnalytics';
 import { useAppStore } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
 import * as Clipboard from 'expo-clipboard';
@@ -112,6 +113,7 @@ export function ShareGlazeRecipeSheet({
   const sessionToken = useAppStore((s) => s.sessionToken);
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
+  const { trackCommunityPostCreated } = useAnalytics();
   const [posting, setPosting] = React.useState(false);
   const [draft, setDraft] = React.useState<ShareGlazeDraft | null>(null);
   const [showPreview, setShowPreview] = React.useState(true);
@@ -214,6 +216,10 @@ export function ShareGlazeRecipeSheet({
 
       await clearShareDraft(glaze.id);
       markPostCreated();
+      trackCommunityPostCreated({
+        hasRecipe: Boolean(buildGlazePostPayload(glaze, draft)),
+        hasPhoto: assetIds.length > 0,
+      });
       showToast('Recipe shared to Community', 'success');
       onShared?.();
       onClose();

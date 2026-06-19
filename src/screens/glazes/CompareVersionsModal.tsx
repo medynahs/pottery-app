@@ -22,6 +22,7 @@ import {
 import { Pill } from '@/src/screens/library/atlas/Pill';
 import type { Piece } from '@/src/types/pieces';
 import { formatDateShort } from '@/src/utils/dates';
+import { ArrowLeftRight } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 
@@ -107,6 +108,12 @@ export function CompareVersionsModal({
   const rightRate = computeVersionSuccessRate(rightGlaze.id, tests, pieces);
   const rateDiff =
     leftRate != null && rightRate != null ? rightRate - leftRate : null;
+  const changedCount = ingredientRows.filter((row) => row.changed).length;
+
+  const handleSwap = () => {
+    setLeftId(rightId);
+    setRightId(leftId);
+  };
 
   return (
     <ModalShell visible={visible} onClose={onClose}>
@@ -161,6 +168,14 @@ export function CompareVersionsModal({
               successRate={leftRate}
               statsLine={formatVersionStatsLine(leftGlaze.id, tests, pieces)}
             />
+            <TouchableOpacity
+              onPress={handleSwap}
+              activeOpacity={0.78}
+              className="self-center w-10 h-10 rounded-full border border-border bg-muted items-center justify-center"
+              accessibilityLabel="Swap versions"
+            >
+              <ArrowLeftRight size={16} color="hsl(24 20% 40%)" />
+            </TouchableOpacity>
             <CompareColumn
               title="Version B"
               glaze={rightGlaze}
@@ -168,6 +183,30 @@ export function CompareVersionsModal({
               statsLine={formatVersionStatsLine(rightGlaze.id, tests, pieces)}
             />
           </View>
+
+          {(leftGlaze.batchSize || rightGlaze.batchSize) ? (
+            <View className="rounded-2xl border border-border bg-card px-4 py-3 mb-5">
+              <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                Batch size
+              </Text>
+              <View className="flex-row gap-3">
+                <Text className="flex-1 text-sm text-foreground">
+                  A: {leftGlaze.batchSize?.trim() || '—'}
+                </Text>
+                <Text className="flex-1 text-sm text-foreground">
+                  B: {rightGlaze.batchSize?.trim() || '—'}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {changedCount > 0 ? (
+            <View className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 mb-5">
+              <Text className="text-sm text-foreground">
+                {changedCount} ingredient{changedCount === 1 ? '' : 's'} differ between versions.
+              </Text>
+            </View>
+          ) : null}
 
           {rateDiff != null && rateDiff !== 0 ? (
             <View className="rounded-2xl border border-border bg-muted/30 px-4 py-3 mb-5">

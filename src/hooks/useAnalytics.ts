@@ -36,5 +36,15 @@ export function useAnalytics() {
     trackTestTileLogged: (props?: { glazeId?: string; resultRating?: string }) => {
       captureAnalyticsEvent('test_tile_logged', props);
     },
+    trackGlazeSavedFromCommunity: (props?: {
+      postId?: string;
+      glazeName?: string;
+      sourceStudio?: string;
+    }) => {
+      captureAnalyticsEvent('glaze_saved_from_community', props);
+    },
+    trackCommunityPostCreated: (props?: { hasRecipe?: boolean; hasPhoto?: boolean }) => {
+      captureAnalyticsEvent('community_post_created', props);
+    },
   };
 }

@@ -1,5 +1,5 @@
 import { Text } from '@/src/components/ui/text';
-import type { GlazeIngredient } from '@/src/screens/glazes/types';
+import type { GlazeIngredient, GlazeLibraryItem } from '@/src/screens/glazes/types';
 import {
   computeGlazeBatchForPieces,
   GLAZE_COVERAGE_PRESETS,
@@ -7,21 +7,82 @@ import {
 import React from 'react';
 import { TextInput, TouchableOpacity, View } from 'react-native';
 
+type BatchScalerDefaults = Pick<
+  GlazeLibraryItem,
+  'batchScalerPresetId' | 'batchScalerGramsPerPiece' | 'batchScalerWastePercent' | 'batchScalerPieceCount'
+>;
+
 type GlazeBatchScalerCardProps = {
   ingredients: GlazeIngredient[];
   linkedPieceCount?: number;
+  defaults?: BatchScalerDefaults;
+  onDefaultsChange?: (patch: BatchScalerDefaults) => void;
 };
 
 export function GlazeBatchScalerCard({
   ingredients,
   linkedPieceCount = 0,
+  defaults,
+  onDefaultsChange,
 }: GlazeBatchScalerCardProps) {
-  const [pieceCount, setPieceCount] = React.useState(
-    linkedPieceCount > 0 ? String(linkedPieceCount) : '6',
+  const initialPreset = defaults?.batchScalerPresetId ?? 'standard';
+  const initialPieces =
+    defaults?.batchScalerPieceCount != null
+      ? String(defaults.batchScalerPieceCount)
+      : linkedPieceCount > 0
+        ? String(linkedPieceCount)
+        : '6';
+  const initialCustomGrams =
+    defaults?.batchScalerGramsPerPiece != null && defaults.batchScalerPresetId == null
+      ? String(defaults.batchScalerGramsPerPiece)
+      : defaults?.batchScalerGramsPerPiece != null &&
+          !GLAZE_COVERAGE_PRESETS.some((p) => p.id === initialPreset && p.gramsPerPiece === defaults.batchScalerGramsPerPiece)
+        ? String(defaults.batchScalerGramsPerPiece)
+        : '';
+  const initialWaste =
+    defaults?.batchScalerWastePercent != null ? String(defaults.batchScalerWastePercent) : '10';
+
+  const [pieceCount, setPieceCount] = React.useState(initialPieces);
+  const [presetId, setPresetId] = React.useState(initialPreset);
+  const [customGrams, setCustomGrams] = React.useState(initialCustomGrams);
+  const [wastePercent, setWastePercent] = React.useState(initialWaste);
+
+  const persistTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const persistDefaults = React.useCallback(
+    (next: {
+      pieceCount: string;
+      presetId: string;
+      customGrams: string;
+      wastePercent: string;
+    }) => {
+      if (!onDefaultsChange) return;
+      if (persistTimer.current) clearTimeout(persistTimer.current);
+      persistTimer.current = setTimeout(() => {
+        const preset = GLAZE_COVERAGE_PRESETS.find((p) => p.id === next.presetId) ?? GLAZE_COVERAGE_PRESETS[1];
+        const parsedCustom = Number.parseFloat(next.customGrams.replace(',', '.'));
+        const gramsPerPiece =
+          next.customGrams.trim() && Number.isFinite(parsedCustom)
+            ? parsedCustom
+            : preset.gramsPerPiece;
+        const parsedPieces = Number.parseInt(next.pieceCount, 10);
+        const parsedWaste = Number.parseFloat(next.wastePercent.replace(',', '.'));
+
+        onDefaultsChange({
+          batchScalerPresetId: next.customGrams.trim() ? undefined : next.presetId,
+          batchScalerGramsPerPiece: gramsPerPiece,
+          batchScalerWastePercent: Number.isFinite(parsedWaste) ? parsedWaste : 10,
+          batchScalerPieceCount:
+            Number.isFinite(parsedPieces) && parsedPieces > 0 ? parsedPieces : undefined,
+        });
+      }, 400);
+    },
+    [onDefaultsChange],
   );
-  const [presetId, setPresetId] = React.useState('standard');
-  const [customGrams, setCustomGrams] = React.useState('');
-  const [wastePercent, setWastePercent] = React.useState('10');
+
+  React.useEffect(() => {
+    persistDefaults({ pieceCount, presetId, customGrams, wastePercent });
+  }, [pieceCount, presetId, customGrams, wastePercent, persistDefaults]);
 
   const preset = GLAZE_COVERAGE_PRESETS.find((p) => p.id === presetId) ?? GLAZE_COVERAGE_PRESETS[1];
   const gramsPerPiece = customGrams.trim()
@@ -46,7 +107,7 @@ export function GlazeBatchScalerCard({
         Scale batch for pieces
       </Text>
       <Text className="text-xs text-muted-foreground mb-3 leading-5">
-        Estimate total mix from piece count and coverage per piece.
+        Estimate total mix from piece count and coverage per piece. Your settings are remembered on this glaze.
       </Text>
 
       <View className="flex-row gap-3 mb-3">

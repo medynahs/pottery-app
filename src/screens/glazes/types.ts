@@ -62,6 +62,16 @@ export interface GlazeLibraryItem {
   conesTested: string[];
   lastTestedAt?: string;
   createdAt: string;
+  /** Provenance when saved from a community post (local until BE-8). */
+  communitySourcePostId?: string;
+  communitySourceUserId?: string;
+  communitySourceStudioName?: string;
+  communitySavedAt?: string;
+  /** Batch scaler prefs (local until BE-9). */
+  batchScalerPresetId?: string;
+  batchScalerGramsPerPiece?: number;
+  batchScalerWastePercent?: number;
+  batchScalerPieceCount?: number;
 }
 
 export interface GlazeTestTile {

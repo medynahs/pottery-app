@@ -1,6 +1,7 @@
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { Text } from '@/src/components/ui/text';
 import { FeedbackModal } from '@/src/screens/overview/components/FeedbackModal';
+import { GlazeTestWallWidget } from '@/src/screens/overview/components/GlazeTestWallWidget';
 import { LiveStudioStateHero } from '@/src/screens/overview/components/LiveStudioStateHero';
 import { OverviewPageHeader } from '@/src/screens/overview/components/OverviewPageHeader';
 import { SetupModeSection } from '@/src/screens/overview/components/SetupModeSection';
@@ -29,6 +30,9 @@ export function OverviewPage() {
     heroReveal,
     focusReveal,
     journalReveal,
+    testWallReveal,
+    glazeTests,
+    glazes,
     oneThingCard,
     pieces,
     missionsSummary,
@@ -147,6 +151,14 @@ export function OverviewPage() {
             onShowFewerTasks={() => setShowAllMissionTasks(false)}
             onMissionPress={navigate}
             onSetupRhythmPress={() => navigate('/profile/studio-rhythm')}
+          />
+        ) : null}
+
+        {!isSetupMode ? (
+          <GlazeTestWallWidget
+            reveal={testWallReveal}
+            glazes={glazes}
+            glazeTests={glazeTests}
           />
         ) : null}
 

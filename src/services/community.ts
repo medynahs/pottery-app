@@ -21,6 +21,8 @@ export interface BackendFeedPost {
   reaction_count: number;
   comment_count: number;
   has_reacted: boolean;
+  /** Server-side save count for glaze recipe posts (BE-8.5). */
+  save_count?: number;
 }
 
 export interface FeedPage {

@@ -37,6 +37,7 @@ export function useOverviewPage() {
   const setupProgress = useAppStore((state) => state.setupProgress);
   const pricingOnboardingCompleted = useAppStore((state) => state.pricingOnboardingCompleted);
   const glazes = useAppStore((state) => state.glazes);
+  const glazeTests = useAppStore((state) => state.glazeTests);
   const pieces = useVisiblePieces();
   const firings = useAppStore((state) => state.firings);
   const rhythm = useAppStore((state) => state.studioRhythm);
@@ -120,6 +121,7 @@ export function useOverviewPage() {
   const focusReveal = React.useRef(new Animated.Value(0)).current;
   const secondaryReveal = React.useRef(new Animated.Value(0)).current;
   const journalReveal = React.useRef(new Animated.Value(0)).current;
+  const testWallReveal = React.useRef(new Animated.Value(0)).current;
 
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
   const markCeremonyAsSeen = useAppStore((s) => s.markCeremonyAsSeen);
@@ -207,12 +209,19 @@ export function useOverviewPage() {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
+      Animated.timing(testWallReveal, {
+        toValue: 1,
+        duration: 440,
+        delay: 380,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
     ]).start();
 
     return () => {
       if (patTimeoutRef.current) clearTimeout(patTimeoutRef.current);
     };
-  }, [heroReveal, focusReveal, secondaryReveal, journalReveal]);
+  }, [heroReveal, focusReveal, secondaryReveal, journalReveal, testWallReveal]);
 
   const oneThingCard = React.useMemo(
     () => buildOneThingCard(activeFiring, studioSignals, stagePositions),
@@ -288,6 +297,9 @@ export function useOverviewPage() {
     heroReveal,
     focusReveal,
     journalReveal,
+    testWallReveal,
+    glazeTests,
+    glazes,
     oneThingCard,
     pieces,
     missionsSummary,

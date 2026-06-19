@@ -13,6 +13,7 @@ import {
 } from '@/src/utils/analyticsPeriods';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { formatGlazeUsageHint } from '@/src/screens/glazes/glazeUsageAnalytics';
+import { GlazeUsageDrillDownSheet } from '@/src/screens/analytics/GlazeUsageDrillDownSheet';
 import { checkPremium, PremiumFeature } from '@/src/utils/premiumGate';
 import { buildStudioExportPayload, shareStudioExport, summarizeExport } from '@/src/utils/exportStudioData';
 import { useRouter } from 'expo-router';
@@ -110,6 +111,7 @@ export default function AnalyticsScreen() {
   const [trendMetric, setTrendMetric] = React.useState<'cost' | 'fired'>('cost');
   const [economicsFilter, setEconomicsFilter] = React.useState<EconomicsFilter>('all');
   const [exporting, setExporting] = React.useState(false);
+  const [glazeUsageFamilyKey, setGlazeUsageFamilyKey] = React.useState<string | null>(null);
 
   const handleExport = async () => {
     if (!requestAccess(PremiumFeature.Export)) return;
@@ -491,10 +493,13 @@ export default function AnalyticsScreen() {
           <>
             <SectionLabel title="Materials" icon={<Layers size={14} color="hsl(24 20% 40%)" />} hint={stats.period.label} />
             {stats.materials.glazes.length > 0 ? (
-              <RankedCard
+              <GlazeUsageRankedCard
                 title="Glaze usage"
                 rows={stats.materials.glazes}
                 hint={glazeUsageHint ?? 'Linked pieces and test tiles, grouped by glaze family'}
+                onRowPress={(row) => {
+                  if (row.familyKey) setGlazeUsageFamilyKey(row.familyKey);
+                }}
               />
             ) : (
               <EmptyHint text="Link glazes to pieces or log test tiles to see usage here." />
@@ -530,6 +535,14 @@ export default function AnalyticsScreen() {
           </TouchableOpacity>
         </Card>
       </ScrollView>
+      <GlazeUsageDrillDownSheet
+        familyKey={glazeUsageFamilyKey}
+        pieces={pieces}
+        glazeTests={glazeTests}
+        glazes={glazes}
+        periodId={periodId}
+        onClose={() => setGlazeUsageFamilyKey(null)}
+      />
     </View>
   );
 }
@@ -653,6 +666,60 @@ function PieceEconomicsRow({
         ) : null}
       </Card>
     </TouchableOpacity>
+  );
+}
+
+function GlazeUsageRankedCard({
+  title,
+  rows,
+  hint,
+  onRowPress,
+}: {
+  title: string;
+  rows: RankedUsage[];
+  hint?: string;
+  onRowPress?: (row: RankedUsage) => void;
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <Card className="p-4 mb-3 gap-2.5">
+      <Text className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</Text>
+      {hint ? (
+        <Text className="text-[11px] text-muted-foreground -mt-1 mb-0.5">{hint}</Text>
+      ) : null}
+      {rows.slice(0, 5).map((r) => {
+        const body = (
+          <>
+            <View className="flex-row items-center justify-between mb-1">
+              <Text className="text-xs text-foreground flex-1" numberOfLines={1}>{r.label}</Text>
+              <Text className="text-xs text-muted-foreground">
+                {r.count} · {Math.round(r.pct)}%
+                {r.pieceCount != null && r.testCount != null
+                  ? ` (${r.pieceCount}p · ${r.testCount}t)`
+                  : ''}
+              </Text>
+            </View>
+            <View className="h-2 rounded-full bg-muted/50 overflow-hidden">
+              <View style={{ width: `${Math.max(2, r.pct)}%`, height: '100%', backgroundColor: 'hsl(24 45% 55%)' }} />
+            </View>
+          </>
+        );
+
+        if (!onRowPress || !r.familyKey) {
+          return <View key={r.label}>{body}</View>;
+        }
+
+        return (
+          <TouchableOpacity
+            key={r.label}
+            activeOpacity={0.82}
+            onPress={() => onRowPress(r)}
+          >
+            {body}
+          </TouchableOpacity>
+        );
+      })}
+    </Card>
   );
 }
 

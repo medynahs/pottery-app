@@ -3,6 +3,7 @@ import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
+import { useAnalytics } from '@/src/hooks/useAnalytics';
 import { SaveCommunityGlazeSheet } from '@/src/screens/community/components/SaveCommunityGlazeSheet';
 import { communityGlazeToLibraryItem } from '@/src/screens/community/utils/saveCommunityGlaze';
 import {
@@ -21,9 +22,10 @@ import { apiSendFriendRequest } from '@/src/services/friends';
 import { useAppStore } from '@/src/store';
 import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
 import { Image } from 'expo-image';
-import { Bookmark, Check, MessageCircle } from 'lucide-react-native';
+import { Bookmark, Check, MessageCircle, Users } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import { Animated, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import type { BackendFeedPost } from '../../../services/community';
 
 // ─── Pottery reactions ────────────────────────────────────────────────────────
@@ -114,14 +116,18 @@ interface Props {
 }
 
 export function FeedPostCard({ post, sessionToken }: Props) {
+  const router = useRouter();
   const backendUserId = useAppStore((s) => s.backendUserId);
   const user = useAppStore((s) => s.user);
   const glazes = useAppStore((s) => s.glazes);
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const addGlaze = useAppStore((s) => s.addGlaze);
   const registerGlazeCollections = useAppStore((s) => s.registerGlazeCollections);
+  const recordCommunityPostSave = useAppStore((s) => s.recordCommunityPostSave);
+  const communityPostSaveCounts = useAppStore((s) => s.communityPostSaveCounts);
   const showToast = useAppStore((s) => s.showToast);
   const { requestAccess, PaywallGate } = usePremiumGate();
+  const { trackGlazeSavedFromCommunity } = useAnalytics();
 
   const recipePayload = React.useMemo(
     () => (post.content ? parseGlazeRecipeFromPost(post.content) : null),
@@ -143,6 +149,11 @@ export function FeedPostCard({ post, sessionToken }: Props) {
   const authorLabel = isOwnPost
     ? (user.studioName?.trim() || user.name?.trim() || 'You')
     : 'Community Member';
+  const authorStudioForProvenance = isOwnPost
+    ? (user.studioName?.trim() || user.name?.trim() || 'Your studio')
+    : authorLabel;
+  const saveCount = Math.max(post.save_count ?? 0, communityPostSaveCounts[post.id] ?? 0);
+  const isGlazeRecipePost = isSavableGlazeRecipePayload(recipePayload);
   const canSendFriendRequest = Boolean(backendUserId && backendUserId !== post.user_id);
 
   const [selectedReaction, setSelectedReaction] = useState<ReactionKey | null>(
@@ -171,10 +182,22 @@ export function FeedPostCard({ post, sessionToken }: Props) {
 
     const customCollections = sanitizeCustomCollections(selectedCollections);
     registerGlazeCollections(customCollections);
-    addGlaze(communityGlazeToLibraryItem(recipePayload, post.id, customCollections));
+    const savedGlaze = communityGlazeToLibraryItem(recipePayload, {
+      postId: post.id,
+      sourceUserId: post.user_id,
+      sourceStudioName: authorStudioForProvenance,
+    }, customCollections);
+    addGlaze(savedGlaze);
+    recordCommunityPostSave(post.id);
+    trackGlazeSavedFromCommunity({
+      postId: post.id,
+      glazeName: recipePayload.name,
+      sourceStudio: authorStudioForProvenance,
+    });
     scheduleGlazesSync();
     setSaveSheetOpen(false);
     showToast(`${recipePayload.name} saved to Glaze Atlas`, 'success');
+    router.push(`/glaze/${savedGlaze.id}` as never);
   };
 
   const handleSendFriendRequest = async () => {
@@ -274,8 +297,16 @@ export function FeedPostCard({ post, sessionToken }: Props) {
         <Text className="text-sm text-foreground leading-relaxed mb-3">{displayContent}</Text>
       ) : null}
 
-      {isSavableGlazeRecipePayload(recipePayload) ? (
+      {isGlazeRecipePost ? (
         <View className="mb-3">
+          {saveCount > 0 ? (
+            <View className="flex-row items-center gap-1.5 mb-2">
+              <Users size={12} color="hsl(24 20% 55%)" />
+              <Text className="text-[11px] text-muted-foreground">
+                Saved by {saveCount} potter{saveCount === 1 ? '' : 's'}
+              </Text>
+            </View>
+          ) : null}
           {savedFromPost ? (
             <View className="flex-row items-center gap-2 rounded-xl border border-green-500/30 bg-green-50 px-3 py-2.5">
               <Check size={14} color="hsl(145 50% 38%)" />

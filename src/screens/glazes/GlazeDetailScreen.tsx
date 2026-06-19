@@ -4,6 +4,7 @@ import { Text } from '@/src/components/ui/text';
 import { AddGlazeModal } from '@/src/screens/library/atlas/AddGlazeModal';
 import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
 import { buildGlazeTestFromDraft } from '@/src/screens/library/atlas/glazeTestDraft';
+import { CommunityProvenanceBanner } from '@/src/screens/glazes/components/CommunityProvenanceBanner';
 import { GlazeBatchScalerCard } from '@/src/screens/glazes/components/GlazeBatchScalerCard';
 import { GlazeStatusPill, GlazeStatusPillRow } from '@/src/screens/glazes/components/GlazeStatusPill';
 import { ShareGlazeRecipeSheet } from '@/src/screens/glazes/ShareGlazeRecipeSheet';
@@ -544,6 +545,8 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
             </TouchableOpacity>
           </View>
 
+          <CommunityProvenanceBanner glaze={glaze} />
+
           <View className="mt-5">
             <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
               Status
@@ -579,6 +582,15 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
                   <GlazeBatchScalerCard
                     ingredients={glaze.recipeIngredients}
                     linkedPieceCount={linkedPieces.length}
+                    defaults={{
+                      batchScalerPresetId: glaze.batchScalerPresetId,
+                      batchScalerGramsPerPiece: glaze.batchScalerGramsPerPiece,
+                      batchScalerWastePercent: glaze.batchScalerWastePercent,
+                      batchScalerPieceCount: glaze.batchScalerPieceCount,
+                    }}
+                    onDefaultsChange={(patch) => {
+                      updateGlaze({ ...glaze, ...patch });
+                    }}
                   />
                 </>
               ) : (

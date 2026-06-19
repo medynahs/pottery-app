@@ -487,7 +487,10 @@ interface AppState {
   hasCreatedPost: boolean;
   /** Bumped when a community post is created — feeds subscribe to refresh. */
   communityFeedRevision: number;
+  /** Local stub for BE-8.5 until server returns save_count. */
+  communityPostSaveCounts: Record<string, number>;
   markPostCreated: () => void;
+  recordCommunityPostSave: (postId: string) => void;
 
   // ── Pricing Rules ───────────────────────────────────────────
   pricingSettings: PricingSettings;
@@ -1175,10 +1178,18 @@ export const useAppStore = create<AppState>()(
     })),
   hasCreatedPost: false,
   communityFeedRevision: 0,
+  communityPostSaveCounts: {},
   markPostCreated: () =>
     set((state) => ({
       hasCreatedPost: true,
       communityFeedRevision: state.communityFeedRevision + 1,
+    })),
+  recordCommunityPostSave: (postId) =>
+    set((state) => ({
+      communityPostSaveCounts: {
+        ...state.communityPostSaveCounts,
+        [postId]: (state.communityPostSaveCounts[postId] ?? 0) + 1,
+      },
     })),
 
   // ── Pricing Rules ───────────────────────────────────────────

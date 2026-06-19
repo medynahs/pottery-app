@@ -48,7 +48,15 @@ export type MonthlyTrendPoint = {
   piecesFired: number;
 };
 
-export type RankedUsage = { label: string; count: number; pct: number };
+export type RankedUsage = {
+  label: string;
+  count: number;
+  pct: number;
+  /** Glaze family root id — present on glaze usage rows. */
+  familyKey?: string;
+  pieceCount?: number;
+  testCount?: number;
+};
 
 export type StageDuration = { from: string; to: string; medianDays: number; sample: number };
 

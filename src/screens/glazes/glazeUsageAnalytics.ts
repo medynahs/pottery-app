@@ -8,11 +8,32 @@ import {
   type AnalyticsPeriod,
   type AnalyticsPeriodId,
 } from '@/src/utils/analyticsPeriods';
+import { formatDateShort } from '@/src/utils/dates';
 
 type FamilyUsage = {
   label: string;
   pieceCount: number;
   testCount: number;
+};
+
+export type GlazeFamilyDrillDown = {
+  label: string;
+  familyKey: string;
+  pieceCount: number;
+  testCount: number;
+  pieces: Array<{
+    pieceId: number;
+    name: string;
+    stageLabel: string;
+    dateLabel: string;
+  }>;
+  tests: Array<{
+    testId: string;
+    glazeId: string;
+    glazeVersionLabel: string;
+    resultRating: GlazeTestTile['resultRating'];
+    dateLabel: string;
+  }>;
 };
 
 function resolveFamilyLabel(
@@ -34,6 +55,20 @@ function pieceGlazeActivityDate(piece: Piece): string {
 function testActivityDate(test: GlazeTestTile): string {
   return test.firingDate;
 }
+
+const STAGE_LABELS: Record<string, string> = {
+  idea: 'Idea',
+  forming: 'Forming',
+  'leather-hard': 'Leather hard',
+  trimming: 'Trimming',
+  drying: 'Drying',
+  'bone-dry': 'Bone dry',
+  bisque: 'Bisque',
+  glazing: 'Glazing',
+  'glaze-fired': 'Glaze fired',
+  finished: 'Finished',
+  cemetery: 'Cemetery',
+};
 
 /**
  * Rank glaze families by linked piece firings + logged test tiles.
@@ -73,8 +108,9 @@ export function buildGlazeUsageRankings(
     bump(test.glazeId, 'testCount');
   });
 
-  const rows = [...families.values()]
-    .map((family) => ({
+  const rows = [...families.entries()]
+    .map(([familyKey, family]) => ({
+      familyKey,
       label: family.label,
       count: family.pieceCount + family.testCount,
       pieceCount: family.pieceCount,
@@ -90,7 +126,69 @@ export function buildGlazeUsageRankings(
     label: row.label,
     count: row.count,
     pct: (row.count / total) * 100,
+    familyKey: row.familyKey,
+    pieceCount: row.pieceCount,
+    testCount: row.testCount,
   }));
+}
+
+export function buildGlazeFamilyDrillDown(
+  familyKey: string,
+  pieces: Piece[],
+  glazeTests: GlazeTestTile[],
+  glazes: GlazeLibraryItem[],
+  periodId: AnalyticsPeriodId = 'all-time',
+  now: Date = new Date(),
+): GlazeFamilyDrillDown {
+  const period = resolvePeriod(periodId, now);
+  const glazeById = new Map(glazes.map((glaze) => [glaze.id, glaze]));
+  const label = resolveFamilyLabel(familyKey, glazeById);
+
+  const pieceRows = pieces
+    .filter((piece) => {
+      if (piece.deleted || !piece.glazeId) return false;
+      const glaze = glazeById.get(piece.glazeId);
+      if (!glaze || getGlazeRootId(glaze) !== familyKey) return false;
+      return isWithinPeriod(pieceGlazeActivityDate(piece), period);
+    })
+    .map((piece) => ({
+      pieceId: piece.id,
+      name: piece.name,
+      stageLabel: STAGE_LABELS[piece.stage.trim().toLowerCase()] ?? piece.stage,
+      dateLabel: formatDateShort(pieceGlazeActivityDate(piece)),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const testRows = glazeTests
+    .filter((test) => {
+      if (!test.glazeId) return false;
+      const glaze = glazeById.get(test.glazeId);
+      if (!glaze || getGlazeRootId(glaze) !== familyKey) return false;
+      return isWithinPeriod(testActivityDate(test), period);
+    })
+    .map((test) => {
+      const glaze = glazeById.get(test.glazeId);
+      const versionLabel = glaze
+        ? `${stripGlazeVersionSuffix(glaze.name) || glaze.name} v${glaze.versionNumber ?? 1}`
+        : test.glazeNameSnapshot;
+      return {
+        testId: test.id,
+        glazeId: test.glazeId,
+        glazeVersionLabel: versionLabel,
+        resultRating: test.resultRating,
+        dateLabel: formatDateShort(test.firingDate),
+      };
+    })
+    .sort((a, b) => b.dateLabel.localeCompare(a.dateLabel));
+
+  return {
+    label,
+    familyKey,
+    pieceCount: pieceRows.length,
+    testCount: testRows.length,
+    pieces: pieceRows,
+    tests: testRows,
+  };
 }
 
 export function formatGlazeUsageHint(
@@ -123,5 +221,5 @@ export function formatGlazeUsageHint(
   if (pieceLinks > 0) parts.push(`${pieceLinks} piece${pieceLinks === 1 ? '' : 's'}`);
   if (tests > 0) parts.push(`${tests} test tile${tests === 1 ? '' : 's'}`);
   const scope = period.id === 'all-time' ? '' : ` · ${period.label.toLowerCase()}`;
-  return `${parts.join(' · ')}${scope}`;
+  return `${parts.join(' · ')}${scope} · tap a row for details`;
 }
