@@ -1,25 +1,47 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { ImageLightbox } from '@/src/components/ImageLightbox';
 import { Text } from '@/src/components/ui/text';
 import { AddGlazeModal } from '@/src/screens/library/atlas/AddGlazeModal';
 import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
+import { buildGlazeTestFromDraft } from '@/src/screens/library/atlas/glazeTestDraft';
+import { Pill } from '@/src/screens/library/atlas/Pill';
 import {
   formatShortDate,
   glazeCardColor,
   glazeToEditDraft,
-  parseCommaList,
 } from '@/src/screens/library/atlas/helpers';
+import {
+  formatDaysSinceMixed,
+  resolveGlazeStatus,
+} from '@/src/screens/library/atlas/glazeListUtils';
 import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { GlazeThumbnail } from '@/src/screens/library/atlas/MediaSlot';
 import type { GlazeDraft, TestDraft } from '@/src/screens/library/atlas/types';
 import { sanitizeCustomCollections, deriveCustomCollectionNames } from '@/src/screens/library/atlas/collections';
 import { hasValidRecipeIngredients } from '@/src/screens/library/atlas/GlazeRecipeBuilder';
 import { GlazeRecipeSummary } from '@/src/screens/library/atlas/GlazeRecipeSummary';
-import { glazeDraftToItem } from '@/src/screens/glazes/glazeItemHelpers';
+import { glazeDraftToItem, normalizeGlazeItem } from '@/src/screens/glazes/glazeItemHelpers';
+import {
+  buildGlazeTestInsight,
+} from '@/src/screens/glazes/glazeTestStats';
+import { glazeCardColorForItem, resolveGlazePhotoUri, selectPiecesByGlazeId } from '@/src/screens/glazes/glazePieceLink';
+import { CompareVersionsModal } from '@/src/screens/glazes/CompareVersionsModal';
+import {
+  buildNewVersionDraft,
+  computeNextVersionNumber,
+  formatGlazeDisplayName,
+  formatVersionStatsLine,
+  getGlazeRootId,
+  getGlazeVersions,
+} from '@/src/screens/glazes/glazeVersionUtils';
+import { usePremiumGate } from '@/src/hooks/usePremiumGate';
+import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
+import { GLAZE_OUTCOME_LABELS } from '@/src/screens/pieces/utils/constants';
 import { formatDateShort } from '@/src/utils/dates';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisiblePieces } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Pencil, Sparkles, Star, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, GitBranchPlus, Pencil, Sparkles, Star, Trash2, ArrowLeftRight } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +52,9 @@ import {
   GLAZE_RESULT_LABELS,
   GLAZE_STATUS_EMOJI,
   GLAZE_STATUS_LABELS,
+  GLAZE_STATUS_OPTIONS,
+  type GlazeLibraryItem,
+  type GlazeStatus,
   type GlazeTestTile,
 } from './types';
 
@@ -39,14 +64,73 @@ function resultTone(result: GlazeTestTile['resultRating']) {
   return { bg: 'bg-amber-50 border-amber-100', text: 'text-amber-700' };
 }
 
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="flex-row items-start gap-3 py-2 border-b border-border/60 last:border-b-0">
+      <Text className="w-24 text-xs text-muted-foreground shrink-0">{label}</Text>
+      <Text className="flex-1 text-sm text-foreground">{value}</Text>
+    </View>
+  );
+}
+
+function BatchDetailsCard({ glaze }: { glaze: GlazeLibraryItem }) {
+  const rows: Array<{ label: string; value: string }> = [];
+
+  rows.push({ label: 'Finish', value: GLAZE_FINISH_LABELS[glaze.finish] });
+
+  if (glaze.bestClayType) {
+    rows.push({ label: 'Works on', value: GLAZE_CLAY_TYPE_LABELS[glaze.bestClayType] });
+  }
+
+  if (glaze.bestFiringTempC) {
+    rows.push({
+      label: 'Firing temp',
+      value: `${glaze.bestFiringTempC}°C${glaze.defaultCone ? ` (${glaze.defaultCone})` : ''}`,
+    });
+  } else if (glaze.defaultCone || glaze.coneRange) {
+    rows.push({ label: 'Cone', value: glaze.defaultCone || glaze.coneRange });
+  }
+
+  if (glaze.atmosphere) {
+    rows.push({ label: 'Atmosphere', value: GLAZE_ATMOSPHERE_LABELS[glaze.atmosphere] });
+  }
+
+  if (glaze.supplier) {
+    rows.push({ label: 'Supplier', value: glaze.supplier });
+  }
+
+  const hasNotes = Boolean(glaze.notes?.trim());
+
+  if (rows.length === 0 && !hasNotes) return null;
+
+  return (
+    <View className="mt-5 rounded-2xl border border-border bg-card px-4 py-3">
+      <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+        Batch details
+      </Text>
+      {rows.map((row) => (
+        <DetailRow key={row.label} label={row.label} value={row.value} />
+      ))}
+      {hasNotes ? (
+        <View className="pt-3 mt-1">
+          <Text className="text-xs text-muted-foreground mb-1">Notes</Text>
+          <Text className="text-sm text-foreground leading-5">{glaze.notes}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const glazes = useAppStore((s) => s.glazes);
   const glazeTests = useAppStore((s) => s.glazeTests);
+  const pieces = useVisiblePieces();
   const clayBodies = useAppStore((s) => s.clayBodies);
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
   const toggleFavoriteGlaze = useAppStore((s) => s.toggleFavoriteGlaze);
+  const addGlaze = useAppStore((s) => s.addGlaze);
   const updateGlaze = useAppStore((s) => s.updateGlaze);
   const deleteGlaze = useAppStore((s) => s.deleteGlaze);
   const deleteGlazeTest = useAppStore((s) => s.deleteGlazeTest);
@@ -54,9 +138,13 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
   const registerGlazeCollections = useAppStore((s) => s.registerGlazeCollections);
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const showToast = useAppStore((s) => s.showToast);
+  const { requestAccess, PaywallGate } = usePremiumGate();
 
   const [editOpen, setEditOpen] = React.useState(false);
+  const [newVersionOpen, setNewVersionOpen] = React.useState(false);
+  const [compareOpen, setCompareOpen] = React.useState(false);
   const [logTestOpen, setLogTestOpen] = React.useState(false);
+  const [lightboxOpen, setLightboxOpen] = React.useState(false);
   const [confirmDeleteGlaze, setConfirmDeleteGlaze] = React.useState(false);
   const [pendingDeleteTest, setPendingDeleteTest] = React.useState<GlazeTestTile | null>(null);
 
@@ -69,9 +157,34 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
 
   const editDraft = React.useMemo(
     () => (glaze ? glazeToEditDraft(glaze) : undefined),
-    // Recompute only when the modal opens so the form doesn't shift while typing
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [editOpen],
+  );
+
+  const versionFamily = React.useMemo(
+    () => (glaze ? getGlazeVersions(glazes, getGlazeRootId(glaze)) : []),
+    [glaze, glazes],
+  );
+
+  const nextVersionNumber = React.useMemo(
+    () => (glaze ? computeNextVersionNumber(glazes, glaze) : 2),
+    [glaze, glazes],
+  );
+
+  const newVersionDraft = React.useMemo(
+    () => (glaze ? buildNewVersionDraft(glaze) : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [newVersionOpen],
+  );
+
+  const displayName = React.useMemo(
+    () =>
+      glaze
+        ? formatGlazeDisplayName(glaze, {
+            alwaysShowVersion: versionFamily.length > 1 || (glaze.versionNumber ?? 1) > 1,
+          })
+        : '',
+    [glaze, versionFamily.length],
   );
 
   const handleEditGlaze = React.useCallback(
@@ -96,12 +209,71 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
     [glaze, updateGlaze, registerGlazeCollections, showToast],
   );
 
+  const openNewVersion = React.useCallback(() => {
+    if (!canAddGlaze(glazes.length)) {
+      requestAccess(PremiumFeature.FullGlazeAtlas);
+      return;
+    }
+    setNewVersionOpen(true);
+  }, [glazes.length, requestAccess]);
+
+  const handleSaveNewVersion = React.useCallback(
+    (draft: GlazeDraft) => {
+      if (!glaze) return;
+      if (!draft.name.trim() || !hasValidRecipeIngredients(draft.recipeIngredients)) {
+        showToast('Name and at least one ingredient row are required', 'error');
+        return;
+      }
+      const customCollections = sanitizeCustomCollections(draft.collections);
+      registerGlazeCollections(customCollections);
+      const id = `glaze-${Date.now()}`;
+      const versionNumber = computeNextVersionNumber(glazes, glaze);
+      addGlaze(
+        glazeDraftToItem(
+          { ...draft, collections: customCollections },
+          { id, versionFromParent: { parent: glaze, versionNumber } },
+        ),
+      );
+      scheduleGlazesSync();
+      setNewVersionOpen(false);
+      showToast(`Version ${versionNumber} saved`, 'success');
+      router.replace(`/glaze/${id}` as never);
+    },
+    [addGlaze, glaze, glazes, registerGlazeCollections, router, showToast],
+  );
+
+  const handleStatusChange = React.useCallback(
+    (status: GlazeStatus) => {
+      if (!glaze) return;
+      updateGlaze(normalizeGlazeItem({ ...glaze, status }));
+      scheduleGlazesSync();
+    },
+    [glaze, updateGlaze],
+  );
+
   const tests = React.useMemo(
     () =>
       glazeTests
         .filter((t) => t.glazeId === glazeId)
         .sort((a, b) => new Date(b.firingDate).getTime() - new Date(a.firingDate).getTime()),
     [glazeTests, glazeId],
+  );
+
+  const linkedPieces = React.useMemo(
+    () =>
+      selectPiecesByGlazeId(pieces, glazeId).sort(
+        (a, b) => new Date(b.updatedAt ?? b.createdAt).getTime() - new Date(a.updatedAt ?? a.createdAt).getTime(),
+      ),
+    [pieces, glazeId],
+  );
+
+  const testStatsLine = React.useMemo(
+    () => (glaze ? formatVersionStatsLine(glaze.id, tests, pieces) : ''),
+    [glaze, tests, pieces],
+  );
+  const testInsight = React.useMemo(
+    () => buildGlazeTestInsight(tests, linkedPieces),
+    [tests, linkedPieces],
   );
 
   const heroUri =
@@ -114,29 +286,12 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
       const selectedGlaze = glazes.find((g) => g.id === testDraft.glazeId);
       if (!selectedGlaze) return;
 
-      const firingDate =
-        testDraft.firingDate.length === 10
-          ? `${testDraft.firingDate}T12:00:00.000Z`
-          : testDraft.firingDate;
-
-      addGlazeTest({
-        id: `glaze-test-${Date.now()}`,
-        glazeId: selectedGlaze.id,
-        glazeNameSnapshot: selectedGlaze.name,
-        clayBody: testDraft.clayBody.trim(),
-        cone: testDraft.cone.trim(),
-        kilnName: testDraft.kilnName.trim() || undefined,
-        kilnType: testDraft.kilnType,
-        applicationMethod: testDraft.applicationMethod,
-        thickness: testDraft.thickness,
-        layeredWith: parseCommaList(testDraft.layeredWith),
-        shelfPosition: testDraft.shelfPosition.trim() || undefined,
-        firingDate,
-        photoUri: testDraft.photoUri,
-        notes: testDraft.notes.trim() || undefined,
-        resultRating: testDraft.resultRating,
-        defects: testDraft.defects,
-      });
+      addGlazeTest(
+        buildGlazeTestFromDraft(testDraft, {
+          id: `glaze-test-${Date.now()}`,
+          glazeName: selectedGlaze.name,
+        }),
+      );
       scheduleGlazesSync();
       setLogTestOpen(false);
       showToast('Test tile saved', 'success');
@@ -157,8 +312,21 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
     );
   }
 
+  const status = resolveGlazeStatus(glaze);
+  const mixedLabel = glaze.dateMixed ? formatDateShort(glaze.dateMixed) : null;
+  const mixedAgeLabel = formatDaysSinceMixed(glaze);
+  const hasRecipe =
+    (glaze.recipeIngredients?.length ?? 0) > 0 || Boolean(glaze.ingredientsText?.trim());
+
   return (
     <View className="flex-1 bg-background">
+      {PaywallGate}
+      <ImageLightbox
+        visible={lightboxOpen}
+        uri={heroUri}
+        onClose={() => setLightboxOpen(false)}
+      />
+
       <ConfirmSheet
         visible={confirmDeleteGlaze}
         title="Delete glaze?"
@@ -213,21 +381,52 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
         preselectedGlazeId={glazeId}
       />
 
+      <AddGlazeModal
+        visible={newVersionOpen}
+        onClose={() => setNewVersionOpen(false)}
+        onSave={handleSaveNewVersion}
+        defaultCone={defaultGlazeTemp}
+        collections={collections}
+        onCreateCollection={(name) => registerGlazeCollections([name])}
+        initialDraft={newVersionDraft}
+        mode="new-version"
+        versionLabel={`v${nextVersionNumber}`}
+      />
+
+      <CompareVersionsModal
+        visible={compareOpen}
+        onClose={() => setCompareOpen(false)}
+        versions={versionFamily}
+        initialLeftId={versionFamily[0]?.id ?? glazeId}
+        initialRightId={glazeId}
+        tests={glazeTests}
+        pieces={pieces}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
       >
         <View style={{ paddingTop: insets.top }} className="relative">
-          {heroUri ? (
-            <Image source={{ uri: heroUri }} style={{ width: '100%', height: 260 }} contentFit="cover" />
-          ) : (
-            <View
-              style={{ width: '100%', height: 260, backgroundColor: glazeCardColor(glaze.colorFamily) }}
-            />
-          )}
+          <TouchableOpacity
+            activeOpacity={heroUri ? 0.92 : 1}
+            onPress={() => {
+              if (heroUri) setLightboxOpen(true);
+            }}
+            disabled={!heroUri}
+          >
+            {heroUri ? (
+              <Image source={{ uri: heroUri }} style={{ width: '100%', height: 260 }} contentFit="cover" />
+            ) : (
+              <View
+                style={{ width: '100%', height: 260, backgroundColor: glazeCardColor(glaze.colorFamily) }}
+              />
+            )}
+          </TouchableOpacity>
+
           <View
-            className="absolute inset-x-0 bottom-0 h-24"
-            style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}
+            className="absolute inset-x-0 bottom-0 h-28"
+            style={{ backgroundColor: 'rgba(0,0,0,0.42)' }}
           />
           <TouchableOpacity
             onPress={() => router.back()}
@@ -239,11 +438,22 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
           </TouchableOpacity>
           <View className="absolute bottom-4 left-5 right-5">
             <Text className="text-2xl text-white" style={{ fontFamily: 'Fraunces_700Bold' }}>
-              {glaze.name}
+              {displayName}
             </Text>
-            <Text className="text-sm text-white/85 mt-1">
-              {glaze.batchId ? `${glaze.batchId} · ` : ''}
-              {glaze.dateMixed ? `Mixed ${formatDateShort(glaze.dateMixed)} · ` : ''}
+            <View className="flex-row flex-wrap items-center gap-2 mt-2">
+              {glaze.batchId ? (
+                <View className="px-2.5 py-1 rounded-full bg-white/15 border border-white/20">
+                  <Text className="text-[11px] font-semibold text-white">{glaze.batchId}</Text>
+                </View>
+              ) : null}
+              {mixedLabel ? (
+                <Text className="text-xs text-white/85">
+                  Mixed {mixedLabel}
+                  {mixedAgeLabel ? ` · ${mixedAgeLabel.replace(/^Mixed /, '')}` : ''}
+                </Text>
+              ) : null}
+            </View>
+            <Text className="text-sm text-white/80 mt-1.5">
               {glaze.defaultCone || glaze.coneRange} · {GLAZE_FINISH_LABELS[glaze.finish]}
             </Text>
           </View>
@@ -267,6 +477,24 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
               <Sparkles size={15} color="hsl(24 20% 40%)" />
               <Text className="text-xs font-semibold text-foreground">Log Test</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              onPress={openNewVersion}
+              activeOpacity={0.85}
+              className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-border bg-card"
+            >
+              <GitBranchPlus size={15} color="hsl(24 20% 40%)" />
+              <Text className="text-xs font-semibold text-foreground">New Version</Text>
+            </TouchableOpacity>
+            {versionFamily.length > 1 ? (
+              <TouchableOpacity
+                onPress={() => setCompareOpen(true)}
+                activeOpacity={0.85}
+                className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-border bg-card"
+              >
+                <ArrowLeftRight size={15} color="hsl(24 20% 40%)" />
+                <Text className="text-xs font-semibold text-foreground">Compare</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity
               onPress={() => {
                 toggleFavoriteGlaze(glaze.id);
@@ -294,67 +522,63 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
             </TouchableOpacity>
           </View>
 
-          {glaze.status ? (
-            <View className="mt-5 self-start flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border">
-              <Text className="text-xs">{GLAZE_STATUS_EMOJI[glaze.status]}</Text>
-              <Text className="text-xs font-semibold text-foreground">
-                {GLAZE_STATUS_LABELS[glaze.status]}
-              </Text>
+          <View className="mt-5">
+            <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
+              Status
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {GLAZE_STATUS_OPTIONS.map((option) => (
+                <Pill
+                  key={option}
+                  label={`${GLAZE_STATUS_EMOJI[option]} ${GLAZE_STATUS_LABELS[option]}`}
+                  active={status === option}
+                  onPress={() => handleStatusChange(option)}
+                />
+              ))}
             </View>
-          ) : null}
+          </View>
 
-          {glaze.recipeIngredients?.length ? (
+          <View className="mt-5 rounded-2xl border border-border bg-muted/30 px-4 py-3">
+            <Text className="text-sm font-semibold text-foreground">{testStatsLine}</Text>
+            {testInsight ? (
+              <Text className="text-xs text-muted-foreground mt-1 leading-5">{testInsight}</Text>
+            ) : null}
+          </View>
+
+          {hasRecipe ? (
             <View className="mt-5">
-              <GlazeRecipeSummary
-                ingredients={glaze.recipeIngredients}
-                batchSizeG={glaze.batchSize}
-              />
+              {glaze.recipeIngredients?.length ? (
+                <GlazeRecipeSummary
+                  ingredients={glaze.recipeIngredients}
+                  batchSizeG={glaze.batchSize}
+                  onEdit={() => setEditOpen(true)}
+                />
+              ) : (
+                <View className="rounded-2xl border border-border bg-card px-4 py-3">
+                  <View className="flex-row items-center justify-between mb-1">
+                    <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Ingredients
+                    </Text>
+                    <TouchableOpacity onPress={() => setEditOpen(true)} hitSlop={8}>
+                      <Text className="text-[11px] font-semibold text-primary">Edit</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text className="text-sm text-foreground leading-5">{glaze.ingredientsText}</Text>
+                </View>
+              )}
             </View>
-          ) : glaze.ingredientsText ? (
-            <View className="mt-5 rounded-2xl border border-border bg-card px-4 py-3">
-              <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                Ingredients
-              </Text>
-              <Text className="text-sm text-foreground leading-5">{glaze.ingredientsText}</Text>
-            </View>
-          ) : null}
+          ) : (
+            <TouchableOpacity
+              onPress={() => setEditOpen(true)}
+              activeOpacity={0.85}
+              className="mt-5 rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-4 items-center"
+            >
+              <Text className="text-sm font-semibold text-foreground">Add recipe</Text>
+              <Text className="text-xs text-muted-foreground mt-1">Tap to build the batch formula</Text>
+            </TouchableOpacity>
+          )}
 
-          {(glaze.bestClayType || glaze.bestFiringTempC || glaze.atmosphere) ? (
-            <View className="mt-4 rounded-2xl border border-border bg-card px-4 py-3">
-              <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                Firing notes
-              </Text>
-              {glaze.bestClayType ? (
-                <Text className="text-sm text-foreground">
-                  Best on {GLAZE_CLAY_TYPE_LABELS[glaze.bestClayType]}
-                </Text>
-              ) : null}
-              {glaze.bestFiringTempC ? (
-                <Text className="text-sm text-foreground mt-1">
-                  {glaze.bestFiringTempC}°C
-                  {glaze.defaultCone ? ` (${glaze.defaultCone})` : ''}
-                </Text>
-              ) : null}
-              {glaze.atmosphere ? (
-                <Text className="text-sm text-foreground mt-1">
-                  {GLAZE_ATMOSPHERE_LABELS[glaze.atmosphere]} atmosphere
-                </Text>
-              ) : null}
-            </View>
-          ) : null}
-
-          {glaze.notes ? (
-            <View className="mt-5 rounded-2xl border border-border bg-card px-4 py-3">
-              <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                Notes
-              </Text>
-              <Text className="text-sm text-foreground leading-5">{glaze.notes}</Text>
-            </View>
-          ) : null}
-
-          {glaze.supplier ? (
-            <Text className="text-xs text-muted-foreground mt-4">Supplier: {glaze.supplier}</Text>
-          ) : null}
+          <BatchDetailsCard glaze={glaze} />
 
           {glaze.collections.length > 0 ? (
             <View className="flex-row flex-wrap gap-2 mt-4">
@@ -365,6 +589,143 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
               ))}
             </View>
           ) : null}
+
+          <View className="mt-8">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-lg text-foreground" style={{ fontFamily: 'Fraunces_600SemiBold' }}>
+                Version history
+              </Text>
+              <Text className="text-xs text-muted-foreground">
+                {versionFamily.length} version{versionFamily.length === 1 ? '' : 's'}
+              </Text>
+            </View>
+            {versionFamily.length <= 1 ? (
+              <View className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5">
+                <Text className="text-sm text-muted-foreground text-center leading-5">
+                  This is the first batch. Tap New Version when you remix the recipe.
+                </Text>
+              </View>
+            ) : (
+              <View className="gap-3">
+                {versionFamily.map((version) => {
+                  const isCurrent = version.id === glaze.id;
+                  const versionStats = formatVersionStatsLine(version.id, glazeTests, pieces);
+                  const versionPhotoUri =
+                    resolveGlazePhotoUri(version)
+                    ?? version.finishedPiecePhotoUris[0]
+                    ?? glazeTests.find((test) => test.glazeId === version.id)?.photoUri;
+                  return (
+                    <TouchableOpacity
+                      key={version.id}
+                      onPress={() => {
+                        if (!isCurrent) router.replace(`/glaze/${version.id}` as never);
+                      }}
+                      activeOpacity={isCurrent ? 1 : 0.85}
+                      className={`flex-row gap-3 rounded-2xl border p-3 ${
+                        isCurrent ? 'border-primary bg-primary/5' : 'border-border bg-card'
+                      }`}
+                    >
+                      <GlazeThumbnail
+                        uri={versionPhotoUri}
+                        colorHex={glazeCardColorForItem(version)}
+                        size={72}
+                        rounded={12}
+                      />
+                      <View className="flex-1 min-w-0">
+                        <View className="flex-row items-center justify-between gap-2">
+                          <Text className="text-sm font-semibold text-foreground flex-1" numberOfLines={1}>
+                            {formatGlazeDisplayName(version, { alwaysShowVersion: true })}
+                          </Text>
+                          {isCurrent ? (
+                            <View className="px-2 py-0.5 rounded-full bg-primary/15 shrink-0">
+                              <Text className="text-[10px] font-bold text-primary uppercase">Current</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        <Text className="text-[11px] text-muted-foreground mt-1">
+                          Mixed {formatDateShort(version.dateMixed ?? version.createdAt)}
+                          {version.batchId ? ` · ${version.batchId}` : ''}
+                        </Text>
+                        <Text className="text-[11px] text-muted-foreground mt-1">
+                          {GLAZE_STATUS_EMOJI[version.status ?? 'experimental']}{' '}
+                          {GLAZE_STATUS_LABELS[version.status ?? 'experimental']}
+                        </Text>
+                        <Text className="text-xs text-foreground mt-2">{versionStats}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
+          <View className="mt-8">
+            <Text className="text-lg text-foreground mb-2" style={{ fontFamily: 'Fraunces_600SemiBold' }}>
+              Pieces using this glaze
+            </Text>
+            {linkedPieces.length === 0 ? (
+              <View className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5">
+                <Text className="text-sm text-muted-foreground text-center leading-5">
+                  No pieces linked yet. Choose a studio glaze when creating or editing a piece.
+                </Text>
+              </View>
+            ) : (
+              <View className="gap-3">
+                {linkedPieces.map((piece) => {
+                  const outcomeLabel = piece.glazeOutcome
+                    ? GLAZE_OUTCOME_LABELS[piece.glazeOutcome]
+                    : null;
+                  return (
+                    <TouchableOpacity
+                      key={piece.id}
+                      onPress={() => {
+                        router.push({
+                          pathname: '/(tabs)/pieces',
+                          params: { openJournalPieceId: String(piece.id) },
+                        });
+                      }}
+                      activeOpacity={0.85}
+                      className="flex-row gap-3 rounded-2xl border border-border bg-card p-3"
+                    >
+                      {piece.photo ? (
+                        <Image
+                          source={{ uri: piece.photo }}
+                          style={{ width: 72, height: 72, borderRadius: 12 }}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View
+                          className="items-center justify-center bg-muted"
+                          style={{ width: 72, height: 72, borderRadius: 12 }}
+                        >
+                          <Text className="text-[10px] text-muted-foreground">No photo</Text>
+                        </View>
+                      )}
+                      <View className="flex-1 min-w-0">
+                        {outcomeLabel ? (
+                          <View className="self-start px-2 py-0.5 rounded-full border border-border bg-muted mb-1">
+                            <Text className="text-[9px] font-bold uppercase text-muted-foreground">
+                              {outcomeLabel}
+                            </Text>
+                          </View>
+                        ) : null}
+                        <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>
+                          {piece.name}
+                        </Text>
+                        <Text className="text-[11px] text-muted-foreground mt-0.5">
+                          {piece.clay}
+                          {piece.stage ? ` · ${piece.stage}` : ''}
+                        </Text>
+                        <Text className="text-[11px] text-muted-foreground mt-0.5">
+                          Updated {formatDateShort(piece.updatedAt ?? piece.createdAt)}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
 
           <View className="mt-8 mb-3 flex-row items-center justify-between">
             <Text className="text-lg text-foreground" style={{ fontFamily: 'Fraunces_600SemiBold' }}>

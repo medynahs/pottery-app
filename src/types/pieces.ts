@@ -28,6 +28,9 @@ export type Stage =
   | 'finished'
   | 'cemetery';
 
+/** Firing result when a piece was glazed with a linked studio glaze batch. */
+export type GlazeOutcome = 'success' | 'crawling' | 'underfired' | 'crack';
+
 // Condition or disposition — separate from physical stage
 export type PieceStatus =
   | 'cracked'
@@ -111,6 +114,10 @@ export type Piece = {
   /** Studio queue status — set when a studio member submits a piece for firing. */
   studioQueueStatus?: 'submitted' | 'in-firing' | 'ready-for-pickup' | 'picked-up';
   studioQueueSubmittedAt?: string;
+  /** Linked glaze atlas batch (`GlazeLibraryItem.id`). */
+  glazeId?: string;
+  /** How this glaze performed on the piece after firing. */
+  glazeOutcome?: GlazeOutcome;
 };
 
 export type PieceForm = {
@@ -145,6 +152,8 @@ export type PieceForm = {
   retailPriceTarget: string;
   wholesalePriceTarget: string;
   quantity: number;
+  glazeId: string;
+  glazeOutcome: string;
 };
 
 export type DisplayItem =

@@ -71,7 +71,7 @@ export function glazeToEditDraft(glaze: GlazeLibraryItem): GlazeDraft {
         : [];
 
   return {
-    name: glaze.name,
+    name: glaze.name.replace(/\s+v\d+\s*$/i, '').trim(),
     finish: glaze.finish,
     colorFamily: glaze.colorFamily ?? '',
     coneRange: glaze.coneRange ?? '',

@@ -161,6 +161,17 @@ export const FIRING_TYPES = [
   'Other',
 ];
 
+import type { GlazeOutcome } from '../../../types/pieces';
+
+export const GLAZE_OUTCOME_OPTIONS: GlazeOutcome[] = ['success', 'crawling', 'underfired', 'crack'];
+
+export const GLAZE_OUTCOME_LABELS: Record<GlazeOutcome, string> = {
+  success: 'Success',
+  crawling: 'Crawling',
+  underfired: 'Underfired',
+  crack: 'Crack',
+};
+
 export const EMPTY_FORM = {
   name: '',
   clay: '',
@@ -193,6 +204,8 @@ export const EMPTY_FORM = {
   retailPriceTarget: '',
   wholesalePriceTarget: '',
   quantity: 1,
+  glazeId: '',
+  glazeOutcome: '',
 };
 
 export const STAGE_ICON_MAP = Object.fromEntries(STAGES.map(s => [s.id, s.Icon]));

@@ -10,6 +10,7 @@ import {
     type PricingFiringMode,
 } from '../../../types/pricing';
 import { EMPTY_FORM } from '../utils/constants';
+import { isGlazeOutcome } from '@/src/screens/glazes/glazePieceLink';
 
 function formatInputNumber(value?: number | null): string {
   if (value == null || !Number.isFinite(value)) return '';
@@ -54,6 +55,8 @@ function pieceToForm(piece: Piece): PieceForm {
     retailPriceTarget: formatInputNumber(legacyRetailPrice),
     wholesalePriceTarget: formatInputNumber(legacyWholesalePrice),
     quantity: 1,
+    glazeId: piece.glazeId ?? '',
+    glazeOutcome: piece.glazeOutcome ?? '',
   };
 }
 
@@ -230,6 +233,8 @@ export function useAddPieceForm(
       epitaph: form.epitaph.trim() || undefined,
       causeOfDeath: form.causeOfDeath.trim() || undefined,
       price: activePrice > 0 ? String(activePrice) : undefined,
+      glazeId: form.glazeId.trim() || undefined,
+      glazeOutcome: isGlazeOutcome(form.glazeOutcome) ? form.glazeOutcome : undefined,
     };
   }, [buildPricingSnapshot, form, pricingSettings]);
 

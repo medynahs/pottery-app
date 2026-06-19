@@ -1,7 +1,7 @@
 import { Text } from '@/src/components/ui/text';
 import type { GlazeIngredient } from '@/src/screens/glazes/types';
 import React from 'react';
-import { View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 
 function validRows(ingredients: GlazeIngredient[]) {
   return ingredients.filter(
@@ -60,9 +60,11 @@ function RecipeSection({
 export function GlazeRecipeSummary({
   ingredients,
   batchSizeG,
+  onEdit,
 }: {
   ingredients: GlazeIngredient[];
   batchSizeG?: string;
+  onEdit?: () => void;
 }) {
   const rows = validRows(ingredients);
   if (rows.length === 0) return null;
@@ -78,9 +80,16 @@ export function GlazeRecipeSummary({
         <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Recipe
         </Text>
-        {parsedBatch ? (
-          <Text className="text-[11px] text-muted-foreground">{parsedBatch}g batch</Text>
-        ) : null}
+        <View className="flex-row items-center gap-2">
+          {parsedBatch ? (
+            <Text className="text-[11px] text-muted-foreground">{parsedBatch}g batch</Text>
+          ) : null}
+          {onEdit ? (
+            <TouchableOpacity onPress={onEdit} hitSlop={8} activeOpacity={0.7}>
+              <Text className="text-[11px] font-semibold text-primary">Edit</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
       <RecipeSection rows={base.length > 0 && additions.length > 0 ? base : rows} batchSizeG={parsedBatch} />
       {additions.length > 0 ? (

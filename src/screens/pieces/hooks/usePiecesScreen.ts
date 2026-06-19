@@ -8,6 +8,8 @@ import type { DisplayItem, Piece } from '../../../types/pieces';
 import { ActiveFilters, EMPTY_FILTERS, SortKey, countActiveFilters } from '../components/FilterSortSheet';
 import type { StageAdvanceCelebration } from '../modals/StageAdvanceCelebrationModal';
 import type { StageAdvanceCapture, StageAdvanceRequest } from '../modals/StageAdvanceFlowModal';
+import type { GlazeOutcome } from '@/src/types/pieces';
+import { isGlazeOutcome } from '@/src/screens/glazes/glazePieceLink';
 import { FINISHED_STAGE_ID, getAdvanceOrder, getConfiguredNextStage } from '../utils/stageFlow';
 import { STAGE_ICONS, resolveStageIcon } from '../utils/stageIconUtils';
 import { schedulePiecesSync, usePiecesSyncStatus } from './usePiecesSync';
@@ -352,15 +354,22 @@ export function usePiecesScreen() {
     const bisqueTemp = advanceRequest.toStage === 'bisque' ? capture.bisqueTemp : undefined;
     const glazeTemp = advanceRequest.toStage === 'glaze-fired' ? capture.glazeTemp : undefined;
     const status = advanceRequest.toStage === FINISHED_STAGE_ID ? capture.status : undefined;
+    const glazeOutcome: GlazeOutcome | undefined =
+      (advanceRequest.toStage === 'glaze-fired' || advanceRequest.toStage === FINISHED_STAGE_ID)
+      && capture.glazeOutcome
+      && isGlazeOutcome(capture.glazeOutcome)
+        ? capture.glazeOutcome
+        : undefined;
 
     targetPieces.forEach((piece) => {
-      if (!bisqueTemp && !glazeTemp && !status) return;
+      if (!bisqueTemp && !glazeTemp && !status && !glazeOutcome) return;
 
       updatePiece({
         ...piece,
         bisqueTemp: bisqueTemp || piece.bisqueTemp,
         glazeTemp: glazeTemp || piece.glazeTemp,
         status: status || piece.status,
+        glazeOutcome: glazeOutcome || piece.glazeOutcome,
       });
     });
 

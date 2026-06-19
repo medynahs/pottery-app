@@ -3,6 +3,7 @@ import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
+import { Pill } from '@/src/screens/library/atlas/Pill';
 import { ChevronDown, ChevronUp, Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
@@ -17,9 +18,12 @@ import {
 } from '../../../types/pricing';
 import {
   PIECE_DISPOSITION_STATUSES,
+  GLAZE_OUTCOME_LABELS,
+  GLAZE_OUTCOME_OPTIONS,
 } from '../utils/constants';
 import { resolveStageIcon } from '../utils/stageIconUtils';
 import { FieldLabel } from './FieldLabel';
+import { GlazePickerField } from './GlazePickerField';
 import { OptionPills } from './OptionPills';
 import { PhotoPicker } from './PhotoPicker';
 
@@ -43,6 +47,9 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing, fillHe
   const [showCostDetails, setShowCostDetails] = React.useState(false);
   const isCemetery = form.stage === 'cemetery';
   const isFinished = form.stage === 'finished';
+  const showGlazeOutcome =
+    Boolean(form.glazeId)
+    && ['glazing', 'glaze-fired', 'finished'].includes(form.stage);
 
   const firingFeeMode: PricingFiringMode = form.firingFeeMode === 'bisque' ? 'bisque' : 'bisque-glaze';
   const pricingSnapshot = React.useMemo(() => {
@@ -586,6 +593,39 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing, fillHe
             )}
           </View>
         </View>
+      )}
+
+      {/* Studio glaze link */}
+      {!isCemetery && (
+      <View className="mt-5">
+        <FieldLabel>Studio Glaze</FieldLabel>
+        <GlazePickerField
+          value={form.glazeId}
+          onChange={(glazeId) => {
+            if (!glazeId) {
+              set('glazeId', '');
+              set('glazeOutcome', '');
+              return;
+            }
+            set('glazeId', glazeId);
+          }}
+        />
+        {showGlazeOutcome ? (
+          <View className="mt-4">
+            <FieldLabel>Firing Outcome</FieldLabel>
+            <View className="flex-row flex-wrap gap-2">
+              {GLAZE_OUTCOME_OPTIONS.map((option) => (
+                <Pill
+                  key={option}
+                  label={GLAZE_OUTCOME_LABELS[option]}
+                  active={form.glazeOutcome === option}
+                  onPress={() => set('glazeOutcome', form.glazeOutcome === option ? '' : option)}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
+      </View>
       )}
 
       {/* Decorations */}

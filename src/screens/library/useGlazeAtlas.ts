@@ -5,6 +5,7 @@ import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
 import React from 'react';
 import { deriveCustomCollectionNames, sanitizeCustomCollections } from './atlas/collections';
 import { hasValidRecipeIngredients } from './atlas/GlazeRecipeBuilder';
+import { buildGlazeTestFromDraft } from './atlas/glazeTestDraft';
 import type { GlazeDraft, TestDraft } from './atlas/types';
 import { scheduleGlazesSync } from './useGlazesSync';
 
@@ -71,29 +72,12 @@ export function useGlazeAtlas() {
     const selectedGlaze = glazes.find((g) => g.id === testDraft.glazeId);
     if (!selectedGlaze) return;
 
-    const firingDate =
-      testDraft.firingDate.length === 10
-        ? `${testDraft.firingDate}T12:00:00.000Z`
-        : testDraft.firingDate;
-
-    addGlazeTest({
-      id: `glaze-test-${Date.now()}`,
-      glazeId: selectedGlaze.id,
-      glazeNameSnapshot: selectedGlaze.name,
-      clayBody: testDraft.clayBody.trim(),
-      cone: testDraft.cone.trim(),
-      kilnName: testDraft.kilnName.trim() || undefined,
-      kilnType: testDraft.kilnType,
-      applicationMethod: testDraft.applicationMethod,
-      thickness: testDraft.thickness,
-      layeredWith: parseCommaList(testDraft.layeredWith),
-      shelfPosition: testDraft.shelfPosition.trim() || undefined,
-      firingDate,
-      photoUri: testDraft.photoUri,
-      notes: testDraft.notes.trim() || undefined,
-      resultRating: testDraft.resultRating,
-      defects: testDraft.defects,
-    });
+    addGlazeTest(
+      buildGlazeTestFromDraft(testDraft, {
+        id: `glaze-test-${Date.now()}`,
+        glazeName: selectedGlaze.name,
+      }),
+    );
     scheduleGlazesSync();
     setTestOpen(false);
     showToast('Test tile saved', 'success');
@@ -116,11 +100,4 @@ export function useGlazeAtlas() {
     addGlazeCollection,
     PaywallGate,
   };
-}
-
-function parseCommaList(value: string): string[] {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
 }

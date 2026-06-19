@@ -24,11 +24,17 @@ import {
   type GlazeLibraryItem,
 } from '@/src/screens/glazes/types';
 import { GLAZE_TEMPS } from '@/src/screens/pieces/utils/constants';
+import {
+  labelForMappedOutcome,
+  previewTestTileOutcome,
+} from '@/src/screens/glazes/glazeOutcomeMap';
 import { useAppStore } from '@/src/store';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { FormField } from './FormField';
 import { createEmptyTestDraft } from './helpers';
+import { isValidTestDraft, buildGlazeTestFromDraft, kilnTypeFromStudioKiln } from './glazeTestDraft';
+import { KilnPickerField } from './KilnPickerField';
 import { MediaSlot } from './MediaSlot';
 import { Pill } from './Pill';
 import type { TestDraft } from './types';
@@ -52,7 +58,6 @@ export function LogTestModal({
 }) {
   const showToast = useAppStore((s) => s.showToast);
   const defaultClayBodyId = useAppStore((s) => s.defaultClayBodyId);
-  const kilns = useAppStore((s) => s.kilns);
   const { openPickSheet } = usePhotoPicker();
   const sheetHeight = useModalSheetHeight();
   const resolveDefaultClayBody = React.useCallback(() => {
@@ -81,21 +86,20 @@ export function LogTestModal({
     }
   }, [visible, buildDraft]);
 
-  const canSave =
-    Boolean(testDraft.glazeId)
-    && testDraft.clayBody.trim().length > 0
-    && testDraft.cone.trim().length > 0;
+  const canSave = isValidTestDraft(testDraft);
+
+  const mappedOutcomePreview = previewTestTileOutcome(testDraft.resultRating, testDraft.defects);
 
   const handleSavePress = () => {
     if (!testDraft.glazeId) {
       showToast('Choose a glaze first', 'error');
       return;
     }
-    if (!testDraft.clayBody.trim()) {
+    if (!testDraft.clayBody?.trim()) {
       showToast('Add a clay body for this test', 'error');
       return;
     }
-    if (!testDraft.cone.trim()) {
+    if (!testDraft.cone?.trim()) {
       showToast('Add a firing cone', 'error');
       return;
     }
@@ -166,6 +170,16 @@ export function LogTestModal({
               </View>
             </FormField>
 
+            {mappedOutcomePreview ? (
+              <Text className="text-xs text-muted-foreground mt-2 leading-5">
+                Rolls up in glaze stats as{' '}
+                <Text className="font-semibold text-foreground">
+                  {labelForMappedOutcome(mappedOutcomePreview)}
+                </Text>
+                . Test tiles stay in your lab notebook — piece firings use the same outcome labels.
+              </Text>
+            ) : null}
+
             <View className="flex-row gap-3 mt-4">
               <View className="flex-1">
                 <FormField label="Clay body">
@@ -228,28 +242,18 @@ export function LogTestModal({
 
             <View className="mt-6 border-t border-border" />
 
-            {kilns.length > 0 ? (
-              <FormField label="Kiln">
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                  {kilns.map((kiln) => (
-                    <Pill
-                      key={kiln.id}
-                      label={kiln.name}
-                      active={testDraft.kilnName === kiln.name}
-                      onPress={() => setTestDraft((d) => ({ ...d, kilnName: kiln.name }))}
-                    />
-                  ))}
-                </ScrollView>
-              </FormField>
-            ) : (
-              <FormField label="Kiln">
-                <Input
-                  value={testDraft.kilnName}
-                  onChangeText={(v) => setTestDraft((d) => ({ ...d, kilnName: v }))}
-                  placeholder="Studio kiln"
-                />
-              </FormField>
-            )}
+            <FormField label="Kiln (optional)">
+              <KilnPickerField
+                value={testDraft.kilnName ?? ''}
+                onChange={(kilnName, kiln) => {
+                  setTestDraft((d) => ({
+                    ...d,
+                    kilnName,
+                    kilnType: kiln ? kilnTypeFromStudioKiln(kiln.type) : d.kilnType,
+                  }));
+                }}
+              />
+            </FormField>
 
             <FormField label="Application">
               <View className="flex-row flex-wrap gap-2">
@@ -308,18 +312,20 @@ export function LogTestModal({
               />
             </FormField>
 
-            <FormField label="Kiln type">
-              <View className="flex-row flex-wrap gap-2">
-                {GLAZE_KILN_TYPE_OPTIONS.map((option) => (
-                  <Pill
-                    key={option}
-                    label={GLAZE_KILN_TYPE_LABELS[option]}
-                    active={testDraft.kilnType === option}
-                    onPress={() => setTestDraft((d) => ({ ...d, kilnType: option }))}
-                  />
-                ))}
-              </View>
-            </FormField>
+            {!testDraft.kilnName ? (
+              <FormField label="Kiln type">
+                <View className="flex-row flex-wrap gap-2">
+                  {GLAZE_KILN_TYPE_OPTIONS.map((option) => (
+                    <Pill
+                      key={option}
+                      label={GLAZE_KILN_TYPE_LABELS[option]}
+                      active={testDraft.kilnType === option}
+                      onPress={() => setTestDraft((d) => ({ ...d, kilnType: option }))}
+                    />
+                  ))}
+                </View>
+              </FormField>
+            ) : null}
           </ScrollView>
 
           <ModalSheetFooter>

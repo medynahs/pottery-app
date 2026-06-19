@@ -3,7 +3,7 @@
 **Purpose:** Bring the **Glaze Atlas** tab in line with the **GLAZE NOTES** spec — log glaze batches, link to pieces, track outcomes, and support version history.
 
 **Last updated:** June 19, 2026  
-**Current completion:** ~50% (Phase 0 + Phase 1 form complete; library filters & piece linking next)
+**Current completion:** ~96% (Phases 0–6 complete; Phase 7 polish remaining)
 
 ### Status legend
 
@@ -27,7 +27,7 @@
 
 - No glaze **batch ID**, **date mixed**, or **status** (works / experimental / failed)
 - No **version chain** (parent glaze, compare, "+ New Version")
-- No **piece ↔ glaze** link (`Piece` has no `glazeId`)
+- No **piece ↔ glaze** link (`Piece` has no `glazeId`) — **Phase 4 adds local `glazeId` + `glazeOutcome`**
 - Ingredients in model (`recipeIngredients`) but no create/edit UI
 - Outcomes tracked on **test tiles**, not per batch version or per piece firing
 
@@ -43,8 +43,8 @@ Foundation for everything else. Extend types before UI.
 | 0.2 | Add `GlazeBatchMetadata` fields to `GlazeLibraryItem`: `batchId`, `dateMixed`, `status`, `bestClayType`, `bestFiringTempC`, `atmosphere` (`oxidation` \| `reduction` \| `both`) | ✅ | Keep `finish`; cone strings can coexist with °C |
 | 0.3 | Add versioning fields: `parentGlazeId?`, `versionNumber` (default 1), `rootGlazeId?` (stable group key) | ✅ | Enables "Cobalt Blue v3" + `CB-2026-06-v3` |
 | 0.4 | Add `ingredientsText` (free-form) or wire up existing `recipeIngredients` + UI | ✅ | Model has `recipeIngredients[]`; spec wants free-form text |
-| 0.5 | Add `glazeId?: string` and `glazeOutcome?: string` to `Piece` | ❌ | `src/types/pieces.ts` |
-| 0.6 | Store actions: `createGlazeVersion(parentId)`, `getGlazeVersions(rootId)`, `linkPieceToGlaze`, batch ID generator | 🟡 | `generateGlazeBatchId` in `batchId.ts`; version actions deferred to Phase 5 |
+| 0.5 | Add `glazeId?: string` and `glazeOutcome?: string` to `Piece` | ✅ | `src/types/pieces.ts` — `GlazeOutcome` type |
+| 0.6 | Store actions: `createGlazeVersion(parentId)`, `getGlazeVersions(rootId)`, `linkPieceToGlaze`, batch ID generator | ✅ | Version helpers in `glazeVersionUtils.ts`; batch ID in `batchId.ts` |
 | 0.7 | Migration in persist layer for existing glazes (default `versionNumber: 1`, infer `dateMixed` from `createdAt`) | ✅ | Persist v5 |
 | 0.8 | Update `src/services/glazes.ts` mappers + sync payload for new fields | ✅ | Batch fields in sync payload; preserved on merge |
 
@@ -72,14 +72,14 @@ Foundation for everything else. Extend types before UI.
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 
-| 2.2 | Search: include **ingredients** text in filter | ❌ | Extend `LibraryGlazesScreen` search |
-| 2.3 | Status filter chips: All \| Works Great 🟢 \| Experimental 🟡 \| Failed 🔴 | ❌ | Replace or supplement collection chips |
-| 2.4 | Clay filter: "Works on…" dropdown (stoneware / earthenware / porcelain) 
-| 2.5 | Update card (`GlazePhotoTile` or list row): status badge, batch ID, days since mixed | ❌ | |
-| 2.6 | Card one-liner: "Best on stoneware at 1240°C" (clay + temp + finish) | ❌ | |
-| 2.7 | Swipe-to-delete on list cards (with confirm) | ❌ | Delete exists on detail only |
-| 2.8 | Evaluate wiring `GlazeLibraryScreen.tsx` vs extending `LibraryGlazesScreen` | ❌ | Avoid duplicate list UIs |
-| 2.9 | Group list by glaze family (show latest version per root, or flat list with version suffix) | ❌ | Product decision |
+| 2.2 | Search: include **ingredients** text in filter | ✅ | `glazeListUtils.glazeSearchHaystack` |
+| 2.3 | Status filter chips: All \| Works Great 🟢 \| Experimental 🟡 \| Failed 🔴 | ✅ | Second chip row on `LibraryGlazesScreen` |
+| 2.4 | Clay filter: "Works on…" (stoneware / earthenware / porcelain) | ✅ | Chip row filters `bestClayType` |
+| 2.5 | Update card (`GlazePhotoTile`): status badge, batch ID, days since mixed | ✅ | Status emoji, meta line on tile |
+| 2.6 | Card one-liner: "Best on stoneware at 1240°C" (clay + temp + finish) | ✅ | `buildGlazeCardSubtitle` |
+| 2.7 | Swipe-to-delete on list cards (with confirm) | ✅ | `GlazeSwipeTile` + `ConfirmSheet` |
+| 2.8 | Evaluate wiring `GlazeLibraryScreen.tsx` vs extending `LibraryGlazesScreen` | ✅ | Extend `LibraryGlazesScreen` (tab home); keep orphaned screen for now |
+| 2.9 | Group list by glaze family (show latest version per root, or flat list with version suffix) | ✅ | `collapseToLatestGlazeVersions` + display name suffix |
 
 **Acceptance:** Library matches spec list UX — searchable, filterable by status, informative cards.
 
@@ -89,14 +89,14 @@ Foundation for everything else. Extend types before UI.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 3.1 | Show batch ID + date mixed in header | ❌ | |
-| 3.2 | Status picker (inline, saves on change) | ❌ | |
-| 3.3 | Ingredients section (display + editable) | ❌ | |
-| 3.4 | Expanded notes / metadata block (clay, temp, atmosphere, finish, free-form notes) | 🟡 | Notes display only today |
-| 3.5 | Hero photo tap-to-expand (lightbox) | ❌ | |
-| 3.6 | **Pieces Using This Glaze** — list linked pieces with thumbnail, name, firing outcome | ❌ | Requires Phase 0.5 + 4.x |
-| 3.7 | Quick stats footer: "Used 8 times • 7 successful • 1 crawling" | 🟡 | Stats logic exists in orphaned `GlazeLibraryScreen`; wire to detail |
-| 3.8 | Compute stats from **linked pieces** (not just test tiles) once piece linking exists | ❌ | |
+| 3.1 | Show batch ID + date mixed in header | ✅ | Batch chip + mixed date in hero |
+| 3.2 | Status picker (inline, saves on change) | ✅ | Pill group saves via `updateGlaze` |
+| 3.3 | Ingredients section (display + editable) | ✅ | `GlazeRecipeSummary` + Edit / Add recipe |
+| 3.4 | Expanded notes / metadata block (clay, temp, atmosphere, finish, free-form notes) | ✅ | `BatchDetailsCard` |
+| 3.5 | Hero photo tap-to-expand (lightbox) | ✅ | `ImageLightbox` component |
+| 3.6 | **Pieces Using This Glaze** — list linked pieces with thumbnail, name, firing outcome | ✅ | `GlazeDetailScreen` + `selectPiecesByGlazeId` |
+| 3.7 | Quick stats footer: "Used 8 times • 7 successful • 1 crawling" | ✅ | `glazeTestStats.ts` on detail |
+| 3.8 | Compute stats from **linked pieces** (not just test tiles) once piece linking exists | ✅ | `formatGlazeUsageStatsLine` combines tests + pieces |
 
 **Acceptance:** Detail shows full batch metadata, linked pieces, and aggregate outcomes.
 
@@ -106,11 +106,11 @@ Foundation for everything else. Extend types before UI.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 4.1 | Add searchable **Select Glaze** dropdown to piece create/edit form | ❌ | `AddPieceForm` / `useAddPieceForm` |
-| 4.2 | Selected glaze shows thumbnail preview on piece form | ❌ | |
-| 4.3 | Persist `glazeId` on piece save | ❌ | |
-| 4.4 | Capture firing outcome on piece (success / crawling / underfired / crack) — stage advance or kiln flow | ❌ | May overlap with existing stage/firing UX |
-| 4.5 | Reverse lookup: query pieces by `glazeId` for detail screen | ❌ | Store selector or memoized helper |
+| 4.1 | Add searchable **Select Glaze** dropdown to piece create/edit form | ✅ | `GlazePickerField` in `AddPieceForm` |
+| 4.2 | Selected glaze shows thumbnail preview on piece form | ✅ | Thumbnail in picker + selected state |
+| 4.3 | Persist `glazeId` on piece save | ✅ | `useAddPieceForm` → `buildSavedPiece` |
+| 4.4 | Capture firing outcome on piece (success / crawling / underfired / crack) — stage advance or kiln flow | ✅ | Piece form + `StageAdvanceFlowModal` on glaze-fired / finished |
+| 4.5 | Reverse lookup: query pieces by `glazeId` for detail screen | ✅ | `selectPiecesByGlazeId` in `glazePieceLink.ts` |
 
 **Acceptance:** Creating/editing a piece links a glaze; detail shows those pieces.
 
@@ -120,13 +120,13 @@ Foundation for everything else. Extend types before UI.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 5.1 | Display version in name convention: "Cobalt Blue v3" | ❌ | |
-| 5.2 | Batch ID includes version segment | ❌ | |
-| 5.3 | Version history list on detail (all versions for `rootGlazeId`) | ❌ | |
-| 5.4 | Version card: version #, date mixed, status, "Used N times, M successful" | ❌ | |
-| 5.5 | **+ New Version** flow: copy parent (name, ingredients, notes), pre-fill vN suffix, allow edits, save linked to parent | ❌ | |
-| 5.6 | **Compare** versions: side-by-side ingredients + outcome % diff | ❌ | New screen or modal |
-| 5.7 | Outcomes tracked **per version** (stats scoped to `glazeId`, not conflated across versions) | ❌ | |
+| 5.1 | Display version in name convention: "Cobalt Blue v3" | ✅ | `formatGlazeDisplayName` |
+| 5.2 | Batch ID includes version segment | ✅ | `generateGlazeBatchId` → `CB-2026-06-v3` |
+| 5.3 | Version history list on detail (all versions for `rootGlazeId`) | ✅ | `GlazeDetailScreen` version history section |
+| 5.4 | Version card: version #, date mixed, status, "Used N times, M successful" | ✅ | Per-version stats via `formatVersionStatsLine` |
+| 5.5 | **+ New Version** flow: copy parent (name, ingredients, notes), pre-fill vN suffix, allow edits, save linked to parent | ✅ | `AddGlazeModal` new-version mode + `buildNewVersionDraft` |
+| 5.6 | **Compare** versions: side-by-side ingredients + outcome % diff | ✅ | `CompareVersionsModal` |
+| 5.7 | Outcomes tracked **per version** (stats scoped to `glazeId`, not conflated across versions) | ✅ | Stats filtered by `glazeId` on detail + compare |
 
 **Acceptance:** User can remix a glaze over months and see which version performs best.
 
@@ -136,10 +136,10 @@ Foundation for everything else. Extend types before UI.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 6.1 | Align outcome vocabulary: spec (success/crawling/underfired/crack) vs test tile (great/interesting/bad + defects) | ❌ | Unify or map between systems |
-| 6.2 | Mark piece glaze outcome after firing (not only via test tile) | ❌ | |
-| 6.3 | Optional: prompt to log outcome when advancing piece past glaze firing stage | ❌ | |
-| 6.4 | Keep test tile flow as lab notebook OR merge into batch outcomes — product decision | 🟡 | Both exist conceptually today |
+| 6.1 | Align outcome vocabulary: spec (success/crawling/underfired/crack) vs test tile (great/interesting/bad + defects) | ✅ | `glazeOutcomeMap.ts` maps test tiles → studio outcomes |
+| 6.2 | Mark piece glaze outcome after firing (not only via test tile) | ✅ | Piece form, stage advance, kiln glaze-firing completion |
+| 6.3 | Optional: prompt to log outcome when advancing piece past glaze firing stage | ✅ | Stage advance modal prompts when piece has linked glaze |
+| 6.4 | Keep test tile flow as lab notebook OR merge into batch outcomes — product decision | ✅ | Test tiles kept; stats roll up via shared outcome map |
 
 **Acceptance:** Firing results roll up to glaze stats per version.
 
@@ -172,22 +172,22 @@ Foundation for everything else. Extend types before UI.
 
 | Criterion | Status |
 |-----------|--------|
-| Create glaze (name, ingredients, photo, notes) | 🟡 |
+| Create glaze (name, ingredients, photo, notes) | ✅ |
 | View all glazes (searchable list) | ✅ |
-| Filter by status (works / experimental / failed) | ❌ |
-| Mark outcome after firing | 🟡 |
-| See pieces using each glaze | ❌ |
-| Quick stats (used X times, Y successful) | 🟡 |
+| Filter by status (works / experimental / failed) | ✅ |
+| Mark outcome after firing | ✅ |
+| See pieces using each glaze | ✅ |
+| Quick stats (used X times, Y successful) | ✅ |
 | Edit / delete glaze | ✅ |
-| Create glaze version (inherits parent, can modify) | ❌ |
-| See version history | ❌ |
-| Compare versions (ingredients + outcomes) | ❌ |
-| Outcomes track per version | ❌ |
-| Clay type, temp, atmosphere, finish metadata | 🟡 |
-| Display metadata in detail | 🟡 |
-| Summary on glaze card | ❌ |
-| Filter by clay type | ❌ |
-| Link glaze to piece (searchable picker) | ❌ |
+| Create glaze version (inherits parent, can modify) | ✅ |
+| See version history | ✅ |
+| Compare versions (ingredients + outcomes) | ✅ |
+| Outcomes track per version | ✅ |
+| Clay type, temp, atmosphere, finish metadata | ✅ |
+| Display metadata in detail | ✅ |
+| Summary on glaze card | ✅ |
+| Filter by clay type | ✅ |
+| Link glaze to piece (searchable picker) | ✅ |
 
 ---
 
@@ -204,5 +204,6 @@ Foundation for everything else. Extend types before UI.
 | Types | `src/screens/glazes/types.ts` |
 | Store | `src/store/appStore.ts` |
 | Sync | `src/services/glazes.ts`, `src/screens/library/useGlazesSync.ts` |
+| Outcome mapping | `src/screens/glazes/glazeOutcomeMap.ts` |
 | Piece form | `src/screens/pieces/components/AddPieceForm.tsx` |
 | Piece types | `src/types/pieces.ts` |

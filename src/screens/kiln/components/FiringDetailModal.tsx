@@ -11,7 +11,7 @@ import { Trash2, X } from 'lucide-react-native';
 import React from 'react';
 import { Image, Modal, ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import type { Firing, FiringResult } from '../../../types/kiln';
-import type { Piece } from '../../../types/pieces';
+import type { GlazeOutcome, Piece } from '../../../types/pieces';
 import { FIRING_TYPE_LABELS } from '../constants';
 import {
     useDeleteFiringMutation,
@@ -45,6 +45,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
 
   const [resultNotes, setResultNotes] = React.useState('');
   const [selectedResult, setSelectedResult] = React.useState<FiringResult>('success');
+  const [selectedGlazeOutcome, setSelectedGlazeOutcome] = React.useState<GlazeOutcome | ''>('');
   const [showCompletionForm, setShowCompletionForm] = React.useState(false);
   const [showPiecePicker, setShowPiecePicker] = React.useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
@@ -59,6 +60,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
 
     setResultNotes('');
     setSelectedResult('success');
+    setSelectedGlazeOutcome('');
     setShowCompletionForm(false);
     setShowPiecePicker(false);
   }, [visible]);
@@ -91,13 +93,29 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
     [assignedPieces, showPiecePicker, unassignedPieces]
   );
 
+  const linkedGlazePieces = React.useMemo(
+    () => assignedPieces.filter((piece) => piece.glazeId),
+    [assignedPieces],
+  );
+
+  const handleSelectResult = React.useCallback((result: FiringResult) => {
+    setSelectedResult(result);
+    if (result === 'success') {
+      setSelectedGlazeOutcome('success');
+    }
+  }, []);
+
   if (!firing || !liveFiring) return null;
 
   const kiln = kilns.find((currentKiln) => currentKiln.id === liveFiring.kilnId);
   const isCompleted = liveFiring.state === 'completed';
 
   const handleComplete = () => {
-    completeFiring(liveFiring.id, selectedResult, resultNotes);
+    const glazeOutcome =
+      liveFiring.type === 'glaze' && selectedGlazeOutcome
+        ? selectedGlazeOutcome
+        : undefined;
+    completeFiring(liveFiring.id, selectedResult, resultNotes, glazeOutcome);
     const now = new Date().toISOString();
     updateFiringMutation.mutate({
       ...liveFiring,
@@ -206,12 +224,21 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
               onToggleAssignPiece={toggleAssignPiece}
               showCompletionForm={showCompletionForm}
               selectedResult={selectedResult}
-              onSelectResult={setSelectedResult}
+              onSelectResult={handleSelectResult}
               resultNotes={resultNotes}
               onChangeResultNotes={setResultNotes}
               onCancelCompletion={() => setShowCompletionForm(false)}
               onComplete={handleComplete}
-              onMarkPickedUp={() => setShowCompletionForm(true)}
+              onMarkPickedUp={() => {
+                setSelectedGlazeOutcome('success');
+                setShowCompletionForm(true);
+              }}
+              isGlazeFiring={liveFiring.type === 'glaze'}
+              linkedGlazePieceCount={linkedGlazePieces.length}
+              selectedGlazeOutcome={selectedGlazeOutcome}
+              onSelectGlazeOutcome={(outcome) =>
+                setSelectedGlazeOutcome(outcome as GlazeOutcome | '')
+              }
             />
           </ScrollView>
 

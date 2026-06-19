@@ -21,7 +21,7 @@ import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
 import { fetchUsers, type BackendUser } from '../services';
 import type { Firing, FiringState, Kiln, KilnChecklist, KilnType } from '../types/kiln';
-import type { Piece } from '../types/pieces';
+import type { GlazeOutcome, Piece } from '../types/pieces';
 import {
     applyPricingUserTypePreset,
     buildDefaultPricingSettings,
@@ -508,7 +508,12 @@ interface AppState {
   deleteFiring: (id: string) => void;
   updateFiringState: (firingId: string, state: FiringState) => void;
   assignPiecesToFiring: (firingId: string, pieceIds: number[]) => void;
-  completeFiring: (firingId: string, result: 'success' | 'issues' | 'failure', resultNotes: string) => void;
+  completeFiring: (
+    firingId: string,
+    result: 'success' | 'issues' | 'failure',
+    resultNotes: string,
+    glazeOutcome?: GlazeOutcome,
+  ) => void;
   toggleKilnChecklistItem: (id: string) => void;
   addKilnChecklistItem: (text: string) => void;
   removeKilnChecklistItem: (id: string) => void;
@@ -1231,16 +1236,18 @@ export const useAppStore = create<AppState>()(
       glazes: state.glazes.map((glaze) => {
         if (glaze.id !== test.glazeId) return glaze;
 
-        const clayBodiesUsed = glaze.clayBodiesUsed.includes(test.clayBody)
+        const clayBody = test.clayBody ?? '';
+        const clayBodiesUsed = glaze.clayBodiesUsed.includes(clayBody)
           ? glaze.clayBodiesUsed
-          : [test.clayBody, ...glaze.clayBodiesUsed];
+          : clayBody ? [clayBody, ...glaze.clayBodiesUsed] : glaze.clayBodiesUsed;
         const kilnLabel = test.kilnName || (test.kilnType ? `${test.kilnType[0].toUpperCase()}${test.kilnType.slice(1)} kiln` : 'Unknown kiln');
         const kilnTypesUsed = glaze.kilnTypesUsed.includes(kilnLabel)
           ? glaze.kilnTypesUsed
           : [kilnLabel, ...glaze.kilnTypesUsed];
-        const conesTested = glaze.conesTested.includes(test.cone)
+        const cone = test.cone ?? '';
+        const conesTested = glaze.conesTested.includes(cone)
           ? glaze.conesTested
-          : [test.cone, ...glaze.conesTested];
+          : cone ? [cone, ...glaze.conesTested] : glaze.conesTested;
 
         return {
           ...glaze,
@@ -1362,19 +1369,32 @@ export const useAppStore = create<AppState>()(
         }),
       };
     }),
-  completeFiring: (firingId, result, resultNotes) => {
+  completeFiring: (firingId, result, resultNotes, glazeOutcome) => {
     const state = get();
     const firing = state.firings.find((f) => f.id === firingId);
     if (!firing) return;
     const now = new Date().toISOString();
-    // Auto-advance assigned pieces to the appropriate next stage
     const targetStage = FIRING_TARGET_STAGE[firing.type];
     if (targetStage && firing.pieceIds.length > 0) {
       const idSet = new Set(firing.pieceIds);
       set((s) => ({
         pieces: s.pieces.map((p) => {
           if (!idSet.has(p.id)) return p;
-          return { ...p, stage: targetStage, timeline: [...p.timeline, { stage: targetStage, timestamp: now }] };
+          const next: Piece = {
+            ...p,
+            stage: targetStage,
+            timeline: [...p.timeline, { stage: targetStage, timestamp: now }],
+          };
+          if (
+            firing.type === 'glaze'
+            && glazeOutcome
+            && p.glazeId
+            && !p.glazeOutcome
+          ) {
+            next.glazeOutcome = glazeOutcome;
+            next.syncDirty = true;
+          }
+          return next;
         }),
       }));
     }

@@ -5,7 +5,8 @@ import { Check, FlameKindling, Image as ImageIcon } from 'lucide-react-native';
 import React from 'react';
 import { Image, TextInput, TouchableOpacity, View } from 'react-native';
 import type { Firing, FiringResult, Kiln } from '../../../types/kiln';
-import type { Piece } from '../../../types/pieces';
+import type { GlazeOutcome, Piece } from '../../../types/pieces';
+import { GLAZE_OUTCOME_LABELS, GLAZE_OUTCOME_OPTIONS } from '../../pieces/utils/constants';
 import {
     FIRING_LOCATION_LABELS,
     FIRING_TYPE_LABELS,
@@ -56,6 +57,10 @@ interface FiringDetailContentProps {
   onCancelCompletion: () => void;
   onComplete: () => void;
   onMarkPickedUp: () => void;
+  isGlazeFiring?: boolean;
+  linkedGlazePieceCount?: number;
+  selectedGlazeOutcome?: string;
+  onSelectGlazeOutcome?: (outcome: string) => void;
 }
 
 export function FiringDetailContent({
@@ -80,6 +85,10 @@ export function FiringDetailContent({
   onCancelCompletion,
   onComplete,
   onMarkPickedUp,
+  isGlazeFiring = false,
+  linkedGlazePieceCount = 0,
+  selectedGlazeOutcome = '',
+  onSelectGlazeOutcome,
 }: FiringDetailContentProps) {
   const autoStatus = getAutoFiringStatus(liveFiring, kiln);
   const timeline = getCalculatedTimeline(liveFiring, kiln);
@@ -325,6 +334,40 @@ export function FiringDetailContent({
               </TouchableOpacity>
             ))}
           </View>
+          {isGlazeFiring && linkedGlazePieceCount > 0 ? (
+            <View className="mb-3">
+              <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Glaze results for linked pieces
+              </Text>
+              <Text className="text-xs text-muted-foreground mb-2 leading-5">
+                {linkedGlazePieceCount} piece{linkedGlazePieceCount === 1 ? '' : 's'} linked to a studio glaze batch.
+                Outcome applies to pieces without one logged yet.
+              </Text>
+              <View className="flex-row flex-wrap gap-2">
+                {GLAZE_OUTCOME_OPTIONS.map((option) => {
+                  const active = selectedGlazeOutcome === option;
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      onPress={() => onSelectGlazeOutcome?.(active ? '' : option)}
+                      className={`px-3 py-1.5 rounded-full border ${
+                        active ? 'bg-foreground border-foreground' : 'bg-card border-border'
+                      }`}
+                      activeOpacity={0.75}
+                    >
+                      <Text
+                        className={`text-xs font-medium ${
+                          active ? 'text-background' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {GLAZE_OUTCOME_LABELS[option]}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
           <TextInput
             multiline
             numberOfLines={3}

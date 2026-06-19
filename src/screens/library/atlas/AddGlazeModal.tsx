@@ -39,6 +39,8 @@ export function AddGlazeModal({
   collections,
   onCreateCollection,
   initialDraft,
+  mode = initialDraft != null ? 'edit' : 'create',
+  versionLabel,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -47,8 +49,12 @@ export function AddGlazeModal({
   collections: string[];
   onCreateCollection: (name: string) => void;
   initialDraft?: GlazeDraft;
+  /** Override header when creating a new version from a parent batch. */
+  mode?: 'create' | 'edit' | 'new-version';
+  versionLabel?: string;
 }) {
-  const isEdit = initialDraft != null;
+  const isEdit = initialDraft != null && mode !== 'new-version';
+  const isNewVersion = mode === 'new-version';
   const [draft, setDraft] = React.useState<GlazeDraft>(() =>
     initialDraft ?? createEmptyGlazeDraft(defaultCone, collections),
   );
@@ -70,12 +76,18 @@ export function AddGlazeModal({
       <ModalCard radius={MODAL_SHEET_RADIUS} height={sheetHeight} maxHeight={sheetHeight} withHandle={false}>
         <ModalSheetHeader>
           <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
-            {isEdit ? 'Edit Glaze' : 'New Glaze Batch'}
+            {isNewVersion
+              ? `New Version${versionLabel ? ` (${versionLabel})` : ''}`
+              : isEdit
+                ? 'Edit Glaze'
+                : 'New Glaze Batch'}
           </Text>
           <Text className="text-sm text-muted-foreground mt-1">
-            {isEdit
-              ? 'Update this batch’s recipe, firing notes, and collections.'
-              : 'Name your batch and build the recipe row by row.'}
+            {isNewVersion
+              ? 'Recipe and notes carry over — tweak the mix and save as the next batch.'
+              : isEdit
+                ? 'Update this batch’s recipe, firing notes, and collections.'
+                : 'Name your batch and build the recipe row by row.'}
           </Text>
         </ModalSheetHeader>
 

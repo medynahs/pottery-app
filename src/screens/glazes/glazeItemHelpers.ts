@@ -1,4 +1,5 @@
 import type { GlazeDraft } from '@/src/screens/library/atlas/types';
+import { stripGlazeVersionSuffix } from './glazeVersionUtils';
 import { generateGlazeBatchId } from './batchId';
 import { todayDateIso } from '@/src/utils/dates';
 import type { GlazeIngredient, GlazeLibraryItem } from './types';
@@ -62,18 +63,38 @@ function parseTempC(value: string): number | undefined {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-/** Map a form draft to a glaze record for create or update. */
+/** Map a form draft to a glaze record for create, update, or new version. */
 export function glazeDraftToItem(
   draft: GlazeDraft,
-  opts: { id: string; existing?: GlazeLibraryItem },
+  opts: {
+    id: string;
+    existing?: GlazeLibraryItem;
+    versionFromParent?: {
+      parent: GlazeLibraryItem;
+      versionNumber: number;
+    };
+  },
 ): GlazeLibraryItem {
   const existing = opts.existing;
+  const versionFromParent = opts.versionFromParent;
   const dateMixed = draft.dateMixed.trim() || existing?.dateMixed || todayDateIso();
-  const versionNumber = existing?.versionNumber ?? 1;
-  const name = draft.name.trim();
+  const versionNumber =
+    existing?.versionNumber
+    ?? versionFromParent?.versionNumber
+    ?? 1;
+  const name = stripGlazeVersionSuffix(draft.name.trim());
   const batchId =
-    existing?.batchId ?? generateGlazeBatchId(name, dateMixed, versionNumber);
+    existing?.batchId
+    ?? generateGlazeBatchId(name, dateMixed, versionNumber);
   const recipeIngredients = sanitizeRecipeIngredients(draft.recipeIngredients);
+  const rootGlazeId =
+    existing?.rootGlazeId
+    ?? versionFromParent?.parent.rootGlazeId
+    ?? versionFromParent?.parent.id
+    ?? opts.id;
+  const parentGlazeId =
+    existing?.parentGlazeId
+    ?? versionFromParent?.parent.id;
 
   return normalizeGlazeItem({
     id: opts.id,
@@ -81,7 +102,7 @@ export function glazeDraftToItem(
     syncDirty: true,
     name,
     finish: draft.finish,
-    colorFamily: draft.colorFamily.trim() || existing?.colorFamily || 'Unsorted Surface',
+    colorFamily: draft.colorFamily.trim() || existing?.colorFamily || versionFromParent?.parent.colorFamily || 'Unsorted Surface',
     coneRange: draft.coneRange.trim() || draft.defaultCone,
     defaultCone: draft.defaultCone,
     source: draft.source,
@@ -99,8 +120,8 @@ export function glazeDraftToItem(
     bestFiringTempC: parseTempC(draft.bestFiringTempC),
     atmosphere: draft.atmosphere,
     versionNumber,
-    rootGlazeId: existing?.rootGlazeId ?? opts.id,
-    parentGlazeId: existing?.parentGlazeId,
+    rootGlazeId,
+    parentGlazeId,
     tags: parseCommaList(draft.tags),
     collections: draft.collections,
     favorite: draft.favorite,

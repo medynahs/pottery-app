@@ -4,6 +4,7 @@ import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { EmptyState } from '@/src/components/EmptyState';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
+import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
 import { useAppStore } from '@/src/store';
 import { countPiecePhotos } from '@/src/utils/premiumGate';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -43,6 +44,7 @@ export default function PiecesScreen() {
   const [stageTransition, setStageTransition] = React.useState<StageAdvanceCelebration | null>(null);
   const [firstPieceCeremony, setFirstPieceCeremony] = React.useState(false);
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
+  const glazes = useAppStore((s) => s.glazes);
   const markCeremonyAsSeen = useAppStore((s) => s.markCeremonyAsSeen);
 
   const {
@@ -91,6 +93,19 @@ export default function PiecesScreen() {
     handleSendToCemetery,
     handleConfirmSendToCemetery,
   } = usePiecesScreen();
+
+  const advanceLinkedGlazeNames = React.useMemo(() => {
+    if (!advanceRequest) return [];
+    const names = advanceRequest.pieceIds
+      .map((id) => pieces.find((piece) => piece.id === id))
+      .filter((piece): piece is Piece => !!piece?.glazeId)
+      .map((piece) => {
+        const glaze = glazes.find((item) => item.id === piece.glazeId);
+        return glaze ? formatGlazeDisplayName(glaze) : null;
+      })
+      .filter((name): name is string => Boolean(name));
+    return Array.from(new Set(names));
+  }, [advanceRequest, glazes, pieces]);
 
   const openJournal = React.useCallback((
     piece: Piece,
@@ -404,6 +419,7 @@ export default function PiecesScreen() {
             : 0
         }
         stageLookup={stageLookup}
+        linkedGlazeNames={advanceLinkedGlazeNames}
         defaultBisqueTemp={defaultBisqueTemp}
         defaultGlazeTemp={defaultGlazeTemp}
         onClose={dismissAdvanceRequest}

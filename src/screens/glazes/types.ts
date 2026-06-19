@@ -117,9 +117,9 @@ export const GLAZE_STATUS_LABELS: Record<GlazeStatus, string> = {
 };
 
 export const GLAZE_STATUS_EMOJI: Record<GlazeStatus, string> = {
-  works_great: '🟢',
-  experimental: '🟡',
-  failed: '🔴',
+  works_great: '✨',
+  experimental: '🌻',
+  failed: '🍂',
 };
 
 export const GLAZE_ATMOSPHERE_LABELS: Record<GlazeAtmosphere, string> = {

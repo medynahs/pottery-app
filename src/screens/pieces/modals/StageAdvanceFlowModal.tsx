@@ -13,7 +13,7 @@ import { ImagePlus, Sparkles, X } from 'lucide-react-native';
 import React from 'react';
 import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
 import { OptionPills } from '../components/OptionPills';
-import { BISQUE_TEMPS, GLAZE_TEMPS, PIECE_DISPOSITION_STATUSES } from '../utils/constants';
+import { BISQUE_TEMPS, GLAZE_OUTCOME_LABELS, GLAZE_OUTCOME_OPTIONS, GLAZE_TEMPS, PIECE_DISPOSITION_STATUSES } from '../utils/constants';
 import { FINISHED_STAGE_ID } from '../utils/stageFlow';
 
 export type StageAdvanceRequest = {
@@ -31,6 +31,7 @@ export type StageAdvanceCapture = {
   bisqueTemp?: string;
   glazeTemp?: string;
   status?: string;
+  glazeOutcome?: string;
 };
 
 type StageVisual = {
@@ -42,6 +43,8 @@ interface StageAdvanceFlowModalProps {
   request: StageAdvanceRequest | null;
   /** Total photos already on the piece (cover + journal). Used for free-tier photo gate. */
   piecePhotoCount?: number;
+  /** Linked studio glaze names when advancing past glaze firing. */
+  linkedGlazeNames?: string[];
   stageLookup: Record<string, StageVisual>;
   defaultBisqueTemp?: string | null;
   defaultGlazeTemp?: string | null;
@@ -58,7 +61,7 @@ const STAGE_PROMPTS: Record<string, string> = {
   'bone-dry': 'Final prep before heat. Add any reminders.',
   bisque: 'Optional: save firing cone and quick kiln notes.',
   glazing: 'Capture glaze choices or application notes.',
-  'glaze-fired': 'Optional: save glaze cone and kiln result notes.',
+  'glaze-fired': 'Log how the glaze fired — this feeds your glaze atlas stats.',
   finished: 'Celebrate and optionally set disposition now.',
 };
 
@@ -69,6 +72,7 @@ function getPrompt(stageId: string) {
 export function StageAdvanceFlowModal({
   request,
   piecePhotoCount = 0,
+  linkedGlazeNames = [],
   stageLookup,
   defaultBisqueTemp,
   defaultGlazeTemp,
@@ -86,6 +90,7 @@ export function StageAdvanceFlowModal({
   const [bisqueTemp, setBisqueTemp] = React.useState('');
   const [glazeTemp, setGlazeTemp] = React.useState('');
   const [status, setStatus] = React.useState('');
+  const [glazeOutcome, setGlazeOutcome] = React.useState('');
 
   React.useEffect(() => {
     if (!request) {
@@ -94,6 +99,7 @@ export function StageAdvanceFlowModal({
       setBisqueTemp('');
       setGlazeTemp('');
       setStatus('');
+      setGlazeOutcome('');
       return;
     }
 
@@ -102,6 +108,7 @@ export function StageAdvanceFlowModal({
     setBisqueTemp(request.toStage === 'bisque' ? (defaultBisqueTemp ?? '') : '');
     setGlazeTemp(request.toStage === 'glaze-fired' ? (defaultGlazeTemp ?? '') : '');
     setStatus('');
+    setGlazeOutcome('');
   }, [request, defaultBisqueTemp, defaultGlazeTemp]);
 
   const pickPhoto = React.useCallback(() => {
@@ -119,9 +126,13 @@ export function StageAdvanceFlowModal({
       bisqueTemp: request?.toStage === 'bisque' ? (bisqueTemp || undefined) : undefined,
       glazeTemp: request?.toStage === 'glaze-fired' ? (glazeTemp || undefined) : undefined,
       status: request?.toStage === FINISHED_STAGE_ID ? (status || undefined) : undefined,
+      glazeOutcome:
+        request?.toStage === 'glaze-fired' || request?.toStage === FINISHED_STAGE_ID
+          ? (glazeOutcome || undefined)
+          : undefined,
     };
     onConfirm(capture);
-  }, [notes, photo, bisqueTemp, glazeTemp, status, request, onConfirm]);
+  }, [notes, photo, bisqueTemp, glazeTemp, status, glazeOutcome, request, onConfirm]);
 
   if (!request) return null;
 
@@ -131,6 +142,9 @@ export function StageAdvanceFlowModal({
   const fromLabel = fromVisual?.label ?? request.fromStage;
   const StageIcon = toVisual?.Icon ?? Sparkles;
   const isFinished = request.toStage === FINISHED_STAGE_ID;
+  const showGlazeOutcome = request.toStage === 'glaze-fired' || isFinished;
+  const hasLinkedGlaze = linkedGlazeNames.length > 0;
+  const linkedGlazeLabel = linkedGlazeNames.join(', ');
 
   return (
     <>
@@ -159,7 +173,11 @@ export function StageAdvanceFlowModal({
                   <Text className="text-sm font-semibold text-foreground">
                     {request.count > 1 ? `${request.count} pieces` : request.pieceName}
                   </Text>
-                  <Text className="text-xs text-muted-foreground mt-0.5">{getPrompt(request.toStage)}</Text>
+                  <Text className="text-xs text-muted-foreground mt-0.5">
+                    {hasLinkedGlaze && showGlazeOutcome
+                      ? `How did ${linkedGlazeLabel} perform?`
+                      : getPrompt(request.toStage)}
+                  </Text>
                 </View>
               </View>
 
@@ -216,6 +234,29 @@ export function StageAdvanceFlowModal({
                 <View className="mt-5">
                   <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Glaze Cone</Text>
                   <OptionPills options={GLAZE_TEMPS} value={glazeTemp} onChange={setGlazeTemp} />
+                </View>
+              )}
+
+              {showGlazeOutcome && (
+                <View className="mt-5">
+                  <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                    Glaze Outcome{hasLinkedGlaze ? '' : ' (Optional)'}
+                  </Text>
+                  {hasLinkedGlaze ? (
+                    <Text className="text-xs text-muted-foreground mb-2 leading-5">
+                      Linked to {linkedGlazeLabel}. This rolls up in your glaze batch stats.
+                    </Text>
+                  ) : null}
+                  <OptionPills
+                    options={GLAZE_OUTCOME_OPTIONS.map((option) => GLAZE_OUTCOME_LABELS[option])}
+                    value={glazeOutcome ? GLAZE_OUTCOME_LABELS[glazeOutcome as keyof typeof GLAZE_OUTCOME_LABELS] ?? '' : ''}
+                    onChange={(label) => {
+                      const match = GLAZE_OUTCOME_OPTIONS.find(
+                        (option) => GLAZE_OUTCOME_LABELS[option] === label,
+                      );
+                      setGlazeOutcome(match ?? '');
+                    }}
+                  />
                 </View>
               )}
 
