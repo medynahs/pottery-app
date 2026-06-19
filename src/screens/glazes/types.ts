@@ -67,6 +67,9 @@ export interface GlazeLibraryItem {
   communitySourceUserId?: string;
   communitySourceStudioName?: string;
   communitySavedAt?: string;
+  /** Provenance when saved from Discover catalog (local until BE-10). */
+  discoverSourceRecipeId?: string;
+  discoverSavedAt?: string;
   /** Batch scaler prefs (local until BE-9). */
   batchScalerPresetId?: string;
   batchScalerGramsPerPiece?: number;

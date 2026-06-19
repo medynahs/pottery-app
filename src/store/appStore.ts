@@ -9,7 +9,15 @@ import {
   deriveCustomCollectionNames,
   sanitizeCustomCollections,
 } from '../screens/library/atlas/collections';
-import { DEFAULT_CHECKLIST, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
+import { DEFAULT_CHECKLIST, FIRING_SOURCE_STAGE, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
+import {
+  applyGlazeOutcomeToPiece,
+  buildFiringEconomics,
+  DEFAULT_KILN_MAX_TEMP_C,
+  deriveLastFiredAt,
+  getGlazeOutcomeForFiringResult,
+  normalizeKiln,
+} from '../screens/kiln/utils/kilnHelpers';
 import {
     DEFAULT_KILNKIN_COMPANION,
     type KilnkinCompanion,
@@ -21,7 +29,7 @@ import type { CommunityPostComposerPreset } from '../screens/community/types/com
 import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
 import { fetchUsers, type BackendUser } from '../services';
-import type { Firing, FiringState, Kiln, KilnChecklist, KilnType } from '../types/kiln';
+import type { Firing, FiringState, Kiln, KilnChecklist, KilnType, LogFiringPayload, FiringStatusOverride } from '../types/kiln';
 import type { GlazeOutcome, Piece } from '../types/pieces';
 import {
     applyPricingUserTypePreset,
@@ -543,6 +551,10 @@ interface AppState {
     resultNotes: string,
     glazeOutcome?: GlazeOutcome,
   ) => void;
+  logFiring: (kilnId: string, payload: LogFiringPayload) => Firing;
+  assignPiecesToCompletedFiring: (firingId: string, pieceIds: number[]) => void;
+  setCompletedFiringPieces: (firingId: string, pieceIds: number[]) => void;
+  setFiringStatusOverride: (firingId: string, statusOverride?: FiringStatusOverride) => void;
   toggleKilnChecklistItem: (id: string) => void;
   addKilnChecklistItem: (text: string) => void;
   removeKilnChecklistItem: (id: string) => void;
@@ -1338,9 +1350,9 @@ export const useAppStore = create<AppState>()(
   firings: [],
   kilnChecklist: DEFAULT_CHECKLIST,
   setKilns: (kilns) => set({ kilns }),
-  addKiln: (kiln) => set((state) => ({ kilns: [kiln, ...state.kilns] })),
+  addKiln: (kiln) => set((state) => ({ kilns: [normalizeKiln(kiln), ...state.kilns] })),
   updateKiln: (kiln) =>
-    set((state) => ({ kilns: state.kilns.map((k) => (k.id === kiln.id ? kiln : k)) })),
+    set((state) => ({ kilns: state.kilns.map((k) => (k.id === kiln.id ? normalizeKiln(kiln) : k)) })),
   deleteKiln: (id) =>
     set((state) => ({
       kilns: state.kilns.filter((k) => k.id !== id),
@@ -1419,38 +1431,190 @@ export const useAppStore = create<AppState>()(
     const firing = state.firings.find((f) => f.id === firingId);
     if (!firing) return;
     const now = new Date().toISOString();
+    const kiln = state.kilns.find((k) => k.id === firing.kilnId);
     const targetStage = FIRING_TARGET_STAGE[firing.type];
+    const idSet = new Set(firing.pieceIds);
+    const assignedPieces = state.pieces.filter((p) => idSet.has(p.id));
+    const economics = buildFiringEconomics({
+      firing: { ...firing, result },
+      kiln,
+      pieces: assignedPieces,
+    });
+    const resolvedGlazeOutcome =
+      glazeOutcome ?? getGlazeOutcomeForFiringResult(result);
+
     if (targetStage && firing.pieceIds.length > 0) {
-      const idSet = new Set(firing.pieceIds);
       set((s) => ({
         pieces: s.pieces.map((p) => {
           if (!idSet.has(p.id)) return p;
-          const next: Piece = {
+          let next: Piece = {
             ...p,
             stage: targetStage,
             timeline: [...p.timeline, { stage: targetStage, timestamp: now }],
+            syncDirty: true,
           };
-          if (
-            firing.type === 'glaze'
-            && glazeOutcome
-            && p.glazeId
-            && !p.glazeOutcome
-          ) {
-            next.glazeOutcome = glazeOutcome;
-            next.syncDirty = true;
+          if (firing.type === 'glaze') {
+            next = applyGlazeOutcomeToPiece(next, { ...firing, result }, resolvedGlazeOutcome);
           }
           return next;
         }),
       }));
     }
+
     set((s) => ({
       firings: s.firings.map((f) =>
         f.id !== firingId
           ? f
-          : { ...f, state: 'completed', completedAt: now, result, resultNotes }
+          : {
+              ...f,
+              state: 'completed',
+              completedAt: now,
+              result,
+              resultNotes,
+              statusOverride: undefined,
+              estimatedTotalCost: economics.totalCost ?? f.estimatedTotalCost,
+              estimatedCostPerPiece: economics.costPerPiece ?? f.estimatedCostPerPiece,
+              pieceReceipts: economics.pieceReceipts ?? f.pieceReceipts,
+              clayBodiesUsed: economics.clayBodiesUsed ?? f.clayBodiesUsed,
+            }
+      ),
+      kilns: s.kilns.map((k) =>
+        k.id === firing.kilnId ? { ...k, lastFiredAt: now } : k
       ),
     }));
   },
+  logFiring: (kilnId, payload) => {
+    const state = get();
+    const kiln = state.kilns.find((k) => k.id === kilnId);
+    const now = new Date().toISOString();
+    const firedAtIso = `${payload.firedDate}T12:00:00.000Z`;
+    const type = payload.type ?? 'glaze';
+    const pieceIds = Array.from(new Set(payload.pieceIds ?? []));
+    const selectedPieces = state.pieces.filter((piece) => pieceIds.includes(piece.id));
+    const economics = buildFiringEconomics({
+      firing: { type, result: payload.result },
+      kiln,
+      pieces: selectedPieces,
+    });
+    const targetStage = FIRING_TARGET_STAGE[type];
+
+    const firing: Firing = {
+      id: `firing-${Date.now()}`,
+      kilnId,
+      name: `${type === 'glaze' ? 'Glaze' : 'Bisque'} firing — ${payload.firedDate}`,
+      type,
+      cone: kiln?.coneRange?.replace(/[^0-9]/g, '').slice(0, 2) || '04',
+      state: 'completed',
+      firedDate: payload.firedDate,
+      peakTempC: payload.peakTempC,
+      holdTimeMinutes: payload.holdTimeMinutes,
+      photoUri: payload.photoUri,
+      logSource: 'manual',
+      completedAt: firedAtIso,
+      pieceIds,
+      estimatedTotalCost: economics.totalCost ?? undefined,
+      estimatedCostPerPiece: economics.costPerPiece ?? undefined,
+      pieceReceipts: economics.pieceReceipts,
+      clayBodiesUsed: economics.clayBodiesUsed,
+      notes: '',
+      result: payload.result,
+      resultNotes: payload.resultNotes?.trim() || undefined,
+      createdAt: now,
+    };
+
+    if (targetStage && pieceIds.length > 0) {
+      const idSet = new Set(pieceIds);
+      set((s) => ({
+        pieces: s.pieces.map((p) => {
+          if (!idSet.has(p.id)) return p;
+          let next: Piece = {
+            ...p,
+            stage: targetStage,
+            timeline: [...p.timeline, { stage: targetStage, timestamp: now }],
+            syncDirty: true,
+          };
+          next = applyGlazeOutcomeToPiece(next, { type, result: payload.result });
+          return next;
+        }),
+      }));
+    }
+
+    set((s) => ({
+      firings: [firing, ...s.firings],
+      kilns: s.kilns.map((k) =>
+        k.id === kilnId ? { ...k, lastFiredAt: firedAtIso } : k
+      ),
+    }));
+
+    return firing;
+  },
+  assignPiecesToCompletedFiring: (firingId, pieceIds) => {
+    const firing = get().firings.find((f) => f.id === firingId);
+    if (!firing) return;
+    get().setCompletedFiringPieces(
+      firingId,
+      Array.from(new Set([...firing.pieceIds, ...pieceIds])),
+    );
+  },
+  setCompletedFiringPieces: (firingId, pieceIds) => {
+    const state = get();
+    const firing = state.firings.find((f) => f.id === firingId);
+    if (!firing || firing.state !== 'completed') return;
+
+    const kiln = state.kilns.find((k) => k.id === firing.kilnId);
+    const newIds = Array.from(new Set(pieceIds));
+    const oldIdSet = new Set(firing.pieceIds);
+    const newIdSet = new Set(newIds);
+    const added = newIds.filter((id) => !oldIdSet.has(id));
+    const removed = firing.pieceIds.filter((id) => !newIdSet.has(id));
+    const now = new Date().toISOString();
+    const targetStage = FIRING_TARGET_STAGE[firing.type] ?? 'glaze-fired';
+    const sourceStage = FIRING_SOURCE_STAGE[firing.type];
+    const selectedPieces = state.pieces.filter((p) => newIdSet.has(p.id));
+    const economics = buildFiringEconomics({ firing, kiln, pieces: selectedPieces });
+
+    set((s) => ({
+      pieces: s.pieces.map((p) => {
+        if (added.includes(p.id) && targetStage) {
+          let next: Piece = {
+            ...p,
+            stage: targetStage,
+            timeline: [...p.timeline, { stage: targetStage, timestamp: now }],
+            syncDirty: true,
+          };
+          next = applyGlazeOutcomeToPiece(next, firing);
+          return next;
+        }
+        if (removed.includes(p.id) && sourceStage) {
+          return {
+            ...p,
+            stage: sourceStage,
+            timeline: [...p.timeline, { stage: sourceStage, timestamp: now }],
+            syncDirty: true,
+          };
+        }
+        return p;
+      }),
+      firings: s.firings.map((f) =>
+        f.id !== firingId
+          ? f
+          : {
+              ...f,
+              pieceIds: newIds,
+              estimatedTotalCost: economics.totalCost ?? undefined,
+              estimatedCostPerPiece: economics.costPerPiece ?? undefined,
+              pieceReceipts: economics.pieceReceipts,
+              clayBodiesUsed: economics.clayBodiesUsed,
+            }
+      ),
+    }));
+  },
+  setFiringStatusOverride: (firingId, statusOverride) =>
+    set((s) => ({
+      firings: s.firings.map((f) =>
+        f.id !== firingId ? f : { ...f, statusOverride },
+      ),
+    })),
   toggleKilnChecklistItem: (id) =>
     set((state) => ({
       kilnChecklist: state.kilnChecklist.map((item) =>
@@ -1518,7 +1682,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'pottery-life-store',
-      version: 6,
+      version: 7,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
@@ -1562,6 +1726,19 @@ export const useAppStore = create<AppState>()(
           onboardingProfile.activeModules = normalizeModuleList(onboardingProfile.activeModules);
         }
 
+        let kilns = state.kilns ?? [];
+        let firings = state.firings ?? [];
+
+        if (version < 7) {
+          kilns = (kilns ?? []).map((kiln) =>
+            normalizeKiln({
+              ...kiln,
+              maxTempC: kiln.maxTempC ?? DEFAULT_KILN_MAX_TEMP_C,
+              lastFiredAt: kiln.lastFiredAt ?? deriveLastFiredAt(kiln.id, firings ?? []),
+            }),
+          );
+        }
+
         const migratedEnabledModules = normalizeModuleList(state.enabledModules);
         return {
           ...state,
@@ -1571,6 +1748,8 @@ export const useAppStore = create<AppState>()(
           glazes,
           glazeTests,
           glazeCollectionNames,
+          kilns,
+          firings,
         };
       },
       merge: (persistedState, currentState) => {
@@ -1587,6 +1766,7 @@ export const useAppStore = create<AppState>()(
           onboardingProfile,
           enabledModules: enabledModules.length > 0 ? enabledModules : onboardingProfile.activeModules,
           notificationPrefs,
+          kilns: (state.kilns ?? currentState.kilns).map(normalizeKiln),
           setupProgress: {
             ...DEFAULT_SETUP_PROGRESS,
             ...(state.setupProgress ?? {}),

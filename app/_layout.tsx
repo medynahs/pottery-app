@@ -129,6 +129,7 @@ function AppShell() {
         <Stack.Screen name="glaze/[id]" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="glaze-collection/[slug]" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="discover-recipe" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="discover-inspiration" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="library-glazes" options={{ headerShown: false }} />
         <Stack.Screen name="pricing-rules" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="pricing-onboarding" options={{ headerShown: false, presentation: 'fullScreenModal' }} />

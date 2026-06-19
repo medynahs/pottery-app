@@ -23,7 +23,7 @@ const PRICE_PER_LB: Record<string, number> = {
 const G_PER_LB = 453.592;
 
 /** Curated ceramic / glaze swatch photos (Unsplash, stable IDs). */
-const PREVIEW = {
+export const PREVIEW = {
   blue: 'https://images.unsplash.com/photo-1610701596007-d2f5ddfa5b0e?w=480&q=80',
   amber: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=480&q=80',
   red: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=480&q=80',
@@ -59,7 +59,6 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     colorHex: '#7BA7CC',
     previewUri: PREVIEW.blue,
     description: 'Beloved cone 6 blue that pools at texture and breaks lighter on edges.',
-    savedCount: 1240,
     ingredients: [
       { material: 'Custer Feldspar', percentage: 30 },
       { material: 'Silica', percentage: 30 },
@@ -81,7 +80,6 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     colorHex: '#D4B88C',
     previewUri: PREVIEW.amber,
     description: 'Warm buttery matte. Works on nearly every clay body. Great layering base.',
-    savedCount: 876,
     ingredients: [
       { material: 'Custer Feldspar', percentage: 40 },
       { material: 'Silica', percentage: 20 },
@@ -102,7 +100,6 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     colorHex: '#EFEBE0',
     previewUri: PREVIEW.white,
     description: 'Clean clear for interiors. Stays true over slips and underglazes.',
-    savedCount: 2100,
     ingredients: [
       { material: 'Custer Feldspar', percentage: 30 },
       { material: 'Silica', percentage: 30 },
@@ -122,7 +119,6 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     colorHex: '#8FBFA0',
     previewUri: PREVIEW.green,
     description: 'Soft green satin with subtle breaking on rims. Stable on stoneware and porcelain.',
-    savedCount: 542,
     ingredients: [
       { material: 'Nepheline Syenite', percentage: 32 },
       { material: 'Silica', percentage: 28 },
@@ -142,7 +138,6 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     colorHex: '#C45C5C',
     previewUri: PREVIEW.red,
     description: 'Reduction iron red. Needs thick application — thin areas go amber.',
-    savedCount: 654,
     ingredients: [
       { material: 'Custer Feldspar', percentage: 40 },
       { material: 'Silica', percentage: 30 },
@@ -163,7 +158,6 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     colorHex: '#C48B5A',
     previewUri: PREVIEW.amber,
     description: 'Carbon-trapping shino. Orange flashing in reduction. Apply thick over texture.',
-    savedCount: 988,
     ingredients: [
       { material: 'Nepheline Syenite', percentage: 40 },
       { material: 'Spodumene', percentage: 30 },
@@ -182,7 +176,6 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     colorHex: '#3A2810',
     previewUri: PREVIEW.black,
     description: 'Deep iron black that breaks rust-brown on edges and ridges.',
-    savedCount: 432,
     ingredients: [
       { material: 'Custer Feldspar', percentage: 40 },
       { material: 'Silica', percentage: 30 },
@@ -202,7 +195,6 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     colorHex: '#A8CBB7',
     previewUri: PREVIEW.green,
     description: 'Soft translucent green. Best on white stoneware with a thin dip.',
-    savedCount: 715,
     ingredients: [
       { material: 'Custer Feldspar', percentage: 35 },
       { material: 'Silica', percentage: 30 },
@@ -222,7 +214,6 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     colorHex: '#2A2018',
     previewUri: PREVIEW.black,
     description: 'Near-black gloss with brown breaks. Reliable on textured surfaces.',
-    savedCount: 389,
     ingredients: [
       { material: 'Nepheline Syenite', percentage: 34 },
       { material: 'Silica', percentage: 26 },
@@ -232,22 +223,3 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     ],
   }),
 ];
-
-export const RECIPE_SUCCESS_RATES: Record<string, number> = {
-  'rec-floating-blue': 87,
-  'rec-oatmeal-matte': 91,
-  'rec-iron-red': 68,
-  'rec-clear-liner': 95,
-  'rec-shino': 72,
-  'rec-tenmoku': 76,
-  'rec-sea-glass': 84,
-  'rec-celadon': 79,
-  'rec-obsidian': 82,
-};
-
-export const TRENDING_IDS = new Set(
-  [...DISCOVER_RECIPES]
-    .sort((a, b) => b.savedCount - a.savedCount)
-    .slice(0, 3)
-    .map((r) => r.id),
-);

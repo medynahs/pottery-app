@@ -13,6 +13,7 @@ export const KILN_TYPE_LABELS: Record<KilnType, string> = {
   electric: 'Electric',
   gas: 'Gas',
   wood: 'Wood',
+  pit: 'Pit',
   studio: 'Studio (shared)',
 };
 

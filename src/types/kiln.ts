@@ -1,6 +1,7 @@
 // src/screens/kiln/types.ts
 
-export type KilnType = 'electric' | 'gas' | 'wood' | 'studio';
+export type KilnType = 'electric' | 'gas' | 'wood' | 'pit' | 'studio';
+export type FiringLogSource = 'session' | 'manual';
 export type KilnPricingModel = 'per-volume' | 'per-shelf' | 'per-kiln';
 export type FiringLocation = 'studio' | 'external-kiln' | 'home';
 export type FiringStatusOverride = 'fired' | 'ready' | 'picked-up';
@@ -25,6 +26,10 @@ export type Kiln = {
   studioDelayDays?: number;
   pricingModel?: KilnPricingModel;
   pricingBaseRate?: number;
+  /** Maximum rated temperature in °C (spec default 1300). */
+  maxTempC?: number;
+  /** ISO timestamp of the most recent completed firing. */
+  lastFiredAt?: string;
   createdAt: string;
 };
 
@@ -86,6 +91,36 @@ export type Firing = {
   lostCount?: number;
   /** Per-piece outcome receipts, populated after completion. */
   pieceReceipts?: PieceFireReceipt[];
+  /** Calendar date the kiln actually fired (YYYY-MM-DD). */
+  firedDate?: string;
+  /** Peak temperature reached during the firing (°C). */
+  peakTempC?: number;
+  /** Hold time at peak temperature (minutes). */
+  holdTimeMinutes?: number;
+  /** Optional photo documenting the firing load or result. */
+  photoUri?: string;
+  /** Whether this record came from a live session or a retroactive log. */
+  logSource?: FiringLogSource;
+};
+
+export type LogFiringPayload = {
+  firedDate: string;
+  peakTempC: number;
+  holdTimeMinutes: number;
+  photoUri?: string;
+  result: 'success' | 'issues';
+  resultNotes?: string;
+  type?: FiringType;
+  /** Pieces that were in this firing (optional). */
+  pieceIds?: number[];
+};
+
+export type KilnPerformanceStats = {
+  totalFirings: number;
+  successCount: number;
+  successPct: number | null;
+  avgPeakTempC: number | null;
+  avgHoldMinutes: number | null;
 };
 
 export type KilnChecklist = {

@@ -152,11 +152,13 @@ export function GlazePhotoTile({
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
-            gap: 6,
+            gap: 8,
           }}
         >
-          <PhotoBadge label={coneLabel} />
-          <View style={{ flexDirection: 'row', gap: 6, flexShrink: 1, justifyContent: 'flex-end' }}>
+          <View style={{ flexShrink: 1, maxWidth: '55%' }}>
+            <PhotoBadge label={coneLabel} />
+          </View>
+          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-start', flexShrink: 0 }}>
             {cornerBadge ? (
               <PhotoBadge label={cornerBadge.label} tone={cornerBadge.tone ?? 'success'} />
             ) : null}

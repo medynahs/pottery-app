@@ -23,9 +23,25 @@ export interface DiscoverRecipe {
   ingredients: RecipeIngredient[];
   /** Pre-computed USD cost for a 100 g test batch */
   estimatedCostPer100g: number;
-  savedCount: number;
   previewUri?: string;
 }
+
+/** Photo + notes layering idea — no formula, not saved to atlas. */
+export interface DiscoverInspiration {
+  id: string;
+  title: string;
+  description: string;
+  applicationNotes: string;
+  cone: string;
+  coneLabel: string;
+  colorHex: string;
+  colorFamily?: string;
+  previewUri?: string;
+}
+
+export type DiscoverItem =
+  | { kind: 'recipe'; recipe: DiscoverRecipe }
+  | { kind: 'inspiration'; inspiration: DiscoverInspiration };
 
 export const CONE_OPTIONS: { key: ConeFilter; label: string }[] = [
   { key: 'all', label: 'All Cones' },

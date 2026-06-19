@@ -17,6 +17,7 @@ import { useAppStore } from '@/src/store';
 import React from 'react';
 import { ScrollView } from 'react-native';
 import type { Kiln } from '../../../types/kiln';
+import { DEFAULT_KILN_MAX_TEMP_C, trimOrEmpty } from '../utils/kilnHelpers';
 import {
     AddKilnModalForm,
     EMPTY_ADD_KILN_FORM,
@@ -52,13 +53,14 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
 
     if (editKiln) {
       setForm({
-        name: editKiln.name,
+        name: editKiln.name ?? '',
         imageUri: editKiln.imageUri ?? '',
-        type: editKiln.type,
-        coneRange: editKiln.coneRange,
-        shelves: String(editKiln.shelves),
-        size: editKiln.size,
-        location: editKiln.location,
+        type: editKiln.type ?? 'electric',
+        maxTempC: String(editKiln.maxTempC ?? DEFAULT_KILN_MAX_TEMP_C),
+        coneRange: editKiln.coneRange ?? '',
+        shelves: String(editKiln.shelves ?? 0),
+        size: editKiln.size ?? '',
+        location: editKiln.location ?? '',
         queueDelayDays:
           editKiln.queueDelayDays != null
             ? String(editKiln.queueDelayDays)
@@ -69,8 +71,8 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
         pickupDelayDays: editKiln.pickupDelayDays != null ? String(editKiln.pickupDelayDays) : '',
         runsEveryDays: editKiln.runsEveryDays != null ? String(editKiln.runsEveryDays) : '',
         pricingModel: editKiln.pricingModel ?? 'per-kiln',
-        pricingBaseRate: editKiln.pricingBaseRate ? String(editKiln.pricingBaseRate) : '',
-        notes: editKiln.notes,
+        pricingBaseRate: editKiln.pricingBaseRate != null ? String(editKiln.pricingBaseRate) : '',
+        notes: editKiln.notes ?? '',
       });
     } else {
       setForm(EMPTY_ADD_KILN_FORM);
@@ -96,24 +98,26 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
   }, []);
 
   const handleSave = () => {
-    if (!form.name.trim()) return;
+    const maxTempC = parseInt(form.maxTempC ?? '', 10);
+    if (!trimOrEmpty(form.name) || !maxTempC || maxTempC <= 0) return;
 
     const kiln: Kiln = {
       id: editKiln?.id ?? `kiln-${Date.now()}`,
-      name: form.name.trim(),
-      imageUri: form.imageUri.trim() || undefined,
+      name: trimOrEmpty(form.name),
+      imageUri: trimOrEmpty(form.imageUri) || undefined,
       type: form.type,
-      coneRange: form.coneRange.trim(),
-      shelves: parseInt(form.shelves, 10) || 0,
-      size: form.size.trim(),
-      location: form.location.trim(),
-      queueDelayDays: parseFloat(form.queueDelayDays) || undefined,
-      cycleDurationDays: parseFloat(form.cycleDurationDays) || undefined,
-      pickupDelayDays: parseFloat(form.pickupDelayDays) || undefined,
-      runsEveryDays: parseFloat(form.runsEveryDays) || undefined,
+      maxTempC,
+      coneRange: trimOrEmpty(form.coneRange),
+      shelves: parseInt(form.shelves ?? '0', 10) || 0,
+      size: trimOrEmpty(form.size),
+      location: trimOrEmpty(form.location),
+      queueDelayDays: parseFloat(form.queueDelayDays ?? '') || undefined,
+      cycleDurationDays: parseFloat(form.cycleDurationDays ?? '') || undefined,
+      pickupDelayDays: parseFloat(form.pickupDelayDays ?? '') || undefined,
+      runsEveryDays: parseFloat(form.runsEveryDays ?? '') || undefined,
       pricingModel: form.pricingModel,
-      pricingBaseRate: parseFloat(form.pricingBaseRate) || undefined,
-      notes: form.notes.trim(),
+      pricingBaseRate: parseFloat(form.pricingBaseRate ?? '') || undefined,
+      notes: trimOrEmpty(form.notes),
       createdAt: editKiln?.createdAt ?? new Date().toISOString(),
     };
 
@@ -121,7 +125,9 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
     onClose();
   };
 
-  const canSave = form.name.trim().length > 0;
+  const canSave =
+    trimOrEmpty(form.name).length > 0
+    && parseInt(form.maxTempC ?? '', 10) > 0;
 
   return (
     <>

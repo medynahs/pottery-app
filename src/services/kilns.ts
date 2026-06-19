@@ -23,6 +23,7 @@ export interface BackendKiln {
   studioDelayDays?: number | null;
   pricingModel?: KilnPricingModel | null;
   pricingBaseRate?: number | null;
+  maxTempC?: number | null;
   createdAt: string;
 }
 
@@ -45,6 +46,7 @@ export interface UpsertKilnPayload {
   runsEveryDays?: number;
   pricingModel?: string;
   pricingBaseRate?: number;
+  maxTempC?: number;
 }
 
 // ─── Mappers ──────────────────────────────────────────────────────────────────
@@ -68,6 +70,7 @@ export function localKilnToUpsertPayload(kiln: Kiln): UpsertKilnPayload {
   if (kiln.runsEveryDays != null) payload.runsEveryDays = kiln.runsEveryDays;
   if (kiln.pricingModel) payload.pricingModel = kiln.pricingModel;
   if (kiln.pricingBaseRate != null) payload.pricingBaseRate = kiln.pricingBaseRate;
+  if (kiln.maxTempC != null) payload.maxTempC = kiln.maxTempC;
 
   return payload;
 }
@@ -75,26 +78,26 @@ export function localKilnToUpsertPayload(kiln: Kiln): UpsertKilnPayload {
 export function backendKilnToLocal(b: BackendKiln, existing?: Kiln): Kiln {
   const base: Kiln = existing ?? {
     id: b.id,
-    name: b.name,
+    name: b.name ?? 'Unnamed kiln',
     type: b.type ?? 'electric',
-    coneRange: b.coneRange,
-    shelves: b.shelves,
-    size: b.size,
-    location: b.location,
-    notes: b.notes,
+    coneRange: b.coneRange ?? '',
+    shelves: b.shelves ?? 0,
+    size: b.size ?? '',
+    location: b.location ?? '',
+    notes: b.notes ?? '',
     createdAt: b.createdAt,
   };
 
   return {
     ...base,
     backendId: b.id,
-    name: b.name,
-    type: b.type ?? base.type,
-    coneRange: b.coneRange,
-    shelves: b.shelves,
-    size: b.size,
-    location: b.location,
-    notes: b.notes,
+    name: b.name ?? base.name ?? 'Unnamed kiln',
+    type: b.type ?? base.type ?? 'electric',
+    coneRange: b.coneRange ?? base.coneRange ?? '',
+    shelves: b.shelves ?? base.shelves ?? 0,
+    size: b.size ?? base.size ?? '',
+    location: b.location ?? base.location ?? '',
+    notes: b.notes ?? base.notes ?? '',
     imageUri: b.imageUri ?? base.imageUri,
     queueDelayDays: b.queueDelayDays ?? base.queueDelayDays,
     cycleDurationDays: b.cycleDurationDays ?? base.cycleDurationDays,
@@ -102,6 +105,7 @@ export function backendKilnToLocal(b: BackendKiln, existing?: Kiln): Kiln {
     runsEveryDays: b.runsEveryDays ?? base.runsEveryDays,
     pricingModel: b.pricingModel ?? base.pricingModel,
     pricingBaseRate: b.pricingBaseRate ?? base.pricingBaseRate,
+    maxTempC: b.maxTempC ?? base.maxTempC,
   };
 }
 

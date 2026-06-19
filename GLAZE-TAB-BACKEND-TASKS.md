@@ -117,6 +117,26 @@ Saved glazes use client ids `community-{post_id}-{timestamp}` and land in collec
 
 ---
 
+## P1 — Discover catalog (recipes, inspirations, provenance)
+
+Discover tab ships a **bundled static catalog** today (`recipes.ts`, `inspirations.ts`). Recipes save to atlas with stable ids `discover-{recipe_id}` + `discoverSourceRecipeId`. **Layering ideas** are read-only (photo, description, application notes — not saved to atlas).
+
+| # | Task | Notes |
+|---|------|-------|
+| BE-10.1 | `GET /glazes/discover/recipes` — versioned catalog JSON | Replace bundled `DISCOVER_RECIPES`; include `catalog_version` for cache invalidation |
+| BE-10.2 | `GET /glazes/discover/inspirations` — layering ideas | `{ title, description, application_notes, cone, preview_url }` — no recipe refs required |
+| BE-10.3 | CDN URLs for test-tile preview images | Replace Unsplash placeholders; signed or public static assets |
+| BE-10.4 | Add `source_discover_recipe_id` on glaze sync records | Set when saving a **recipe** from Discover; mirrors community `source_post_id` |
+| BE-10.5 | Idempotent save: unique `(user_id, source_discover_recipe_id)` | Prevents duplicate saves; return existing glaze on retry |
+| BE-10.6 | Return `source_discover_recipe_id` on glaze list + sync pull | FE `isDiscoverRecipeSaved()` can check server-side |
+| BE-10.7 | Optional: `discover_saved_at` timestamp on glaze record | Powers provenance banner + analytics |
+| BE-10.8 | Optional: admin endpoint to publish/update catalog entries | Curate recipes + inspirations without app release |
+| BE-10.9 | Optional: full-text search index on catalog | Recipes (name, materials) + inspirations (title, notes) |
+
+**Acceptance:** Save Floating Blue from Discover → one atlas entry with provenance → reinstall restores saved state; catalog update bumps version → app fetches new content without release.
+
+---
+
 ## P2 — Batch scaling metadata (optional server fields)
 
 Piece-count batch scaling runs **entirely on device** today (`GlazeBatchScalerCard` + `glazeBatchScaler.ts`). Server support is optional for sharing defaults across devices.
@@ -157,6 +177,7 @@ Piece-count batch scaling runs **entirely on device** today (`GlazeBatchScalerCa
 | Glaze pull mapper | `src/services/glazes.ts` → `backendGlazeToLocal` |
 | Community post create | `src/services/community.ts` → send `post_type` + `glaze_recipe` when BE-7 lands |
 | Community save provenance | `src/screens/community/utils/saveCommunityGlaze.ts`, `glazePostPayload.ts` |
+| Discover save provenance | `src/screens/library/discover/saveDiscoverGlaze.ts`, `recipeLookup.ts` |
 | Types | `BackendPiece`, `PieceSyncSnapshot`, `BackendFeedPost`, `GlazeSyncItem` |
 | Merge rules | Preserve local `syncDirty` until push confirms new fields |
 
@@ -174,4 +195,6 @@ Piece-count batch scaling runs **entirely on device** today (`GlazeBatchScalerCa
 | `POST /users/me/pieces/sync` | Push pieces (**missing glaze fields**) |
 | `POST /posts` (or `/users/me/posts`) | Create feed post (**missing `post_type` / `glaze_recipe`**) |
 | `GET /users/me/feed` | Friends feed (**returns plain `content` only today**) |
+| `GET /glazes/discover/recipes` | Curated starter recipes (**bundled in app today**) |
+| `GET /glazes/discover/inspirations` | Layering ideas — photo + notes (**bundled in app today**) |
 | `POST /uploads/presigned` | Post photo upload (see `TICKETS.md` #22) |

@@ -1,26 +1,39 @@
-import { Text } from '@/src/components/ui/text';
 import { GLAZE_FINISH_LABELS } from '@/src/screens/glazes/types';
 import type { GlazeFinish } from '@/src/screens/glazes/types';
 import React from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import { GlazePhotoTile } from '../GlazePhotoTile';
-import type { DiscoverRecipe } from './types';
+import type { DiscoverItem } from './types';
 
 function DiscoverTile({
-  recipe,
+  item,
   width,
-  matchesCone,
   saved,
   onPress,
 }: {
-  recipe: DiscoverRecipe;
+  item: DiscoverItem;
   width: number;
-  matchesCone: boolean;
   saved: boolean;
   onPress: () => void;
 }) {
-  const finishLabel =
-    GLAZE_FINISH_LABELS[recipe.finish as GlazeFinish] ?? recipe.finish;
+  if (item.kind === 'inspiration') {
+    const { inspiration } = item;
+    return (
+      <GlazePhotoTile
+        width={width}
+        name={inspiration.title}
+        coneLabel={inspiration.coneLabel}
+        finishLabel="Layering idea"
+        previewUri={inspiration.previewUri}
+        colorHex={inspiration.colorHex}
+        cornerBadge={undefined}
+        onPress={onPress}
+      />
+    );
+  }
+
+  const { recipe } = item;
+  const finishLabel = GLAZE_FINISH_LABELS[recipe.finish as GlazeFinish] ?? recipe.finish;
 
   return (
     <GlazePhotoTile
@@ -30,7 +43,6 @@ function DiscoverTile({
       finishLabel={finishLabel}
       previewUri={recipe.previewUri}
       colorHex={recipe.colorHex}
-      matchesCone={matchesCone}
       cornerBadge={saved ? { label: 'Saved', tone: 'success' } : undefined}
       onPress={onPress}
     />
@@ -38,50 +50,50 @@ function DiscoverTile({
 }
 
 export function DiscoverGrid({
-  recipes,
-  userConeNorm,
+  items,
   savedRecipeIds,
-  onPressRecipe,
+  onPressItem,
 }: {
-  recipes: DiscoverRecipe[];
-  userConeNorm: string | null;
+  items: DiscoverItem[];
   savedRecipeIds?: Set<string>;
-  onPressRecipe: (recipe: DiscoverRecipe) => void;
+  onPressItem: (item: DiscoverItem) => void;
 }) {
   const { width } = useWindowDimensions();
   const gap = 10;
   const horizontalPad = 24;
   const tileWidth = (width - horizontalPad * 2 - gap) / 2;
 
-  const leftColumn = recipes.filter((_, i) => i % 2 === 0);
-  const rightColumn = recipes.filter((_, i) => i % 2 === 1);
+  const leftColumn = items.filter((_, i) => i % 2 === 0);
+  const rightColumn = items.filter((_, i) => i % 2 === 1);
 
   return (
     <View className="px-6 flex-row" style={{ gap }}>
       <View style={{ width: tileWidth }}>
-        {leftColumn.map((recipe) => (
+        {leftColumn.map((item) => (
           <DiscoverTile
-            key={recipe.id}
-            recipe={recipe}
+            key={itemId(item)}
+            item={item}
             width={tileWidth}
-            matchesCone={userConeNorm !== null && recipe.cone === userConeNorm}
-            saved={savedRecipeIds?.has(recipe.id) ?? false}
-            onPress={() => onPressRecipe(recipe)}
+            saved={item.kind === 'recipe' ? savedRecipeIds?.has(item.recipe.id) ?? false : false}
+            onPress={() => onPressItem(item)}
           />
         ))}
       </View>
       <View style={{ width: tileWidth }}>
-        {rightColumn.map((recipe) => (
+        {rightColumn.map((item) => (
           <DiscoverTile
-            key={recipe.id}
-            recipe={recipe}
+            key={itemId(item)}
+            item={item}
             width={tileWidth}
-            matchesCone={userConeNorm !== null && recipe.cone === userConeNorm}
-            saved={savedRecipeIds?.has(recipe.id) ?? false}
-            onPress={() => onPressRecipe(recipe)}
+            saved={item.kind === 'recipe' ? savedRecipeIds?.has(item.recipe.id) ?? false : false}
+            onPress={() => onPressItem(item)}
           />
         ))}
       </View>
     </View>
   );
+}
+
+function itemId(item: DiscoverItem): string {
+  return item.kind === 'recipe' ? item.recipe.id : item.inspiration.id;
 }

@@ -113,6 +113,9 @@ export interface GlazeSyncItem {
   versionNumber?: number;
   rootGlazeId?: string;
   parentGlazeId?: string;
+  /** Client-side discover provenance — server may ignore until BE-10. */
+  discoverSourceRecipeId?: string;
+  discoverSavedAt?: string;
 }
 
 export interface GlazeTestSyncItem {
@@ -252,6 +255,8 @@ export function localGlazeToSyncItem(g: GlazeLibraryItem, deleted = false): Glaz
     versionNumber: g.versionNumber,
     rootGlazeId: g.rootGlazeId,
     parentGlazeId: g.parentGlazeId,
+    discoverSourceRecipeId: g.discoverSourceRecipeId,
+    discoverSavedAt: g.discoverSavedAt,
     ...(deleted ? { deleted: true } : {}),
   };
 }

@@ -8,7 +8,6 @@ import { Droplets, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GlazeAtlasGrid } from './GlazeAtlasGrid';
 import { deriveCustomCollectionNames } from './atlas/collections';
 import { CreateCollectionModal } from './atlas/CollectionsGrid';
 import { GlazeFilterSheet } from './atlas/GlazeFilterSheet';
@@ -19,6 +18,7 @@ import {
   filterGlazesList,
   type GlazeFilters,
 } from './atlas/glazeListUtils';
+import { GlazeAtlasGrid } from './GlazeAtlasGrid';
 import { scheduleGlazesSync } from './useGlazesSync';
 
 type LibraryGlazesScreenProps = {
@@ -121,8 +121,7 @@ export default function LibraryGlazesScreen({
     }
   }, [customCollections, filters.collection, patchFilters]);
 
-  const showSummaryRow =
-    activeFilterTags.length > 0 || search.trim().length > 0 || filteredGlazes.length !== glazes.length;
+  const showSummaryRow = activeFilterTags.length > 0;
 
   return (
     <View className="flex-1 bg-background">
@@ -253,25 +252,16 @@ export default function LibraryGlazesScreen({
           </View>
 
           {showSummaryRow ? (
-            <View className="flex-row items-center mt-2.5 gap-2 min-h-[28px]">
-              {activeFilterTags.length > 0 ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={{ flex: 1 }}
-                  contentContainerStyle={{ gap: 6, paddingRight: 8 }}
-                >
-                  {activeFilterTags.map((tag) => (
-                    <ActiveFilterChip key={tag.key} label={tag.label} onClear={tag.onClear} />
-                  ))}
-                </ScrollView>
-              ) : (
-                <View style={{ flex: 1 }} />
-              )}
-              <Text className="text-[11px] text-muted-foreground shrink-0">
-                {filteredGlazes.length} of {glazes.length}
-              </Text>
-            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="mt-2.5"
+              contentContainerStyle={{ gap: 6, paddingRight: 8 }}
+            >
+              {activeFilterTags.map((tag) => (
+                <ActiveFilterChip key={tag.key} label={tag.label} onClear={tag.onClear} />
+              ))}
+            </ScrollView>
           ) : null}
         </View>
 

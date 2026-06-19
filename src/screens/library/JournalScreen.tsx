@@ -8,9 +8,9 @@ import { useLocalSearchParams } from 'expo-router';
 import { Plus, Sparkles } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
-import { slugToCollectionKey } from './atlas/collections';
 import { MainTabHeader } from '../../components/MainTabHeader';
 import { Text } from '../../components/ui/text';
+import { slugToCollectionKey } from './atlas/collections';
 
 type AtlasTab = 'my-atlas' | 'discover';
 
@@ -53,47 +53,46 @@ export default function JournalScreen() {
     [atlas.glazes],
   );
 
-  const headerActions =
-    activeTab === 'my-atlas' ? (
-      <View className="flex-row items-center gap-2">
-        <TouchableOpacity
-          onPress={atlas.openLogTest}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel="Log test tile"
-          className="flex-row items-center gap-1.5 px-3 py-2.5 rounded-2xl border border-border bg-card"
-        >
-          <Sparkles size={14} color="hsl(24 20% 40%)" />
-          <Text className="text-xs font-semibold text-foreground">Log Tile</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={atlas.openAddGlaze}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={
-            atlasLimit.atLimit ? 'Add glaze batch, premium required' : 'Add glaze batch'
-          }
-          className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-primary"
-          style={{
-            shadowColor: '#8B6A2A',
-            shadowOpacity: 0.2,
-            shadowRadius: 6,
-            shadowOffset: { width: 0, height: 2 },
-            elevation: 3,
-          }}
-        >
-          <Plus size={15} color="white" />
-          <Text className="text-sm font-semibold text-white">Add</Text>
-        </TouchableOpacity>
-      </View>
-    ) : null;
+  const headerActions = (
+    <View className="flex-row items-center gap-2">
+      <TouchableOpacity
+        onPress={atlas.openLogTest}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="Log test tile"
+        className="flex-row items-center gap-1.5 px-3 py-2.5 rounded-2xl border border-border bg-card"
+      >
+        <Sparkles size={14} color="hsl(24 20% 40%)" />
+        <Text className="text-xs font-semibold text-foreground">Log Tile</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={atlas.openAddGlaze}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={
+          atlasLimit.atLimit ? 'Add glaze batch, premium required' : 'Add glaze batch'
+        }
+        className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-primary"
+        style={{
+          shadowColor: '#8B6A2A',
+          shadowOpacity: 0.2,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 3,
+        }}
+      >
+        <Plus size={15} color="white" />
+        <Text className="text-sm font-semibold text-white">Add</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   const atlasDescription =
     activeTab === 'my-atlas'
       ? atlasLimit.isPremium
         ? `${atlas.glazes.length} batch${atlas.glazes.length !== 1 ? 'es' : ''} · ${atlas.glazeTests.length} test${atlas.glazeTests.length !== 1 ? 's' : ''}`
         : `${atlasLimit.count}/${atlasLimit.limit} free batches · ${atlas.glazeTests.length} test${atlas.glazeTests.length !== 1 ? 's' : ''}`
-      : 'Browse glaze inspiration — tap a photo for the full recipe';
+      : 'Recipes and layering ideas to try in your studio';
 
   return (
     <View className="flex-1 bg-background">

@@ -3,6 +3,7 @@ import { ConfirmSheet } from '@/src/components/AppSheets';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
+import { BrandColors } from '@/src/constants/theme';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Flame, FlameKindling, Layers, Plus, Thermometer } from 'lucide-react-native';
@@ -16,11 +17,14 @@ import { AddKilnModal } from './components/AddKilnModal';
 import { FiringDetailModal } from './components/FiringDetailModal';
 import { ScheduledFiringRow } from './components/FiringRows';
 import { KilnCard } from './components/KilnCard';
+import { KilnSwipeCard } from './components/KilnSwipeCard';
+import { LogFiringModal } from './components/LogFiringModal';
 import { ReadyFilterChip, ReadyPieceRow, ReadySortChip } from './components/ReadyPieces';
 import { SectionHeader } from './components/SectionHeader';
 import { StartFiringModal } from './components/StartFiringModal';
 import { formatReadyDate, getAutoFiringStatus, getExpectedReadyAt } from './firingEstimations';
 import { useKilnScreen } from './hooks/useKilnScreen';
+import { getLastFiredLabel } from './utils/kilnHelpers';
 
 export default function KilnScreen() {
   const router = useRouter();
@@ -58,7 +62,7 @@ export default function KilnScreen() {
   }, [activeFirings, featuredActiveFiring?.id, scheduledFirings]);
 
   const waitingCount = waitingForBisque.length + waitingForGlaze.length;
-  const [sectionMode, setSectionMode] = React.useState<'sessions' | 'queue' | 'kilns'>('sessions');
+  const [sectionMode, setSectionMode] = React.useState<'kilns' | 'sessions' | 'queue'>('kilns');
   const [firstKilnCeremony, setFirstKilnCeremony] = React.useState(false);
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
   const markCeremonyAsSeen = useAppStore((s) => s.markCeremonyAsSeen);
@@ -68,6 +72,8 @@ export default function KilnScreen() {
   const [showAllSessions, setShowAllSessions] = React.useState(false);
   const [photoPreview, setPhotoPreview] = React.useState<{ uri: string; name: string } | null>(null);
   const [pendingDeleteKiln, setPendingDeleteKiln] = React.useState<Kiln | null>(null);
+  const [logFiringKiln, setLogFiringKiln] = React.useState<Kiln | null>(null);
+  const firings = useAppStore((s) => s.firings);
   const visibleSessionRows = showAllSessions ? sessionRows : sessionRows.slice(0, 4);
   const hiddenSessionCount = Math.max(0, sessionRows.length - visibleSessionRows.length);
   const hasOpenSessionContent = featuredActiveFiring !== null || sessionRows.length > 0;
@@ -150,8 +156,12 @@ export default function KilnScreen() {
         <View className="px-6 pt-4 pb-10">
           <View className="mb-6">
             <View className="flex-row bg-muted rounded-2xl p-1">
-              {(['sessions', 'queue', 'kilns'] as const).map((tab) => {
-                const labels: Record<typeof tab, string> = { sessions: 'Sessions', queue: 'Queue', kilns: 'Kilns' };
+              {(['kilns', 'sessions', 'queue'] as const).map((tab) => {
+                const labels: Record<typeof tab, string> = {
+                  kilns: 'Active Kilns',
+                  sessions: 'Sessions',
+                  queue: 'Queue',
+                };
                 return (
                   <TouchableOpacity
                     key={tab}
@@ -167,7 +177,48 @@ export default function KilnScreen() {
             </View>
           </View>
 
-          {sectionMode === 'sessions' ? (
+          {sectionMode === 'kilns' ? (
+            <View className="mb-4">
+              <SectionHeader
+                title="Active Kilns"
+                icon={<Thermometer size={18} color={BrandColors.primary} />}
+                action={
+                  <TouchableOpacity
+                    onPress={() => setAddKilnOpen(true)}
+                    className="flex-row items-center gap-1 px-3 py-1.5 rounded-xl border border-border bg-card"
+                  >
+                    <Plus size={14} color={BrandColors.primary} />
+                    <Text className="text-xs font-semibold text-primary">Add Kiln</Text>
+                  </TouchableOpacity>
+                }
+              />
+
+              {kilns.length === 0 ? (
+                <EmptyState
+                  icon={Thermometer}
+                  title="No kilns yet"
+                  description="Add your kiln to log firings, track peak temps, and see when you last fired."
+                  ctaLabel="Add your first kiln"
+                  ctaIcon={Plus}
+                  onCtaPress={() => setAddKilnOpen(true)}
+                />
+              ) : (
+                kilns.map((kiln) => (
+                  <KilnSwipeCard key={kiln.id} onDelete={() => confirmDeleteKiln(kiln)}>
+                    <KilnCard
+                      kiln={kiln}
+                      firingCount={kilnFiringCounts[kiln.id] ?? 0}
+                      lastFiredLabel={getLastFiredLabel(kiln, firings)}
+                      onPress={() => { setEditKiln(kiln); setAddKilnOpen(true); }}
+                      onViewHistory={() => router.push({ pathname: '/kiln-history', params: { kilnId: kiln.id } } as never)}
+                      onLogFiring={() => setLogFiringKiln(kiln)}
+                    />
+                  </KilnSwipeCard>
+                ))
+              )}
+            </View>
+
+          ) : sectionMode === 'sessions' ? (
             <View className="mb-8">
               <SectionHeader title="Firing Sessions" icon={<Flame size={18} />} />
 
@@ -306,46 +357,7 @@ export default function KilnScreen() {
                 />
               ) : null}
             </View>
-
-          ) : (
-            <View className="mb-4">
-              <SectionHeader
-                title="Studio / Kiln Profiles"
-                icon={<Thermometer size={18} color="#8B6A2A" />}
-                action={
-                  <TouchableOpacity
-                    onPress={() => setAddKilnOpen(true)}
-                    className="flex-row items-center gap-1 px-3 py-1.5 rounded-xl border border-border bg-card"
-                  >
-                    <Plus size={14} color="#8B6A2A" />
-                    <Text className="text-xs font-semibold text-primary">Add Kiln</Text>
-                  </TouchableOpacity>
-                }
-              />
-
-              {kilns.length === 0 ? (
-                <EmptyState
-                  icon={Thermometer}
-                  title="No kilns yet"
-                  description="Add your kiln to start tracking firings, piece history, and quirks."
-                  ctaLabel="Add your first kiln"
-                  ctaIcon={Plus}
-                  onCtaPress={() => setAddKilnOpen(true)}
-                />
-              ) : (
-                kilns.map((kiln) => (
-                  <KilnCard
-                    key={kiln.id}
-                    kiln={kiln}
-                    firingCount={kilnFiringCounts[kiln.id] ?? 0}
-                    onEdit={() => { setEditKiln(kiln); setAddKilnOpen(true); }}
-                    onDelete={() => confirmDeleteKiln(kiln)}
-                    onViewHistory={() => router.push({ pathname: '/kiln-history', params: { kilnId: kiln.id } } as never)}
-                  />
-                ))
-              )}
-            </View>
-          )}
+          ) : null}
         </View>
       </ScrollView>
 
@@ -358,6 +370,11 @@ export default function KilnScreen() {
         tint="rgba(211, 120, 60, 1)"
         durationMs={3000}
         onDismiss={() => setFirstKilnCeremony(false)}
+      />
+      <LogFiringModal
+        visible={logFiringKiln !== null}
+        kiln={logFiringKiln}
+        onClose={() => setLogFiringKiln(null)}
       />
       <AddKilnModal
         visible={addKilnOpen || !!editKiln}

@@ -117,6 +117,53 @@ export function estimateFiringCost({
   return { totalCost: roundedTotal, costPerPiece };
 }
 
+export type FiringCostLineItem = {
+  piece: Piece;
+  cost: number | null;
+  volumeCm3: number | null;
+};
+
+/** Per-piece cost lines aligned with the kiln pricing model. */
+export function buildFiringCostBreakdown({
+  kiln,
+  pieces,
+}: {
+  kiln?: Kiln;
+  pieces: Piece[];
+}): { totalCost: number | null; costPerPiece: number | null; lineItems: FiringCostLineItem[] } {
+  if (!kiln || pieces.length === 0) {
+    return { totalCost: null, costPerPiece: null, lineItems: [] };
+  }
+
+  const model = kiln.pricingModel ?? 'per-kiln';
+  const baseRate = kiln.pricingBaseRate ?? (model === 'per-kiln' ? 45 : model === 'per-shelf' ? 18 : 2.2);
+
+  if (model === 'per-volume') {
+    const lineItems: FiringCostLineItem[] = pieces.map((piece) => {
+      const volumeCm3 = piece.volumeCm3 ?? null;
+      const liters = volumeCm3 != null && volumeCm3 > 0 ? volumeCm3 / 1000 : null;
+      const cost = liters != null ? Number((liters * baseRate).toFixed(2)) : null;
+      return { piece, cost, volumeCm3 };
+    });
+    const totalCost = Number(
+      lineItems.reduce((sum, item) => sum + (item.cost ?? 0), 0).toFixed(2),
+    );
+    const costPerPiece =
+      pieces.length > 0 ? Number((totalCost / pieces.length).toFixed(2)) : null;
+    return { totalCost, costPerPiece, lineItems };
+  }
+
+  const { totalCost, costPerPiece } = estimateFiringCost({ kiln, pieces });
+  const share = costPerPiece;
+  const lineItems: FiringCostLineItem[] = pieces.map((piece) => ({
+    piece,
+    cost: share,
+    volumeCm3: piece.volumeCm3 ?? null,
+  }));
+
+  return { totalCost, costPerPiece, lineItems };
+}
+
 export function formatReadyDate(input?: string) {
   if (!input) return '—';
   const date = new Date(input);
@@ -167,6 +214,11 @@ export function getAutoFiringStatus(firing: Firing, kiln?: Kiln) {
   if (now < firingEnd) return 'firing';
   if (now < cycleEnd) return 'cooling';
   return 'ready';
+}
+
+/** Auto status from kiln schedule only — ignores manual statusOverride. */
+export function getScheduledAutoStatus(firing: Firing, kiln?: Kiln) {
+  return getAutoFiringStatus({ ...firing, statusOverride: undefined }, kiln);
 }
 
 export function getExpectedReadyAt(firing: Firing, kiln?: Kiln) {

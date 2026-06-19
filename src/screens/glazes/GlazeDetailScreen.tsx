@@ -5,6 +5,7 @@ import { AddGlazeModal } from '@/src/screens/library/atlas/AddGlazeModal';
 import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
 import { buildGlazeTestFromDraft } from '@/src/screens/library/atlas/glazeTestDraft';
 import { CommunityProvenanceBanner } from '@/src/screens/glazes/components/CommunityProvenanceBanner';
+import { DiscoverProvenanceBanner } from '@/src/screens/glazes/components/DiscoverProvenanceBanner';
 import { GlazeBatchScalerCard } from '@/src/screens/glazes/components/GlazeBatchScalerCard';
 import { GlazeStatusPill, GlazeStatusPillRow } from '@/src/screens/glazes/components/GlazeStatusPill';
 import { ShareGlazeRecipeSheet } from '@/src/screens/glazes/ShareGlazeRecipeSheet';
@@ -546,6 +547,7 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
           </View>
 
           <CommunityProvenanceBanner glaze={glaze} />
+          <DiscoverProvenanceBanner glaze={glaze} />
 
           <View className="mt-5">
             <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">

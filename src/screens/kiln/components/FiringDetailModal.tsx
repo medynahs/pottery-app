@@ -1,24 +1,27 @@
 // src/screens/kiln/FiringDetailModal.tsx
 import { ConfirmSheet, ModalCard, ModalShell } from '@/src/components/AppSheets';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
+import { ImageLightbox } from '@/src/components/ImageLightbox';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
-import { Colors } from '@/src/constants/theme';
-import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
 import { useVisiblePieces, useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Trash2, X } from 'lucide-react-native';
 import React from 'react';
-import { Image, Modal, ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import type { Firing, FiringResult } from '../../../types/kiln';
+import { InteractionManager, ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import type { Firing, FiringResult, FiringStatusOverride } from '../../../types/kiln';
 import type { GlazeOutcome, Piece } from '../../../types/pieces';
-import { FIRING_TYPE_LABELS } from '../constants';
+import { FIRING_SOURCE_STAGE, FIRING_TYPE_LABELS } from '../constants';
+import { buildFiringCostBreakdown } from '../firingEstimations';
 import {
-    useDeleteFiringMutation,
-    useUpdateFiringMutation,
+  useDeleteFiringMutation,
+  useUpdateFiringMutation,
 } from '../hooks/useFiringsSync';
+import { getFiringDisplayDate } from '../utils/kilnHelpers';
+import { KILN_UI } from '../utils/kilnTheme';
 import { FiringDetailContent } from './FiringDetailContent';
+import { FiringOutcomeBadge } from './FiringOutcomeBadge';
 
 interface FiringDetailModalProps {
   firing: Firing | null;
@@ -29,8 +32,6 @@ interface FiringDetailModalProps {
 export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModalProps) {
   const router = useRouter();
   const { height } = useWindowDimensions();
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme];
 
   const kilns = useAppStore((state) => state.kilns);
   const sessionToken = useAppStore((state) => state.sessionToken);
@@ -38,13 +39,17 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const shareToCommunity = useCommunityComposer();
   const currencySymbol = useAppStore((state) => state.pricingSettings.currencySymbol);
   const assignPiecesToFiring = useAppStore((state) => state.assignPiecesToFiring);
+  const setCompletedFiringPieces = useAppStore((state) => state.setCompletedFiringPieces);
+  const setFiringStatusOverride = useAppStore((state) => state.setFiringStatusOverride);
   const completeFiring = useAppStore((state) => state.completeFiring);
   const deleteFiring = useAppStore((state) => state.deleteFiring);
   const updateFiring = useAppStore((state) => state.updateFiring);
   const deleteFiringMutation = useDeleteFiringMutation();
   const updateFiringMutation = useUpdateFiringMutation();
 
-  const liveFiring = useAppStore((state) => state.firings.find((currentFiring) => currentFiring.id === firing?.id));
+  const liveFiring = useAppStore((state) =>
+    state.firings.find((currentFiring) => currentFiring.id === firing?.id),
+  );
 
   const [resultNotes, setResultNotes] = React.useState('');
   const [selectedResult, setSelectedResult] = React.useState<FiringResult>('success');
@@ -54,13 +59,10 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
   const [firingCeremonyVisible, setFiringCeremonyVisible] = React.useState(false);
   const [firingCeremonyName, setFiringCeremonyName] = React.useState('');
-  const [piecePhotoPreview, setPiecePhotoPreview] = React.useState<{ uri: string; name: string } | null>(null);
+  const [lightbox, setLightbox] = React.useState<{ uri: string; caption?: string } | null>(null);
 
   React.useEffect(() => {
-    if (!visible) {
-      return;
-    }
-
+    if (!visible) return;
     setResultNotes('');
     setSelectedResult('success');
     setSelectedGlazeOutcome('');
@@ -71,42 +73,111 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const handlePreviewPieceImage = (piece: Piece) => {
     const uri = piece.photo ?? piece.imgUrl;
     if (!uri) return;
-    setPiecePhotoPreview({ uri, name: piece.name });
+    setLightbox({ uri, caption: piece.name });
+  };
+
+  const handlePreviewFiringPhoto = () => {
+    const uri = liveFiring?.photoUri;
+    if (!uri) return;
+    setLightbox({ uri, caption: liveFiring?.name });
   };
 
   const handleOpenPieceJournal = (piece: Piece) => {
-    onClose();
+    const pieceId = String(piece.id);
     router.push({
       pathname: '/(tabs)/pieces',
-      params: { openJournalPieceId: String(piece.id) },
+      params: { openJournalPieceId: pieceId },
+    });
+    InteractionManager.runAfterInteractions(() => {
+      onClose();
     });
   };
 
-  const assignedPieceIdSet = React.useMemo(() => new Set(liveFiring?.pieceIds ?? []), [liveFiring?.pieceIds]);
+  const assignedPieceIdSet = React.useMemo(
+    () => new Set(liveFiring?.pieceIds ?? []),
+    [liveFiring?.pieceIds],
+  );
   const assignedPieces = React.useMemo(
     () => pieces.filter((piece) => assignedPieceIdSet.has(piece.id)),
-    [assignedPieceIdSet, pieces]
+    [assignedPieceIdSet, pieces],
   );
+  const sourceStage = liveFiring ? FIRING_SOURCE_STAGE[liveFiring.type] : undefined;
+  const eligiblePieces = React.useMemo(() => {
+    if (!liveFiring || !sourceStage) return [];
+    return pieces.filter(
+      (piece) =>
+        piece.stage !== 'cemetery'
+        && (assignedPieceIdSet.has(piece.id) || piece.stage === sourceStage),
+    );
+  }, [assignedPieceIdSet, liveFiring, pieces, sourceStage]);
   const unassignedPieces = React.useMemo(
     () => pieces.filter((piece) => !assignedPieceIdSet.has(piece.id) && piece.stage !== 'cemetery'),
-    [assignedPieceIdSet, pieces]
+    [assignedPieceIdSet, pieces],
   );
   const glazeReadyPieces = React.useMemo(
-    () => unassignedPieces.filter((piece) => piece.stage.trim().toLowerCase() === 'glazing'),
+    () => unassignedPieces.filter((piece) => (piece.stage ?? '').trim().toLowerCase() === 'glazing'),
     [unassignedPieces],
   );
   const pieceRows = React.useMemo(() => {
     if (!showPiecePicker) return assignedPieces;
+    if (liveFiring?.state === 'completed') {
+      return eligiblePieces;
+    }
     const unassigned =
       firing?.type === 'glaze'
-        ? [...glazeReadyPieces, ...unassignedPieces.filter((p) => p.stage.trim().toLowerCase() !== 'glazing')]
+        ? [...glazeReadyPieces, ...unassignedPieces.filter((p) => (p.stage ?? '').trim().toLowerCase() !== 'glazing')]
         : unassignedPieces;
     return [...assignedPieces, ...unassigned];
-  }, [assignedPieces, firing?.type, glazeReadyPieces, showPiecePicker, unassignedPieces]);
+  }, [
+    assignedPieces,
+    eligiblePieces,
+    firing?.type,
+    glazeReadyPieces,
+    liveFiring?.state,
+    showPiecePicker,
+    unassignedPieces,
+  ]);
 
   const linkedGlazePieces = React.useMemo(
     () => assignedPieces.filter((piece) => piece.glazeId),
     [assignedPieces],
+  );
+
+  const kiln = kilns.find((currentKiln) => currentKiln.id === liveFiring?.kilnId);
+  const isCompleted = liveFiring?.state === 'completed';
+
+  const costBreakdown = React.useMemo(
+    () => buildFiringCostBreakdown({ kiln, pieces: assignedPieces }),
+    [assignedPieces, kiln],
+  );
+
+  const receiptSurvivedByPieceId = React.useMemo(() => {
+    const map = new Map<number, boolean | undefined>();
+    for (const receipt of liveFiring?.pieceReceipts ?? []) {
+      const piece = pieces.find(
+        (candidate) => (candidate.backendId ?? String(candidate.id)) === receipt.pieceBackendId,
+      );
+      if (piece) map.set(piece.id, receipt.survived);
+    }
+    return map;
+  }, [liveFiring?.pieceReceipts, pieces]);
+
+  const syncFiringMutation = React.useCallback(
+    (nextFiring: Firing) => {
+      updateFiring(nextFiring);
+      updateFiringMutation.mutate(nextFiring);
+    },
+    [updateFiring, updateFiringMutation],
+  );
+
+  const persistStatusOverride = React.useCallback(
+    (override: FiringStatusOverride | undefined) => {
+      if (!liveFiring) return;
+      setFiringStatusOverride(liveFiring.id, override);
+      const updated = useAppStore.getState().firings.find((f) => f.id === liveFiring.id);
+      if (updated) syncFiringMutation(updated);
+    },
+    [liveFiring, setFiringStatusOverride, syncFiringMutation],
   );
 
   const handleSelectResult = React.useCallback((result: FiringResult) => {
@@ -132,9 +203,6 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
 
   if (!firing || !liveFiring) return null;
 
-  const kiln = kilns.find((currentKiln) => currentKiln.id === liveFiring.kilnId);
-  const isCompleted = liveFiring.state === 'completed';
-
   const handleComplete = () => {
     const glazeOutcome =
       liveFiring.type === 'glaze' && selectedGlazeOutcome
@@ -142,14 +210,17 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
         : undefined;
     completeFiring(liveFiring.id, selectedResult, resultNotes, glazeOutcome);
     const now = new Date().toISOString();
-    updateFiringMutation.mutate({
-      ...liveFiring,
-      state: 'completed',
-      completedAt: now,
-      notes: liveFiring.notes,
-      result: selectedResult,
-      resultNotes,
-    });
+    const updated = useAppStore.getState().firings.find((f) => f.id === liveFiring.id);
+    if (updated) {
+      updateFiringMutation.mutate({
+        ...updated,
+        state: 'completed',
+        completedAt: now,
+        notes: liveFiring.notes,
+        result: selectedResult,
+        resultNotes,
+      });
+    }
     setShowCompletionForm(false);
     if (selectedResult === 'success') {
       setFiringCeremonyName(liveFiring.name);
@@ -162,15 +233,24 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   };
 
   const toggleAssignPiece = (pieceId: number) => {
+    if (isCompleted) {
+      const nextIds = assignedPieceIdSet.has(pieceId)
+        ? liveFiring.pieceIds.filter((id) => id !== pieceId)
+        : [...liveFiring.pieceIds, pieceId];
+      setCompletedFiringPieces(liveFiring.id, nextIds);
+      const updated = useAppStore.getState().firings.find((f) => f.id === liveFiring.id);
+      if (updated) syncFiringMutation(updated);
+      return;
+    }
+
     if (assignedPieceIdSet.has(pieceId)) {
       const next = { ...liveFiring, pieceIds: liveFiring.pieceIds.filter((id) => id !== pieceId) };
-      updateFiring(next);
-      updateFiringMutation.mutate(next);
+      syncFiringMutation(next);
       return;
     }
 
     assignPiecesToFiring(liveFiring.id, [pieceId]);
-    updateFiringMutation.mutate({
+    syncFiringMutation({
       ...liveFiring,
       pieceIds: Array.from(new Set([...liveFiring.pieceIds, pieceId])),
     });
@@ -179,8 +259,17 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const assignAllGlazeReady = () => {
     if (glazeReadyPieces.length === 0) return;
     const ids = glazeReadyPieces.map((piece) => piece.id);
+    if (isCompleted) {
+      setCompletedFiringPieces(
+        liveFiring.id,
+        Array.from(new Set([...liveFiring.pieceIds, ...ids])),
+      );
+      const updated = useAppStore.getState().firings.find((f) => f.id === liveFiring.id);
+      if (updated) syncFiringMutation(updated);
+      return;
+    }
     assignPiecesToFiring(liveFiring.id, ids);
-    updateFiringMutation.mutate({
+    syncFiringMutation({
       ...liveFiring,
       pieceIds: Array.from(new Set([...liveFiring.pieceIds, ...ids])),
     });
@@ -214,109 +303,105 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
     />
     <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
       <ModalCard maxHeight={height * 0.95}>
-
-          <View className="flex-row justify-between items-start px-6 pb-4 border-b border-border">
+        <View
+          className="px-6 pt-5 pb-4 border-b"
+          style={{ borderColor: KILN_UI.warmBorder, backgroundColor: KILN_UI.warmBg }}
+        >
+          <View className="flex-row justify-between items-start">
             <View className="flex-1 pr-4">
-              <Text className="text-2xl font-serif font-bold text-foreground" numberOfLines={1}>
+              <Text
+                className="text-2xl text-foreground"
+                style={{ fontFamily: 'Fraunces_700Bold' }}
+                numberOfLines={2}
+              >
                 {liveFiring.name}
               </Text>
-              <Text className="text-xs text-muted-foreground mt-1">
-                {FIRING_TYPE_LABELS[liveFiring.type]} · Cone {liveFiring.cone}
+              <Text className="text-xs text-muted-foreground mt-1.5">
+                {getFiringDisplayDate(liveFiring)}
+                {' · '}
+                {FIRING_TYPE_LABELS[liveFiring.type]}
               </Text>
+              {liveFiring.result ? (
+                <View className="mt-2 self-start">
+                  <FiringOutcomeBadge result={liveFiring.result} compact />
+                </View>
+              ) : null}
             </View>
-            <View className="flex-row gap-2 items-center">
+            <View className="flex-row gap-1 items-center">
               {!isCompleted ? (
-                <TouchableOpacity onPress={handleDelete} className="p-2">
-                  <Trash2 size={16} color={colors.mutedForeground} />
+                <TouchableOpacity onPress={handleDelete} className="p-2" hitSlop={8}>
+                  <Trash2 size={16} color={KILN_UI.brownMuted} />
                 </TouchableOpacity>
               ) : null}
-              <Pressable onPress={onClose} className="p-1">
-                <X size={20} color={colors.mutedForeground} />
+              <Pressable onPress={onClose} className="p-2">
+                <X size={20} color={KILN_UI.brownMuted} />
               </Pressable>
             </View>
           </View>
+        </View>
 
-          <ScrollView className="px-6 pt-4" showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <FiringDetailContent
-              liveFiring={liveFiring}
-              kiln={kiln}
-              currencySymbol={currencySymbol}
-              palette={{
-                muted: colors.muted,
-                mutedForeground: colors.mutedForeground,
-                border: colors.border,
-                foreground: colors.foreground,
-                background: colors.background,
-              }}
-              isCompleted={isCompleted}
-              assignedPiecesCount={assignedPieces.length}
-              pieceRows={pieceRows}
-              assignedPieceIdSet={assignedPieceIdSet}
-              showPiecePicker={showPiecePicker}
-              onPreviewPieceImage={handlePreviewPieceImage}
-              onOpenPieceJournal={handleOpenPieceJournal}
-              onTogglePiecePicker={() => setShowPiecePicker((current) => !current)}
-              onToggleAssignPiece={toggleAssignPiece}
-              showCompletionForm={showCompletionForm}
-              selectedResult={selectedResult}
-              onSelectResult={handleSelectResult}
-              resultNotes={resultNotes}
-              onChangeResultNotes={setResultNotes}
-              onCancelCompletion={() => setShowCompletionForm(false)}
-              onComplete={handleComplete}
-              onMarkPickedUp={() => {
-                setSelectedGlazeOutcome('success');
-                setShowCompletionForm(true);
-              }}
-              isGlazeFiring={liveFiring.type === 'glaze'}
-              linkedGlazePieceCount={linkedGlazePieces.length}
-              selectedGlazeOutcome={selectedGlazeOutcome}
-              onSelectGlazeOutcome={(outcome) =>
-                setSelectedGlazeOutcome(outcome as GlazeOutcome | '')
-              }
-              glazeReadyPieces={glazeReadyPieces}
-              onAssignAllGlazeReady={assignAllGlazeReady}
-              onShareToCommunity={isCompleted && sessionToken ? handleShareFiring : undefined}
-            />
-          </ScrollView>
-
-
+        <ScrollView
+          className="px-6 pt-4"
+          style={{ backgroundColor: KILN_UI.cream }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <FiringDetailContent
+            liveFiring={liveFiring}
+            kiln={kiln}
+            currencySymbol={currencySymbol}
+            palette={{
+              muted: KILN_UI.warmBg,
+              mutedForeground: KILN_UI.brownMuted,
+              border: KILN_UI.warmBorder,
+              foreground: KILN_UI.brown,
+              background: KILN_UI.cream,
+            }}
+            isCompleted={isCompleted}
+            assignedPiecesCount={assignedPieces.length}
+            pieceRows={pieceRows}
+            assignedPieceIdSet={assignedPieceIdSet}
+            costLineItems={costBreakdown.lineItems}
+            receiptSurvivedByPieceId={receiptSurvivedByPieceId}
+            showPiecePicker={showPiecePicker}
+            onPreviewFiringPhoto={liveFiring.photoUri ? handlePreviewFiringPhoto : undefined}
+            onPreviewPieceImage={handlePreviewPieceImage}
+            onOpenPieceJournal={handleOpenPieceJournal}
+            onTogglePiecePicker={() => setShowPiecePicker((current) => !current)}
+            onToggleAssignPiece={toggleAssignPiece}
+            showCompletionForm={showCompletionForm}
+            selectedResult={selectedResult}
+            onSelectResult={handleSelectResult}
+            resultNotes={resultNotes}
+            onChangeResultNotes={setResultNotes}
+            onCancelCompletion={() => setShowCompletionForm(false)}
+            onComplete={handleComplete}
+            onMarkPickedUp={() => {
+              setSelectedGlazeOutcome('success');
+              setShowCompletionForm(true);
+            }}
+            onSetStatusOverride={(override) => persistStatusOverride(override)}
+            onClearStatusOverride={() => persistStatusOverride(undefined)}
+            isGlazeFiring={liveFiring.type === 'glaze'}
+            linkedGlazePieceCount={linkedGlazePieces.length}
+            selectedGlazeOutcome={selectedGlazeOutcome}
+            onSelectGlazeOutcome={(outcome) =>
+              setSelectedGlazeOutcome(outcome as GlazeOutcome | '')
+            }
+            glazeReadyPieces={glazeReadyPieces}
+            onAssignAllGlazeReady={assignAllGlazeReady}
+            onShareToCommunity={isCompleted && sessionToken ? handleShareFiring : undefined}
+          />
+        </ScrollView>
       </ModalCard>
     </ModalShell>
 
-    <Modal
-      visible={piecePhotoPreview !== null}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setPiecePhotoPreview(null)}
-    >
-      <View className="flex-1 justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}>
-        <Pressable
-          onPress={() => setPiecePhotoPreview(null)}
-          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
-        />
-        <View className="mx-5 rounded-2xl overflow-hidden bg-card border border-border">
-          {piecePhotoPreview ? (
-            <Image
-              source={{ uri: piecePhotoPreview.uri }}
-              style={{ width: '100%', height: 340 }}
-              resizeMode="cover"
-            />
-          ) : null}
-          <View className="px-4 py-3 flex-row items-center justify-between">
-            <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>
-              {piecePhotoPreview?.name ?? 'Piece'}
-            </Text>
-            <TouchableOpacity
-              onPress={() => setPiecePhotoPreview(null)}
-              className="px-3 py-1.5 rounded-lg border border-border bg-background"
-            >
-              <Text className="text-xs font-semibold text-muted-foreground">Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
+    <ImageLightbox
+      visible={lightbox !== null}
+      uri={lightbox?.uri}
+      caption={lightbox?.caption}
+      onClose={() => setLightbox(null)}
+    />
     </>
   );
 }

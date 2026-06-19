@@ -11,8 +11,16 @@ import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Firing } from '../../types/kiln';
 import { FiringDetailModal } from './components/FiringDetailModal';
+import { FiringLogHistoryCard } from './components/FiringLogHistoryCard';
+import { LogFiringModal } from './components/LogFiringModal';
+import { LogFiringButton } from './components/LogFiringButton';
 import { FIRING_STATE_LABELS, FIRING_TYPE_LABELS, KILN_TYPE_LABELS } from './constants';
 import { formatReadyDate } from './firingEstimations';
+import {
+  getFiringSortTimestamp,
+  getKilnMaxTempLabel,
+  getKilnPerformanceStats,
+} from './utils/kilnHelpers';
 
 function ResultBadge({ result }: { result?: string }) {
   const bg =
@@ -295,23 +303,26 @@ export default function KilnHistoryScreen() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
-  const { kilnId } = useLocalSearchParams<{ kilnId: string }>();
+  const { kilnId: kilnIdParam } = useLocalSearchParams<{ kilnId?: string | string[] }>();
+  const kilnId = Array.isArray(kilnIdParam) ? kilnIdParam[0] : kilnIdParam;
 
   const kilns = useAppStore((s) => s.kilns);
   const firings = useAppStore((s) => s.firings);
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
 
-  const kiln = React.useMemo(() => kilns.find((k) => k.id === kilnId), [kilns, kilnId]);
+  const kiln = React.useMemo(
+    () =>
+      kilnId
+        ? kilns.find((k) => k.id === kilnId || k.backendId === kilnId)
+        : undefined,
+    [kilns, kilnId],
+  );
 
   const kilnFirings = React.useMemo(
     () =>
       firings
         .filter((f) => f.kilnId === kilnId && f.state === 'completed')
-        .sort(
-          (a, b) =>
-            new Date(b.completedAt ?? b.createdAt).getTime() -
-            new Date(a.completedAt ?? a.createdAt).getTime()
-        ),
+        .sort((a, b) => getFiringSortTimestamp(b) - getFiringSortTimestamp(a)),
     [firings, kilnId]
   );
 
@@ -328,12 +339,12 @@ export default function KilnHistoryScreen() {
   );
 
   const [detailFiring, setDetailFiring] = React.useState<Firing | null>(null);
+  const [logFiringOpen, setLogFiringOpen] = React.useState(false);
 
-  const totalPieces = kilnFirings.reduce((sum, f) => sum + f.pieceIds.length, 0);
-  const totalCost = kilnFirings.reduce((sum, f) => sum + (f.estimatedTotalCost ?? 0), 0);
-  const successCount = kilnFirings.filter((f) => f.result === 'success').length;
-  const successPct = kilnFirings.length > 0 ? Math.round((successCount / kilnFirings.length) * 100) : null;
-  const avgCost = kilnFirings.length > 0 && totalCost > 0 ? totalCost / kilnFirings.length : null;
+  const performance = React.useMemo(
+    () => (kilnId ? getKilnPerformanceStats(kilnId, firings) : null),
+    [firings, kilnId],
+  );
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -344,15 +355,17 @@ export default function KilnHistoryScreen() {
         </TouchableOpacity>
         <View className="flex-1">
           <Text className="text-lg font-serif font-bold text-foreground" numberOfLines={1}>
-            {kiln?.name ?? 'Kiln History'}
+            {kiln ? `${kiln.name} — Firing History` : 'Kiln History'}
           </Text>
           {kiln ? (
             <Text className="text-[11px] text-muted-foreground">
-              {KILN_TYPE_LABELS[kiln.type]}
-              {kiln.coneRange ? `  ·  ${kiln.coneRange}` : ''}
+              {KILN_TYPE_LABELS[kiln.type]} · {getKilnMaxTempLabel(kiln)}
             </Text>
           ) : null}
         </View>
+        {kiln ? (
+          <LogFiringButton variant="primary" onPress={() => setLogFiringOpen(true)} />
+        ) : null}
       </View>
 
       <ScrollView
@@ -369,26 +382,28 @@ export default function KilnHistoryScreen() {
         ) : null}
 
         {/* Stats row */}
-        {kilnFirings.length > 0 ? (
-          <View className="flex-row gap-2.5 mb-5">
-            <Card className="flex-1 p-3 items-center">
+        {kilnFirings.length > 0 && performance ? (
+          <View className="flex-row flex-wrap gap-2.5 mb-5">
+            <Card className="flex-1 min-w-[72px] p-3 items-center">
               <Text className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Firings</Text>
-              <Text className="text-xl font-serif font-bold text-foreground">{kilnFirings.length}</Text>
+              <Text className="text-xl font-serif font-bold text-foreground">{performance.totalFirings}</Text>
             </Card>
-            <Card className="flex-1 p-3 items-center">
-              <Text className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Pieces</Text>
-              <Text className="text-xl font-serif font-bold text-foreground">{totalPieces}</Text>
-            </Card>
-            <Card className="flex-1 p-3 items-center">
+            <Card className="flex-1 min-w-[72px] p-3 items-center">
               <Text className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Success</Text>
               <Text className="text-xl font-serif font-bold text-foreground">
-                {successPct != null ? `${successPct}%` : '—'}
+                {performance.successPct != null ? `${performance.successPct}%` : '—'}
               </Text>
             </Card>
-            <Card className="flex-1 p-3 items-center">
-              <Text className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Avg cost</Text>
+            <Card className="flex-1 min-w-[72px] p-3 items-center">
+              <Text className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Avg temp</Text>
               <Text className="text-xl font-serif font-bold text-foreground">
-                {avgCost != null ? `${currencySymbol}${avgCost.toFixed(0)}` : '—'}
+                {performance.avgPeakTempC != null ? `${performance.avgPeakTempC}°` : '—'}
+              </Text>
+            </Card>
+            <Card className="flex-1 min-w-[72px] p-3 items-center">
+              <Text className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Avg hold</Text>
+              <Text className="text-xl font-serif font-bold text-foreground">
+                {performance.avgHoldMinutes != null ? `${performance.avgHoldMinutes}m` : '—'}
               </Text>
             </Card>
           </View>
@@ -414,7 +429,7 @@ export default function KilnHistoryScreen() {
           </>
         ) : (
           <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-            Firing Sessions
+            Firing Log
           </Text>
         )
         }
@@ -428,21 +443,42 @@ export default function KilnHistoryScreen() {
             </View>
             <Text className="text-sm font-semibold text-foreground text-center">No completed firings yet</Text>
             <Text className="text-xs text-muted-foreground mt-1 text-center leading-relaxed">
-              Complete a firing session with this kiln to see its history here.
+              Log a firing or complete a session to build this kiln&apos;s history.
             </Text>
+            {kiln ? (
+              <LogFiringButton variant="cta" onPress={() => setLogFiringOpen(true)} />
+            ) : null}
           </Card>
         ) : (
-          kilnFirings.map((firing) => (
-            <FiringHistoryCard
-              key={firing.id}
-              firing={firing}
-              currencySymbol={currencySymbol}
-              onPress={() => setDetailFiring(firing)}
-            />
-          ))
+          kilnFirings.map((firing) => {
+            const isLogEntry = firing.logSource === 'manual' || firing.peakTempC != null;
+            if (isLogEntry) {
+              return (
+                <FiringLogHistoryCard
+                  key={firing.id}
+                  firing={firing}
+                  currencySymbol={currencySymbol}
+                  onOpenDetail={() => setDetailFiring(firing)}
+                />
+              );
+            }
+            return (
+              <FiringHistoryCard
+                key={firing.id}
+                firing={firing}
+                currencySymbol={currencySymbol}
+                onPress={() => setDetailFiring(firing)}
+              />
+            );
+          })
         )}
       </ScrollView>
 
+      <LogFiringModal
+        visible={logFiringOpen}
+        kiln={kiln ?? null}
+        onClose={() => setLogFiringOpen(false)}
+      />
       <FiringDetailModal
         firing={detailFiring}
         visible={detailFiring !== null}

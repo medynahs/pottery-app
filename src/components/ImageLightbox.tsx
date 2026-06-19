@@ -1,16 +1,17 @@
 import { Image } from 'expo-image';
 import { X } from 'lucide-react-native';
 import React from 'react';
-import { Modal, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ImageLightboxProps = {
   visible: boolean;
   uri?: string;
+  caption?: string;
   onClose: () => void;
 };
 
-export function ImageLightbox({ visible, uri, onClose }: ImageLightboxProps) {
+export function ImageLightbox({ visible, uri, caption, onClose }: ImageLightboxProps) {
   const insets = useSafeAreaInsets();
 
   if (!uri) return null;
@@ -40,13 +41,38 @@ export function ImageLightbox({ visible, uri, onClose }: ImageLightboxProps) {
           <X size={20} color="white" />
         </TouchableOpacity>
 
-        <Pressable style={{ flex: 1 }} onPress={onClose}>
+        <Pressable style={{ flex: 1, justifyContent: 'center' }} onPress={onClose}>
           <Image
             source={{ uri }}
             style={{ width: '100%', height: '100%' }}
             contentFit="contain"
           />
         </Pressable>
+
+        {caption ? (
+          <View
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: insets.bottom + 16,
+              paddingHorizontal: 20,
+            }}
+            pointerEvents="none"
+          >
+            <Text
+              style={{
+                textAlign: 'center',
+                color: 'rgba(255,251,244,0.92)',
+                fontSize: 14,
+                fontWeight: '600',
+              }}
+              numberOfLines={2}
+            >
+              {caption}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </Modal>
   );

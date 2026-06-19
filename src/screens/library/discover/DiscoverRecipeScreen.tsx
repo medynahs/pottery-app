@@ -5,7 +5,6 @@ import {
   sanitizeCustomCollections,
 } from '@/src/screens/library/atlas/collections';
 import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
-import { ingredientsFromStructured, normalizeGlazeItem } from '@/src/screens/glazes/glazeItemHelpers';
 import { GLAZE_FINISH_LABELS } from '@/src/screens/glazes/types';
 import type { GlazeFinish } from '@/src/screens/glazes/types';
 import { useAppStore } from '@/src/store';
@@ -18,7 +17,7 @@ import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RecipeIngredients } from './RecipeIngredients';
 import { getDiscoverRecipe, isDiscoverRecipeSaved } from './recipeLookup';
-import { RECIPE_SUCCESS_RATES } from './recipes';
+import { discoverGlazeToLibraryItem } from './saveDiscoverGlaze';
 import { SaveCollectionSheet } from './SaveCollectionSheet';
 
 export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string }) {
@@ -34,8 +33,7 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
   const [saveSheetOpen, setSaveSheetOpen] = React.useState(false);
 
   const recipe = getDiscoverRecipe(recipeId);
-  const saved = recipe ? isDiscoverRecipeSaved(recipe.id, glazes.map((g) => g.id)) : false;
-  const successRate = recipe ? RECIPE_SUCCESS_RATES[recipe.id] ?? 75 : 0;
+  const saved = recipe ? isDiscoverRecipeSaved(recipe.id, glazes) : false;
   const collections = React.useMemo(
     () => deriveCustomCollectionNames(glazes, glazeCollectionNames),
     [glazes, glazeCollectionNames],
@@ -59,43 +57,7 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
 
     const customCollections = sanitizeCustomCollections(selectedCollections);
     registerGlazeCollections(customCollections);
-
-    const id = `discover-${recipe.id}-${Date.now()}`;
-    const recipeIngredients = recipe.ingredients.map((ing, i) => ({
-      id: `ing-${i}`,
-      material: ing.material,
-      percentage: String(ing.percentage),
-    }));
-
-    addGlaze(
-      normalizeGlazeItem({
-        id,
-        name: recipe.name,
-        finish: recipe.finish as GlazeFinish,
-        colorFamily: recipe.colorFamily,
-        coneRange: recipe.coneLabel,
-        defaultCone: recipe.coneLabel,
-        source: 'custom',
-        notes: recipe.description,
-        collections: customCollections,
-        tags: [],
-        ingredientsText: ingredientsFromStructured(recipeIngredients),
-        recipeIngredients,
-        status: 'experimental',
-        versionNumber: 1,
-        rootGlazeId: id,
-        favorite: false,
-        production: false,
-        bucketPhotoUri: recipe.previewUri,
-        testTilePhotoUris: recipe.previewUri ? [recipe.previewUri] : [],
-        finishedPiecePhotoUris: [],
-        accidentPhotoUris: [],
-        clayBodiesUsed: [],
-        kilnTypesUsed: [],
-        conesTested: [],
-        createdAt: new Date().toISOString(),
-      }),
-    );
+    addGlaze(discoverGlazeToLibraryItem(recipe, customCollections));
     scheduleGlazesSync();
     setSaveSheetOpen(false);
     showToast(`${recipe.name} saved to My Glazes`, 'success');
@@ -164,9 +126,6 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
             </View>
             <View className="px-3 py-1 rounded-full bg-muted">
               <Text className="text-xs font-semibold text-foreground">{finishLabel}</Text>
-            </View>
-            <View className="px-3 py-1 rounded-full bg-muted">
-              <Text className="text-xs font-semibold text-muted-foreground">{successRate}% studio success</Text>
             </View>
           </View>
 

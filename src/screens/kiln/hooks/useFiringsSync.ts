@@ -43,6 +43,15 @@ function toLocalFiring(backend: BackendFiring, existing?: Firing): Firing {
     scheduledDate: backend.scheduled_date ?? existing?.scheduledDate,
     startedAt: backend.started_at ?? existing?.startedAt,
     completedAt: backend.completed_at ?? existing?.completedAt,
+    firedDate: existing?.firedDate,
+    peakTempC: existing?.peakTempC,
+    holdTimeMinutes: existing?.holdTimeMinutes,
+    photoUri: existing?.photoUri,
+    logSource: existing?.logSource,
+    statusOverride: existing?.statusOverride,
+    result: existing?.result,
+    resultNotes: existing?.resultNotes,
+    pieceIds: existing?.pieceIds ?? [],
     createdAt: backend.created_at ?? existing?.createdAt ?? new Date().toISOString(),
   };
 }
@@ -103,8 +112,8 @@ export function useCreateFiringMutation() {
         type: firing.type,
         cone: firing.cone,
         state: firing.state,
-        notes: firing.notes,
-        scheduled_date: firing.submissionDate ?? firing.scheduledDate,
+        notes: firing.notes || firing.resultNotes,
+        scheduled_date: firing.firedDate ?? firing.submissionDate ?? firing.scheduledDate,
       });
       return { firing, backend };
     },

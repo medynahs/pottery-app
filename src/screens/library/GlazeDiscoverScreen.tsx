@@ -5,34 +5,37 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  buildDiscoverCatalog,
+  itemMatchesFilters,
+  itemMatchesSearch,
+} from './discover/discoverSearch';
 import { DiscoverGrid } from './discover/DiscoverGrid';
 import { FilterPanel, SearchBar } from './discover/FilterPanel';
 import { isDiscoverRecipeSaved } from './discover/recipeLookup';
-import { DISCOVER_RECIPES } from './discover/recipes';
 import {
-  normalizeCone,
   type ColorFilter,
   type ConeFilter,
-  type DiscoverRecipe,
+  type DiscoverItem,
   type FinishFilter,
 } from './discover/types';
 
 export default function GlazeDiscoverScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
   const glazes = useAppStore((s) => s.glazes);
-  const userConeNorm = defaultGlazeTemp ? normalizeCone(defaultGlazeTemp) : null;
+
+  const catalog = React.useMemo(() => buildDiscoverCatalog(), []);
 
   const savedRecipeIds = React.useMemo(() => {
     const ids = new Set<string>();
-    for (const recipe of DISCOVER_RECIPES) {
-      if (isDiscoverRecipeSaved(recipe.id, glazes.map((g) => g.id))) {
-        ids.add(recipe.id);
+    for (const item of catalog) {
+      if (item.kind === 'recipe' && isDiscoverRecipeSaved(item.recipe.id, glazes)) {
+        ids.add(item.recipe.id);
       }
     }
     return ids;
-  }, [glazes]);
+  }, [catalog, glazes]);
 
   const [search, setSearch] = React.useState('');
   const [showFilters, setShowFilters] = React.useState(false);
@@ -46,22 +49,26 @@ export default function GlazeDiscoverScreen() {
     colorFilter !== 'all',
   ].filter(Boolean).length;
 
-  const filtered = React.useMemo(
+  const filteredItems = React.useMemo(
     () =>
-      DISCOVER_RECIPES.filter((r: DiscoverRecipe) => {
-        const q = search.trim().toLowerCase();
-        const matchSearch =
-          q === ''
-          || r.name.toLowerCase().includes(q)
-          || r.description.toLowerCase().includes(q);
+      catalog.filter((item) => {
         return (
-          matchSearch
-          && (coneFilter === 'all' || r.cone === coneFilter)
-          && (finishFilter === 'all' || r.finish === finishFilter)
-          && (colorFilter === 'all' || r.colorFamily === colorFilter)
+          itemMatchesSearch(item, search)
+          && itemMatchesFilters(item, { coneFilter, finishFilter, colorFilter })
         );
       }),
-    [search, coneFilter, finishFilter, colorFilter],
+    [catalog, search, coneFilter, finishFilter, colorFilter],
+  );
+
+  const openItem = React.useCallback(
+    (item: DiscoverItem) => {
+      if (item.kind === 'recipe') {
+        router.push(`/discover-recipe?id=${encodeURIComponent(item.recipe.id)}` as never);
+        return;
+      }
+      router.push(`/discover-inspiration?id=${encodeURIComponent(item.inspiration.id)}` as never);
+    },
+    [router],
   );
 
   return (
@@ -96,14 +103,9 @@ export default function GlazeDiscoverScreen() {
               }}
             />
           ) : null}
-
-          <Text className="text-[11px] text-muted-foreground mb-3 tracking-wide">
-            {filtered.length} {filtered.length === 1 ? 'inspiration' : 'inspirations'}
-            {activeFilterCount > 0 ? ' · filtered' : ''}
-          </Text>
         </View>
 
-        {filtered.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <View className="px-6">
             <EmptyState
               title="No matches"
@@ -112,13 +114,11 @@ export default function GlazeDiscoverScreen() {
           </View>
         ) : (
           <DiscoverGrid
-            recipes={filtered}
-            userConeNorm={userConeNorm}
+            items={filteredItems}
             savedRecipeIds={savedRecipeIds}
-            onPressRecipe={(recipe) =>
-              router.push(`/discover-recipe?id=${encodeURIComponent(recipe.id)}` as never)
-            }
-          />        )}
+            onPressItem={openItem}
+          />
+        )}
       </ScrollView>
     </View>
   );

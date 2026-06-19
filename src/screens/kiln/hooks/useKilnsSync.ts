@@ -21,6 +21,7 @@ import {
     localKilnToUpsertPayload,
     type BackendKiln,
 } from '../../../services/kilns';
+import { normalizeKiln } from '../utils/kilnHelpers';
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
@@ -61,7 +62,7 @@ function mergeKilnsIntoStore(
     k.backendId ? (updatedByBackendId.get(k.backendId) ?? k) : k,
   );
 
-  setKilns([...newKilns, ...retained]);
+  setKilns([...newKilns, ...retained].map(normalizeKiln));
 }
 
 // ─── Sync hook ────────────────────────────────────────────────────────────────

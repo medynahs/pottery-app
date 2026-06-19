@@ -1,444 +1,1142 @@
 import { Button } from '@/src/components/ui/button';
-import { Card } from '@/src/components/ui/card';
+
 import { Text } from '@/src/components/ui/text';
-import { Check, FlameKindling, Image as ImageIcon } from 'lucide-react-native';
+
+import { BrandColors } from '@/src/constants/theme';
+
+import { Check, Clock3, FlameKindling, Receipt, Thermometer } from 'lucide-react-native';
+
 import React from 'react';
-import { Image, TextInput, TouchableOpacity, View } from 'react-native';
-import type { Firing, FiringResult, Kiln } from '../../../types/kiln';
-import type { GlazeOutcome, Piece } from '../../../types/pieces';
+
+import { Image, Pressable, TextInput, TouchableOpacity, View } from 'react-native';
+
+import type { Firing, FiringResult, FiringStatusOverride, Kiln } from '../../../types/kiln';
+
+import type { Piece } from '../../../types/pieces';
+
 import { GLAZE_OUTCOME_LABELS, GLAZE_OUTCOME_OPTIONS } from '../../pieces/utils/constants';
+
+import { Pill } from '../../library/atlas/Pill';
+
 import {
-    FIRING_LOCATION_LABELS,
-    FIRING_TYPE_LABELS,
-    KILN_TYPE_LABELS,
+
+  FIRING_LOCATION_LABELS,
+
+  FIRING_TYPE_LABELS,
+
+  KILN_TYPE_LABELS,
+
 } from '../constants';
+
+import type { FiringCostLineItem } from '../firingEstimations';
+
 import {
-    type AutoFiringStatus,
-    getAutoFiringStatus,
-    getCalculatedTimeline,
+
+  type AutoFiringStatus,
+
+  getAutoFiringStatus,
+
+  getCalculatedTimeline,
+
 } from '../firingEstimations';
+
+import { formatHoldTime, getKilnMaxTempLabel } from '../utils/kilnHelpers';
+
+import { KILN_UI } from '../utils/kilnTheme';
+
 import { formatMoney } from '../utils/kilnUtils';
 
+import { FiringOutcomeBadge } from './FiringOutcomeBadge';
+import { FiringPieceRow } from './FiringPieceRow';
+import { SessionStatusPanel } from './SessionStatusPanel';
+
+
+
 const AUTO_STATUS_LABEL: Record<AutoFiringStatus, string> = {
+
   waiting: 'In Queue',
+
   firing: 'Firing',
+
   cooling: 'Cooling Down',
+
   ready: 'Ready for Pickup',
+
   completed: 'Completed',
+
 };
+
+
 
 type Palette = {
+
   muted: string;
+
   mutedForeground: string;
+
   border: string;
+
   foreground: string;
+
   background: string;
+
 };
 
+
+
 interface FiringDetailContentProps {
+
   liveFiring: Firing;
+
   kiln?: Kiln;
+
   currencySymbol: string;
+
   palette: Palette;
+
   isCompleted: boolean;
+
   assignedPiecesCount: number;
+
   pieceRows: Piece[];
+
   assignedPieceIdSet: Set<number>;
+
+  costLineItems: FiringCostLineItem[];
+
+  receiptSurvivedByPieceId: Map<number, boolean | undefined>;
+
   showPiecePicker: boolean;
+
+  onPreviewFiringPhoto?: () => void;
+
   onPreviewPieceImage: (piece: Piece) => void;
+
   onOpenPieceJournal: (piece: Piece) => void;
+
   onTogglePiecePicker: () => void;
+
   onToggleAssignPiece: (pieceId: number) => void;
+
   showCompletionForm: boolean;
+
   selectedResult: FiringResult;
+
   onSelectResult: (result: FiringResult) => void;
+
   resultNotes: string;
+
   onChangeResultNotes: (notes: string) => void;
+
   onCancelCompletion: () => void;
+
   onComplete: () => void;
+
   onMarkPickedUp: () => void;
+
+  onSetStatusOverride: (override: FiringStatusOverride) => void;
+
+  onClearStatusOverride: () => void;
+
   isGlazeFiring?: boolean;
+
   linkedGlazePieceCount?: number;
+
   selectedGlazeOutcome?: string;
+
   onSelectGlazeOutcome?: (outcome: string) => void;
+
   glazeReadyPieces?: Piece[];
+
   onAssignAllGlazeReady?: () => void;
+
   onShareToCommunity?: () => void;
+
 }
 
-export function FiringDetailContent({
-  liveFiring,
-  kiln,
-  currencySymbol,
-  palette,
-  isCompleted,
-  assignedPiecesCount,
-  pieceRows,
-  assignedPieceIdSet,
-  showPiecePicker,
-  onPreviewPieceImage,
-  onOpenPieceJournal,
-  onTogglePiecePicker,
-  onToggleAssignPiece,
-  showCompletionForm,
-  selectedResult,
-  onSelectResult,
-  resultNotes,
-  onChangeResultNotes,
-  onCancelCompletion,
-  onComplete,
-  onMarkPickedUp,
-  isGlazeFiring = false,
-  linkedGlazePieceCount = 0,
-  selectedGlazeOutcome = '',
-  onSelectGlazeOutcome,
-  glazeReadyPieces = [],
-  onAssignAllGlazeReady,
-  onShareToCommunity,
-}: FiringDetailContentProps) {
-  const autoStatus = getAutoFiringStatus(liveFiring, kiln);
-  const timeline = getCalculatedTimeline(liveFiring, kiln);
-  const timelineStepIndex =
-    autoStatus === 'waiting' ? 0 : autoStatus === 'firing' || autoStatus === 'cooling' ? 1 : 2;
 
-  const resultOptions: { value: FiringResult; label: string; color: string }[] = [
-    { value: 'success', label: '✓ Success', color: 'hsl(142 60% 40%)' },
-    { value: 'issues', label: '⚡ Issues', color: 'hsl(39 80% 50%)' },
-    { value: 'failure', label: '✕ Failure', color: 'hsl(0 70% 50%)' },
-  ];
+
+const RESULT_OPTIONS: { value: FiringResult; label: string }[] = [
+
+  { value: 'success', label: 'Success' },
+
+  { value: 'issues', label: 'Issue' },
+
+  { value: 'failure', label: 'Failure' },
+
+];
+
+
+
+function SectionLabel({ children }: { children: string }) {
 
   return (
-    <>
-      {kiln && (
-        <Card className="p-4 mb-4 bg-card/60">
-          {kiln.imageUri ? (
-            <Image
-              source={{ uri: kiln.imageUri }}
-              style={{ width: '100%', height: 150, borderRadius: 14, marginBottom: 10 }}
-              resizeMode="cover"
-            />
-          ) : (
-            <View className="w-full h-20 rounded-xl mb-3 border border-border bg-muted/30 items-center justify-center">
-              <FlameKindling size={16} color={palette.mutedForeground} />
-              <Text className="text-[11px] text-muted-foreground mt-1">No kiln photo</Text>
-            </View>
-          )}
-          <Text className="text-xs font-semibold text-muted-foreground mb-1">
-            {kiln.name} - {KILN_TYPE_LABELS[kiln.type]}
-            {kiln.location ? `  ·  ${kiln.location}` : ''}
-          </Text>
-          {kiln.notes ? <Text className="text-xs text-muted-foreground italic">"{kiln.notes}"</Text> : null}
-        </Card>
-      )}
 
-      <Card className="p-4 mb-4 bg-card/60">
-        <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Session</Text>
-        <Text className="text-sm text-foreground">
-          {FIRING_TYPE_LABELS[liveFiring.type]} · {FIRING_LOCATION_LABELS[liveFiring.location ?? 'studio']}
+    <Text
+
+      className="text-[11px] font-semibold uppercase tracking-wider mb-2"
+
+      style={{ color: KILN_UI.brownMuted }}
+
+    >
+
+      {children}
+
+    </Text>
+
+  );
+
+}
+
+
+
+function MetricChip({
+
+  icon: Icon,
+
+  label,
+
+  value,
+
+}: {
+
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+
+  label: string;
+
+  value: string;
+
+}) {
+
+  return (
+
+    <View
+
+      className="flex-1 rounded-2xl border px-3 py-2.5"
+
+      style={{ borderColor: KILN_UI.brownSoftBorder, backgroundColor: KILN_UI.brownSoft }}
+
+    >
+
+      <View className="flex-row items-center gap-1 mb-1">
+
+        <Icon size={11} color={KILN_UI.brownMuted} />
+
+        <Text className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+
+          {label}
+
         </Text>
-        <Text className="text-xs text-muted-foreground mt-1">Cone {liveFiring.cone}</Text>
-        {typeof liveFiring.estimatedTotalCost === 'number' ? (
-          <Text className="text-xs text-muted-foreground mt-1">
-            Est. cost: {formatMoney(currencySymbol, liveFiring.estimatedTotalCost)}
-            {typeof liveFiring.estimatedCostPerPiece === 'number'
-              ? ` · ${formatMoney(currencySymbol, liveFiring.estimatedCostPerPiece)} / piece`
-              : ''}
-          </Text>
-        ) : null}
-      </Card>
 
-      {!isCompleted ? (
-        <Card className="p-4 mb-4 bg-card/60">
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Timeline</Text>
-            <View className="px-2.5 py-1 rounded-full border border-border bg-muted/30">
-              <Text className="text-[11px] font-semibold text-foreground">
-                {AUTO_STATUS_LABEL[autoStatus]}
-              </Text>
-            </View>
-          </View>
-
-          <View className="rounded-xl border border-border bg-background/40 px-3 py-2">
-            {[
-              { label: 'Submitted', date: timeline.submittedLabel },
-              { label: 'Fires', date: timeline.firesOnLabel },
-              { label: 'Ready', date: timeline.readyOnLabel },
-            ].map((step, index, arr) => {
-              const isDone = index <= timelineStepIndex;
-              const isCurrent = index === timelineStepIndex;
-
-              return (
-                <View key={step.label} className="flex-row items-start">
-                  <View className="items-center mr-3" style={{ width: 18 }}>
-                    <View
-                      className="w-[14px] h-[14px] rounded-full items-center justify-center"
-                      style={{
-                        backgroundColor: isDone ? palette.foreground : palette.muted,
-                      }}
-                    >
-                      {isDone ? <Check size={9} color={palette.background} strokeWidth={3} /> : null}
-                    </View>
-                    {index < arr.length - 1 ? (
-                      <View
-                        className="w-[2px] mt-1"
-                        style={{
-                          height: 22,
-                          backgroundColor: isDone ? palette.border : palette.muted,
-                        }}
-                      />
-                    ) : null}
-                  </View>
-                  <View className="flex-1" style={{ paddingBottom: index < arr.length - 1 ? 10 : 2 }}>
-                    <Text className="text-[12px] font-semibold" style={{ color: isCurrent ? palette.foreground : palette.mutedForeground }}>
-                      {step.label}
-                    </Text>
-                    <Text className="text-[11px] text-muted-foreground mt-0.5">{step.date}</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        </Card>
-      ) : null}
-
-      {!isCompleted && autoStatus === 'ready' && !showCompletionForm ? (
-        <Card className="p-4 mb-4" style={{ borderColor: 'hsl(142 60% 65%)', borderWidth: 1.5, backgroundColor: 'hsl(142 45% 97%)' }}>
-          <Text className="text-sm font-semibold text-foreground mb-1">Pieces are ready</Text>
-          <Text className="text-xs text-muted-foreground mb-3">
-            The estimated ready date has passed. Mark this firing as complete when you have collected your pieces.
-          </Text>
-          <Button onPress={onMarkPickedUp} className="w-full">
-            <Text className="font-semibold text-primary-foreground">Mark as Picked Up</Text>
-          </Button>
-        </Card>
-      ) : null}
-
-      {isCompleted && liveFiring.result ? (
-        <Card className="p-4 mb-4 bg-card/60">
-          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Result</Text>
-          <Text
-            className="text-sm font-semibold"
-            style={{
-              color:
-                liveFiring.result === 'success'
-                  ? 'hsl(142 60% 40%)'
-                  : liveFiring.result === 'issues'
-                    ? 'hsl(39 80% 50%)'
-                    : 'hsl(0 70% 50%)',
-            }}
-          >
-            {liveFiring.result === 'success'
-              ? '✓ Success'
-              : liveFiring.result === 'issues'
-                ? '⚡ Issues Reported'
-                : '✕ Failure'}
-          </Text>
-          {liveFiring.resultNotes ? <Text className="text-sm text-muted-foreground mt-1">{liveFiring.resultNotes}</Text> : null}
-          {onShareToCommunity ? (
-            <Button onPress={onShareToCommunity} variant="outline" className="w-full mt-4">
-              <Text className="font-semibold text-primary">Share firing to community</Text>
-            </Button>
-          ) : null}
-        </Card>
-      ) : null}
-
-      {liveFiring.notes ? (
-        <Card className="p-4 mb-4 bg-card/60">
-          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Notes</Text>
-          <Text className="text-sm text-foreground">{liveFiring.notes}</Text>
-        </Card>
-      ) : null}
-
-      <View className="flex-row justify-between items-center mb-2">
-        <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Pieces ({assignedPiecesCount})
-        </Text>
-        {!isCompleted ? (
-          <TouchableOpacity onPress={onTogglePiecePicker}>
-            <Text className="text-xs font-semibold text-primary">{showPiecePicker ? 'Done' : '+ Add / Remove'}</Text>
-          </TouchableOpacity>
-        ) : null}
       </View>
 
-      {isGlazeFiring && !isCompleted && showPiecePicker && glazeReadyPieces.length > 0 ? (
-        <Card className="p-4 mb-3 bg-primary/5 border-primary/20">
-          <Text className="text-sm font-semibold text-foreground mb-1">Glaze-ready pieces</Text>
-          <Text className="text-xs text-muted-foreground mb-3 leading-5">
-            {glazeReadyPieces.length} piece{glazeReadyPieces.length === 1 ? '' : 's'} waiting in glazing — tap to add or assign all.
-          </Text>
-          <View className="flex-row flex-wrap gap-2 mb-3">
-            {glazeReadyPieces.map((piece) => (
-              <TouchableOpacity
-                key={piece.id}
-                onPress={() => onToggleAssignPiece(piece.id)}
-                activeOpacity={0.75}
-                className="px-3 py-1.5 rounded-full border border-primary/30 bg-background"
-              >
-                <Text className="text-xs font-semibold text-primary" numberOfLines={1}>
-                  {piece.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {onAssignAllGlazeReady ? (
-            <Button onPress={onAssignAllGlazeReady} variant="outline" className="w-full">
-              <Text className="font-semibold text-primary">Assign all glaze-ready</Text>
-            </Button>
-          ) : null}
-        </Card>
-      ) : null}
+      <Text className="text-sm font-bold text-foreground">{value}</Text>
 
-      {pieceRows.length === 0 ? (
-        <Text className="text-sm text-muted-foreground mb-4">No pieces assigned yet.</Text>
+    </View>
+
+  );
+
+}
+
+
+
+export function FiringDetailContent({
+
+  liveFiring,
+
+  kiln,
+
+  currencySymbol,
+
+  palette,
+
+  isCompleted,
+
+  assignedPiecesCount,
+
+  pieceRows,
+
+  assignedPieceIdSet,
+
+  costLineItems,
+
+  receiptSurvivedByPieceId,
+
+  showPiecePicker,
+
+  onPreviewFiringPhoto,
+
+  onPreviewPieceImage,
+
+  onOpenPieceJournal,
+
+  onTogglePiecePicker,
+
+  onToggleAssignPiece,
+
+  showCompletionForm,
+
+  selectedResult,
+
+  onSelectResult,
+
+  resultNotes,
+
+  onChangeResultNotes,
+
+  onCancelCompletion,
+
+  onComplete,
+
+  onMarkPickedUp,
+
+  onSetStatusOverride,
+
+  onClearStatusOverride,
+
+  isGlazeFiring = false,
+
+  linkedGlazePieceCount = 0,
+
+  selectedGlazeOutcome = '',
+
+  onSelectGlazeOutcome,
+
+  glazeReadyPieces = [],
+
+  onAssignAllGlazeReady,
+
+  onShareToCommunity,
+
+}: FiringDetailContentProps) {
+
+  const autoStatus = getAutoFiringStatus(liveFiring, kiln);
+
+  const timeline = getCalculatedTimeline(liveFiring, kiln);
+
+  const timelineStepIndex =
+
+    autoStatus === 'waiting' ? 0 : autoStatus === 'firing' || autoStatus === 'cooling' ? 1 : 2;
+
+  const holdLabel = formatHoldTime(liveFiring.holdTimeMinutes);
+
+  const isLogEntry = liveFiring.logSource === 'manual' || liveFiring.peakTempC != null;
+
+  const costByPieceId = React.useMemo(() => {
+
+    const map = new Map<number, number | null>();
+
+    for (const item of costLineItems) {
+
+      map.set(item.piece.id, item.cost);
+
+    }
+
+    return map;
+
+  }, [costLineItems]);
+
+  const notesRequired = selectedResult === 'issues' || selectedResult === 'failure';
+
+  const isActiveSession = !isCompleted && liveFiring.logSource !== 'manual';
+
+  const hasMetrics =
+
+    liveFiring.peakTempC != null
+
+    || holdLabel != null
+
+    || typeof liveFiring.estimatedTotalCost === 'number';
+
+
+
+  return (
+
+    <>
+
+      {liveFiring.photoUri ? (
+
+        <Pressable
+
+          onPress={onPreviewFiringPhoto}
+
+          className="rounded-2xl overflow-hidden mb-4 border"
+
+          style={{ borderColor: KILN_UI.brownSoftBorder }}
+
+        >
+
+          <Image
+
+            source={{ uri: liveFiring.photoUri }}
+
+            style={{ width: '100%', height: 180 }}
+
+            resizeMode="cover"
+
+          />
+
+        </Pressable>
+
       ) : (
-        <Card className="overflow-hidden mb-4">
-          {pieceRows.map((piece, index, arr) => {
-            const isAssigned = assignedPieceIdSet.has(piece.id);
-            const imageUri = piece.photo ?? piece.imgUrl;
 
-            return (
-              <TouchableOpacity
-                key={piece.id}
-                onPress={showPiecePicker ? () => onToggleAssignPiece(piece.id) : undefined}
-                activeOpacity={showPiecePicker ? 0.7 : 1}
-                className={`flex-row items-center gap-3 px-4 py-3 ${
-                  index < arr.length - 1 ? 'border-b border-border' : ''
-                } ${isAssigned && showPiecePicker ? 'bg-primary/5' : ''}`}
-              >
-                {showPiecePicker ? (
-                  <View
-                    className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
-                      isAssigned ? 'bg-primary border-primary' : 'border-muted-foreground'
-                    }`}
-                  >
-                    {isAssigned ? <Check size={11} color="white" /> : null}
-                  </View>
-                ) : null}
+        <View
 
-                {imageUri ? (
-                  <TouchableOpacity
-                    onPress={(event) => {
-                      event.stopPropagation();
-                      onPreviewPieceImage(piece);
-                    }}
-                    className="w-11 h-11 rounded-xl overflow-hidden"
-                  >
-                    <Image source={{ uri: imageUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                  </TouchableOpacity>
-                ) : (
-                  <View className="w-11 h-11 rounded-xl border border-border bg-muted/30 items-center justify-center">
-                    <ImageIcon size={14} color={palette.mutedForeground} />
-                  </View>
-                )}
+          className="rounded-2xl mb-4 border items-center justify-center py-6"
 
-                <View className="flex-1">
-                  <Text className="text-sm font-medium text-foreground">{piece.name}</Text>
-                  <Text className="text-xs text-muted-foreground">{piece.stage} · {piece.clay}</Text>
-                </View>
+          style={{ borderColor: KILN_UI.brownSoftBorder, backgroundColor: KILN_UI.brownSoft }}
 
-                {!showPiecePicker ? (
-                  <TouchableOpacity
-                    onPress={() => onOpenPieceJournal(piece)}
-                    className="px-2.5 py-1.5 rounded-lg border border-border bg-background"
-                  >
-                    <Text className="text-[11px] font-semibold text-primary">Journal</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </TouchableOpacity>
-            );
-          })}
-        </Card>
+        >
+
+          <FlameKindling size={24} color={BrandColors.primary} />
+
+          <Text className="text-xs text-muted-foreground mt-2">
+
+            {isLogEntry ? 'Logged firing' : 'Scheduled session'}
+
+          </Text>
+
+        </View>
+
       )}
 
-      {showCompletionForm ? (
-        <Card className="p-4 mb-4 border-primary/30">
-          <Text className="text-sm font-semibold text-foreground mb-3">Mark as Completed</Text>
-          <View className="flex-row gap-2 mb-3">
-            {resultOptions.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                onPress={() => onSelectResult(option.value)}
-                className="flex-1 py-2 rounded-xl border items-center"
-                style={{
-                  borderColor: selectedResult === option.value ? option.color : palette.border,
-                  backgroundColor: selectedResult === option.value ? `${option.color}18` : 'transparent',
-                }}
-              >
-                <Text
-                  className="text-xs font-semibold"
-                  style={{ color: selectedResult === option.value ? option.color : palette.mutedForeground }}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+
+
+      <View className="flex-row flex-wrap items-center gap-2 mb-4">
+
+        {liveFiring.result ? <FiringOutcomeBadge result={liveFiring.result} /> : null}
+
+        {!isCompleted && !liveFiring.result ? (
+
+          <View
+
+            className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border"
+
+            style={{ borderColor: KILN_UI.warmBorder, backgroundColor: KILN_UI.warmBg }}
+
+          >
+
+            <Clock3 size={12} color={KILN_UI.brownMuted} />
+
+            <Text className="text-xs font-semibold text-foreground">
+
+              {AUTO_STATUS_LABEL[autoStatus]}
+
+            </Text>
+
           </View>
-          {isGlazeFiring && linkedGlazePieceCount > 0 ? (
-            <View className="mb-3">
-              <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                Glaze results for linked pieces
-              </Text>
-              <Text className="text-xs text-muted-foreground mb-2 leading-5">
-                {linkedGlazePieceCount} piece{linkedGlazePieceCount === 1 ? '' : 's'} linked to a studio glaze batch.
-                Outcome applies to pieces without one logged yet.
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {GLAZE_OUTCOME_OPTIONS.map((option) => {
-                  const active = selectedGlazeOutcome === option;
-                  return (
-                    <TouchableOpacity
-                      key={option}
-                      onPress={() => onSelectGlazeOutcome?.(active ? '' : option)}
-                      className={`px-3 py-1.5 rounded-full border ${
-                        active ? 'bg-foreground border-foreground' : 'bg-card border-border'
-                      }`}
-                      activeOpacity={0.75}
-                    >
-                      <Text
-                        className={`text-xs font-medium ${
-                          active ? 'text-background' : 'text-muted-foreground'
-                        }`}
-                      >
-                        {GLAZE_OUTCOME_LABELS[option]}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
+
+        ) : null}
+
+        <Text className="text-xs text-muted-foreground">
+
+          {FIRING_TYPE_LABELS[liveFiring.type]}
+
+          {liveFiring.cone ? ` · Cone ${liveFiring.cone}` : ''}
+
+        </Text>
+
+      </View>
+
+
+
+      {hasMetrics ? (
+
+        <View className="flex-row gap-2 mb-4">
+
+          {liveFiring.peakTempC != null ? (
+
+            <MetricChip icon={Thermometer} label="Peak" value={`${liveFiring.peakTempC}°C`} />
+
           ) : null}
-          <TextInput
-            multiline
-            numberOfLines={3}
-            placeholder="Notes on this firing (optional)..."
-            value={resultNotes}
-            onChangeText={onChangeResultNotes}
-            style={{
-              borderWidth: 1,
-              borderColor: palette.border,
-              borderRadius: 10,
-              padding: 10,
-              color: palette.foreground,
-              backgroundColor: palette.background,
-              textAlignVertical: 'top',
-              minHeight: 72,
-              fontSize: 13,
-              marginBottom: 12,
-            }}
-            placeholderTextColor={palette.mutedForeground}
-          />
-          <View className="flex-row gap-2">
-            <Button variant="outline" className="flex-1" onPress={onCancelCompletion}>
-              <Text className="text-sm">Cancel</Text>
-            </Button>
-            <Button className="flex-1" onPress={onComplete}>
-              <Text className="text-sm font-semibold text-primary-foreground">Complete</Text>
-            </Button>
-          </View>
-        </Card>
+
+          {holdLabel ? (
+
+            <MetricChip icon={Clock3} label="Hold" value={holdLabel.replace('Hold: ', '')} />
+
+          ) : null}
+
+          {typeof liveFiring.estimatedTotalCost === 'number' ? (
+
+            <MetricChip
+
+              icon={Receipt}
+
+              label="Est. cost"
+
+              value={formatMoney(currencySymbol, liveFiring.estimatedTotalCost)}
+
+            />
+
+          ) : null}
+
+        </View>
+
       ) : null}
 
+
+
+      {kiln ? (
+
+        <View
+
+          className="rounded-2xl border px-4 py-3 mb-4 flex-row items-center gap-3"
+
+          style={{ borderColor: KILN_UI.warmBorder, backgroundColor: KILN_UI.warmBg }}
+
+        >
+
+          {kiln.imageUri ? (
+
+            <Image
+
+              source={{ uri: kiln.imageUri }}
+
+              style={{ width: 44, height: 44, borderRadius: 12 }}
+
+              resizeMode="cover"
+
+            />
+
+          ) : (
+
+            <View
+
+              className="w-11 h-11 rounded-xl items-center justify-center"
+
+              style={{ backgroundColor: KILN_UI.brownSoft }}
+
+            >
+
+              <Thermometer size={18} color={BrandColors.primary} />
+
+            </View>
+
+          )}
+
+          <View className="flex-1">
+
+            <Text className="text-sm font-semibold text-foreground">{kiln.name}</Text>
+
+            <Text className="text-xs text-muted-foreground mt-0.5">
+
+              {KILN_TYPE_LABELS[kiln.type]} · {getKilnMaxTempLabel(kiln)}
+
+            </Text>
+
+          </View>
+
+        </View>
+
+      ) : null}
+
+
+
+      {!isCompleted ? (
+
+        <View className="mb-4">
+
+          <SectionLabel>Session timeline</SectionLabel>
+
+          <View
+
+            className="rounded-2xl border px-3 py-3"
+
+            style={{ borderColor: KILN_UI.warmBorder, backgroundColor: KILN_UI.warmBg }}
+
+          >
+
+            {[
+
+              { label: 'Submitted', date: timeline.submittedLabel },
+
+              { label: 'Fires', date: timeline.firesOnLabel },
+
+              { label: 'Ready', date: timeline.readyOnLabel },
+
+            ].map((step, index, arr) => {
+
+              const isDone = index <= timelineStepIndex;
+
+              const isCurrent = index === timelineStepIndex;
+
+
+
+              return (
+
+                <View key={step.label} className="flex-row items-start">
+
+                  <View className="items-center mr-3" style={{ width: 18 }}>
+
+                    <View
+
+                      className="w-[14px] h-[14px] rounded-full items-center justify-center"
+
+                      style={{ backgroundColor: isDone ? KILN_UI.brown : palette.muted }}
+
+                    >
+
+                      {isDone ? <Check size={9} color={KILN_UI.cream} strokeWidth={3} /> : null}
+
+                    </View>
+
+                    {index < arr.length - 1 ? (
+
+                      <View
+
+                        className="w-[2px] mt-1"
+
+                        style={{
+
+                          height: 22,
+
+                          backgroundColor: isDone ? KILN_UI.brownSoftBorder : palette.muted,
+
+                        }}
+
+                      />
+
+                    ) : null}
+
+                  </View>
+
+                  <View className="flex-1" style={{ paddingBottom: index < arr.length - 1 ? 10 : 2 }}>
+
+                    <Text
+
+                      className="text-[12px] font-semibold"
+
+                      style={{ color: isCurrent ? KILN_UI.brown : palette.mutedForeground }}
+
+                    >
+
+                      {step.label}
+
+                    </Text>
+
+                    <Text className="text-[11px] text-muted-foreground mt-0.5">{step.date}</Text>
+
+                  </View>
+
+                </View>
+
+              );
+
+            })}
+
+          </View>
+
+          <Text className="text-[11px] text-muted-foreground mt-2">
+
+            {FIRING_LOCATION_LABELS[liveFiring.location ?? 'studio']}
+
+            {typeof liveFiring.estimatedCostPerPiece === 'number'
+
+              ? ` · ${formatMoney(currencySymbol, liveFiring.estimatedCostPerPiece)} / piece`
+
+              : ''}
+
+          </Text>
+
+        </View>
+
+      ) : null}
+
+
+
+      {isActiveSession ? (
+        <SessionStatusPanel
+          firing={liveFiring}
+          kiln={kiln}
+          showCompletionForm={showCompletionForm}
+          onSetStatusOverride={onSetStatusOverride}
+          onClearStatusOverride={onClearStatusOverride}
+          onMarkPickedUp={onMarkPickedUp}
+        />
+      ) : null}
+
+      {isCompleted && liveFiring.resultNotes ? (
+
+        <View className="mb-4">
+
+          <SectionLabel>Outcome notes</SectionLabel>
+
+          <View
+
+            className="rounded-2xl border px-4 py-3"
+
+            style={{ borderColor: KILN_UI.warmBorder, backgroundColor: KILN_UI.warmBg }}
+
+          >
+
+            <Text className="text-sm text-foreground leading-5">{liveFiring.resultNotes}</Text>
+
+          </View>
+
+        </View>
+
+      ) : null}
+
+
+
+      {liveFiring.notes ? (
+
+        <View className="mb-4">
+
+          <SectionLabel>Session notes</SectionLabel>
+
+          <Text className="text-sm text-foreground leading-5">{liveFiring.notes}</Text>
+
+        </View>
+
+      ) : null}
+
+
+
+      {isCompleted && onShareToCommunity ? (
+
+        <Button onPress={onShareToCommunity} variant="outline" className="w-full mb-4">
+
+          <Text className="font-semibold text-primary">Share firing to community</Text>
+
+        </Button>
+
+      ) : null}
+
+
+
+      <View className="flex-row justify-between items-center mb-2">
+
+        <SectionLabel>{`Pieces (${assignedPiecesCount})`}</SectionLabel>
+
+        <TouchableOpacity onPress={onTogglePiecePicker} hitSlop={8}>
+
+          <Text className="text-xs font-semibold" style={{ color: KILN_UI.brown }}>
+
+            {showPiecePicker ? 'Done' : isCompleted ? 'Edit pieces' : 'Add / remove'}
+
+          </Text>
+
+        </TouchableOpacity>
+
+      </View>
+
+
+
+      {isGlazeFiring && showPiecePicker && glazeReadyPieces.length > 0 ? (
+
+        <View
+
+          className="rounded-2xl border p-4 mb-3"
+
+          style={{ borderColor: KILN_UI.brownSoftBorder, backgroundColor: KILN_UI.brownSoft }}
+
+        >
+
+          <Text className="text-sm font-semibold text-foreground mb-1">Glaze-ready pieces</Text>
+
+          <Text className="text-xs text-muted-foreground mb-3 leading-5">
+
+            Tap a name to add it, or assign all at once.
+
+          </Text>
+
+          <View className="flex-row flex-wrap gap-2 mb-3">
+
+            {glazeReadyPieces.map((piece) => (
+
+              <TouchableOpacity
+
+                key={piece.id}
+
+                onPress={() => onToggleAssignPiece(piece.id)}
+
+                activeOpacity={0.75}
+
+                className="px-3 py-1.5 rounded-full border"
+
+                style={{ borderColor: KILN_UI.brownSoftBorder, backgroundColor: KILN_UI.cream }}
+
+              >
+
+                <Text className="text-xs font-semibold" style={{ color: KILN_UI.brown }} numberOfLines={1}>
+
+                  {piece.name}
+
+                </Text>
+
+              </TouchableOpacity>
+
+            ))}
+
+          </View>
+
+          {onAssignAllGlazeReady ? (
+
+            <Button onPress={onAssignAllGlazeReady} variant="outline" className="w-full">
+
+              <Text className="font-semibold text-primary">Assign all glaze-ready</Text>
+
+            </Button>
+
+          ) : null}
+
+        </View>
+
+      ) : null}
+
+
+
+      {pieceRows.length === 0 ? (
+
+        <Text className="text-sm text-muted-foreground mb-4 leading-5">
+
+          No pieces linked yet. Tap Edit pieces to assign work from your studio.
+
+        </Text>
+
+      ) : (
+
+        <View className="gap-2 mb-4">
+
+          {pieceRows.map((piece) => {
+
+            const isAssigned = assignedPieceIdSet.has(piece.id);
+
+            return (
+
+              <FiringPieceRow
+
+                key={piece.id}
+
+                piece={piece}
+
+                kiln={kiln}
+
+                selected={isAssigned}
+
+                selectable={showPiecePicker}
+
+                lineCost={isAssigned ? costByPieceId.get(piece.id) ?? null : null}
+
+                currencySymbol={currencySymbol}
+
+                survived={receiptSurvivedByPieceId.get(piece.id)}
+
+                onToggle={() => onToggleAssignPiece(piece.id)}
+
+                onPreviewImage={
+
+                  piece.photo ?? piece.imgUrl
+
+                    ? () => onPreviewPieceImage(piece)
+
+                    : undefined
+
+                }
+
+                onOpenJournal={
+
+                  showPiecePicker ? undefined : () => onOpenPieceJournal(piece)
+
+                }
+
+              />
+
+            );
+
+          })}
+
+        </View>
+
+      )}
+
+
+
+      {assignedPiecesCount > 0 && costLineItems.length > 0 ? (
+
+        <View className="mb-4">
+
+          <SectionLabel>Cost breakdown</SectionLabel>
+
+          <View
+
+            className="rounded-2xl border overflow-hidden"
+
+            style={{ borderColor: KILN_UI.warmBorder }}
+
+          >
+
+            <View
+
+              className="flex-row justify-between px-4 py-2.5 border-b"
+
+              style={{ backgroundColor: KILN_UI.brownSoft, borderColor: KILN_UI.warmBorder }}
+
+            >
+
+              <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+
+                Piece
+
+              </Text>
+
+              <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+
+                Firing fee
+
+              </Text>
+
+            </View>
+
+            {costLineItems.map(({ piece, cost, volumeCm3 }, index) => (
+
+              <View
+
+                key={piece.id}
+
+                className={`flex-row items-center justify-between px-4 py-3 ${
+
+                  index < costLineItems.length - 1 ? 'border-b border-border' : ''
+
+                }`}
+
+              >
+
+                <View className="flex-1 pr-3">
+
+                  <Text className="text-sm font-medium text-foreground">{piece.name}</Text>
+
+                  <Text className="text-xs text-muted-foreground">
+
+                    {piece.clay}
+
+                    {kiln?.pricingModel === 'per-volume' && volumeCm3 ? ` · ${volumeCm3} cm³` : ''}
+
+                  </Text>
+
+                </View>
+
+                <Text className="text-sm font-semibold text-foreground">
+
+                  {cost != null ? formatMoney(currencySymbol, cost) : '—'}
+
+                </Text>
+
+              </View>
+
+            ))}
+
+            {typeof liveFiring.estimatedTotalCost === 'number' ? (
+
+              <View
+
+                className="flex-row justify-between px-4 py-3 border-t"
+
+                style={{ backgroundColor: KILN_UI.brownSoft, borderColor: KILN_UI.warmBorder }}
+
+              >
+
+                <Text className="text-sm font-semibold text-foreground">
+
+                  Total ({assignedPiecesCount} {assignedPiecesCount === 1 ? 'piece' : 'pieces'})
+
+                </Text>
+
+                <Text className="text-sm font-bold" style={{ color: KILN_UI.brown }}>
+
+                  {formatMoney(currencySymbol, liveFiring.estimatedTotalCost)}
+
+                </Text>
+
+              </View>
+
+            ) : null}
+
+          </View>
+
+        </View>
+
+      ) : null}
+
+
+
+      {showCompletionForm ? (
+
+        <View
+
+          className="rounded-2xl border p-4 mb-4"
+
+          style={{ borderColor: KILN_UI.brownSoftBorder, backgroundColor: KILN_UI.warmCard }}
+
+        >
+
+          <Text
+
+            className="text-base text-foreground mb-3"
+
+            style={{ fontFamily: 'Fraunces_700Bold' }}
+
+          >
+
+            Complete firing
+
+          </Text>
+
+
+
+          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+
+            Outcome
+
+          </Text>
+
+          <View className="flex-row flex-wrap gap-2 mb-4">
+
+            {RESULT_OPTIONS.map((option) => (
+
+              <Pill
+
+                key={option.value}
+
+                label={option.label}
+
+                active={selectedResult === option.value}
+
+                onPress={() => onSelectResult(option.value)}
+
+              />
+
+            ))}
+
+          </View>
+
+
+
+          {isGlazeFiring && linkedGlazePieceCount > 0 ? (
+
+            <View className="mb-4">
+
+              <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+
+                Glaze results for linked pieces
+
+              </Text>
+
+              <View className="flex-row flex-wrap gap-2">
+
+                {GLAZE_OUTCOME_OPTIONS.map((option) => {
+
+                  const active = selectedGlazeOutcome === option;
+
+                  return (
+
+                    <Pill
+
+                      key={option}
+
+                      label={GLAZE_OUTCOME_LABELS[option]}
+
+                      active={active}
+
+                      onPress={() => onSelectGlazeOutcome?.(active ? '' : option)}
+
+                    />
+
+                  );
+
+                })}
+
+              </View>
+
+            </View>
+
+          ) : null}
+
+
+
+          <TextInput
+
+            multiline
+
+            numberOfLines={3}
+
+            placeholder={
+
+              notesRequired ? 'Describe what went wrong…' : 'Optional notes on this firing…'
+
+            }
+
+            value={resultNotes}
+
+            onChangeText={onChangeResultNotes}
+
+            style={{
+
+              borderWidth: 1,
+
+              borderColor: KILN_UI.warmBorder,
+
+              borderRadius: 14,
+
+              padding: 12,
+
+              color: palette.foreground,
+
+              backgroundColor: KILN_UI.cream,
+
+              textAlignVertical: 'top',
+
+              minHeight: 88,
+
+              fontSize: 14,
+
+              marginBottom: 14,
+
+            }}
+
+            placeholderTextColor={palette.mutedForeground}
+
+          />
+
+
+
+          <View className="flex-row gap-2">
+
+            <Button variant="outline" className="flex-1" onPress={onCancelCompletion}>
+
+              <Text className="text-sm">Cancel</Text>
+
+            </Button>
+
+            <Button
+
+              className="flex-1"
+
+              onPress={onComplete}
+
+              disabled={notesRequired && resultNotes.trim().length === 0}
+
+            >
+
+              <Text className="text-sm font-semibold text-primary-foreground">Complete</Text>
+
+            </Button>
+
+          </View>
+
+        </View>
+
+      ) : null}
+
+
+
       <View style={{ height: 24 }} />
+
     </>
+
   );
+
 }
+
+

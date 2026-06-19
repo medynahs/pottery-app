@@ -7,11 +7,13 @@ import React from 'react';
 import { Image, TextInput, TouchableOpacity, View } from 'react-native';
 import type { KilnPricingModel, KilnType } from '../../../types/kiln';
 import { KILN_PRICING_MODEL_OPTIONS, KILN_TYPE_OPTIONS } from '../constants';
+import { DEFAULT_KILN_MAX_TEMP_C } from '../utils/kilnHelpers';
 
 export type AddKilnFormValues = {
   name: string;
   imageUri: string;
   type: KilnType;
+  maxTempC: string;
   coneRange: string;
   shelves: string;
   size: string;
@@ -29,6 +31,7 @@ export const EMPTY_ADD_KILN_FORM: AddKilnFormValues = {
   name: '',
   imageUri: '',
   type: 'electric',
+  maxTempC: String(DEFAULT_KILN_MAX_TEMP_C),
   coneRange: '',
   shelves: '',
   size: '',
@@ -160,6 +163,15 @@ export function AddKilnModalForm({
         onValueChange={(option) => option && setForm((current) => ({ ...current, type: option.value as KilnType }))}
         options={KILN_TYPE_OPTIONS}
         placeholder="Select type..."
+        className="mb-4"
+      />
+
+      <FieldLabel label="Max Temp (°C) *" openHelp={openHelp} onToggleHelp={onToggleHelp} />
+      <Input
+        placeholder={`e.g. ${DEFAULT_KILN_MAX_TEMP_C}`}
+        value={form.maxTempC}
+        onChangeText={set('maxTempC')}
+        keyboardType="number-pad"
         className="mb-4"
       />
 
