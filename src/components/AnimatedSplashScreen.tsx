@@ -1,5 +1,5 @@
+import { SplashPotteryRing } from '@/src/components/SplashPotteryRing';
 import { Image } from 'expo-image';
-import { Sparkles } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
@@ -8,15 +8,15 @@ type AnimatedSplashScreenProps = {
 };
 
 const SPLASH_HOLD_MS = 2600;
+const LOGO_STAGE_SIZE = 320;
 
 export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
   const containerOpacity = useRef(new Animated.Value(1)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.92)).current;
   const logoTranslateY = useRef(new Animated.Value(18)).current;
-  const sparkleOpacity = useRef(new Animated.Value(0)).current;
-  const sparkleScale = useRef(new Animated.Value(0.4)).current;
-  const sparkleRotate = useRef(new Animated.Value(0)).current;
+  const ornamentOpacity = useRef(new Animated.Value(0)).current;
+  const ornamentScale = useRef(new Animated.Value(0.88)).current;
   const glowOpacity = useRef(new Animated.Value(0)).current;
   const glowScale = useRef(new Animated.Value(0.8)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
@@ -55,24 +55,18 @@ export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
-      ]),
-      Animated.parallel([
-        Animated.timing(sparkleOpacity, {
+        Animated.timing(ornamentOpacity, {
           toValue: 1,
-          duration: 180,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(sparkleScale, {
-          toValue: 1,
-          duration: 520,
-          easing: Easing.out(Easing.back(2)),
-          useNativeDriver: true,
-        }),
-        Animated.timing(sparkleRotate, {
-          toValue: 1,
-          duration: 700,
+          duration: 720,
+          delay: 180,
           easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(ornamentScale, {
+          toValue: 1,
+          duration: 900,
+          delay: 120,
+          easing: Easing.out(Easing.back(1.05)),
           useNativeDriver: true,
         }),
       ]),
@@ -112,17 +106,11 @@ export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
     logoScale,
     logoTranslateY,
     onFinish,
-    sparkleOpacity,
-    sparkleRotate,
-    sparkleScale,
+    ornamentOpacity,
+    ornamentScale,
     titleOpacity,
     titleTranslateY,
   ]);
-
-  const sparkleRotation = sparkleRotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['-18deg', '0deg'],
-  });
 
   return (
     <Animated.View
@@ -140,6 +128,17 @@ export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
           ]}
         />
         <Animated.View
+          style={[
+            styles.ornamentLayer,
+            {
+              opacity: ornamentOpacity,
+              transform: [{ scale: ornamentScale }],
+            },
+          ]}
+        >
+          <SplashPotteryRing size={LOGO_STAGE_SIZE} />
+        </Animated.View>
+        <Animated.View
           style={{
             opacity: logoOpacity,
             transform: [
@@ -153,20 +152,6 @@ export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
             style={styles.logo}
             contentFit="contain"
           />
-        </Animated.View>
-        <Animated.View
-          style={[
-            styles.sparkle,
-            {
-              opacity: sparkleOpacity,
-              transform: [
-                { scale: sparkleScale },
-                { rotate: sparkleRotation },
-              ],
-            },
-          ]}
-        >
-          <Sparkles color="#D7964C" size={24} strokeWidth={2.4} />
         </Animated.View>
       </View>
       <Animated.Text
@@ -194,9 +179,12 @@ const styles = StyleSheet.create({
   },
   logoWrap: {
     alignItems: 'center',
-    height: 250,
+    height: LOGO_STAGE_SIZE,
     justifyContent: 'center',
-    width: 250,
+    width: LOGO_STAGE_SIZE,
+  },
+  ornamentLayer: {
+    ...StyleSheet.absoluteFillObject,
   },
   glow: {
     backgroundColor: '#F1D7B4',
@@ -208,11 +196,6 @@ const styles = StyleSheet.create({
   logo: {
     height: 220,
     width: 220,
-  },
-  sparkle: {
-    left: 42,
-    position: 'absolute',
-    top: 40,
   },
   title: {
     color: '#7A4328',

@@ -15,8 +15,15 @@ import {
   isCommunityGlazePostSaved,
   isSavableGlazeRecipePayload,
   parseGlazeRecipeFromPost,
-  stripPayloadFromDisplay,
 } from '@/src/screens/glazes/shareGlazeRecipe/glazePostPayload';
+import {
+  communityPostAskTopicLabel,
+  communityPostChallengeHashtag,
+  communityPostKindLabel,
+  stripCommunityPostPayload,
+} from '@/src/screens/community/utils/feedDisplayContent';
+import { parseCommunityPostMeta } from '@/src/screens/community/utils/communityPostPayload';
+import { parsePieceJournalFromPost } from '@/src/screens/community/utils/pieceJournalPostPayload';
 import { apiAddReaction, apiRemoveReaction } from '@/src/services/community';
 import { apiSendFriendRequest } from '@/src/services/friends';
 import { useAppStore } from '@/src/store';
@@ -24,7 +31,7 @@ import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
 import { Image } from 'expo-image';
 import { Bookmark, Check, MessageCircle, Users } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
-import { Animated, TouchableOpacity, View } from 'react-native';
+import { Animated, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { BackendFeedPost } from '../../../services/community';
 
@@ -134,9 +141,37 @@ export function FeedPostCard({ post, sessionToken }: Props) {
     [post.content],
   );
   const displayContent = React.useMemo(
-    () => (post.content ? stripPayloadFromDisplay(post.content) : ''),
+    () => (post.content ? stripCommunityPostPayload(post.content) : ''),
     [post.content],
   );
+  const postKindLabel = React.useMemo(
+    () => (post.content ? communityPostKindLabel(post.content) : null),
+    [post.content],
+  );
+  const askTopicLabel = React.useMemo(
+    () => (post.content ? communityPostAskTopicLabel(post.content) : null),
+    [post.content],
+  );
+  const challengeHashtag = React.useMemo(
+    () => (post.content ? communityPostChallengeHashtag(post.content) : null),
+    [post.content],
+  );
+  const postMeta = React.useMemo(
+    () => (post.content ? parseCommunityPostMeta(post.content) : null),
+    [post.content],
+  );
+  const pieceJournalPayload = React.useMemo(() => {
+    if (postMeta?.pieceJournal) {
+      return {
+        pieceId: postMeta.pieceJournal.pieceId,
+        pieceName: postMeta.pieceJournal.pieceName,
+      };
+    }
+    const legacy = post.content ? parsePieceJournalFromPost(post.content) : null;
+    if (!legacy) return null;
+    return { pieceId: legacy.pieceId, pieceName: legacy.pieceName };
+  }, [post.content, postMeta]);
+  const kilnPieceChips = postMeta?.kilnFiring?.pieceIds ?? [];
   const firstAsset = post.assets?.[0];
   const initial = post.user_id.slice(0, 1).toUpperCase();
   const isOwnPost = Boolean(backendUserId && backendUserId === post.user_id);
@@ -293,8 +328,58 @@ export function FeedPostCard({ post, sessionToken }: Props) {
       )}
 
       {/* Content */}
+      {postKindLabel ? (
+        <View className="flex-row flex-wrap items-center gap-2 mb-2">
+          <View className="self-start px-2.5 py-1 rounded-full bg-muted border border-border">
+            <Text className="text-[10px] font-semibold text-muted-foreground">{postKindLabel}</Text>
+          </View>
+          {askTopicLabel ? (
+            <View className="self-start px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200">
+              <Text className="text-[10px] font-semibold text-blue-700">{askTopicLabel}</Text>
+            </View>
+          ) : null}
+          {challengeHashtag ? (
+            <View className="self-start px-2.5 py-1 rounded-full bg-primary/10 border border-primary/25">
+              <Text className="text-[10px] font-semibold text-primary">{challengeHashtag}</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
       {displayContent ? (
         <Text className="text-sm text-foreground leading-relaxed mb-3">{displayContent}</Text>
+      ) : null}
+
+      {pieceJournalPayload ? (
+        <TouchableOpacity
+          onPress={() => router.push(`/(tabs)/pieces?openJournalPieceId=${pieceJournalPayload.pieceId}` as never)}
+          activeOpacity={0.82}
+          className="self-start mb-3 px-3 py-2 rounded-xl border border-primary/30 bg-primary/10"
+        >
+          <Text className="text-xs font-semibold text-primary">Open piece journal</Text>
+        </TouchableOpacity>
+      ) : null}
+
+      {kilnPieceChips.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+          className="mb-3"
+        >
+          {kilnPieceChips.map((pieceId, index) => {
+            const name = postMeta?.kilnFiring?.pieceNames[index] ?? `Piece ${pieceId}`;
+            return (
+              <TouchableOpacity
+                key={`${pieceId}-${index}`}
+                onPress={() => router.push(`/(tabs)/pieces?openJournalPieceId=${pieceId}` as never)}
+                activeOpacity={0.82}
+                className="px-3 py-2 rounded-full border border-orange-300/50 bg-orange-50"
+              >
+                <Text className="text-xs font-semibold text-orange-900">{name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       ) : null}
 
       {isGlazeRecipePost ? (

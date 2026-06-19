@@ -63,6 +63,7 @@ interface FiringDetailContentProps {
   onSelectGlazeOutcome?: (outcome: string) => void;
   glazeReadyPieces?: Piece[];
   onAssignAllGlazeReady?: () => void;
+  onShareToCommunity?: () => void;
 }
 
 export function FiringDetailContent({
@@ -93,6 +94,7 @@ export function FiringDetailContent({
   onSelectGlazeOutcome,
   glazeReadyPieces = [],
   onAssignAllGlazeReady,
+  onShareToCommunity,
 }: FiringDetailContentProps) {
   const autoStatus = getAutoFiringStatus(liveFiring, kiln);
   const timeline = getCalculatedTimeline(liveFiring, kiln);
@@ -232,6 +234,11 @@ export function FiringDetailContent({
                 : '✕ Failure'}
           </Text>
           {liveFiring.resultNotes ? <Text className="text-sm text-muted-foreground mt-1">{liveFiring.resultNotes}</Text> : null}
+          {onShareToCommunity ? (
+            <Button onPress={onShareToCommunity} variant="outline" className="w-full mt-4">
+              <Text className="font-semibold text-primary">Share firing to community</Text>
+            </Button>
+          ) : null}
         </Card>
       ) : null}
 

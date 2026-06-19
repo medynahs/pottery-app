@@ -17,6 +17,7 @@ import {
 import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import type { DryingTimers, Ritual, StageDay, StudioEvent, StudioRhythm, StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRythm/studioRhythm';
 import { DEFAULT_STUDIO_RHYTHM, getDateKey } from '../screens/overview/studioRythm/studioRhythm';
+import type { CommunityPostComposerPreset } from '../screens/community/types/composerPreset';
 import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
 import { fetchUsers, type BackendUser } from '../services';
@@ -487,9 +488,13 @@ interface AppState {
   hasCreatedPost: boolean;
   /** Bumped when a community post is created — feeds subscribe to refresh. */
   communityFeedRevision: number;
+  /** Pre-fill community composer when opening from journal, kiln, etc. */
+  communityPostComposerPreset: CommunityPostComposerPreset | null;
   /** Local stub for BE-8.5 until server returns save_count. */
   communityPostSaveCounts: Record<string, number>;
   markPostCreated: () => void;
+  openCommunityPostComposer: (preset: CommunityPostComposerPreset) => void;
+  clearCommunityPostComposerPreset: () => void;
   recordCommunityPostSave: (postId: string) => void;
 
   // ── Pricing Rules ───────────────────────────────────────────
@@ -1178,12 +1183,15 @@ export const useAppStore = create<AppState>()(
     })),
   hasCreatedPost: false,
   communityFeedRevision: 0,
+  communityPostComposerPreset: null,
   communityPostSaveCounts: {},
   markPostCreated: () =>
     set((state) => ({
       hasCreatedPost: true,
       communityFeedRevision: state.communityFeedRevision + 1,
     })),
+  openCommunityPostComposer: (preset) => set({ communityPostComposerPreset: preset }),
+  clearCommunityPostComposerPreset: () => set({ communityPostComposerPreset: null }),
   recordCommunityPostSave: (postId) =>
     set((state) => ({
       communityPostSaveCounts: {

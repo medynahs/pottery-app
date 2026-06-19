@@ -1,5 +1,5 @@
 import { Text } from '@/src/components/ui/text';
-import { BookOpen, X } from 'lucide-react-native';
+import { BookOpen, Share2, X } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
@@ -9,11 +9,13 @@ export function JournalHeader({
   subtitle,
   isCompact,
   onClose,
+  onShareToCommunity,
 }: {
   piece: Piece;
   subtitle?: string;
   isCompact: boolean;
   onClose: () => void;
+  onShareToCommunity?: () => void;
 }) {
   return (
     <View
@@ -61,21 +63,40 @@ export function JournalHeader({
           ) : null}
         </View>
       </View>
-      <TouchableOpacity
-        onPress={onClose}
-        activeOpacity={0.8}
-        accessibilityLabel="Close journal"
-        style={{
-          width: isCompact ? 32 : 36,
-          height: isCompact ? 32 : 36,
-          borderRadius: 999,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: JournalTheme.headerIconBg,
-        }}
-      >
-        <X size={18} color={JournalTheme.headerText} />
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        {onShareToCommunity ? (
+          <TouchableOpacity
+            onPress={onShareToCommunity}
+            activeOpacity={0.8}
+            accessibilityLabel="Share journal to community"
+            style={{
+              width: isCompact ? 32 : 36,
+              height: isCompact ? 32 : 36,
+              borderRadius: 999,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: JournalTheme.headerIconBg,
+            }}
+          >
+            <Share2 size={isCompact ? 15 : 16} color={JournalTheme.headerText} />
+          </TouchableOpacity>
+        ) : null}
+        <TouchableOpacity
+          onPress={onClose}
+          activeOpacity={0.8}
+          accessibilityLabel="Close journal"
+          style={{
+            width: isCompact ? 32 : 36,
+            height: isCompact ? 32 : 36,
+            borderRadius: 999,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: JournalTheme.headerIconBg,
+          }}
+        >
+          <X size={18} color={JournalTheme.headerText} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

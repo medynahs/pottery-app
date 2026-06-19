@@ -1,7 +1,9 @@
 import { PhotoPickerOverlay } from '@/src/components/PhotoPickerOverlay';
+import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
+import { resolvePieceJournalPhoto } from '@/src/screens/community/utils/createPostCompose';
 import { useAppStore } from '@/src/store/appStore';
 import { canAddPiecePhoto, checkPremium, countPiecePhotos, PremiumFeature } from '@/src/utils/premiumGate';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -64,6 +66,8 @@ export function PieceJournalModal({
 }: PieceJournalModalProps) {
   const { stages } = useStageConfig();
   const currencySymbol = useAppStore((state) => state.pricingSettings.currencySymbol);
+  const sessionToken = useAppStore((state) => state.sessionToken);
+  const shareToCommunity = useCommunityComposer();
   const { width, height } = useWindowDimensions();
   const isTablet = width >= 700;
   const isCompact = width < 430;
@@ -135,6 +139,16 @@ export function PieceJournalModal({
       : piece
         ? `${piece.clay} · ${formatDuration(totalMs)} in the making`
         : '';
+
+  const handleShareJournal = React.useCallback(() => {
+    if (!piece || !sessionToken) return;
+    shareToCommunity({
+      kind: 'piece_journal',
+      pieceId: piece.id,
+      photoUri: resolvePieceJournalPhoto(piece),
+      includeChallengeTag: true,
+    });
+  }, [piece, sessionToken, shareToCommunity]);
 
   // Update notes using hook and call onUpdateEntry
   const handleUpdateNotes = React.useCallback((index: number, notes: string) => {
@@ -234,6 +248,7 @@ export function PieceJournalModal({
             subtitle={activeSubtitle}
             isCompact={isCompact}
             onClose={onClose}
+            onShareToCommunity={sessionToken ? handleShareJournal : undefined}
           />
           <View style={{ height: tabsBlock, marginBottom: 2 }}>
             <BookTabs

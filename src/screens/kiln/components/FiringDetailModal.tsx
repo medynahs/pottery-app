@@ -5,6 +5,7 @@ import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
+import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
 import { useVisiblePieces, useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Trash2, X } from 'lucide-react-native';
@@ -32,7 +33,9 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const colors = Colors[colorScheme];
 
   const kilns = useAppStore((state) => state.kilns);
+  const sessionToken = useAppStore((state) => state.sessionToken);
   const pieces = useVisiblePieces();
+  const shareToCommunity = useCommunityComposer();
   const currencySymbol = useAppStore((state) => state.pricingSettings.currencySymbol);
   const assignPiecesToFiring = useAppStore((state) => state.assignPiecesToFiring);
   const completeFiring = useAppStore((state) => state.completeFiring);
@@ -112,6 +115,20 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
       setSelectedGlazeOutcome('success');
     }
   }, []);
+
+  const handleShareFiring = React.useCallback(() => {
+    if (!sessionToken || !liveFiring) return;
+    shareToCommunity({
+      kind: 'kiln_firing',
+      firingId: liveFiring.id,
+      firingName: liveFiring.name,
+      firingType: liveFiring.type,
+      cone: liveFiring.cone,
+      pieceIds: liveFiring.pieceIds,
+      caption: liveFiring.resultNotes ?? '',
+      includeChallengeTag: true,
+    });
+  }, [liveFiring, sessionToken, shareToCommunity]);
 
   if (!firing || !liveFiring) return null;
 
@@ -259,6 +276,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
               }
               glazeReadyPieces={glazeReadyPieces}
               onAssignAllGlazeReady={assignAllGlazeReady}
+              onShareToCommunity={isCompleted && sessionToken ? handleShareFiring : undefined}
             />
           </ScrollView>
 
