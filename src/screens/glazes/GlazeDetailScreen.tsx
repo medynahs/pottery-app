@@ -4,6 +4,7 @@ import { Text } from '@/src/components/ui/text';
 import { AddGlazeModal } from '@/src/screens/library/atlas/AddGlazeModal';
 import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
 import { buildGlazeTestFromDraft } from '@/src/screens/library/atlas/glazeTestDraft';
+import { GlazeBatchScalerCard } from '@/src/screens/glazes/components/GlazeBatchScalerCard';
 import { GlazeStatusPill, GlazeStatusPillRow } from '@/src/screens/glazes/components/GlazeStatusPill';
 import { ShareGlazeRecipeSheet } from '@/src/screens/glazes/ShareGlazeRecipeSheet';
 import {
@@ -569,11 +570,17 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
           {hasRecipe ? (
             <View className="mt-5">
               {glaze.recipeIngredients?.length ? (
-                <GlazeRecipeSummary
-                  ingredients={glaze.recipeIngredients}
-                  batchSizeG={glaze.batchSize}
-                  onEdit={() => setEditOpen(true)}
-                />
+                <>
+                  <GlazeRecipeSummary
+                    ingredients={glaze.recipeIngredients}
+                    batchSizeG={glaze.batchSize}
+                    onEdit={() => setEditOpen(true)}
+                  />
+                  <GlazeBatchScalerCard
+                    ingredients={glaze.recipeIngredients}
+                    linkedPieceCount={linkedPieces.length}
+                  />
+                </>
               ) : (
                 <View className="rounded-2xl border border-border bg-card px-4 py-3">
                   <View className="flex-row items-center justify-between mb-1">

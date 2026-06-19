@@ -23,6 +23,10 @@ import {
   SHARE_INTRO_PRESETS,
   type ShareGlazeDraft,
 } from '@/src/screens/glazes/shareGlazeRecipe/shareGlazeDraft';
+import {
+  buildGlazePostPayload,
+  embedGlazePayloadInContent,
+} from '@/src/screens/glazes/shareGlazeRecipe/glazePostPayload';
 import { ShareGlazeFeedPreview } from '@/src/screens/glazes/shareGlazeRecipe/ShareGlazeFeedPreview';
 import { apiSubmitChallengeEntry, apiListChallenges, type BackendChallenge } from '@/src/services/challenges';
 import { apiCreatePost } from '@/src/services/community';
@@ -139,9 +143,13 @@ export function ShareGlazeRecipeSheet({
 
   const caption =
     glaze && draft ? composeShareCaption(draft, glaze, linkedPieces) : '';
+  const postContent =
+    glaze && draft
+      ? embedGlazePayloadInContent(caption.trim(), buildGlazePostPayload(glaze, draft))
+      : '';
   const previewPhotoUri =
     glaze && draft ? resolveSharePhotoUri(glaze, draft, linkedPieces) : undefined;
-  const charCount = caption.length;
+  const charCount = postContent.length;
   const canPost = Boolean(sessionToken && caption.trim() && charCount <= MAX_SHARE_POST_LENGTH);
 
   const patchDraft = (patch: Partial<ShareGlazeDraft>) => {
@@ -186,7 +194,7 @@ export function ShareGlazeRecipeSheet({
       }
 
       const created = await apiCreatePost(sessionToken, {
-        content: caption.trim(),
+        content: postContent,
         asset_ids: assetIds.length > 0 ? assetIds : undefined,
       });
 

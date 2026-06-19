@@ -84,6 +84,53 @@ FE sends batch/version fields in `GlazeSyncItem` (`src/services/glazes.ts`). Com
 
 ---
 
+## P1 — Community glaze recipe posts
+
+FE embeds a machine-readable glaze recipe block in post `content` today (`<!-- pottery-life-glaze:v1 … -->`). This works offline but is fragile for search, moderation, and cross-client parsing.
+
+| # | Task | Notes |
+|---|------|-------|
+| BE-7.1 | Add `post_type` enum on posts: `text` \| `glaze_recipe` \| … | Default `text` for backward compatibility |
+| BE-7.2 | Add nullable `glaze_recipe` JSON column on posts | Schema mirrors `CommunityGlazeRecipePayload` in `src/screens/glazes/shareGlazeRecipe/glazePostPayload.ts` |
+| BE-7.3 | Accept `glaze_recipe` on `POST /posts` (or `/users/me/posts`) | When present, set `post_type = glaze_recipe`; strip or ignore HTML comment block in `content` |
+| BE-7.4 | Return `post_type` + `glaze_recipe` on feed + my-posts endpoints | FE can stop parsing comment blocks once BE is live |
+| BE-7.5 | Validate recipe payload: name, finish, cone, ingredients[] with material + percentage | Reject oversized payloads (>8 KB) |
+| BE-7.6 | Teaser posts: allow `teaser_shared: true` with partial or empty ingredients | Matches atlas “teaser mode” share |
+
+**Acceptance:** Share recipe from atlas → post appears in feed with structured JSON → another user saves to atlas without parsing caption text.
+
+---
+
+## P1 — Save community glaze → atlas (provenance & dedup)
+
+Saved glazes use client ids `community-{post_id}-{timestamp}` and land in collection **Saved from Community**.
+
+| # | Task | Notes |
+|---|------|-------|
+| BE-8.1 | Add optional `source_post_id` (UUID) on glaze sync records | Set when saving from a community post |
+| BE-8.2 | Add optional `source_user_id` on glaze sync records | Original poster attribution |
+| BE-8.3 | Idempotent save: unique `(user_id, source_post_id)` or return existing glaze | Prevents duplicate saves from same post |
+| BE-8.4 | Include `source_post_id` in glaze list + sync pull | FE `isCommunityGlazePostSaved()` can check server-side |
+| BE-8.5 | Optional: increment `save_count` on source post | Powers “saved by N potters” on feed cards |
+
+**Acceptance:** Save same community post twice → one atlas entry; reinstall → saved state restored from server.
+
+---
+
+## P2 — Batch scaling metadata (optional server fields)
+
+Piece-count batch scaling runs **entirely on device** today (`GlazeBatchScalerCard` + `glazeBatchScaler.ts`). Server support is optional for sharing defaults across devices.
+
+| # | Task | Notes |
+|---|------|-------|
+| BE-9.1 | Optional glaze fields: `default_grams_per_piece`, `default_waste_percent` | User overrides in atlas detail |
+| BE-9.2 | Return fields on glaze list/sync | Pre-fill batch scaler on any device |
+| BE-9.3 | Optional: include `suggested_batch_g` in `glaze_recipe` community payload | Poster’s coverage preset when sharing |
+
+**Acceptance:** Set “25g per piece” on glaze A → sign in elsewhere → batch scaler opens with same default.
+
+---
+
 ## P2 — Analytics & limits
 
 | # | Task | Notes |
@@ -108,7 +155,9 @@ FE sends batch/version fields in `GlazeSyncItem` (`src/services/glazes.ts`). Com
 |------|-------------------|
 | Piece sync payload | `src/services/pieces.ts`, `src/screens/pieces/hooks/usePiecesSync.ts` |
 | Glaze pull mapper | `src/services/glazes.ts` → `backendGlazeToLocal` |
-| Types | `BackendPiece`, `PieceSyncSnapshot` |
+| Community post create | `src/services/community.ts` → send `post_type` + `glaze_recipe` when BE-7 lands |
+| Community save provenance | `src/screens/community/utils/saveCommunityGlaze.ts`, `glazePostPayload.ts` |
+| Types | `BackendPiece`, `PieceSyncSnapshot`, `BackendFeedPost`, `GlazeSyncItem` |
 | Merge rules | Preserve local `syncDirty` until push confirms new fields |
 
 ---
@@ -123,3 +172,6 @@ FE sends batch/version fields in `GlazeSyncItem` (`src/services/glazes.ts`). Com
 | `POST /users/me/glazes/:id/images` | Upload glaze photo |
 | `DELETE /users/me/glazes/:id/images/:imageId` | Remove glaze photo |
 | `POST /users/me/pieces/sync` | Push pieces (**missing glaze fields**) |
+| `POST /posts` (or `/users/me/posts`) | Create feed post (**missing `post_type` / `glaze_recipe`**) |
+| `GET /users/me/feed` | Friends feed (**returns plain `content` only today**) |
+| `POST /uploads/presigned` | Post photo upload (see `TICKETS.md` #22) |

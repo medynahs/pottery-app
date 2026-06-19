@@ -2,6 +2,8 @@ import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
 
 export const MY_GLAZES_COLLECTION = 'My Glazes';
 export const FAVORITES_COLLECTION = 'Favorites';
+/** Auto-assigned when saving a glaze recipe from a community post. */
+export const SAVED_FROM_COMMUNITY_COLLECTION = 'Saved from Community';
 
 /** @deprecated Use MY_GLAZES_COLLECTION / FAVORITES_COLLECTION */
 export const DEFAULT_GLAZE_COLLECTIONS = [MY_GLAZES_COLLECTION, FAVORITES_COLLECTION] as const;

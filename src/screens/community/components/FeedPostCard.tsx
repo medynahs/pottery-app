@@ -2,11 +2,26 @@
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
+import { usePremiumGate } from '@/src/hooks/usePremiumGate';
+import { SaveCommunityGlazeSheet } from '@/src/screens/community/components/SaveCommunityGlazeSheet';
+import { communityGlazeToLibraryItem } from '@/src/screens/community/utils/saveCommunityGlaze';
+import {
+  deriveCustomCollectionNames,
+  sanitizeCustomCollections,
+} from '@/src/screens/library/atlas/collections';
+import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
+import {
+  isCommunityGlazePostSaved,
+  isSavableGlazeRecipePayload,
+  parseGlazeRecipeFromPost,
+  stripPayloadFromDisplay,
+} from '@/src/screens/glazes/shareGlazeRecipe/glazePostPayload';
 import { apiAddReaction, apiRemoveReaction } from '@/src/services/community';
 import { apiSendFriendRequest } from '@/src/services/friends';
 import { useAppStore } from '@/src/store';
+import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
 import { Image } from 'expo-image';
-import { MessageCircle } from 'lucide-react-native';
+import { Bookmark, Check, MessageCircle } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import { Animated, TouchableOpacity, View } from 'react-native';
 import type { BackendFeedPost } from '../../../services/community';
@@ -101,10 +116,30 @@ interface Props {
 export function FeedPostCard({ post, sessionToken }: Props) {
   const backendUserId = useAppStore((s) => s.backendUserId);
   const user = useAppStore((s) => s.user);
+  const glazes = useAppStore((s) => s.glazes);
+  const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
+  const addGlaze = useAppStore((s) => s.addGlaze);
+  const registerGlazeCollections = useAppStore((s) => s.registerGlazeCollections);
   const showToast = useAppStore((s) => s.showToast);
+  const { requestAccess, PaywallGate } = usePremiumGate();
+
+  const recipePayload = React.useMemo(
+    () => (post.content ? parseGlazeRecipeFromPost(post.content) : null),
+    [post.content],
+  );
+  const displayContent = React.useMemo(
+    () => (post.content ? stripPayloadFromDisplay(post.content) : ''),
+    [post.content],
+  );
   const firstAsset = post.assets?.[0];
   const initial = post.user_id.slice(0, 1).toUpperCase();
   const isOwnPost = Boolean(backendUserId && backendUserId === post.user_id);
+  const savedFromPost = isCommunityGlazePostSaved(post.id, glazes.map((g) => g.id));
+  const canSaveRecipe = isSavableGlazeRecipePayload(recipePayload) && !savedFromPost;
+  const collections = React.useMemo(
+    () => deriveCustomCollectionNames(glazes, glazeCollectionNames),
+    [glazes, glazeCollectionNames],
+  );
   const authorLabel = isOwnPost
     ? (user.studioName?.trim() || user.name?.trim() || 'You')
     : 'Community Member';
@@ -116,6 +151,31 @@ export function FeedPostCard({ post, sessionToken }: Props) {
   const [reactionCount, setReactionCount] = useState(post.reaction_count ?? 0);
   const [reacting, setReacting] = useState(false);
   const [requestState, setRequestState] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [saveSheetOpen, setSaveSheetOpen] = useState(false);
+
+  const handleSavePress = () => {
+    if (!recipePayload || savedFromPost) return;
+    if (!canAddGlaze(glazes)) {
+      requestAccess(PremiumFeature.FullGlazeAtlas);
+      return;
+    }
+    setSaveSheetOpen(true);
+  };
+
+  const handleSaveToAtlas = (selectedCollections: string[]) => {
+    if (!recipePayload || savedFromPost) return;
+    if (!canAddGlaze(glazes)) {
+      requestAccess(PremiumFeature.FullGlazeAtlas);
+      return;
+    }
+
+    const customCollections = sanitizeCustomCollections(selectedCollections);
+    registerGlazeCollections(customCollections);
+    addGlaze(communityGlazeToLibraryItem(recipePayload, post.id, customCollections));
+    scheduleGlazesSync();
+    setSaveSheetOpen(false);
+    showToast(`${recipePayload.name} saved to Glaze Atlas`, 'success');
+  };
 
   const handleSendFriendRequest = async () => {
     if (!canSendFriendRequest || requestState !== 'idle') return;
@@ -163,7 +223,17 @@ export function FeedPostCard({ post, sessionToken }: Props) {
   };
 
   return (
-    <Card className="p-4">
+    <>
+      {PaywallGate}
+      <SaveCommunityGlazeSheet
+        payload={saveSheetOpen ? recipePayload : null}
+        postId={saveSheetOpen ? post.id : null}
+        collections={collections}
+        onClose={() => setSaveSheetOpen(false)}
+        onSave={handleSaveToAtlas}
+      />
+
+      <Card className="p-4">
       {/* Header */}
       <View className="flex-row items-center gap-3 mb-3">
         <UserAvatar initial={initial} size={36} />
@@ -200,8 +270,30 @@ export function FeedPostCard({ post, sessionToken }: Props) {
       )}
 
       {/* Content */}
-      {post.content ? (
-        <Text className="text-sm text-foreground leading-relaxed mb-3">{post.content}</Text>
+      {displayContent ? (
+        <Text className="text-sm text-foreground leading-relaxed mb-3">{displayContent}</Text>
+      ) : null}
+
+      {isSavableGlazeRecipePayload(recipePayload) ? (
+        <View className="mb-3">
+          {savedFromPost ? (
+            <View className="flex-row items-center gap-2 rounded-xl border border-green-500/30 bg-green-50 px-3 py-2.5">
+              <Check size={14} color="hsl(145 50% 38%)" />
+              <Text className="text-xs font-semibold text-green-700">Saved to Glaze Atlas</Text>
+            </View>
+          ) : canSaveRecipe ? (
+            <TouchableOpacity
+              onPress={handleSavePress}
+              activeOpacity={0.82}
+              className="flex-row items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5"
+            >
+              <Bookmark size={14} color="hsl(39 57% 45%)" />
+              <Text className="text-xs font-semibold text-primary">
+                Save {recipePayload.name} to atlas
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       ) : null}
 
       {/* Reactions row */}
@@ -229,5 +321,6 @@ export function FeedPostCard({ post, sessionToken }: Props) {
         </TouchableOpacity>
       </View>
     </Card>
+    </>
   );
 }
