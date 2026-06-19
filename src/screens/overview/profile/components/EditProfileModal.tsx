@@ -6,7 +6,7 @@ import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { useUploadAvatar } from '@/src/hooks/useCurrentUser';
+import { useUploadAvatar, useUploadCover } from '@/src/hooks/useCurrentUser';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { useAppStore } from '@/src/store/appStore';
 import { Camera, ImageIcon, X } from 'lucide-react-native';
@@ -33,6 +33,7 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const setUser = useAppStore((s) => s.setUser);
   const sessionToken = useAppStore((s) => s.sessionToken);
   const uploadAvatar = useUploadAvatar();
+  const uploadCover = useUploadCover();
   const avatarPicker = usePhotoPicker({ aspect: [1, 1], quality: 0.85 });
   const coverPicker = usePhotoPicker({ aspect: [16, 9], quality: 0.85 });
 
@@ -45,6 +46,7 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const [coverImageUri, setCoverImageUri] = useState<string | undefined>(undefined);
   // Track whether a new local image was picked (so we only upload when there's a change)
   const avatarChanged = useRef(false);
+  const coverChanged = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -59,6 +61,7 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
       setAvatarImageUri(user.avatarImageUri);
       setCoverImageUri(user.coverImageUri);
       avatarChanged.current = false;
+      coverChanged.current = false;
       setUploadError(null);
       setUploadSuccess(false);
       setIsSaving(false);
@@ -74,7 +77,10 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   };
 
   const pickCover = () => {
-    coverPicker.openPickSheet((uri) => setCoverImageUri(uri));
+    coverPicker.openPickSheet((uri) => {
+      setCoverImageUri(uri);
+      coverChanged.current = true;
+    });
   };
 
   const handleSave = async () => {
@@ -89,16 +95,20 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
       coverImageUri,
     });
 
-    if (sessionToken && avatarChanged.current && avatarImageUri) {
+    const shouldUploadAvatar = avatarChanged.current && !!avatarImageUri;
+    const shouldUploadCover = coverChanged.current && !!coverImageUri;
+
+    if (sessionToken && (shouldUploadAvatar || shouldUploadCover)) {
       setIsSaving(true);
       setUploadError(null);
       try {
-        await uploadAvatar(avatarImageUri, avatarMimeType);
+        if (shouldUploadAvatar) await uploadAvatar(avatarImageUri!, avatarMimeType);
+        if (shouldUploadCover) await uploadCover(coverImageUri!, 'image/jpeg');
         setUploadSuccess(true);
         setTimeout(onClose, 800);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Avatar upload failed';
-        if (__DEV__) console.warn('[uploadAvatar]', msg);
+        const msg = err instanceof Error ? err.message : 'Photo upload failed';
+        if (__DEV__) console.warn('[uploadProfilePhotos]', msg);
         setUploadError(msg);
         setIsSaving(false);
       }
@@ -131,7 +141,7 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
                 <Banner message={uploadError} className="mb-4" />
               ) : null}
               {uploadSuccess ? (
-                <Banner intent="success" message="Avatar updated successfully" className="mb-4" />
+                <Banner intent="success" message="Profile photos updated successfully" className="mb-4" />
               ) : null}
               {/* Cover photo picker */}
               <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">

@@ -1,7 +1,7 @@
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { Copy, Edit3, Layers, Trash2 } from 'lucide-react-native';
+import { Copy, Edit3, Layers, Trash2, BookOpen } from 'lucide-react-native';
 import React from 'react';
 import { Modal, TouchableOpacity, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
@@ -11,6 +11,7 @@ interface PieceActionSheetProps {
   piece: Piece | null;
   visible: boolean;
   onClose: () => void;
+  onJournal?: () => void;
   onEdit: () => void;
   onDuplicate: () => void;
   onDuplicateBatch?: () => void;
@@ -21,6 +22,7 @@ export function PieceActionSheet({
   piece,
   visible,
   onClose,
+  onJournal,
   onEdit,
   onDuplicate,
   onDuplicateBatch,
@@ -59,6 +61,13 @@ export function PieceActionSheet({
           </View>
 
           {/* Actions */}
+          {onJournal ? (
+            <Row
+              icon={<BookOpen size={17} color={colors.foreground} />}
+              label="Open journal"
+              onPress={act(onJournal)}
+            />
+          ) : null}
           <Row
             icon={<Edit3 size={17} color={colors.foreground} />}
             label="Edit details"

@@ -1,4 +1,5 @@
 import { ArchiveX, Droplets, Flame, Hammer, Lightbulb, PackageCheck, Scissors, Sparkles, Star, Wind, Zap } from 'lucide-react-native';
+import { JournalTheme } from './journalTheme';
 
 export const LIFECYCLE_ORDER = [
   'idea',
@@ -195,7 +196,7 @@ export const EMPTY_FORM = {
 };
 
 export const STAGE_ICON_MAP = Object.fromEntries(STAGES.map(s => [s.id, s.Icon]));
-export const PAGE_ACCENTS = ['#C97752', '#D49F56', '#8FAE70', '#7D99BD', '#C88290', '#9A846B'];
+export const PAGE_ACCENTS: string[] = [...JournalTheme.pageAccents];
 
 export const BOOK_ART = {
   coverIllustration: require('../../../../assets/images/pottery-studio.png'),

@@ -1,5 +1,6 @@
-import { Input } from '@/src/components/ui/input.ios';
 import type { AppModule, OnboardingUserType, PracticeMode, UserRole } from '@/src/store/appStore';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Check } from 'lucide-react-native';
 import React, { useRef } from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
 
@@ -21,21 +22,42 @@ interface RoleStepProps {
   USER_TYPE_CONFIG: Record<OnboardingUserType, UserTypeConfig>;
 }
 
-// Short single-line descriptions for compact cards
-const SHORT_DESC: Record<OnboardingUserType, string> = {
-  'home-potter':              'Personal practice · home kiln & piece tracking',
-  'studio-potter':            'Shared studio · piece flow & firing context',
-  'studio-owner-technician':  'Kiln management · member ops & scheduling',
-  'business-owner':           'Production tracking · pricing & sales tools',
-  'not-sure':                 'Everything enabled · refine your setup later',
-};
-
-// Roles that collect a studio/brand name
-const STUDIO_NAME_ROLES: OnboardingUserType[] = ['studio-owner-technician', 'home-potter', 'business-owner'];
-const STUDIO_NAME_META: Partial<Record<OnboardingUserType, { label: string; placeholder: string }>> = {
-  'studio-owner-technician': { label: 'Studio name',                  placeholder: 'e.g. The Kiln Room' },
-  'home-potter':             { label: 'Home studio name (optional)',   placeholder: 'e.g. The Clay Nook' },
-  'business-owner':          { label: 'Brand or studio name (optional)', placeholder: 'e.g. Ember Ceramics' },
+const ROLE_DETAILS: Record<OnboardingUserType, { eyebrow: string; promise: string; modules: string; accent: string; tint: string }> = {
+  'home-potter': {
+    eyebrow: 'Home Studio',
+    promise: 'Shape a personal workspace for your pieces, clay bodies, and kiln notes.',
+    modules: 'Pieces · Kiln · Glaze Atlas',
+    accent: '#8d552f',
+    tint: '#fff1df',
+  },
+  'studio-potter': {
+    eyebrow: 'Shared Studio',
+    promise: 'Keep your own piece flow clear while working around communal firings.',
+    modules: 'Pieces · Library · Community',
+    accent: '#526b43',
+    tint: '#eef5e9',
+  },
+  'studio-owner-technician': {
+    eyebrow: 'Studio Ops',
+    promise: 'Prioritise kiln schedules, member flow, and the practical rhythm of the room.',
+    modules: 'Kiln · Pieces · Community',
+    accent: '#9a471f',
+    tint: '#ffe9dc',
+  },
+  'business-owner': {
+    eyebrow: 'Selling Work',
+    promise: 'Bring pricing, production, and repeatable studio systems to the front.',
+    modules: 'Pricing · Pieces · Analytics',
+    accent: '#7253a3',
+    tint: '#f1ecff',
+  },
+  'not-sure': {
+    eyebrow: 'Explore',
+    promise: 'Start broad, then refine your studio once the app learns how you work.',
+    modules: 'Everything enabled',
+    accent: '#53606b',
+    tint: '#edf2f6',
+  },
 };
 
 export const RoleStep: React.FC<RoleStepProps> = ({ draft, updateDraft, USER_TYPE_CONFIG }) => {
@@ -59,169 +81,98 @@ export const RoleStep: React.FC<RoleStepProps> = ({ draft, updateDraft, USER_TYP
     });
   };
 
-  const studioNameMeta = STUDIO_NAME_META[draft.userType as OnboardingUserType];
-
   return (
-    <View style={{ paddingBottom: 8 }}>
-      {/* Heading */}
-      <View style={{ paddingHorizontal: 24, paddingTop: 22, paddingBottom: 20 }}>
-        <Text
-          style={{
-            fontFamily: 'Fraunces_700Bold',
-            fontSize: 28,
-            lineHeight: 36,
-            color: 'hsl(24 30% 12%)',
-          }}
-        >
-          Your pottery practice
+    <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8 }}>
+     
+        <View style={{ alignSelf: 'flex-start', borderRadius: 999, backgroundColor: 'rgba(125, 76, 39, 0.1)', paddingHorizontal: 11, paddingVertical: 6, marginBottom: 10 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', color: 'hsl(28 38% 34%)' }}>
+            Studio profile
+          </Text>
+        </View>
+        <Text style={{ fontFamily: 'Fraunces_700Bold', fontSize: 23, lineHeight: 29, color: 'hsl(24 30% 12%)' }}>
+          How should Pottery Nook shape itself?
         </Text>
-        <Text
-          style={{
-            fontSize: 14,
-            color: 'hsl(24 15% 50%)',
-            marginTop: 8,
-            lineHeight: 22,
-          }}
-        >
-          This personalises your defaults. You can change it anytime in settings.
+        <Text style={{ fontSize: 13, color: 'hsl(24 15% 46%)', marginTop: 7, lineHeight: 19 }}>
+          Pick the closest fit. This tunes your first tabs, checklist, and pricing defaults.
         </Text>
-      </View>
 
-      {/* Role cards */}
-      <View style={{ paddingHorizontal: 24, gap: 8 }}>
-        {(Object.entries(USER_TYPE_CONFIG) as Array<[OnboardingUserType, UserTypeConfig]>).map(([key, option]) => {
+      <View style={{ gap: 9, marginTop: 14 }}>
+        {(Object.entries(USER_TYPE_CONFIG) as [OnboardingUserType, UserTypeConfig][]).map(([key, option]) => {
           const Icon = option.icon;
           const active = draft.userType === key;
+          const detail = ROLE_DETAILS[key];
           return (
             <Animated.View key={key} style={{ transform: [{ scale: scaleAnims[key] }] }}>
-              <Pressable
-                onPress={() => handleSelect(key)}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 14,
-                  borderRadius: 18,
-                  borderWidth: 1.5,
-                  borderColor: active ? 'hsl(24 25% 22%)' : 'hsl(24 10% 86%)',
-                  backgroundColor: active ? 'hsl(34 30% 96%)' : 'hsl(34 20% 99%)',
-                  padding: 14,
-                }}
-              >
-                {/* Icon */}
-                <View
+              <Pressable onPress={() => handleSelect(key)} accessibilityRole="button">
+                <LinearGradient
+                  colors={active ? ['#fff8ed', detail.tint] : ['#fffdf8', '#fff9ef']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 13,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: active ? 'hsl(24 30% 18%)' : 'hsl(24 10% 91%)',
+                    borderRadius: 20,
+                    borderWidth: active ? 1.5 : 1,
+                    borderColor: active ? detail.accent : 'rgba(94, 60, 36, 0.12)',
+                    padding: 13,
+                    shadowColor: active ? detail.accent : '#2f1c12',
+                    shadowOffset: { width: 0, height: active ? 9 : 3 },
+                    shadowOpacity: active ? 0.16 : 0.05,
+                    shadowRadius: active ? 14 : 8,
+                    elevation: active ? 4 : 1,
                   }}
                 >
-                  <Icon
-                    size={17}
-                    color={active ? 'hsl(34 35% 90%)' : 'hsl(24 20% 42%)'}
-                  />
-                </View>
-
-                {/* Label + description */}
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontFamily: 'Fraunces_600SemiBold',
-                      fontSize: 14,
-                      color: 'hsl(24 30% 12%)',
-                      lineHeight: 19,
-                    }}
-                  >
-                    {option.label}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: 'hsl(24 12% 52%)',
-                      marginTop: 2,
-                      lineHeight: 17,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {SHORT_DESC[key]}
-                  </Text>
-                </View>
-
-                {/* Radio dot */}
-                <View
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: 10,
-                    borderWidth: 2,
-                    borderColor: active ? 'hsl(24 25% 22%)' : 'hsl(24 10% 78%)',
-                    backgroundColor: active ? 'hsl(24 25% 22%)' : 'transparent',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {active && (
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
                     <View
                       style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: 'white',
+                        width: 42,
+                        height: 42,
+                        borderRadius: 15,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: active ? detail.accent : detail.tint,
                       }}
-                    />
-                  )}
-                </View>
+                    >
+                      <Icon size={18} color={active ? '#fff8ed' : detail.accent} />
+                    </View>
+
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.9, textTransform: 'uppercase', color: detail.accent }}>
+                          {detail.eyebrow}
+                        </Text>
+                        <View
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 11,
+                            borderWidth: 1,
+                            borderColor: active ? detail.accent : 'rgba(94, 60, 36, 0.18)',
+                            backgroundColor: active ? detail.accent : 'rgba(255, 255, 255, 0.65)',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {active ? <Check size={12} color="#fff8ed" strokeWidth={3} /> : null}
+                        </View>
+                      </View>
+                      <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 15, color: 'hsl(24 30% 12%)', lineHeight: 20, marginTop: 3 }}>
+                        {option.label}
+                      </Text>
+                      <Text style={{ fontSize: 12.5, color: 'hsl(24 14% 42%)', marginTop: 5, lineHeight: 18 }}>
+                        {detail.promise}
+                      </Text>
+                      <View style={{ alignSelf: 'flex-start', borderRadius: 999, backgroundColor: 'rgba(255, 255, 255, 0.72)', paddingHorizontal: 9, paddingVertical: 5, marginTop: 9 }}>
+                        <Text style={{ fontSize: 11.5, fontWeight: '600', color: detail.accent }}>
+                          {detail.modules}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </LinearGradient>
               </Pressable>
             </Animated.View>
           );
         })}
       </View>
-
-      {/* Studio / brand name — only for roles that own a space */}
-      {STUDIO_NAME_ROLES.includes(draft.userType) && studioNameMeta && (
-        <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
-          <View
-            style={{
-              borderRadius: 18,
-              borderWidth: 1,
-              borderColor: 'hsl(24 10% 86%)',
-              backgroundColor: 'hsl(34 20% 99%)',
-              paddingHorizontal: 16,
-              paddingTop: 14,
-              paddingBottom: 16,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: '600',
-                color: 'hsl(24 15% 50%)',
-                textTransform: 'uppercase',
-                letterSpacing: 1,
-                marginBottom: 8,
-              }}
-            >
-              {studioNameMeta.label}
-            </Text>
-            <Input
-              value={draft.studioName}
-              onChangeText={(value: string) => updateDraft({ studioName: value })}
-              placeholder={studioNameMeta.placeholder}
-            />
-            <Text
-              style={{
-                fontSize: 11,
-                color: 'hsl(24 10% 60%)',
-                marginTop: 6,
-              }}
-            >
-              Shown on your overview. You can change it anytime.
-            </Text>
-          </View>
-        </View>
-      )}
     </View>
   );
 };

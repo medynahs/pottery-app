@@ -1,13 +1,21 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
+import { AddGlazeModal } from '@/src/screens/library/atlas/AddGlazeModal';
 import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
-import { formatShortDate, glazeCardColor, parseCommaList } from '@/src/screens/library/atlas/helpers';
+import {
+  formatShortDate,
+  glazeCardColor,
+  glazeToEditDraft,
+  parseCommaList,
+} from '@/src/screens/library/atlas/helpers';
+import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { GlazeThumbnail } from '@/src/screens/library/atlas/MediaSlot';
-import type { TestDraft } from '@/src/screens/library/atlas/types';
+import type { GlazeDraft, TestDraft } from '@/src/screens/library/atlas/types';
+import { sanitizeCustomCollections, deriveCustomCollectionNames } from '@/src/screens/library/atlas/collections';
 import { useAppStore } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Sparkles, Star, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, Pencil, Sparkles, Star, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,16 +40,65 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
   const clayBodies = useAppStore((s) => s.clayBodies);
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
   const toggleFavoriteGlaze = useAppStore((s) => s.toggleFavoriteGlaze);
+  const updateGlaze = useAppStore((s) => s.updateGlaze);
   const deleteGlaze = useAppStore((s) => s.deleteGlaze);
   const deleteGlazeTest = useAppStore((s) => s.deleteGlazeTest);
   const addGlazeTest = useAppStore((s) => s.addGlazeTest);
+  const registerGlazeCollections = useAppStore((s) => s.registerGlazeCollections);
+  const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const showToast = useAppStore((s) => s.showToast);
 
+  const [editOpen, setEditOpen] = React.useState(false);
   const [logTestOpen, setLogTestOpen] = React.useState(false);
   const [confirmDeleteGlaze, setConfirmDeleteGlaze] = React.useState(false);
   const [pendingDeleteTest, setPendingDeleteTest] = React.useState<GlazeTestTile | null>(null);
 
   const glaze = glazes.find((g) => g.id === glazeId);
+
+  const collections = React.useMemo(
+    () => deriveCustomCollectionNames(glazes, glazeCollectionNames),
+    [glazes, glazeCollectionNames],
+  );
+
+  const editDraft = React.useMemo(
+    () => (glaze ? glazeToEditDraft(glaze) : undefined),
+    // Recompute only when the modal opens so the form doesn't shift while typing
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [editOpen],
+  );
+
+  const handleEditGlaze = React.useCallback(
+    (draft: GlazeDraft) => {
+      if (!glaze) return;
+      const customCollections = sanitizeCustomCollections(draft.collections);
+      registerGlazeCollections(customCollections);
+      updateGlaze({
+        ...glaze,
+        name: draft.name.trim(),
+        finish: draft.finish,
+        colorFamily: draft.colorFamily.trim() || glaze.colorFamily,
+        coneRange: draft.coneRange.trim() || draft.defaultCone,
+        defaultCone: draft.defaultCone,
+        source: draft.source,
+        notes: draft.notes.trim() || undefined,
+        applicationNotes: draft.applicationNotes.trim() || undefined,
+        supplier: draft.supplier.trim() || undefined,
+        batchSize: draft.batchSize.trim() || undefined,
+        recipeNotes: draft.recipeNotes.trim() || undefined,
+        tags: parseCommaList(draft.tags),
+        collections: customCollections,
+        favorite: draft.favorite,
+        production: draft.production,
+        bucketPhotoUri: draft.bucketPhotoUri ?? glaze.bucketPhotoUri,
+        syncDirty: true,
+      });
+      scheduleGlazesSync();
+      setEditOpen(false);
+      showToast('Glaze updated', 'success');
+    },
+    [glaze, updateGlaze, registerGlazeCollections, showToast],
+  );
+
   const tests = React.useMemo(
     () =>
       glazeTests
@@ -83,6 +140,7 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
         resultRating: testDraft.resultRating,
         defects: testDraft.defects,
       });
+      scheduleGlazesSync();
       setLogTestOpen(false);
       showToast('Test tile saved', 'success');
     },
@@ -112,6 +170,7 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
         destructive
         onConfirm={() => {
           deleteGlaze(glaze.id);
+          scheduleGlazesSync();
           setConfirmDeleteGlaze(false);
           router.back();
         }}
@@ -128,10 +187,23 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
         confirmLabel="Remove"
         destructive
         onConfirm={() => {
-          if (pendingDeleteTest) deleteGlazeTest(pendingDeleteTest.id);
+          if (pendingDeleteTest) {
+            deleteGlazeTest(pendingDeleteTest.id);
+            scheduleGlazesSync();
+          }
           setPendingDeleteTest(null);
         }}
         onCancel={() => setPendingDeleteTest(null)}
+      />
+
+      <AddGlazeModal
+        visible={editOpen}
+        onClose={() => setEditOpen(false)}
+        onSave={handleEditGlaze}
+        defaultCone={defaultGlazeTemp}
+        collections={collections}
+        onCreateCollection={(name) => registerGlazeCollections([name])}
+        initialDraft={editDraft}
       />
 
       <LogTestModal
@@ -182,7 +254,26 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
         <View className="px-6 pt-5">
           <View className="flex-row flex-wrap gap-2">
             <TouchableOpacity
-              onPress={() => toggleFavoriteGlaze(glaze.id)}
+              onPress={() => setEditOpen(true)}
+              activeOpacity={0.85}
+              className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-primary"
+            >
+              <Pencil size={15} color="white" />
+              <Text className="text-xs font-semibold text-white">Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setLogTestOpen(true)}
+              activeOpacity={0.85}
+              className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-border bg-card"
+            >
+              <Sparkles size={15} color="hsl(24 20% 40%)" />
+              <Text className="text-xs font-semibold text-foreground">Log Test</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                toggleFavoriteGlaze(glaze.id);
+                scheduleGlazesSync();
+              }}
               activeOpacity={0.85}
               className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-border bg-card"
             >
@@ -194,14 +285,6 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
               <Text className="text-xs font-semibold text-foreground">
                 {glaze.favorite ? 'Favorited' : 'Favorite'}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setLogTestOpen(true)}
-              activeOpacity={0.85}
-              className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-primary"
-            >
-              <Sparkles size={15} color="white" />
-              <Text className="text-xs font-semibold text-white">Log Test</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setConfirmDeleteGlaze(true)}
@@ -224,6 +307,16 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
 
           {glaze.supplier ? (
             <Text className="text-xs text-muted-foreground mt-4">Supplier: {glaze.supplier}</Text>
+          ) : null}
+
+          {glaze.collections.length > 0 ? (
+            <View className="flex-row flex-wrap gap-2 mt-4">
+              {glaze.collections.map((collection) => (
+                <View key={collection} className="px-3 py-1 rounded-full bg-muted border border-border">
+                  <Text className="text-[11px] font-semibold text-muted-foreground">{collection}</Text>
+                </View>
+              ))}
+            </View>
           ) : null}
 
           <View className="mt-8 mb-3 flex-row items-center justify-between">

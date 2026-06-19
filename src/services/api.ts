@@ -15,6 +15,7 @@ export interface BackendProfile {
   email: string;
   name: string | null;
   avatar_url: string | null;
+  cover_url: string | null;
   role: string;
   created_at: string;
   updated_at: string;
@@ -49,7 +50,8 @@ export async function deleteAccount(sessionToken: string): Promise<void> {
   if (!res.ok) throw new ApiError(`Account deletion failed (${res.status})`, res.status);
 }
 
-export async function uploadAvatar(
+async function uploadUserImage(
+  kind: 'avatar' | 'cover',
   sessionToken: string,
   imageUri: string,
   mimeType = 'image/jpeg',
@@ -60,11 +62,11 @@ export async function uploadAvatar(
   const form = new FormData();
   form.append('image', {
     uri: imageUri,
-    name: `avatar.${ext}`,
+    name: `${kind}.${ext}`,
     type: mimeType,
   } as unknown as Blob);
 
-  const res = await fetch(`${API_BASE}/users/me/avatar`, {
+  const res = await fetch(`${API_BASE}/users/me/${kind}`, {
     method: 'POST',
     credentials: 'omit',
     headers: { 'X-Session-Token': sessionToken },
@@ -73,9 +75,25 @@ export async function uploadAvatar(
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Avatar upload failed (${res.status}): ${body}`);
+    throw new Error(`${kind === 'avatar' ? 'Avatar' : 'Cover'} upload failed (${res.status}): ${body}`);
   }
   return res.json() as Promise<BackendProfile>;
+}
+
+export async function uploadAvatar(
+  sessionToken: string,
+  imageUri: string,
+  mimeType = 'image/jpeg',
+): Promise<BackendProfile> {
+  return uploadUserImage('avatar', sessionToken, imageUri, mimeType);
+}
+
+export async function uploadCover(
+  sessionToken: string,
+  imageUri: string,
+  mimeType = 'image/jpeg',
+): Promise<BackendProfile> {
+  return uploadUserImage('cover', sessionToken, imageUri, mimeType);
 }
 
 

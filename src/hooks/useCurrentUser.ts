@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { ApiError, avatarDataUri, fetchMe, uploadAvatar } from '../services/api';
+import { ApiError, avatarDataUri, fetchMe, uploadAvatar, uploadCover } from '../services/api';
 import { useAppStore } from '../store/appStore';
 
 export const ME_QUERY_KEY = ['me'] as const;
@@ -56,6 +56,8 @@ export function useCurrentUser() {
     // after the user picked an image but before the upload completed).
     const avatarUrl = avatarDataUri(p);
     if (avatarUrl) patch.avatarImageUri = avatarUrl;
+    // Same rule for the cover photo: only overwrite when the backend has one.
+    if (p.cover_url) patch.coverImageUri = p.cover_url;
     setUser(patch);
   }, [query.data]);
 
@@ -78,6 +80,20 @@ export function useUploadAvatar() {
     // This avoids a redundant GET /users/me and prevents the race condition
     // where a re-fetch returns a stale avatar_url and overwrites the
     // optimistic local URI that was set before the upload completed.
+    queryClient.setQueryData(ME_QUERY_KEY, updatedProfile);
+  };
+}
+
+/**
+ * One-shot helper to upload a profile cover photo, mirroring useUploadAvatar.
+ */
+export function useUploadCover() {
+  const sessionToken = useAppStore((s) => s.sessionToken);
+  const queryClient  = useQueryClient();
+
+  return async (imageUri: string, mimeType?: string): Promise<void> => {
+    if (!sessionToken) throw new Error('Not signed in');
+    const updatedProfile = await uploadCover(sessionToken, imageUri, mimeType);
     queryClient.setQueryData(ME_QUERY_KEY, updatedProfile);
   };
 }

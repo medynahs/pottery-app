@@ -340,11 +340,14 @@ export function usePiecesScreen() {
     }
 
     const notes = capture.notes?.trim();
-    const journalPatch = {
+    const entryPatch = {
       notes: notes || undefined,
       photos: capture.photo ? [capture.photo] : undefined,
+      bisqueTemp: advanceRequest.toStage === 'bisque' && capture.bisqueTemp ? capture.bisqueTemp : undefined,
+      glazeTemp: advanceRequest.toStage === 'glaze-fired' && capture.glazeTemp ? capture.glazeTemp : undefined,
+      status: advanceRequest.toStage === FINISHED_STAGE_ID && capture.status ? capture.status : undefined,
     };
-    const hasJournalPatch = !!journalPatch.notes || !!journalPatch.photos;
+    const hasEntryPatch = Object.values(entryPatch).some((value) => value != null && value !== '');
 
     const bisqueTemp = advanceRequest.toStage === 'bisque' ? capture.bisqueTemp : undefined;
     const glazeTemp = advanceRequest.toStage === 'glaze-fired' ? capture.glazeTemp : undefined;
@@ -367,9 +370,9 @@ export function usePiecesScreen() {
       advancePieceIds(targetPieces.map((piece) => piece.id));
     }
 
-    if (hasJournalPatch) {
+    if (hasEntryPatch) {
       targetPieces.forEach((piece) => {
-        updateJournalEntry(piece.id, piece.timeline.length, journalPatch);
+        updateJournalEntry(piece.id, piece.timeline.length, entryPatch);
       });
     }
 

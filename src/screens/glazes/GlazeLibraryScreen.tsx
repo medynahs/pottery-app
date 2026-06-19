@@ -3,6 +3,7 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { matchesCollectionFilter } from '@/src/screens/library/atlas/collections';
+import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { useAppStore } from '@/src/store/appStore';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -310,7 +311,10 @@ export default function GlazeLibraryScreen({
         confirmLabel="Remove"
         destructive
         onConfirm={() => {
-          if (pendingRemoveTest) deleteGlazeTest(pendingRemoveTest.id);
+          if (pendingRemoveTest) {
+            deleteGlazeTest(pendingRemoveTest.id);
+            scheduleGlazesSync();
+          }
           setPendingRemoveTest(null);
         }}
         onCancel={() => setPendingRemoveTest(null)}
@@ -466,7 +470,7 @@ export default function GlazeLibraryScreen({
                             </Text>
                           </View>
                           <TouchableOpacity
-                            onPress={() => toggleFavoriteGlaze(glaze.id)}
+                            onPress={() => { toggleFavoriteGlaze(glaze.id); scheduleGlazesSync(); }}
                             activeOpacity={0.78}
                             className="w-8 h-8 rounded-full bg-white/70 items-center justify-center"
                           >
@@ -674,7 +678,7 @@ export default function GlazeLibraryScreen({
                           ) : null}
                         </View>
                         <TouchableOpacity
-                          onPress={() => toggleFavoriteGlaze(selectedGlaze.id)}
+                          onPress={() => { toggleFavoriteGlaze(selectedGlaze.id); scheduleGlazesSync(); }}
                           activeOpacity={0.78}
                           className="w-9 h-9 rounded-full bg-white/75 items-center justify-center"
                         >
@@ -817,7 +821,7 @@ export default function GlazeLibraryScreen({
 
                   <View className="mt-5 flex-row gap-3">
                     <TouchableOpacity
-                      onPress={() => updateGlaze({ ...selectedGlaze, production: !selectedGlaze.production })}
+                      onPress={() => { updateGlaze({ ...selectedGlaze, production: !selectedGlaze.production }); scheduleGlazesSync(); }}
                       activeOpacity={0.82}
                       className="flex-1 rounded-2xl border border-border bg-card px-4 py-3 items-center justify-center"
                     >

@@ -1,4 +1,4 @@
-import { normalizeGlazeCollections } from './collections';
+import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
 import { COLOR_FAMILY_HEX } from './constants';
 import type { GlazeDraft, TestDraft } from './types';
 
@@ -44,9 +44,32 @@ export function createEmptyGlazeDraft(
     batchSize: '',
     recipeNotes: '',
     tags: '',
-    collections: normalizeGlazeCollections(),
+    collections: [],
     favorite: false,
     production: false,
+  };
+}
+
+export function glazeToEditDraft(glaze: GlazeLibraryItem): GlazeDraft {
+  return {
+    name: glaze.name,
+    finish: glaze.finish,
+    colorFamily: glaze.colorFamily ?? '',
+    coneRange: glaze.coneRange ?? '',
+    defaultCone: glaze.defaultCone ?? glaze.coneRange ?? '',
+    source: glaze.source,
+    notes: glaze.notes ?? '',
+    applicationNotes: glaze.applicationNotes ?? '',
+    supplier: glaze.supplier ?? '',
+    batchSize: glaze.batchSize ?? '',
+    recipeNotes: glaze.recipeNotes ?? '',
+    tags: (glaze.tags ?? []).join(', '),
+    collections: glaze.collections ?? [],
+    favorite: glaze.favorite,
+    production: glaze.production,
+    bucketPhotoUri: glaze.bucketPhotoUri,
+    firstTilePhotoUri: glaze.testTilePhotoUris[0],
+    firstPiecePhotoUri: glaze.finishedPiecePhotoUris[0],
   };
 }
 

@@ -2,21 +2,28 @@ import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useAppStore } from '@/src/store';
 import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
 import React from 'react';
-import { DEFAULT_GLAZE_COLLECTIONS, normalizeGlazeCollections } from './atlas/collections';
+import { deriveCustomCollectionNames, sanitizeCustomCollections } from './atlas/collections';
 import { parseCommaList } from './atlas/helpers';
 import type { GlazeDraft, TestDraft } from './atlas/types';
+import { scheduleGlazesSync } from './useGlazesSync';
 
 export function useGlazeAtlas() {
   const glazes = useAppStore((state) => state.glazes);
   const glazeTests = useAppStore((state) => state.glazeTests);
+  const glazeCollectionNames = useAppStore((state) => state.glazeCollectionNames);
   const clayBodies = useAppStore((state) => state.clayBodies);
   const defaultGlazeTemp = useAppStore((state) => state.defaultGlazeTemp);
   const addGlaze = useAppStore((state) => state.addGlaze);
   const addGlazeTest = useAppStore((state) => state.addGlazeTest);
+  const registerGlazeCollections = useAppStore((state) => state.registerGlazeCollections);
+  const addGlazeCollection = useAppStore((state) => state.addGlazeCollection);
   const showToast = useAppStore((state) => state.showToast);
   const { requestAccess, PaywallGate } = usePremiumGate();
 
-  const collections = React.useMemo(() => [...DEFAULT_GLAZE_COLLECTIONS], []);
+  const collections = React.useMemo(
+    () => deriveCustomCollectionNames(glazes, glazeCollectionNames),
+    [glazes, glazeCollectionNames],
+  );
 
   const [addOpen, setAddOpen] = React.useState(false);
   const [testOpen, setTestOpen] = React.useState(false);
@@ -39,6 +46,9 @@ export function useGlazeAtlas() {
   }, [glazes.length, showToast, openAddGlaze]);
 
   const handleSaveGlaze = React.useCallback((draft: GlazeDraft) => {
+    const customCollections = sanitizeCustomCollections(draft.collections);
+    registerGlazeCollections(customCollections);
+
     addGlaze({
       id: `glaze-${Date.now()}`,
       name: draft.name.trim(),
@@ -54,7 +64,7 @@ export function useGlazeAtlas() {
       recipeNotes: draft.recipeNotes.trim() || undefined,
       recipeIngredients: [],
       tags: parseCommaList(draft.tags),
-      collections: normalizeGlazeCollections(),
+      collections: customCollections,
       favorite: draft.favorite,
       production: draft.production,
       bucketPhotoUri: draft.bucketPhotoUri,
@@ -67,9 +77,10 @@ export function useGlazeAtlas() {
       createdAt: new Date().toISOString(),
       lastTestedAt: undefined,
     });
+    scheduleGlazesSync();
     setAddOpen(false);
     showToast('Glaze saved', 'success');
-  }, [addGlaze, showToast]);
+  }, [addGlaze, registerGlazeCollections, showToast]);
 
   const handleSaveTest = React.useCallback((testDraft: TestDraft) => {
     const selectedGlaze = glazes.find((g) => g.id === testDraft.glazeId);
@@ -98,6 +109,7 @@ export function useGlazeAtlas() {
       resultRating: testDraft.resultRating,
       defects: testDraft.defects,
     });
+    scheduleGlazesSync();
     setTestOpen(false);
     showToast('Test tile saved', 'success');
   }, [addGlazeTest, glazes, showToast]);
@@ -116,6 +128,7 @@ export function useGlazeAtlas() {
     openLogTest,
     handleSaveGlaze,
     handleSaveTest,
+    addGlazeCollection,
     PaywallGate,
   };
 }

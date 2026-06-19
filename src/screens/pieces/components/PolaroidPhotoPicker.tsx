@@ -11,6 +11,7 @@ import {
   View,
   ViewStyle
 } from 'react-native';
+import { JournalTheme } from '../utils/journalTheme';
 
 export interface PolaroidPhotoPickerProps {
   photo?: string;
@@ -32,7 +33,7 @@ export function PolaroidPhotoPicker({
   photo,
   onPress,
   onDelete,
-  accent = '#B89B7B',
+  accent = JournalTheme.pageAccents[0],
   placeholder = 'Choose your pic ✦',
   label,
   width = 220,
@@ -63,7 +64,7 @@ export function PolaroidPhotoPicker({
           shadowOffset: { width: 0, height: 4 },
           elevation: 4,
           width,
-          maxWidth: 320,
+          maxWidth: width,
           marginBottom: 8,
           transform: [{ rotate: rotation }],
         }}
@@ -95,7 +96,7 @@ export function PolaroidPhotoPicker({
           </View>
         ) : (
           <LinearGradient
-            colors={['#F5E7D1', '#E7C9A4']}
+            colors={[...JournalTheme.polaroidPlaceholder]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ height, alignItems: 'center', justifyContent: 'center', borderRadius: borderRadius - 4 }}
@@ -118,7 +119,7 @@ export function PolaroidPhotoPicker({
               width: 30,
               height: 30,
               borderRadius: 999,
-              backgroundColor: 'rgba(71, 44, 31, 0.72)',
+              backgroundColor: JournalTheme.cameraOverlay,
               alignItems: 'center',
               justifyContent: 'center',
               opacity: 0.4,
@@ -139,7 +140,7 @@ export function PolaroidPhotoPicker({
             }}
           >
             {typeof label === 'string' ? (
-              <Text style={{ fontSize: 12, color: '#7F6450', fontFamily: 'DMSans_500Medium', letterSpacing: 1 }}>{label}</Text>
+              <Text style={{ fontSize: 12, color: JournalTheme.polaroidLabel, fontFamily: 'DMSans_500Medium', letterSpacing: 1 }}>{label}</Text>
             ) : (
               label
             )}

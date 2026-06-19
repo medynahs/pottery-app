@@ -3,18 +3,13 @@ import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
-import { canAddPiecePhoto, PremiumFeature } from '@/src/utils/premiumGate';
+import { canAddPiecePhoto, checkPremium, countPiecePhotos, PremiumFeature } from '@/src/utils/premiumGate';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  TouchableOpacity,
   View,
   useWindowDimensions,
   type NativeScrollEvent,
@@ -32,12 +27,15 @@ import { useJournalDrafts } from '../hooks/useJournalDrafts';
 import { useJournalSpreads } from '../hooks/useJournalSpreads';
 import { PAGE_ACCENTS } from '../utils/constants';
 import { formatDuration } from '../utils/journal';
+import { JournalTheme } from '../utils/journalTheme';
 import { resolveStageIcon } from '../utils/stageIconUtils';
 
 
 interface PieceJournalModalProps {
   piece: Piece | null;
   visible: boolean;
+  /** Open directly to the spread for this stage (e.g. from activity feed). Defaults to cover. */
+  initialStage?: string;
   onClose: () => void;
   onUpdatePiece: (piece: Piece) => void;
   onUpdateEntry: (
@@ -47,9 +45,19 @@ interface PieceJournalModalProps {
   ) => void;
 }
 
+function resolveInitialPage(piece: Piece, initialStage?: string): number {
+  if (initialStage) {
+    for (let i = piece.timeline.length - 1; i >= 0; i -= 1) {
+      if (piece.timeline[i].stage === initialStage) return i + 1;
+    }
+  }
+  return 0;
+}
+
 export function PieceJournalModal({
   piece,
   visible,
+  initialStage,
   onClose,
   onUpdatePiece,
   onUpdateEntry,
@@ -62,7 +70,9 @@ export function PieceJournalModal({
   const shellPadding = isCompact ? 10 : 14;
   const pageInset = isCompact ? 20 : 28;
   const [activePage, setActivePage] = React.useState(0);
+  const [measuredBookHeight, setMeasuredBookHeight] = React.useState(400);
   const pageScrollRef = React.useRef<ScrollViewType>(null);
+  const notesDebounceRef = React.useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
   // Custom hook for drafts
   const { drafts, setDrafts, updateNotes, updatePhotoAt, deletePhotoAt } = useJournalDrafts(piece, visible);
@@ -70,19 +80,32 @@ export function PieceJournalModal({
   const { requestAccess, PaywallGate } = usePremiumGate();
 
   React.useEffect(() => {
-    if (visible && piece) {
-      setActivePage(0);
-      requestAnimationFrame(() => pageScrollRef.current?.scrollTo({ x: 0, animated: false }));
-    }
-    // Only reset to cover when the modal opens or a *different* piece is shown.
+    if (!visible || !piece) return;
+    const startPage = resolveInitialPage(piece, initialStage);
+    setActivePage(startPage);
+    requestAnimationFrame(() => pageScrollRef.current?.scrollTo({ x: startPage * pageWidth, animated: false }));
+    // Only reset page when the modal opens or a *different* piece is shown.
     // Using piece.id instead of piece prevents a reset on every content update
     // (e.g. after picking a photo, setJournalPiece creates a new object reference).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [piece?.id, visible]);
+  }, [piece?.id, visible, initialStage]);
 
   const totalMs = useMemo(() => piece ? Date.now() - new Date(piece.createdAt).getTime() : 0, [piece]);
-  const bookWidth = useMemo(() => Math.min(width - (isCompact ? 10 : 18), 940), [width, isCompact]);
-  const bookHeight = useMemo(() => Math.min(height * (isCompact ? 0.84 : 0.8), 760), [height, isCompact]);
+
+  const topInset = isCompact ? 40 : 46;
+  const headerBlock = isCompact ? 46 : 50;
+  const tabsBlock = 32;
+  const bottomInset = 10;
+  const verticalChrome = topInset + headerBlock + tabsBlock + bottomInset + shellPadding * 2;
+
+  const bookWidth = useMemo(
+    () => Math.min(width - (isCompact ? 16 : isTablet ? 40 : 24), isTablet ? 900 : 940),
+    [width, isCompact, isTablet],
+  );
+  const maxBookHeight = useMemo(
+    () => Math.max(300, Math.min(height - verticalChrome, isTablet ? 820 : 680)),
+    [height, verticalChrome, isTablet],
+  );
   // For tablet, each page is half the book minus insets; for mobile, full width minus insets
   const pageWidth = useMemo(() => isTablet ? (bookWidth - pageInset * 2) / 2 : bookWidth - pageInset, [bookWidth, pageInset, isTablet]);
 
@@ -107,26 +130,35 @@ export function PieceJournalModal({
   const activeSpread = spreads[activePage] ?? spreads[0];
   const activeSubtitle = activeSpread?.kind === 'cover'
     ? activeSpread.subtitle
-    : piece
-      ? `${piece.clay} · ${formatDuration(totalMs)} in the making`
-      : '';
+    : activeSpread?.kind === 'entry'
+      ? `${activeSpread.stageLabel} · ${activeSpread.dateLabel}`
+      : piece
+        ? `${piece.clay} · ${formatDuration(totalMs)} in the making`
+        : '';
 
   // Update notes using hook and call onUpdateEntry
   const handleUpdateNotes = React.useCallback((index: number, notes: string) => {
     if (!piece) return;
     updateNotes(index, notes);
-    onUpdateEntry(piece.id, index, { notes });
+    if (notesDebounceRef.current[index]) clearTimeout(notesDebounceRef.current[index]);
+    notesDebounceRef.current[index] = setTimeout(() => {
+      onUpdateEntry(piece.id, index, { notes });
+    }, 500);
   }, [piece, updateNotes, onUpdateEntry]);
 
   // Update the piece-level cover photo
   const pickCoverPhoto = React.useCallback(() => {
     if (!piece) return;
     const heroImage = piece.photo ?? piece.imgUrl;
+    if (!canAddPiecePhoto(piece, !!heroImage)) {
+      requestAccess(PremiumFeature.UnlimitedPhotos);
+      return;
+    }
     openPickSheet(
       (uri) => onUpdatePiece({ ...piece, photo: uri }),
       heroImage ? () => onUpdatePiece({ ...piece, photo: undefined, imgUrl: undefined }) : undefined,
     );
-  }, [piece, onUpdatePiece, openPickSheet]);
+  }, [piece, onUpdatePiece, openPickSheet, requestAccess]);
 
   // Persist description changes from the cover spread
   const handleUpdateDescription = React.useCallback((description: string) => {
@@ -185,42 +217,54 @@ export function PieceJournalModal({
 
   if (!piece) return null;
 
+  const canAddMorePhotos = checkPremium(PremiumFeature.UnlimitedPhotos) || countPiecePhotos(piece) < 1;
+
   return (
     <Modal visible={visible} animationType="fade" transparent={false} onRequestClose={onClose} statusBarTranslucent>
       {PaywallGate}
       <LinearGradient
-        colors={['#2D221C', '#4C3226', '#6C4433']}
+        colors={[...JournalTheme.shellGradient]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ flex: 1 }}
       >
-        <View style={{ flex: 1, paddingTop: isCompact ? 48 : 54, paddingHorizontal: isCompact ? 10 : 14, paddingBottom: 18 }}>
-          <JournalHeader piece={piece} isCompact={isCompact} onClose={onClose} />
-          {/* BookTabs on top as book markers */}
-          <BookTabs
-            spreads={spreads}
-            activePage={activePage}
-            onPress={goToPage}
-            icons={icons}
+        <View style={{ flex: 1, paddingTop: topInset, paddingHorizontal: isCompact ? 12 : 14, paddingBottom: bottomInset }}>
+          <JournalHeader
+            piece={piece}
+            subtitle={activeSubtitle}
+            isCompact={isCompact}
+            onClose={onClose}
           />
+          <View style={{ height: tabsBlock, marginBottom: 2 }}>
+            <BookTabs
+              spreads={spreads}
+              activePage={activePage}
+              onPress={goToPage}
+              icons={icons}
+            />
+          </View>
 
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, minHeight: 0 }}>
             <View
               style={{
+                flex: 1,
                 width: bookWidth,
-                height: bookHeight,
+                maxHeight: maxBookHeight,
                 alignSelf: 'center',
                 padding: shellPadding,
+                minHeight: 0,
               }}
             >
               <View
+                onLayout={(event) => setMeasuredBookHeight(event.nativeEvent.layout.height)}
                 style={{
                   flex: 1,
                   overflow: 'hidden',
                   borderRadius: isCompact ? 22 : 26,
-                  backgroundColor: '#F3E4CB',
+                  backgroundColor: JournalTheme.pageBackground,
                   borderWidth: 1,
-                  borderColor: '#B78262',
+                  borderColor: JournalTheme.pageBorder,
+                  minHeight: 0,
                 }}
               >
                 <JournalBook
@@ -237,52 +281,17 @@ export function PieceJournalModal({
                   handleUpdateDescription={handleUpdateDescription}
                   pageScrollRef={pageScrollRef}
                   handleMomentumEnd={handleMomentumEnd}
+                  canAddMorePhotos={canAddMorePhotos}
                 />
 
-                <BinderSpine height={bookHeight} compact={isCompact} />
-
-                <View style={isCompact ? { position: 'absolute', left: 12, bottom: 14 } : { position: 'absolute', left: 12, top: '50%', marginTop: -22 }}>
-                  <TouchableOpacity
-                    onPress={() => goToPage(activePage - 1)}
-                    disabled={activePage === 0}
-                    activeOpacity={0.8}
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 999,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: activePage === 0 ? 'rgba(120, 95, 76, 0.2)' : 'rgba(92, 60, 43, 0.82)',
-                    }}
-                  >
-                    <ChevronLeft size={isCompact ? 16 : 18} color={activePage === 0 ? '#B89A82' : '#FFF5E7'} />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={isCompact ? { position: 'absolute', right: 12, bottom: 14 } : { position: 'absolute', right: 12, top: '50%', marginTop: -22 }}>
-                  <TouchableOpacity
-                    onPress={() => goToPage(activePage + 1)}
-                    disabled={activePage === spreads.length - 1}
-                    activeOpacity={0.8}
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 999,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: activePage === spreads.length - 1 ? 'rgba(120, 95, 76, 0.2)' : 'rgba(92, 60, 43, 0.82)',
-                    }}
-                  >
-                    <ChevronRight size={isCompact ? 16 : 18} color={activePage === spreads.length - 1 ? '#B89A82' : '#FFF5E7'} />
-                  </TouchableOpacity>
-                </View>
+                <BinderSpine height={measuredBookHeight} compact={!isTablet && isCompact} />
 
                 <JournalNavigation
                   activePage={activePage}
                   totalPages={spreads.length}
                   goToPage={goToPage}
                   isCompact={isCompact}
-                  bookHeight={bookHeight}
+                  bookHeight={measuredBookHeight}
                   spreads={spreads}
                   accent={activeSpread?.accent ?? PAGE_ACCENTS[0]}
                 />

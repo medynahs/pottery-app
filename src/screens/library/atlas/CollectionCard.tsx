@@ -8,11 +8,12 @@ export function CollectionCard({
   glazeColors,
   count,
   onPress,
+  tint: _tint,
 }: {
   name: string;
   glazeColors: string[];
   count: number;
-  tint: { bg: string; border: string };
+  tint?: { bg: string; border: string };
   onPress: () => void;
 }) {
   const swatches = glazeColors.slice(0, 6);

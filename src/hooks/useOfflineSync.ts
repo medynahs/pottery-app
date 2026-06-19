@@ -1,3 +1,4 @@
+import { flushGlazesSync, hasPendingGlazesSync } from '../screens/library/useGlazesSync';
 import { flushPiecesSync, hasPendingPiecesSync } from '../screens/pieces/hooks/usePiecesSync';
 import { useAppStore } from '../store/appStore';
 import { useNetworkConnection } from './useNetworkConnection';
@@ -21,11 +22,15 @@ export function useOfflineSync() {
 
   const flushQueue = async () => {
     const hasPieces = hasPendingPiecesSync();
+    const hasGlazes = hasPendingGlazesSync();
     const hasLegacyOps = pendingSyncOps.length > 0;
-    if (!hasPieces && !hasLegacyOps) return;
+    if (!hasPieces && !hasGlazes && !hasLegacyOps) return;
 
     if (hasPieces) {
       await flushPiecesSync();
+    }
+    if (hasGlazes) {
+      await flushGlazesSync();
     }
     // Legacy queue — non-piece ops only
     if (hasLegacyOps && !hasPendingPiecesSync()) {
@@ -38,7 +43,7 @@ export function useOfflineSync() {
     const cameOnline = !prevOnline.current && isOnline;
     prevOnline.current = isOnline;
 
-    if (cameOnline && (hasPendingPiecesSync() || pendingSyncOps.length > 0)) {
+    if (cameOnline && (hasPendingPiecesSync() || hasPendingGlazesSync() || pendingSyncOps.length > 0)) {
       void flushQueue();
     }
   }, [isOnline]);

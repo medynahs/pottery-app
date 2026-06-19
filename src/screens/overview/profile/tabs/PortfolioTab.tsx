@@ -2,7 +2,7 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
 import { useVisiblePieces, useAppStore } from '@/src/store/appStore';
 import { Piece } from '@/src/types/pieces';
-import { DollarSign, ImageIcon, Package, Sparkles, X } from 'lucide-react-native';
+import { ImageIcon, Package, Sparkles, Tag, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Image,
@@ -28,7 +28,17 @@ function palette(id: number) {
   return TILE_PALETTES[id % TILE_PALETTES.length];
 }
 
-function PhotoTile({ piece, size, onPress }: { piece: Piece; size: number; onPress: () => void }) {
+function PhotoTile({
+  piece,
+  size,
+  currencySymbol,
+  onPress,
+}: {
+  piece: Piece;
+  size: number;
+  currencySymbol: string;
+  onPress: () => void;
+}) {
   const imgUri = piece.imgUrl ?? piece.photo;
   const pal = palette(piece.id);
   const isFinished = piece.stage === 'finished';
@@ -58,8 +68,8 @@ function PhotoTile({ piece, size, onPress }: { piece: Piece; size: number; onPre
           borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2,
           flexDirection: 'row', alignItems: 'center', gap: 2,
         }}>
-          <DollarSign size={9} color="white" />
-          <Text style={{ fontSize: 9, color: 'white', fontWeight: '700' }}>{piece.price}</Text>
+          <Tag size={9} color="white" />
+          <Text style={{ fontSize: 9, color: 'white', fontWeight: '700' }}>{currencySymbol}{piece.price}</Text>
         </View>
       ) : null}
       {/* Finished sparkle (no price) */}
@@ -75,7 +85,15 @@ function PhotoTile({ piece, size, onPress }: { piece: Piece; size: number; onPre
   );
 }
 
-function PieceDetailSheet({ piece, onClose }: { piece: Piece; onClose: () => void }) {
+function PieceDetailSheet({
+  piece,
+  currencySymbol,
+  onClose,
+}: {
+  piece: Piece;
+  currencySymbol: string;
+  onClose: () => void;
+}) {
   const { width } = useWindowDimensions();
   const imgUri = piece.imgUrl ?? piece.photo;
   const pal = palette(piece.id);
@@ -124,7 +142,7 @@ function PieceDetailSheet({ piece, onClose }: { piece: Piece; onClose: () => voi
           <Text className="text-2xl font-serif font-bold text-foreground flex-1 pr-4">{piece.name}</Text>
           {piece.price ? (
             <View className="px-3 py-1.5 rounded-xl" style={{ backgroundColor: 'hsl(38 55% 55%)' }}>
-              <Text className="text-white font-bold text-base">${piece.price}</Text>
+              <Text className="text-white font-bold text-base">{currencySymbol}{piece.price}</Text>
             </View>
           ) : null}
         </View>
@@ -172,6 +190,7 @@ function DetailChip({ label, value }: { label: string; value: string }) {
 export function PortfolioTab() {
   const { width } = useWindowDimensions();
   const pieces = useVisiblePieces();
+  const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
   const [selected, setSelected] = useState<Piece | null>(null);
 
   const active = pieces.filter(p => p.stage !== 'cemetery');
@@ -196,6 +215,7 @@ export function PortfolioTab() {
               key={piece.id}
               piece={piece}
               size={tileSize}
+              currencySymbol={currencySymbol}
               onPress={() => setSelected(piece)}
             />
           ))}
@@ -214,7 +234,13 @@ export function PortfolioTab() {
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
             onPress={() => setSelected(null)}
           />
-          {selected && <PieceDetailSheet piece={selected} onClose={() => setSelected(null)} />}
+          {selected && (
+            <PieceDetailSheet
+              piece={selected}
+              currencySymbol={currencySymbol}
+              onClose={() => setSelected(null)}
+            />
+          )}
         </View>
       </Modal>
     </View>

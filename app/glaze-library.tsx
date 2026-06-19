@@ -1,9 +1,13 @@
+import { collectionNameToSlug } from '@/src/screens/library/atlas/collections';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 
-/** Legacy route — redirects to flat glaze detail or atlas tab. */
+/** Legacy route — redirects to collection or glaze detail. */
 export default function GlazeLibraryRoute() {
-  const { glazeId } = useLocalSearchParams<{ glazeId?: string; collection?: string }>();
+  const { glazeId, collection } = useLocalSearchParams<{
+    glazeId?: string;
+    collection?: string;
+  }>();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -11,8 +15,12 @@ export default function GlazeLibraryRoute() {
       router.replace(`/glaze/${encodeURIComponent(glazeId)}` as never);
       return;
     }
+    if (typeof collection === 'string' && collection.length > 0) {
+      router.replace(`/glaze-collection/${collectionNameToSlug(collection)}` as never);
+      return;
+    }
     router.replace('/(tabs)/library' as never);
-  }, [glazeId, router]);
+  }, [glazeId, collection, router]);
 
   return null;
 }

@@ -2,7 +2,7 @@
 import { Text } from '@/src/components/ui/text';
 import { JournalSpread } from '@/src/types/journal';
 import React from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 
 
 interface BookTabsProps {
@@ -13,16 +13,42 @@ interface BookTabsProps {
 }
 
 export function BookTabs({ spreads, activePage, onPress, icons }: BookTabsProps) {
+  const scrollRef = React.useRef<ScrollView>(null);
+  const tabLayouts = React.useRef<Record<number, { x: number; width: number }>>({});
+
+  React.useEffect(() => {
+    const layout = tabLayouts.current[activePage];
+    if (layout && scrollRef.current) {
+      scrollRef.current.scrollTo({ x: Math.max(0, layout.x - 24), animated: true });
+    }
+  }, [activePage]);
+
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-end', gap: 3, marginBottom: -10 }}>
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={{ flexGrow: 0 }}
+      contentContainerStyle={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-end', gap: 3, paddingHorizontal: 4, minHeight: 36 }}
+    >
       {spreads.map((spread, index) => {
         const active = index === activePage;
         const Icon = icons[index];
+        const tabLabel = spread.kind === 'cover' ? 'Cover' : spread.stageLabel;
         return (
           <TouchableOpacity
             key={spread.key}
             onPress={() => onPress(index)}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`${tabLabel}, page ${index + 1} of ${spreads.length}`}
+            accessibilityState={{ selected: active }}
+            onLayout={(event) => {
+              tabLayouts.current[index] = {
+                x: event.nativeEvent.layout.x,
+                width: event.nativeEvent.layout.width,
+              };
+            }}
             style={{
               alignItems: 'center',
               justifyContent: 'center',
@@ -47,6 +73,6 @@ export function BookTabs({ spreads, activePage, onPress, icons }: BookTabsProps)
           </TouchableOpacity>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }

@@ -7,7 +7,7 @@ import {
   type StudioRhythmSuggestionType,
 } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
-import { useVisiblePieces, useAppStore } from '@/src/store';
+import { useAppStore, useVisiblePieces } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { CalendarDays, Check, Flame, Hammer, Scissors, Sparkles, Trophy } from 'lucide-react-native';
 import React from 'react';
@@ -106,7 +106,7 @@ export default function OverviewMissionsScreen() {
       <View className="flex-row items-center justify-between px-6 pt-4 pb-2">
         <View>
           <Text className="text-xl font-bold text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
-            Today Missions
+            Today's Missions
           </Text>
           <Text className="text-sm text-muted-foreground mt-0.5">Today&apos;s checklist shaped by your Studio Rhythm.</Text>
         </View>

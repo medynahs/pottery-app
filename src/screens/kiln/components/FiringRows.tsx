@@ -82,7 +82,7 @@ export function ScheduledFiringRow({
   kilnName,
   statusLabel = 'Scheduled',
   expectedReadyLabel,
-  currencySymbol = '$',
+  currencySymbol = '€',
   onPress,
 }: ScheduledFiringRowProps) {
   const statusColors = getStatusColors(statusLabel);

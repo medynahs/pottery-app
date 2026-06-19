@@ -7,13 +7,14 @@ import {
     TextInput,
     View
 } from 'react-native';
+import { JournalTheme } from '../utils/journalTheme';
 
 export function NotesCard({
     value,
     onChangeText,
     placeholder,
     compact,
-    accent = '#B89B7B',
+    accent = JournalTheme.pageAccents[0],
     title = 'Field Notes',
 }: {
     value: string;
@@ -29,14 +30,13 @@ export function NotesCard({
                 borderRadius: 28,
                 overflow: 'hidden',
                 borderWidth: 1,
-                borderColor: '#DCC19D',
-                backgroundColor: 'rgba(255, 252, 245, 0.95)',
-                height: '100%',
+                borderColor: JournalTheme.cardBorder,
+                backgroundColor: JournalTheme.cardBackground,
                 width: '100%',
             }}
         >
             <LinearGradient
-                colors={['rgba(215, 180, 141, 0.26)', 'rgba(255,255,255,0.12)']}
+                colors={[...JournalTheme.notesGradient]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{ padding: 16, paddingBottom: 8 }}
@@ -50,13 +50,13 @@ export function NotesCard({
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholder}
-                    placeholderTextColor="#97795F"
+                    placeholderTextColor={JournalTheme.placeholder}
                     style={{
                         minHeight: compact ? 126 : 166,
                         fontFamily: 'DMSans_400Regular',
                         fontSize: 13,
                         lineHeight: 22,
-                        color: '#4B3126',
+                        color: JournalTheme.bodyInk,
                         textAlignVertical: 'top',
                     }}
                 />

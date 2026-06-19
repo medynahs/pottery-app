@@ -1,6 +1,7 @@
 import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ import {
 } from './discover/types';
 
 export default function GlazeDiscoverScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
   const userConeNorm = defaultGlazeTemp ? normalizeCone(defaultGlazeTemp) : null;
@@ -97,8 +99,13 @@ export default function GlazeDiscoverScreen() {
             />
           </View>
         ) : (
-          <DiscoverGrid recipes={filtered} userConeNorm={userConeNorm} />
-        )}
+          <DiscoverGrid
+            recipes={filtered}
+            userConeNorm={userConeNorm}
+            onPressRecipe={(recipe) =>
+              router.push(`/discover-recipe?id=${encodeURIComponent(recipe.id)}` as never)
+            }
+          />        )}
       </ScrollView>
     </View>
   );

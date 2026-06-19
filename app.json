@@ -7,13 +7,13 @@
       "policy": "appVersion"
     },
     "orientation": "portrait",
-    "icon": "./assets/images/logoa.png",
+    "icon": "./assets/PotteryNookLogo.png",
     "scheme": "potterynook",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/logoa.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#C4A052"
+      "image": "./assets/PotteryNookLogo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FBF0E0"
     },
     "ios": {
       "supportsTablet": true,
@@ -31,8 +31,8 @@
     "android": {
       "package": "com.ariane.potterylife",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logoa.png",
-        "backgroundColor": "#C4A052"
+        "foregroundImage": "./assets/PotteryNookLogo.png",
+        "backgroundColor": "#FBF0E0"
       },
       "permissions": [
         "CAMERA",
@@ -47,21 +47,27 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/logoa.png"
+      "favicon": "./assets/PotteryNookLogo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "../assets/images/logoa.png",
+          "image": "./assets/PotteryNookLogo.png",
           "imageWidth": 400,
           "resizeMode": "contain",
-          "backgroundColor": "#C4A052"
+          "backgroundColor": "#FBF0E0"
         }
       ],
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-custom-assets",
+        {
+          "assetsPaths": ["./assets/rive"]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

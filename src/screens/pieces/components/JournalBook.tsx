@@ -20,6 +20,7 @@ interface JournalBookProps {
   handleUpdateDescription: (description: string) => void;
   pageScrollRef: React.RefObject<ScrollViewType | null>;
   handleMomentumEnd: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  canAddMorePhotos: boolean;
 }
 
 export function JournalBook({
@@ -36,6 +37,7 @@ export function JournalBook({
   handleUpdateDescription,
   pageScrollRef,
   handleMomentumEnd,
+  canAddMorePhotos,
 }: JournalBookProps) {
   return (
     <ScrollView
@@ -47,9 +49,11 @@ export function JournalBook({
       scrollEventThrottle={16}
       onMomentumScrollEnd={handleMomentumEnd}
       keyboardDismissMode="interactive"
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
     >
       {spreads.map((spread) => (
-        <View key={spread.key} style={{ width: pageWidth, flex: 1 }}>
+        <View key={spread.key} style={{ width: pageWidth, flex: 1, height: '100%' }}>
           {spread.kind === 'cover' ? (
             <CoverSpread
               piece={piece}
@@ -65,6 +69,7 @@ export function JournalBook({
             <EntrySpread
               entry={spread.entry}
               draft={spread.draft}
+              piece={piece}
               index={spread.index}
               stageLabel={spread.stageLabel}
               isLast={spread.isLast}
@@ -75,6 +80,7 @@ export function JournalBook({
               onPickPhoto={(photoIndex) => pickPhoto(spread.index, photoIndex)}
               onChangeNotes={(value) => handleUpdateNotes(spread.index, value)}
               compact={isCompact}
+              canAddMorePhotos={canAddMorePhotos}
             />
           )}
         </View>
