@@ -6,6 +6,12 @@ export type TimelineEntry = {
   notes?: string;
   /** Ordered list of photo URIs for this stage entry. */
   photos?: string[];
+  /** Captured when advancing into bisque. */
+  bisqueTemp?: string;
+  /** Captured when advancing into glaze-fired. */
+  glazeTemp?: string;
+  /** Captured when advancing into finished. */
+  status?: string;
 };
 
 // Physical state of the piece in the pottery process

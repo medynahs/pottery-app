@@ -405,7 +405,18 @@ interface AppState {
   deletePiece: (id: number) => void;
   duplicatePiece: (piece: Piece) => void;
   duplicateBatch: (batchId: string) => void;
-  updateJournalEntry: (pieceId: number, entryIndex: number, patch: { notes?: string; photo?: string; photos?: string[] }) => void;
+  updateJournalEntry: (
+    pieceId: number,
+    entryIndex: number,
+    patch: {
+      notes?: string;
+      photo?: string;
+      photos?: string[];
+      bisqueTemp?: string;
+      glazeTemp?: string;
+      status?: string;
+    },
+  ) => void;
   advancePiece: (pieceId: number) => void;
   advancePieceIds: (ids: number[]) => void;
   advanceBatch: (batchId: string, fromStage: string) => void;

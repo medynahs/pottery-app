@@ -1,43 +1,81 @@
 import { Text } from '@/src/components/ui/text';
-import {
-    BookOpen,
-    X
-} from 'lucide-react-native';
+import { BookOpen, X } from 'lucide-react-native';
 import React from 'react';
-import {
-    TouchableOpacity,
-    View
-} from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
+import { JournalTheme } from '../utils/journalTheme';
 
-export function JournalHeader({ piece, isCompact, onClose }: { piece: Piece; isCompact: boolean;  onClose: () => void }) {
-    return (
-        <View className="flex-row items-center justify-between  px-2">
-            <View className="flex-row items-center gap-3 flex-1 pr-3">
-                <View className="rounded-full items-center justify-center" style={{ width: isCompact ? 36 : 40, height: isCompact ? 36 : 40, backgroundColor: 'rgba(255, 244, 228, 0.12)' }}>
-                    <BookOpen size={isCompact ? 16 : 18} color="#F4DFC0" />
-                </View>
-                <View className="flex-1">
-                    <Text className="text-[11px] font-bold uppercase tracking-[1.8px] text-white/70 mb-1">
-                        Artisan Journal
-                    </Text>
-                </View>
-            </View>
-            <TouchableOpacity
-                onPress={onClose}
-                activeOpacity={0.8}
-                accessibilityLabel="Close journal"
-                style={{
-                    width: isCompact ? 38 : 42,
-                    height: isCompact ? 38 : 42,
-                    borderRadius: 999,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'rgba(255, 244, 228, 0.12)',
-                }}
-            >
-                <X size={20} color="#F4DFC0" />
-            </TouchableOpacity>
+export function JournalHeader({
+  subtitle,
+  isCompact,
+  onClose,
+}: {
+  piece: Piece;
+  subtitle?: string;
+  isCompact: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 4,
+        paddingBottom: 6,
+        minHeight: isCompact ? 40 : 44,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
+        <View
+          style={{
+            width: isCompact ? 30 : 34,
+            height: isCompact ? 30 : 34,
+            borderRadius: 999,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: JournalTheme.headerIconBg,
+          }}
+        >
+          <BookOpen size={isCompact ? 13 : 15} color={JournalTheme.headerText} />
         </View>
-    );
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontSize: 10,
+              fontWeight: '700',
+              letterSpacing: 1.5,
+              textTransform: 'uppercase',
+              color: JournalTheme.headerSubtext,
+            }}
+          >
+            Artisan Journal
+          </Text>
+          {subtitle ? (
+            <Text
+              style={{ fontSize: isCompact ? 11 : 12, marginTop: 1, color: JournalTheme.headerText }}
+              numberOfLines={1}
+            >
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+      <TouchableOpacity
+        onPress={onClose}
+        activeOpacity={0.8}
+        accessibilityLabel="Close journal"
+        style={{
+          width: isCompact ? 32 : 36,
+          height: isCompact ? 32 : 36,
+          borderRadius: 999,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: JournalTheme.headerIconBg,
+        }}
+      >
+        <X size={18} color={JournalTheme.headerText} />
+      </TouchableOpacity>
+    </View>
+  );
 }

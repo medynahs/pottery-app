@@ -1,184 +1,292 @@
 import { Text } from '@/src/components/ui/text';
+import { BrandColors } from '@/src/constants/theme';
 import React from 'react';
-import {
-    ScrollView,
-    View
-} from 'react-native';
+import { Image, ScrollView, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
 import { type PricingSaleMode } from '../../../types/pricing';
-import { PaperLabel } from '../components/PaperLabel';
+import { BOOK_ART } from '../utils/constants';
+import {
+    buildEconomicsRows,
+    buildJourneyStages,
+    buildRegistryRows,
+    buildSpecimenRows,
+} from '../utils/coverLedgerData';
 import { formatDuration } from '../utils/journal';
-import { NotesCard } from './NotesCard';
+import { JournalTheme } from '../utils/journalTheme';
+import { JournalNotePreview, JournalNotesSheet } from './JournalNotesSheet';
+import { JournalSpreadMasthead } from './JournalSpreadMasthead';
+import { LedgerRowLine, LedgerSection } from './LedgerBlocks';
 import { PolaroidPhotoPicker } from './PolaroidPhotoPicker';
 import { PricingBreakdownCard } from './PricingBreakdownCard';
 
-
 function formatShortDate(value: string) {
-    return new Date(value).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: '2-digit',
-    });
+  return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+}
+
+function JourneyLog({
+  stages,
+  compact,
+}: {
+  stages: ReturnType<typeof buildJourneyStages>;
+  compact?: boolean;
+}) {
+  if (stages.length === 0) return null;
+
+  return (
+    <View style={{ gap: 8 }}>
+      {stages.map((entry, index) => (
+        <View key={`${entry.stage}-${index}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: JournalTheme.tileBorder,
+              backgroundColor: JournalTheme.tileBackground,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 9, fontWeight: '700', color: JournalTheme.coverMastheadInk }}>
+              {index + 1}
+            </Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: compact ? 11 : 12, fontWeight: '600', color: JournalTheme.bodyInk }}>
+              {entry.label}
+            </Text>
+            <Text style={{ fontSize: 10, color: JournalTheme.coverSpecLabel, marginTop: 1 }}>{entry.date}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function CoverMemorialBlock({
+  epitaph,
+  causeOfDeath,
+  compact,
+}: {
+  epitaph?: string;
+  causeOfDeath?: string;
+  compact?: boolean;
+}) {
+  return (
+    <View
+      style={{
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: JournalTheme.coverMemorialBorder,
+        backgroundColor: JournalTheme.coverMemorialBg,
+        padding: compact ? 12 : 14,
+        gap: 6,
+      }}
+    >
+      <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase', color: JournalTheme.coverMastheadInk }}>
+        Memorial record
+      </Text>
+      {epitaph ? (
+        <Text className="font-serif italic text-foreground" style={{ fontSize: compact ? 15 : 17, lineHeight: 24 }}>
+          &ldquo;{epitaph}&rdquo;
+        </Text>
+      ) : null}
+      {causeOfDeath ? <Text style={{ fontSize: 11, color: JournalTheme.coverSpecLabel }}>{causeOfDeath}</Text> : null}
+    </View>
+  );
 }
 
 export function CoverSpread({
-    piece,
-    totalMs,
-    accent,
-    compact,
-    currencySymbol,
-    onChangeSaleMode,
-    onPickPhoto,
-    onUpdateDescription,
+  piece,
+  totalMs,
+  accent,
+  compact,
+  currencySymbol,
+  onChangeSaleMode,
+  onPickPhoto,
+  onUpdateDescription,
 }: {
-    piece: Piece;
-    totalMs: number;
-    accent: string;
-    compact: boolean;
-    currencySymbol: string;
-    onChangeSaleMode: (mode: PricingSaleMode) => void;
-    onPickPhoto: () => void;
-    onUpdateDescription: (description: string) => void;
+  piece: Piece;
+  totalMs: number;
+  accent: string;
+  compact: boolean;
+  currencySymbol: string;
+  onChangeSaleMode: (mode: PricingSaleMode) => void;
+  onPickPhoto: () => void;
+  onUpdateDescription: (description: string) => void;
 }) {
-    const [description, setDescription] = React.useState(piece.description || '');
-    const descDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [description, setDescription] = React.useState(piece.description || '');
+  const [notesOpen, setNotesOpen] = React.useState(false);
+  const descDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const handleDescriptionChange = React.useCallback((text: string) => {
-        setDescription(text);
-        if (descDebounceRef.current) clearTimeout(descDebounceRef.current);
-        descDebounceRef.current = setTimeout(() => onUpdateDescription(text), 500);
-    }, [onUpdateDescription]);
+  const handleDescriptionChange = React.useCallback((text: string) => {
+    setDescription(text);
+    if (descDebounceRef.current) clearTimeout(descDebounceRef.current);
+    descDebounceRef.current = setTimeout(() => onUpdateDescription(text), 500);
+  }, [onUpdateDescription]);
 
-    const heroImage = piece.photo ?? piece.imgUrl;
-    // Add simple icons for each tile
-    const summaryTiles = [
-        { label: 'Clay Body', value: piece.clay, icon: '🏺' },
-        { label: 'Time Spent', value: formatDuration(totalMs), icon: '⏳' },
-        { label: 'Form', value: piece.form || 'Unknown', icon: '🌀' },
-        { label: 'Method', value: piece.formingMethod || 'Unknown', icon: '🛠️' },
-        { label: 'Location', value: piece.location || 'Unknown', icon: '📍' },
-        { label: 'Dimensions', value: piece.dimensions || 'Unknown', icon: '📏' },
-        { label: 'Weight', value: piece.weight || 'Unknown', icon: '⚖️' },
-        { label: 'Firing Fee', value: piece.firingFee != null ? `${currencySymbol}${piece.firingFee.toFixed(2)}` : 'Unknown', icon: '💸' },
-        { label: 'Glaze Temp', value: piece.glazeTemp || 'Unknown', icon: '🌡️' },
-    ].filter(Boolean) as { label: string; value: string; icon: string }[];
-    const polaroidStartDate = piece.createdAt ? formatShortDate(piece.createdAt) : '';
-    const polaroidCemeteryDate = piece.stage === 'cemetery' && piece.updatedAt ? formatShortDate(piece.updatedAt) : undefined;
-    const polaroidEpitaph = piece.stage === 'cemetery' ? (piece.epitaph || 'In memory') : undefined;
-    const polaroidLabel = piece.stage === 'cemetery'
-        ? `🪦 ${polaroidStartDate}${polaroidCemeteryDate ? ' – ' + polaroidCemeteryDate : ''} • ${polaroidEpitaph}`
-        : (polaroidStartDate ? `Born in ${polaroidStartDate}` : undefined);
+  const registryRows = React.useMemo(() => buildRegistryRows(piece, totalMs, currencySymbol), [piece, totalMs, currencySymbol]);
+  const specimenRows = React.useMemo(() => buildSpecimenRows(piece), [piece]);
+  const economicsRows = React.useMemo(() => buildEconomicsRows(piece, currencySymbol), [piece, currencySymbol]);
+  const journeyStages = React.useMemo(() => buildJourneyStages(piece), [piece]);
 
-    return (
-        <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ padding: compact ? 14 : 18, paddingBottom: compact ? 80 : 28 }}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
-        >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: compact ? 10 : 14, alignItems: 'flex-start' }}>
-                <PaperLabel label="Workshop Ledger" accent={accent} />
-            </View>
+  const heroImage = piece.photo ?? piece.imgUrl;
+  const polaroidStartDate = piece.createdAt ? formatShortDate(piece.createdAt) : '';
+  const polaroidLabel = piece.stage === 'cemetery'
+    ? `Archive ${polaroidStartDate}`
+    : (polaroidStartDate ? `Fig. 1 · ${polaroidStartDate}` : 'Fig. 1 · Add photograph');
 
-            <View style={{ flexDirection: compact ? 'column' : 'row', gap: 14 }}>
-                <View style={{ flex: 1, gap: 12, justifyContent: 'center', alignItems: 'flex-start', position: 'relative' }}>
-                    <View>
-                        {/* Main brown text */}
-                        <Text
-                            className="font-serif text-foreground"
-                            style={{
-                                fontSize: compact ? 32 : 44,
-                                fontWeight: 'bold',
-                                letterSpacing: 1,
-                                color: '#9C4929',
-                                marginBottom: -8,
-                            }}
-                            numberOfLines={2}
-                            pointerEvents="none"
-                        >
-                            {piece.name}
-                        </Text>
-                    </View>
-                </View>
-                <PolaroidPhotoPicker
-                    photo={heroImage}
-                    label={polaroidLabel}
-                    width={310}
-                    height={compact ? 180 : 240}
-                    onPress={onPickPhoto}
-                    borderRadius={12}
-                    rotation="-4deg"
-                    style={{ alignSelf: 'flex-end', marginRight: compact ? 15 : -32 }}
-                    children={piece.stage === 'cemetery' ? (
-                        <View style={{
-                            position: 'absolute',
-                            left: 0,
-                            top: 0,
-                            right: 0,
-                            bottom: 0,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            opacity: 0.18,
-                            zIndex: 10,
-                        }}>
-                            <Text style={{ fontSize: 80 }}>🪦</Text>
-                        </View>
-                    ) : null}
-                />
-                <View style={{ flex: 1, gap: 12, justifyContent: 'center', alignItems: 'flex-start', maxHeight: 130 }}>
-                    <NotesCard
-                        onChangeText={handleDescriptionChange}
-                        value={description}
-                        title='Description'
-                        placeholder='Add a description for your piece! What was the inspiration for it? Or your favorite part to make?'
-                        accent={accent}
-                    />
-                </View>
+  const polaroidWidth = compact ? 280 : 320;
+  const polaroidHeight = compact ? 210 : 236;
 
-                <View style={{ flex: 1, gap: 12, marginTop: compact ? 6 : 0 }}>
-                    <View>
-                        {/* Split summaryTiles into rows of 3 */}
-                        {Array.from({ length: Math.ceil(summaryTiles.length / 3) }).map((_, rowIdx) => (
-                            <View key={rowIdx} style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 12 }}>
-                                {summaryTiles.slice(rowIdx * 3, rowIdx * 3 + 3).map((tile, i) => (
-                                    <View
-                                        key={tile.label}
-                                        style={{
-                                            flex: 1,
-                                            maxWidth: 120,
-                                            marginRight: i < 2 ? 12 : 0,
-                                            backgroundColor: 'rgba(255,251,242,0.93)',
-                                            borderRadius: 14,
-                                            borderWidth: 1,
-                                            borderColor: '#DFC6A0',
-                                            padding: 10,
-                                            alignItems: 'center',
-                                            shadowColor: '#75462f',
-                                            shadowOpacity: 0.07,
-                                            shadowRadius: 8,
-                                            shadowOffset: { width: 0, height: 4 },
-                                        }}
-                                    >
-                                        <Text style={{ fontSize: 22, marginBottom: 2 }}>{tile.icon}</Text>
-                                        <Text className="text-[10px] font-bold uppercase tracking-[1.5px] text-muted-foreground mb-1" style={{ textAlign: 'center' }}>{tile.label}</Text>
-                                        <Text className="text-sm text-foreground leading-5" style={{ textAlign: 'center' }} numberOfLines={3}>{tile.value}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        ))}
-                    </View>
+  return (
+    <>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: compact ? 10 : 14, paddingBottom: compact ? 72 : 22 }}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
+        {/* Page watermark */}
+        <Image
+          source={BOOK_ART.pageWatermark}
+          style={{
+            position: 'absolute',
+            right: compact ? -20 : -10,
+            top: 120,
+            width: compact ? 140 : 180,
+            height: compact ? 140 : 180,
+            opacity: 0.045,
+          }}
+          resizeMode="contain"
+        />
 
-                    {piece.stage === 'finished' && piece.totalCost != null ? (
-                        <PricingBreakdownCard
-                            piece={piece}
-                            accent={accent}
-                            compact={compact}
-                            currencySymbol={currencySymbol}
-                            onChangeSaleMode={onChangeSaleMode}
-                        />
-                    ) : null}
-                </View>
-            </View>
-        </ScrollView>
-    );
+        {/* Masthead */}
+        <JournalSpreadMasthead
+          compact={compact}
+          rightLabel={`Vol. I · Sheet ${String(piece.timeline.length).padStart(2, '0')}`}
+        />
+
+        {/* Hero photograph — top, full width */}
+        <View style={{ alignItems: 'center', marginTop: 14, marginBottom: 16 }}>
+          <PolaroidPhotoPicker
+            photo={heroImage}
+            label={polaroidLabel}
+            width={polaroidWidth}
+            height={polaroidHeight}
+            onPress={onPickPhoto}
+            borderRadius={12}
+            rotation={piece.stage === 'cemetery' ? '0deg' : '-1.5deg'}
+            accent={accent}
+            style={{ alignSelf: 'center' }}
+          >
+            {piece.stage === 'cemetery' ? (
+              <View style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(40, 28, 22, 0.1)' }}>
+                <Text style={{ fontSize: compact ? 56 : 64, opacity: 0.3 }}>🪦</Text>
+              </View>
+            ) : null}
+          </PolaroidPhotoPicker>
+          <Text style={{ fontSize: 9, letterSpacing: 1.4, textTransform: 'uppercase', color: JournalTheme.coverSpecLabel, marginTop: 10, textAlign: 'center' }}>
+            Primary specimen photograph
+          </Text>
+        </View>
+
+        {/* Title plate */}
+        <View style={{ gap: 8, marginBottom: 14, alignItems: compact ? 'center' : 'flex-start' }}>
+          <Text
+            style={{
+              fontFamily: 'Fraunces_700Bold',
+              fontSize: compact ? 32 : 38,
+              lineHeight: compact ? 36 : 44,
+              color: JournalTheme.coverTitleColor,
+              fontStyle: 'italic',
+              textAlign: compact ? 'center' : 'left',
+              maxWidth: '100%',
+            }}
+            numberOfLines={3}
+          >
+            {piece.name}
+          </Text>
+          <Text
+            style={{
+              fontSize: compact ? 11 : 12,
+              lineHeight: 18,
+              color: JournalTheme.coverSpecLabel,
+              textAlign: compact ? 'center' : 'left',
+              letterSpacing: 0.3,
+            }}
+          >
+            {piece.clay} · {formatDuration(totalMs)} recorded · {piece.timeline.length} journal entries
+          </Text>
+        </View>
+
+        <LedgerSection title="Registry" compact={compact}>
+          {registryRows.map((row) => (
+            <LedgerRowLine key={row.label} {...row} compact={compact} />
+          ))}
+        </LedgerSection>
+
+        {/* Detailed ledger sections */}
+        <View style={{ marginTop: 14, gap: 12 }}>
+          <LedgerSection title="Specimen details" subtitle="Physical characteristics & process" compact={compact}>
+            {specimenRows.map((row) => (
+              <LedgerRowLine key={row.label} {...row} compact={compact} />
+            ))}
+          </LedgerSection>
+
+          <LedgerSection title="Studio economics" subtitle="Costs, fees, and pricing targets" compact={compact}>
+            {economicsRows.map((row) => (
+              <LedgerRowLine key={row.label} {...row} compact={compact} />
+            ))}
+          </LedgerSection>
+
+          <LedgerSection
+            title="Journey log"
+            subtitle={`${journeyStages.length} recorded stage${journeyStages.length === 1 ? '' : 's'}`}
+            compact={compact}
+          >
+            <JourneyLog stages={journeyStages} compact={compact} />
+          </LedgerSection>
+
+          {piece.stage === 'cemetery' ? (
+            <CoverMemorialBlock epitaph={piece.epitaph} causeOfDeath={piece.causeOfDeath} compact={compact} />
+          ) : null}
+
+          <JournalNotePreview
+            title="Artist's notes"
+            value={description}
+            placeholder="Origin story, glaze experiments, lessons learned, or what you'd tell your future self about this piece."
+            onPress={() => setNotesOpen(true)}
+            compact={compact}
+          />
+
+          {piece.stage === 'finished' && piece.totalCost != null ? (
+            <PricingBreakdownCard
+              piece={piece}
+              accent={accent}
+              compact={compact}
+              currencySymbol={currencySymbol}
+              onChangeSaleMode={onChangeSaleMode}
+            />
+          ) : null}
+        </View>
+
+        <View style={{ alignItems: 'center', marginTop: 16, opacity: 0.38 }}>
+          <Text style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: BrandColors.primaryMuted }}>
+            Continue in the stage pages →
+          </Text>
+        </View>
+      </ScrollView>
+
+      <JournalNotesSheet
+        visible={notesOpen}
+        title="Artist's notes"
+        value={description}
+        placeholder="Origin story, glaze experiments, lessons learned, or what you'd tell your future self about this piece."
+        onChangeText={handleDescriptionChange}
+        onClose={() => setNotesOpen(false)}
+      />
+    </>
+  );
 }

@@ -12,6 +12,7 @@ import React from 'react';
 import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { MainTabHeader } from '../../components/MainTabHeader';
+import type { Piece } from '../../types/pieces';
 import { BatchCard } from './components/BatchCard';
 import { CemeteryBanner } from './components/CemeteryBanner';
 import { FilterSortSheet } from './components/FilterSortSheet';
@@ -30,8 +31,15 @@ const itemLayout = LinearTransition
 
 export default function PiecesScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ openJournalPieceId?: string | string[]; stage?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    openJournalPieceId?: string | string[];
+    openJournalStage?: string | string[];
+    stage?: string | string[];
+  }>();
   const handledOpenJournalIdRef = React.useRef<string | null>(null);
+  const [journalOpenOptions, setJournalOpenOptions] = React.useState<{
+    initialStage?: string;
+  }>({});
   const [stageTransition, setStageTransition] = React.useState<StageAdvanceCelebration | null>(null);
   const [firstPieceCeremony, setFirstPieceCeremony] = React.useState(false);
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
@@ -84,12 +92,29 @@ export default function PiecesScreen() {
     handleConfirmSendToCemetery,
   } = usePiecesScreen();
 
+  const openJournal = React.useCallback((
+    piece: Piece,
+    options: { initialStage?: string } = {},
+  ) => {
+    setJournalPiece(piece);
+    setJournalOpenOptions(options);
+  }, [setJournalPiece]);
+
+  const closeJournal = React.useCallback(() => {
+    setJournalPiece(null);
+    setJournalOpenOptions({});
+  }, [setJournalPiece]);
+
   React.useEffect(() => {
     const rawId = Array.isArray(params.openJournalPieceId)
       ? params.openJournalPieceId[0]
       : params.openJournalPieceId;
+    const rawStage = Array.isArray(params.openJournalStage)
+      ? params.openJournalStage[0]
+      : params.openJournalStage;
+    const openKey = `${rawId ?? ''}:${rawStage ?? ''}`;
 
-    if (!rawId || handledOpenJournalIdRef.current === rawId) return;
+    if (!rawId || handledOpenJournalIdRef.current === openKey) return;
 
     const pieceId = Number(rawId);
     if (Number.isNaN(pieceId)) return;
@@ -97,10 +122,13 @@ export default function PiecesScreen() {
     const piece = pieces.find((current) => current.id === pieceId);
     if (!piece) return;
 
-    setJournalPiece(piece);
-    handledOpenJournalIdRef.current = rawId;
+    openJournal(
+      piece,
+      rawStage ? { initialStage: rawStage } : {},
+    );
+    handledOpenJournalIdRef.current = openKey;
     router.replace('/(tabs)/pieces');
-  }, [params.openJournalPieceId, pieces, router, setJournalPiece]);
+  }, [params.openJournalPieceId, params.openJournalStage, pieces, router, openJournal]);
 
   React.useEffect(() => {
     const stageParam = Array.isArray(params.stage) ? params.stage[0] : params.stage;
@@ -262,6 +290,7 @@ export default function PiecesScreen() {
                 >
                   <PieceCard
                     piece={item.piece}
+                    onPress={() => openJournal(item.piece)}
                     onAdvance={() => handleAdvance(item.piece.id)}
                     stageLabel={stageLookup[item.piece.stage]?.label}
                     nextStageLabel={(() => {
@@ -270,7 +299,7 @@ export default function PiecesScreen() {
                     })()}
                     progressStageOrder={progressStageOrder}
                     onSendToCemetery={item.piece.stage !== 'cemetery' ? () => handleSendToCemetery(item.piece.id) : undefined}
-                    onJournal={() => setJournalPiece(item.piece)}
+                    onJournal={() => openJournal(item.piece)}
                     onMore={() => setActionSheetPiece(item.piece)}
                   />
                 </Animated.View>
@@ -326,7 +355,8 @@ export default function PiecesScreen() {
       <PieceJournalModal
         piece={journalPiece}
         visible={journalPiece !== null}
-        onClose={() => setJournalPiece(null)}
+        initialStage={journalOpenOptions.initialStage}
+        onClose={closeJournal}
         onUpdateEntry={handleUpdateJournalEntry}
         onUpdatePiece={handleUpdatePiece}
       />
@@ -340,6 +370,7 @@ export default function PiecesScreen() {
         piece={actionSheetPiece}
         visible={actionSheetPiece !== null}
         onClose={() => setActionSheetPiece(null)}
+        onJournal={() => actionSheetPiece && openJournal(actionSheetPiece)}
         onEdit={() => { setEditPiece(actionSheetPiece ?? undefined); setActionSheetPiece(null); }}
         onDuplicate={() => actionSheetPiece && handleDuplicate(actionSheetPiece)}
         onDuplicateBatch={actionSheetPiece?.batchId ? () => handleDuplicateBatch(actionSheetPiece!.batchId!) : undefined}

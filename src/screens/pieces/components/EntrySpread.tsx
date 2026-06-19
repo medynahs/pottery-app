@@ -1,17 +1,19 @@
 import { EntryDraft } from '@/src/types/journal';
-import { TimelineEntry } from '@/src/types/pieces';
-import { BookOpen } from 'lucide-react-native';
+import { TimelineEntry, type Piece } from '@/src/types/pieces';
 import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { STAGE_ICON_MAP } from '../utils/constants';
-import { ArtifactTile } from './ArtifactTile';
-import { NotesCard } from './NotesCard';
-import { PaperLabel } from './PaperLabel';
+import { Image, ScrollView, Text, View } from 'react-native';
+import { getEntryCaptureTiles } from '../utils/entryCaptureMeta';
+import { BOOK_ART } from '../utils/constants';
+import { JournalTheme } from '../utils/journalTheme';
+import { JournalNotePreview, JournalNotesSheet } from './JournalNotesSheet';
+import { JournalSpreadMasthead } from './JournalSpreadMasthead';
+import { LedgerRowLine, LedgerSection } from './LedgerBlocks';
 import { PolaroidPhotoPicker } from './PolaroidPhotoPicker';
 
 export function EntrySpread({
     entry,
     draft,
+    piece,
     index,
     stageLabel,
     isLast,
@@ -22,9 +24,11 @@ export function EntrySpread({
     onPickPhoto,
     onChangeNotes,
     compact,
+    canAddMorePhotos = true,
 }: {
     entry: TimelineEntry;
     draft: EntryDraft;
+    piece: Piece;
     index: number;
     stageLabel: string;
     isLast: boolean;
@@ -35,59 +39,50 @@ export function EntrySpread({
     onPickPhoto: (photoIndex: number) => void;
     onChangeNotes: (value: string) => void;
     compact: boolean;
+    canAddMorePhotos?: boolean;
 }) {
-    const Icon = STAGE_ICON_MAP[entry.stage] ?? BookOpen;
+    const captureTiles = getEntryCaptureTiles(entry, piece);
+    const [notesOpen, setNotesOpen] = React.useState(false);
 
     return (
-        <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ padding: compact ? 14 : 18, paddingBottom: compact ? 80 : 28 }}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
-        >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: compact ? 10 : 14, alignItems: 'flex-start' }}>
-                <PaperLabel label={stageLabel} accent={accent} />
-            </View>
+        <>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ padding: compact ? 10 : 14, paddingBottom: compact ? 72 : 22 }}
+                keyboardShouldPersistTaps="handled"
+                nestedScrollEnabled
+            >
+                <Image
+                    source={BOOK_ART.pageWatermark}
+                    style={{
+                        position: 'absolute',
+                        right: compact ? -20 : -10,
+                        top: 120,
+                        width: compact ? 140 : 180,
+                        height: compact ? 140 : 180,
+                        opacity: 0.045,
+                    }}
+                    resizeMode="contain"
+                />
 
-            {/* Center the main content horizontally */}
-            <View style={{ flexDirection: compact ? 'column' : 'row', gap: 14, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-                <View style={{ flex: 1, gap: 12 }}>
-                    <View
-                        style={{
-                            // borderRadius: 26,
-                            padding: 8,
-                            // borderWidth: 1,
-                            // borderColor: '#D7B48D',
-                            // backgroundColor: 'rgba(255, 250, 243, 0.96)',
-                        }}
-                    >
-                        <View style={{ flexDirection: compact ? 'column' : 'row', alignItems: compact ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: 16, gap: compact ? 10 : 0 }}>
-                            <View className="flex-row items-center gap-3">
-                                <View
-                                    style={{
-                                        width: 42,
-                                        height: 42,
-                                        borderRadius: 999,
-                                        backgroundColor: `${accent}22`,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    <Icon size={18} color={accent} />
-                                </View>
-                                <View>
-                                    <Text className="text-lg font-serif text-foreground">{stageLabel}</Text>
-                                    {/* <Text className="text-xs text-muted-foreground mt-1">{dateLabel}</Text> */}
-                                </View>
-                            </View>
-                        </View>
+                <JournalSpreadMasthead
+                    compact={compact}
+                    leftLabel={stageLabel}
+                    rightLabel={`${piece.name} · ${dateLabel}`}
+                />
 
-                        <View style={{ flexDirection: 'row', gap: 20, flexWrap: 'wrap', justifyContent: 'center' }}>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20, width: compact ? '100%' : 'auto' }}>
-                                <ArtifactTile label="Stage Date" value={dateLabel} accent={accent} compact={compact} />
-                                <ArtifactTile label="Time Spent Here" value={durationLabel} accent={accent} compact={compact} />
-                            </View>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                <View style={{ flexDirection: compact ? 'column' : 'row', gap: 14, width: '100%', marginTop: 14 }}>
+                    <View style={{ flex: compact ? undefined : 1, gap: 12, width: compact ? '100%' : undefined }}>
+                        <LedgerSection title="Stage record" subtitle={`Entry ${index + 1} of ${totalEntries}`} compact={compact}>
+                            <LedgerRowLine label="Stage date" value={dateLabel} compact={compact} />
+                            <LedgerRowLine label="Time in stage" value={durationLabel} compact={compact} />
+                            {captureTiles.map((tile) => (
+                                <LedgerRowLine key={tile.label} label={tile.label} value={tile.value} compact={compact} />
+                            ))}
+                        </LedgerSection>
+
+                        <View style={{ alignItems: compact ? 'center' : 'flex-start', marginTop: 4 }}>
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: compact ? 'center' : 'flex-start' }}>
                                 <PolaroidPhotoPicker
                                     photo={draft.photos?.[0]}
                                     onPress={() => onPickPhoto(0)}
@@ -96,8 +91,8 @@ export function EntrySpread({
                                     height={compact ? 180 : 240}
                                     borderRadius={12}
                                     rotation="5deg"
+                                    placeholder={!canAddMorePhotos && !draft.photos?.[0] ? 'Upgrade to add photos' : undefined}
                                     style={{ alignSelf: 'flex-end', marginRight: compact ? -4 : -32 }}
-
                                 />
                                 <PolaroidPhotoPicker
                                     photo={draft.photos?.[1]}
@@ -107,25 +102,45 @@ export function EntrySpread({
                                     height={100}
                                     borderRadius={12}
                                     rotation="-10deg"
+                                    placeholder={!canAddMorePhotos && !draft.photos?.[1] ? 'Premium' : undefined}
                                     style={{ alignSelf: 'flex-end', marginRight: compact ? -4 : -32 }}
-
                                 />
                             </View>
-
+                            <Text
+                                style={{
+                                    fontSize: 9,
+                                    letterSpacing: 1.4,
+                                    textTransform: 'uppercase',
+                                    color: JournalTheme.coverSpecLabel,
+                                    marginTop: 10,
+                                    textAlign: compact ? 'center' : 'left',
+                                }}
+                            >
+                                Stage photographs
+                            </Text>
                         </View>
                     </View>
-                </View>
 
-                <View style={{ flex: 1, gap: 12, width: '100%' }}>
-                    <NotesCard
-                        value={draft.notes}
-                        onChangeText={onChangeNotes}
-                        placeholder="Record trimming decisions, drying surprises, glaze tests, or what you want your future illustrated journal spread to show."
-                        compact={compact}
-                        accent={accent}
-                    />
+                    <View style={{ flex: compact ? undefined : 1, gap: 12, width: '100%' }}>
+                        <JournalNotePreview
+                            title="Field Notes"
+                            value={draft.notes}
+                            placeholder="Record trimming decisions, drying surprises, glaze tests, or what you want your future illustrated journal spread to show."
+                            onPress={() => setNotesOpen(true)}
+                            compact={compact}
+                        />
+                    </View>
                 </View>
-            </View>
-        </ScrollView>
+            </ScrollView>
+
+            <JournalNotesSheet
+                visible={notesOpen}
+                title="Field Notes"
+                value={draft.notes}
+                placeholder="Record trimming decisions, drying surprises, glaze tests, or what you want your future illustrated journal spread to show."
+                onChangeText={onChangeNotes}
+                onClose={() => setNotesOpen(false)}
+            />
+        </>
     );
 }

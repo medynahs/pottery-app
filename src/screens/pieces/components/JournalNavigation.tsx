@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { CompactPageIndicator } from '../components/CompactPageIndicator';
+import { JournalTheme } from '../utils/journalTheme';
 
 interface JournalNavigationProps {
   activePage: number;
@@ -38,10 +39,10 @@ export function JournalNavigation({
             borderRadius: 999,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: activePage === 0 ? 'rgba(120, 95, 76, 0.2)' : 'rgba(92, 60, 43, 0.82)',
+            backgroundColor: activePage === 0 ? JournalTheme.navButtonDisabled : JournalTheme.navButtonActive,
           }}
         >
-          <ChevronLeft size={isCompact ? 16 : 18} color={activePage === 0 ? '#B89A82' : '#FFF5E7'} />
+          <ChevronLeft size={isCompact ? 16 : 18} color={activePage === 0 ? JournalTheme.navIconDisabled : JournalTheme.navIconActive} />
         </TouchableOpacity>
       </View>
 
@@ -58,10 +59,10 @@ export function JournalNavigation({
             borderRadius: 999,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: activePage === totalPages - 1 ? 'rgba(120, 95, 76, 0.2)' : 'rgba(92, 60, 43, 0.82)',
+            backgroundColor: activePage === totalPages - 1 ? JournalTheme.navButtonDisabled : JournalTheme.navButtonActive,
           }}
         >
-          <ChevronRight size={isCompact ? 16 : 18} color={activePage === totalPages - 1 ? '#B89A82' : '#FFF5E7'} />
+          <ChevronRight size={isCompact ? 16 : 18} color={activePage === totalPages - 1 ? JournalTheme.navIconDisabled : JournalTheme.navIconActive} />
         </TouchableOpacity>
       </View>
 

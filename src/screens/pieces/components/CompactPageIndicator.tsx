@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+import { JournalTheme } from '../utils/journalTheme';
 
 export function CompactPageIndicator({
     activePage,
@@ -18,7 +19,7 @@ export function CompactPageIndicator({
                 paddingHorizontal: 14,
                 paddingVertical: 7,
                 borderRadius: 999,
-                backgroundColor: 'rgba(87, 57, 41, 0.82)',
+                backgroundColor: JournalTheme.pageIndicatorBg,
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 8,
