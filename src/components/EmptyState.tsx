@@ -47,6 +47,8 @@ export function EmptyState({
           onPress={onCtaPress}
           className="flex-row items-center gap-2 px-5 py-3 mt-3 rounded-2xl bg-primary"
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={ctaLabel}
         >
           {CtaIcon ? <CtaIcon size={16} color="white" /> : null}
           <Text className="text-sm font-bold text-white">{ctaLabel}</Text>

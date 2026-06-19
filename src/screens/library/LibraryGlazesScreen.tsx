@@ -1,10 +1,9 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
 import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
-import type { GlazeLibraryItem, GlazeTestTile } from '@/src/screens/glazes/types';
+import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
 import { normalizeCone } from '@/src/screens/library/discover/types';
-import { useAppStore } from '@/src/store';
-import { useRouter } from 'expo-router';
+import { useAppStore, useVisiblePieces } from '@/src/store';
 import { Droplets, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
@@ -24,9 +23,7 @@ import { scheduleGlazesSync } from './useGlazesSync';
 
 type LibraryGlazesScreenProps = {
   glazes: GlazeLibraryItem[];
-  glazeTests: GlazeTestTile[];
   onAddGlaze: () => void;
-  onLogTest: () => void;
 };
 
 function ActiveFilterChip({
@@ -41,7 +38,7 @@ function ActiveFilterChip({
       <Text className="text-[11px] font-semibold text-foreground" numberOfLines={1}>
         {label}
       </Text>
-      <TouchableOpacity onPress={onClear} hitSlop={8} activeOpacity={0.7} className="p-0.5">
+      <TouchableOpacity onPress={onClear} hitSlop={8} activeOpacity={0.7} className="p-0.5" accessibilityRole="button" accessibilityLabel={`Remove ${label} filter`}>
         <X size={11} color="hsl(24 20% 45%)" />
       </TouchableOpacity>
     </View>
@@ -50,12 +47,10 @@ function ActiveFilterChip({
 
 export default function LibraryGlazesScreen({
   glazes,
-  glazeTests,
   onAddGlaze,
-  onLogTest,
 }: LibraryGlazesScreenProps) {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const pieces = useVisiblePieces();
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const addGlazeCollection = useAppStore((s) => s.addGlazeCollection);
   const deleteGlaze = useAppStore((s) => s.deleteGlaze);
@@ -195,6 +190,8 @@ export default function LibraryGlazesScreen({
                 onChangeText={setSearch}
                 placeholder="Search glazes…"
                 placeholderTextColor="#C4B48C"
+                accessibilityLabel="Search glazes"
+                accessibilityHint="Search by name, ingredients, cone, or notes"
                 style={{ flex: 1, fontSize: 13, color: '#3A2810', padding: 0 }}
               />
               {search.length > 0 ? (
@@ -274,9 +271,13 @@ export default function LibraryGlazesScreen({
           <View className="px-6 mt-2">
             <EmptyState
               icon={Droplets}
-              title="No glazes yet"
-              description="Add your first glaze or save one from Discover to start your atlas."
-              ctaLabel="Add Glaze"
+              title="Log your first glaze batch"
+              description={
+                pieces.length > 0
+                  ? 'You have pieces in the studio — add a batch recipe so you can link glazes when you fire.'
+                  : 'Name your mix, log ingredients, and snap a bucket photo. Your atlas starts with one batch.'
+              }
+              ctaLabel="Add Glaze Batch"
               onCtaPress={onAddGlaze}
             />
           </View>

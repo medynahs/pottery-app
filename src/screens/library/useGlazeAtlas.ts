@@ -1,8 +1,7 @@
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { glazeDraftToItem } from '@/src/screens/glazes/glazeItemHelpers';
 import { useAppStore } from '@/src/store';
-import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
-import React from 'react';
+import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';import React from 'react';
 import { deriveCustomCollectionNames, sanitizeCustomCollections } from './atlas/collections';
 import { hasValidRecipeIngredients } from './atlas/GlazeRecipeBuilder';
 import { buildGlazeTestFromDraft } from './atlas/glazeTestDraft';
@@ -31,12 +30,12 @@ export function useGlazeAtlas() {
   const [testOpen, setTestOpen] = React.useState(false);
 
   const openAddGlaze = React.useCallback(() => {
-    if (!canAddGlaze(glazes.length)) {
+    if (!canAddGlaze(glazes)) {
       requestAccess(PremiumFeature.FullGlazeAtlas);
       return;
     }
     setAddOpen(true);
-  }, [glazes.length, requestAccess]);
+  }, [glazes, requestAccess]);
 
   const openLogTest = React.useCallback(() => {
     if (glazes.length === 0) {
@@ -48,6 +47,10 @@ export function useGlazeAtlas() {
   }, [glazes.length, showToast, openAddGlaze]);
 
   const handleSaveGlaze = React.useCallback((draft: GlazeDraft) => {
+    if (!canAddGlaze(glazes)) {
+      requestAccess(PremiumFeature.FullGlazeAtlas);
+      return;
+    }
     if (!draft.name.trim() || !hasValidRecipeIngredients(draft.recipeIngredients)) {
       showToast('Name and at least one ingredient row are required', 'error');
       return;
@@ -66,7 +69,7 @@ export function useGlazeAtlas() {
     scheduleGlazesSync();
     setAddOpen(false);
     showToast('Glaze saved', 'success');
-  }, [addGlaze, registerGlazeCollections, showToast]);
+  }, [addGlaze, glazes, registerGlazeCollections, requestAccess, showToast]);
 
   const handleSaveTest = React.useCallback((testDraft: TestDraft) => {
     const selectedGlaze = glazes.find((g) => g.id === testDraft.glazeId);

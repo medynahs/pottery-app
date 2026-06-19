@@ -115,6 +115,7 @@ export function AddGlazeModal({
                 value={draft.name}
                 onChangeText={(v) => setDraft((d) => ({ ...d, name: v }))}
                 placeholder="Cobalt Blue v1"
+                accessibilityLabel="Glaze batch name"
               />
             </FormField>
             <FormField label="Date mixed" inline>
@@ -145,6 +146,7 @@ export function AddGlazeModal({
                   key={option}
                   label={`${GLAZE_STATUS_EMOJI[option]} ${GLAZE_STATUS_LABELS[option]}`}
                   active={draft.status === option}
+                  accessibilityLabel={`Set status to ${GLAZE_STATUS_LABELS[option]}`}
                   onPress={() => setDraft((d) => ({ ...d, status: option }))}
                 />
               ))}

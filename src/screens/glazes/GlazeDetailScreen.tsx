@@ -210,16 +210,20 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
   );
 
   const openNewVersion = React.useCallback(() => {
-    if (!canAddGlaze(glazes.length)) {
+    if (!canAddGlaze(glazes)) {
       requestAccess(PremiumFeature.FullGlazeAtlas);
       return;
     }
     setNewVersionOpen(true);
-  }, [glazes.length, requestAccess]);
+  }, [glazes, requestAccess]);
 
   const handleSaveNewVersion = React.useCallback(
     (draft: GlazeDraft) => {
       if (!glaze) return;
+      if (!canAddGlaze(glazes)) {
+        requestAccess(PremiumFeature.FullGlazeAtlas);
+        return;
+      }
       if (!draft.name.trim() || !hasValidRecipeIngredients(draft.recipeIngredients)) {
         showToast('Name and at least one ingredient row are required', 'error');
         return;
@@ -239,7 +243,7 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
       showToast(`Version ${versionNumber} saved`, 'success');
       router.replace(`/glaze/${id}` as never);
     },
-    [addGlaze, glaze, glazes, registerGlazeCollections, router, showToast],
+    [addGlaze, glaze, glazes, registerGlazeCollections, requestAccess, router, showToast],
   );
 
   const handleStatusChange = React.useCallback(

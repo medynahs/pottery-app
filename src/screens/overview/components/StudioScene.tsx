@@ -1,3 +1,4 @@
+import { GLAZE_ATLAS_TAB_ROUTE } from '@/src/config/appModules';
 import { Text } from '@/src/components/ui/text';
 import { Kilnkin } from '@/src/screens/overview/components/Kilnkin';
 import { getStudioSignals } from '@/src/screens/overview/utils/getStudioSignals';
@@ -174,7 +175,7 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
     pieceSlot: 'glazeRack',
     quickActions: [
       { label: 'Open Glazes', route: '/glaze-cone' },
-      { label: 'Glaze Library', route: '/(tabs)/library' },
+      { label: 'Glaze Atlas', route: GLAZE_ATLAS_TAB_ROUTE },
     ],
     popoverLeft: '8%',
     popoverTop: '56%',
@@ -220,7 +221,7 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
     height: '16%',
     quickActions: [
       { label: `Meet ${companionName}`, route: '/kilnkin' },
-      { label: 'Open Library', route: '/(tabs)/library' },
+      { label: 'Open Glaze Atlas', route: GLAZE_ATLAS_TAB_ROUTE },
     ],
     popoverLeft: '36%',
     popoverTop: '69%',

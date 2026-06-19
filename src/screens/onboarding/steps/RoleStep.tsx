@@ -33,7 +33,7 @@ const ROLE_DETAILS: Record<OnboardingUserType, { eyebrow: string; promise: strin
   'studio-potter': {
     eyebrow: 'Shared Studio',
     promise: 'Keep your own piece flow clear while working around communal firings.',
-    modules: 'Pieces · Library · Community',
+    modules: 'Pieces · Glaze Atlas · Community',
     accent: '#526b43',
     tint: '#eef5e9',
   },

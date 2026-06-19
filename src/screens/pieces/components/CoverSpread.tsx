@@ -18,6 +18,7 @@ import { JournalSpreadMasthead } from './JournalSpreadMasthead';
 import { LedgerRowLine, LedgerSection } from './LedgerBlocks';
 import { PolaroidPhotoPicker } from './PolaroidPhotoPicker';
 import { PricingBreakdownCard } from './PricingBreakdownCard';
+import { PieceGlazeLinkSection } from './PieceGlazeLinkSection';
 
 function formatShortDate(value: string) {
   return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
@@ -234,6 +235,8 @@ export function CoverSpread({
               <LedgerRowLine key={row.label} {...row} compact={compact} />
             ))}
           </LedgerSection>
+
+          <PieceGlazeLinkSection piece={piece} compact={compact} />
 
           <LedgerSection title="Studio economics" subtitle="Costs, fees, and pricing targets" compact={compact}>
             {economicsRows.map((row) => (

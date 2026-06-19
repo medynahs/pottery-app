@@ -3,6 +3,7 @@ import LibraryGlazesScreen from '@/src/screens/library/LibraryGlazesScreen';
 import { AddGlazeModal } from '@/src/screens/library/atlas/AddGlazeModal';
 import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
 import { useGlazeAtlas } from '@/src/screens/library/useGlazeAtlas';
+import { glazeAtlasLimitStatus } from '@/src/utils/premiumGate';
 import { useLocalSearchParams } from 'expo-router';
 import { Plus, Sparkles } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -36,12 +37,19 @@ export default function JournalScreen() {
     }
   }, [action, atlas]);
 
+  const atlasLimit = React.useMemo(
+    () => glazeAtlasLimitStatus(atlas.glazes),
+    [atlas.glazes],
+  );
+
   const headerActions =
     activeTab === 'my-atlas' ? (
       <View className="flex-row items-center gap-2">
         <TouchableOpacity
           onPress={atlas.openLogTest}
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Log test tile"
           className="flex-row items-center gap-1.5 px-3 py-2.5 rounded-2xl border border-border bg-card"
         >
           <Sparkles size={14} color="hsl(24 20% 40%)" />
@@ -50,6 +58,10 @@ export default function JournalScreen() {
         <TouchableOpacity
           onPress={atlas.openAddGlaze}
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={
+            atlasLimit.atLimit ? 'Add glaze batch, premium required' : 'Add glaze batch'
+          }
           className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-primary"
           style={{
             shadowColor: '#8B6A2A',
@@ -65,15 +77,18 @@ export default function JournalScreen() {
       </View>
     ) : null;
 
+  const atlasDescription =
+    activeTab === 'my-atlas'
+      ? atlasLimit.isPremium
+        ? `${atlas.glazes.length} batch${atlas.glazes.length !== 1 ? 'es' : ''} · ${atlas.glazeTests.length} test${atlas.glazeTests.length !== 1 ? 's' : ''}`
+        : `${atlasLimit.count}/${atlasLimit.limit} free batches · ${atlas.glazeTests.length} test${atlas.glazeTests.length !== 1 ? 's' : ''}`
+      : 'Browse glaze inspiration — tap a photo for the full recipe';
+
   return (
     <View className="flex-1 bg-background">
       <MainTabHeader
         title="Glaze Atlas"
-        description={
-          activeTab === 'my-atlas'
-            ? `${atlas.glazes.length} glaze${atlas.glazes.length !== 1 ? 's' : ''} · ${atlas.glazeTests.length} test${atlas.glazeTests.length !== 1 ? 's' : ''}`
-            : 'Browse glaze inspiration — tap a photo for the full recipe'
-        }
+        description={atlasDescription}
         rightElement={headerActions}
       />
 
@@ -83,6 +98,9 @@ export default function JournalScreen() {
             key={key}
             onPress={() => setActiveTab(key)}
             activeOpacity={0.75}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === key }}
+            accessibilityLabel={label}
             style={{ flex: 1 }}
             className={`py-2.5 rounded-xl items-center justify-center ${activeTab === key ? 'bg-card' : ''}`}
           >
@@ -100,9 +118,7 @@ export default function JournalScreen() {
         {activeTab === 'my-atlas' ? (
           <LibraryGlazesScreen
             glazes={atlas.glazes}
-            glazeTests={atlas.glazeTests}
             onAddGlaze={atlas.openAddGlaze}
-            onLogTest={atlas.openLogTest}
           />
         ) : (
           <GlazeDiscoverScreen />

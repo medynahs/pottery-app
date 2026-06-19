@@ -43,7 +43,7 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
 
   const handleSavePress = () => {
     if (!recipe || saved) return;
-    if (!canAddGlaze(glazes.length)) {
+    if (!canAddGlaze(glazes)) {
       requestAccess(PremiumFeature.FullGlazeAtlas);
       return;
     }
@@ -52,6 +52,10 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
 
   const handleSaveToCollections = (selectedCollections: string[]) => {
     if (!recipe || saved) return;
+    if (!canAddGlaze(glazes)) {
+      requestAccess(PremiumFeature.FullGlazeAtlas);
+      return;
+    }
 
     const customCollections = sanitizeCustomCollections(selectedCollections);
     registerGlazeCollections(customCollections);

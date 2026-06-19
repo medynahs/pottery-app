@@ -135,6 +135,7 @@ export function GlazeFilterSheet({
                   key={option.key}
                   label={option.label}
                   active={filters.status === option.key}
+                  accessibilityLabel={`Filter by status: ${option.label}`}
                   onPress={() => onPatchFilters({ status: option.key })}
                 />
               ))}

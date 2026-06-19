@@ -1,6 +1,13 @@
-import JournalScreen from '@/src/screens/library/JournalScreen';
+import { useRouter } from 'expo-router';
 import React from 'react';
 
+/** Legacy route — redirects to the Glaze Atlas tab. */
 export default function LibraryGlazesRoute() {
-  return <JournalScreen />;
+  const router = useRouter();
+
+  React.useEffect(() => {
+    router.replace('/(tabs)/library' as never);
+  }, [router]);
+
+  return null;
 }

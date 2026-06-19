@@ -69,7 +69,7 @@ export type OnboardingUserType =
 export type MeasurementUnit = 'metric' | 'imperial';
 export type OnboardingPracticeFrequency = 'daily' | 'weekly' | 'flexible';
 export type OnboardingPieceFocus = 'wheel' | 'hand-building' | 'glazing' | 'reclaim';
-export type AppModule = 'overview' | 'pieces' | 'kiln' | 'library' | 'community';
+export type AppModule = 'overview' | 'pieces' | 'kiln' | 'glaze-atlas' | 'community';
 
 export interface OnboardingProfile {
   userType: OnboardingUserType;
@@ -254,14 +254,15 @@ const DEFAULT_ONBOARDING_PROFILE: OnboardingProfile = {
   language: 'English',
   notificationsEnabled: true,
   quickTourRequested: false,
-  activeModules: ['overview', 'pieces', 'kiln', 'library', 'community'],
+  activeModules: ['overview', 'pieces', 'kiln', 'glaze-atlas', 'community'],
   kilnkinId: DEFAULT_KILNKIN_COMPANION.id,
 };
 
-const KNOWN_APP_MODULES: AppModule[] = ['overview', 'pieces', 'kiln', 'library', 'community'];
+const KNOWN_APP_MODULES: AppModule[] = ['overview', 'pieces', 'kiln', 'glaze-atlas', 'community'];
 
 function normalizeModuleId(module: string): AppModule | string {
-  return module === 'journal' ? 'library' : module;
+  if (module === 'journal' || module === 'library') return 'glaze-atlas';
+  return module;
 }
 
 function normalizeModuleList(modules?: readonly string[]): AppModule[] {
@@ -282,6 +283,24 @@ function normalizeModuleList(modules?: readonly string[]): AppModule[] {
   }
 
   return next;
+}
+
+/** Zustand selector — pair with `useShallow` (see `useNormalizedEnabledModules`). */
+export function selectNormalizedEnabledModules(state: Pick<AppState, 'enabledModules'>): AppModule[] {
+  return normalizeModuleList(state.enabledModules);
+}
+
+/** Reactive enabled modules list — shallow-compared so tab bar does not loop re-renders. */
+export function useNormalizedEnabledModules(): AppModule[] {
+  return useAppStore(useShallow(selectNormalizedEnabledModules));
+}
+
+export function isModuleIdEnabled(
+  enabledModules: readonly string[] | undefined,
+  module: AppModule | string,
+): boolean {
+  const normalized = normalizeModuleId(module);
+  return normalizeModuleList(enabledModules).includes(normalized as AppModule);
 }
 
 function normalizeOnboardingProfile(profile?: Partial<OnboardingProfile>): OnboardingProfile {
@@ -477,7 +496,7 @@ interface AppState {
   setPricingTier: (mode: PricingFiringMode, index: number, patch: Partial<PricingTier>) => void;
   resetPricingSettings: () => void;
 
-  // ── Glaze Library ───────────────────────────────────────────
+  // ── Glaze Atlas ─────────────────────────────────────────────
   glazes: GlazeLibraryItem[];
   glazeTests: GlazeTestTile[];
   /** User-created collection names (including empty collections). */
@@ -554,7 +573,7 @@ export const useAppStore = create<AppState>()(
   onboardingProfile: DEFAULT_ONBOARDING_PROFILE,
   practiceMode: 'both',
   role: 'owner',
-  enabledModules: ['overview', 'pieces', 'kiln', 'library', 'community'],
+  enabledModules: ['overview', 'pieces', 'kiln', 'glaze-atlas', 'community'],
   seenCeremonies: [],
 
   setOnboardingProfile: (patch) =>
@@ -596,22 +615,22 @@ export const useAppStore = create<AppState>()(
   setEnabledModules: (modules) => set({ enabledModules: normalizeModuleList(modules) }),
   toggleModule: (module) =>
     set((state) => {
-      const normalizedModule = normalizeModuleId(module);
+      const normalizedModule = normalizeModuleId(module) as AppModule;
 
-      if (!KNOWN_APP_MODULES.includes(normalizedModule as AppModule)) {
+      if (!KNOWN_APP_MODULES.includes(normalizedModule)) {
         return state;
       }
 
       const enabledModules = normalizeModuleList(state.enabledModules);
 
       return {
-        enabledModules: enabledModules.includes(normalizedModule as AppModule)
+        enabledModules: enabledModules.includes(normalizedModule)
           ? enabledModules.filter((currentModule) => currentModule !== normalizedModule)
-          : [...enabledModules, normalizedModule as AppModule],
+          : [...enabledModules, normalizedModule],
       };
     }),
   isModuleEnabled: (module) =>
-    normalizeModuleList(get().enabledModules).includes(normalizeModuleId(module) as AppModule),
+    isModuleIdEnabled(get().enabledModules, module),
 
   notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
   setNotificationPref: (key, value) =>
@@ -1190,7 +1209,7 @@ export const useAppStore = create<AppState>()(
     }),
   resetPricingSettings: () => set({ pricingSettings: buildDefaultPricingSettings() }),
 
-  // ── Glaze Library ───────────────────────────────────────────
+  // ── Glaze Atlas ─────────────────────────────────────────────
   // Glazes/tests sync to the backend like pieces (see useGlazesSync): syncDirty
   // marks unpushed local edits; deletes of already-synced items are parked in
   // pendingGlaze(Test)Deletions until a sync confirms the server tombstone.
@@ -1473,7 +1492,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'pottery-life-store',
-      version: 5,
+      version: 6,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
@@ -1513,10 +1532,15 @@ export const useAppStore = create<AppState>()(
           glazes = (glazes ?? []).map((g) => normalizeGlazeItem(g));
         }
 
+        if (version < 6) {
+          onboardingProfile.activeModules = normalizeModuleList(onboardingProfile.activeModules);
+        }
+
+        const migratedEnabledModules = normalizeModuleList(state.enabledModules);
         return {
           ...state,
           onboardingProfile,
-          enabledModules: enabledModules.length > 0 ? enabledModules : onboardingProfile.activeModules,
+          enabledModules: migratedEnabledModules.length > 0 ? migratedEnabledModules : onboardingProfile.activeModules,
           notificationPrefs,
           glazes,
           glazeTests,

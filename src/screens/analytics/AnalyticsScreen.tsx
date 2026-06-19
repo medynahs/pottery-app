@@ -12,6 +12,7 @@ import {
   type AnalyticsPeriodId,
 } from '@/src/utils/analyticsPeriods';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
+import { formatGlazeUsageHint } from '@/src/screens/glazes/glazeUsageAnalytics';
 import { checkPremium, PremiumFeature } from '@/src/utils/premiumGate';
 import { useRouter } from 'expo-router';
 import {
@@ -95,6 +96,7 @@ export default function AnalyticsScreen() {
   const pieces = useVisiblePieces();
   const firings = useAppStore((s) => s.firings);
   const glazeTests = useAppStore((s) => s.glazeTests);
+  const glazes = useAppStore((s) => s.glazes);
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
   const userType = useAppStore((s) => s.onboardingProfile.userType);
 
@@ -105,9 +107,14 @@ export default function AnalyticsScreen() {
 
   const isStudioOwner = userType === 'studio-owner-technician';
 
+  const glazeUsageHint = React.useMemo(
+    () => formatGlazeUsageHint(pieces, glazeTests, glazes),
+    [pieces, glazeTests, glazes],
+  );
+
   const stats = React.useMemo(
-    () => computeStudioStats({ pieces, firings, glazeTests, periodId }),
-    [pieces, firings, glazeTests, periodId],
+    () => computeStudioStats({ pieces, firings, glazeTests, glazes, periodId }),
+    [pieces, firings, glazeTests, glazes, periodId],
   );
 
   const money = React.useCallback(
@@ -448,9 +455,13 @@ export default function AnalyticsScreen() {
             <RankedCard title="Clay bodies" rows={stats.materials.clayBodies} />
             <RankedCard title="Forming methods" rows={stats.materials.formingMethods} />
             {stats.materials.glazes.length > 0 ? (
-              <RankedCard title="Glaze usage (tests)" rows={stats.materials.glazes} />
+              <RankedCard
+                title="Glaze usage"
+                rows={stats.materials.glazes}
+                hint={glazeUsageHint ?? 'Linked pieces and test tiles, grouped by glaze family'}
+              />
             ) : (
-              <EmptyHint text="Log glaze tests to see usage here." />
+              <EmptyHint text="Link glazes to pieces or log test tiles to see usage here." />
             )}
           </>
         ) : null}
@@ -581,11 +592,14 @@ function PieceEconomicsRow({
   );
 }
 
-function RankedCard({ title, rows }: { title: string; rows: RankedUsage[] }) {
+function RankedCard({ title, rows, hint }: { title: string; rows: RankedUsage[]; hint?: string }) {
   if (rows.length === 0) return null;
   return (
     <Card className="p-4 mb-3 gap-2.5">
       <Text className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</Text>
+      {hint ? (
+        <Text className="text-[11px] text-muted-foreground -mt-1 mb-0.5">{hint}</Text>
+      ) : null}
       {rows.slice(0, 5).map((r) => (
         <View key={r.label}>
           <View className="flex-row items-center justify-between mb-1">

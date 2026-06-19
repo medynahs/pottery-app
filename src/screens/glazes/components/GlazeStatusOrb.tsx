@@ -1,5 +1,5 @@
 import { GLAZE_STATUS_ORB_THEME } from '@/src/screens/glazes/glazeStatusTheme';
-import type { GlazeStatus } from '@/src/screens/glazes/types';
+import { GLAZE_STATUS_LABELS, type GlazeStatus } from '@/src/screens/glazes/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { View, type ViewStyle } from 'react-native';
@@ -24,6 +24,9 @@ export function GlazeStatusOrb({ status, size = 'sm', style }: GlazeStatusOrbPro
 
   return (
     <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={`${GLAZE_STATUS_LABELS[status]} glaze status`}
       style={[
         {
           width: dim.shell,

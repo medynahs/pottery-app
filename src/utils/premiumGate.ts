@@ -1,3 +1,4 @@
+import type { GlazeLibraryItem } from '../screens/glazes/types';
 import type { Piece } from '../types/pieces';
 import { useAppStore } from '../store/appStore';
 
@@ -66,8 +67,37 @@ export function canAddPiecePhoto(piece: Piece, isReplacing: boolean): boolean {
   return countPiecePhotos(piece) < 1;
 }
 
-/** Free tier: up to {@link FREE_GLAZE_LIMIT} glazes in the atlas. */
-export function canAddGlaze(currentCount: number): boolean {
+/**
+ * Each saved batch counts toward the free cap — including new versions
+ * (every version is its own `GlazeLibraryItem` in the atlas).
+ */
+export function countGlazeAtlasEntries(glazes: readonly GlazeLibraryItem[]): number {
+  return glazes.length;
+}
+
+export type GlazeAtlasLimitStatus = {
+  count: number;
+  limit: number;
+  remaining: number | null;
+  atLimit: boolean;
+  isPremium: boolean;
+};
+
+export function glazeAtlasLimitStatus(glazes: readonly GlazeLibraryItem[]): GlazeAtlasLimitStatus {
+  const count = countGlazeAtlasEntries(glazes);
+  const isPremium = checkPremium(PremiumFeature.FullGlazeAtlas);
+  return {
+    count,
+    limit: FREE_GLAZE_LIMIT,
+    remaining: isPremium ? null : Math.max(0, FREE_GLAZE_LIMIT - count),
+    atLimit: !isPremium && count >= FREE_GLAZE_LIMIT,
+    isPremium,
+  };
+}
+
+/** Free tier: up to {@link FREE_GLAZE_LIMIT} glaze batches in the atlas. */
+export function canAddGlaze(glazes: readonly GlazeLibraryItem[] | number): boolean {
   if (checkPremium(PremiumFeature.FullGlazeAtlas)) return true;
-  return currentCount < FREE_GLAZE_LIMIT;
+  const count = typeof glazes === 'number' ? glazes : countGlazeAtlasEntries(glazes);
+  return count < FREE_GLAZE_LIMIT;
 }

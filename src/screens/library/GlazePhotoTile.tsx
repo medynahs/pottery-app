@@ -1,6 +1,9 @@
 import { Text } from '@/src/components/ui/text';
 import { GlazeStatusOrb } from '@/src/screens/glazes/components/GlazeStatusOrb';
-import type { GlazeStatus } from '@/src/screens/glazes/types';
+import {
+  GLAZE_STATUS_LABELS,
+  type GlazeStatus,
+} from '@/src/screens/glazes/types';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Star } from 'lucide-react-native';
@@ -83,11 +86,21 @@ export function GlazePhotoTile({
 }: GlazePhotoTileProps) {
   const detailLine = subtitle ?? finishLabel;
   const imageHeight = width * 1.05;
+  const statusLabel = status ? GLAZE_STATUS_LABELS[status] : null;
+  const accessibilityParts = [
+    name,
+    statusLabel,
+    coneLabel,
+    detailLine,
+    metaLine,
+  ].filter(Boolean);
 
   return (
     <TouchableOpacity
       activeOpacity={0.88}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityParts.join(', ')}
       style={{
         width,
         marginBottom: 12,

@@ -1,6 +1,7 @@
 import type { Firing } from '@/src/types/kiln';
 import type { Piece } from '@/src/types/pieces';
-import type { GlazeTestTile } from '@/src/screens/glazes/types';
+import type { GlazeLibraryItem, GlazeTestTile } from '@/src/screens/glazes/types';
+import { buildGlazeUsageRankings } from '@/src/screens/glazes/glazeUsageAnalytics';
 import {
   buildMonthBuckets,
   isWithinPeriod,
@@ -167,6 +168,7 @@ export type ComputeStudioStatsArgs = {
   pieces: Piece[];
   firings: Firing[];
   glazeTests?: GlazeTestTile[];
+  glazes?: GlazeLibraryItem[];
   periodId: AnalyticsPeriodId;
   now?: Date;
 };
@@ -175,6 +177,7 @@ export function computeStudioStats({
   pieces,
   firings,
   glazeTests = [],
+  glazes = [],
   periodId,
   now = new Date(),
 }: ComputeStudioStatsArgs): StudioStats {
@@ -318,6 +321,7 @@ export function computeStudioStats({
     const name = t.glazeNameSnapshot?.trim() || 'Unknown';
     glazeCounts.set(name, (glazeCounts.get(name) ?? 0) + 1);
   });
+  const glazeUsage = buildGlazeUsageRankings(pieces, glazeTests, glazes);
 
   // ── Process (median days in stage) ─────────────────────────────────
   const process: StageDuration[] = STAGE_TRANSITIONS.map(({ from, to }) => {
@@ -378,7 +382,7 @@ export function computeStudioStats({
     materials: {
       clayBodies: rankUsage(clayCounts, activePieces.length),
       formingMethods: rankUsage(formingCounts, activePieces.length),
-      glazes: rankUsage(glazeCounts, glazeTests.length),
+      glazes: glazeUsage.length > 0 ? glazeUsage : rankUsage(glazeCounts, glazeTests.length),
     },
     process,
   };
