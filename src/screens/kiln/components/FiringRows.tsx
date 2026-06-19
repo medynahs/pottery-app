@@ -6,6 +6,7 @@ import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import type { Firing } from '../../../types/kiln';
 import { FIRING_TYPE_LABELS } from '../constants';
+import { KILN_UI } from '../utils/kilnTheme';
 import { formatDate } from '../utils/kilnUtils';
 
 // ── WaitingPieceRow ───────────────────────────────────────────────────────────
@@ -48,11 +49,11 @@ interface ScheduledFiringRowProps {
 
 function getStatusColors(statusLabel: string) {
   const value = statusLabel.toLowerCase();
-  if (value.includes('waiting')) return { bg: 'hsl(210 55% 90%)', fg: 'hsl(214 70% 38%)' };
-  if (value.includes('firing')) return { bg: 'hsl(22 85% 89%)', fg: 'hsl(18 80% 35%)' };
-  if (value.includes('cooling')) return { bg: 'hsl(196 65% 90%)', fg: 'hsl(197 70% 34%)' };
-  if (value.includes('ready')) return { bg: 'hsl(153 45% 88%)', fg: 'hsl(152 55% 32%)' };
-  return { bg: 'hsl(34 30% 88%)', fg: 'hsl(24 20% 40%)' };
+  if (value.includes('waiting')) return { bg: KILN_UI.brownSoft, fg: KILN_UI.brownMuted, border: KILN_UI.brownSoftBorder };
+  if (value.includes('firing')) return { bg: 'rgba(166, 124, 82, 0.18)', fg: '#6B4423', border: 'rgba(107, 68, 35, 0.25)' };
+  if (value.includes('cooling')) return { bg: 'rgba(139, 115, 85, 0.18)', fg: '#5C4033', border: 'rgba(92, 64, 51, 0.25)' };
+  if (value.includes('ready')) return { bg: 'rgba(58, 40, 16, 0.12)', fg: KILN_UI.brown, border: KILN_UI.brownSoftBorder };
+  return { bg: KILN_UI.warmBg, fg: KILN_UI.brownMuted, border: KILN_UI.warmBorder };
 }
 
 function MiniStat({
@@ -67,12 +68,12 @@ function MiniStat({
   const Icon = icon;
 
   return (
-    <View className="flex-1 min-w-[86px] rounded-xl bg-muted/35 px-2.5 py-2">
+    <View className="flex-1 min-w-[86px] rounded-xl px-2.5 py-2 border" style={{ borderColor: KILN_UI.brownSoftBorder, backgroundColor: KILN_UI.brownSoft }}>
       <View className="flex-row items-center gap-1 mb-1">
-        <Icon size={11} color="hsl(24 20% 45%)" />
-        <Text className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Text>
+        <Icon size={11} color={KILN_UI.brownMuted} />
+        <Text className="text-[10px] uppercase tracking-wider" style={{ color: KILN_UI.brownMuted }}>{label}</Text>
       </View>
-      <Text className="text-xs font-semibold text-foreground" numberOfLines={1}>{value}</Text>
+      <Text className="text-xs font-semibold" style={{ color: KILN_UI.brown }} numberOfLines={1}>{value}</Text>
     </View>
   );
 }
@@ -89,15 +90,25 @@ export function ScheduledFiringRow({
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-      <Card className="p-4 mb-2.5 border border-border">
+      <Card
+        className="p-4 mb-2.5"
+        style={{
+          borderWidth: 1,
+          borderColor: KILN_UI.brownSoftBorder,
+          backgroundColor: KILN_UI.warmCard,
+        }}
+      >
         <View className="flex-row items-start justify-between mb-2">
           <View className="flex-1 pr-3">
-            <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>{firing.name}</Text>
-            <Text className="text-xs text-muted-foreground mt-0.5" numberOfLines={1}>
+            <Text className="font-semibold text-sm" style={{ color: KILN_UI.brown }} numberOfLines={1}>{firing.name}</Text>
+            <Text className="text-xs mt-0.5" style={{ color: KILN_UI.brownMuted }} numberOfLines={1}>
               {kilnName} · {FIRING_TYPE_LABELS[firing.type]} · Cone {firing.cone}
             </Text>
           </View>
-          <View className="px-2.5 py-1 rounded-full" style={{ backgroundColor: statusColors.bg }}>
+          <View
+            className="px-2.5 py-1 rounded-full border"
+            style={{ backgroundColor: statusColors.bg, borderColor: statusColors.border }}
+          >
             <Text className="text-[10px] font-semibold" style={{ color: statusColors.fg }}>{statusLabel}</Text>
           </View>
         </View>
@@ -121,8 +132,8 @@ export function ScheduledFiringRow({
         </View>
 
         <View className="flex-row items-center justify-end gap-1 mt-2">
-          <Text className="text-[11px] font-semibold text-primary">Open details</Text>
-          <ChevronRight size={14} color="hsl(24 20% 40%)" />
+          <Text className="text-[11px] font-semibold" style={{ color: KILN_UI.brown }}>Open details</Text>
+          <ChevronRight size={14} color={KILN_UI.brownMuted} />
         </View>
       </Card>
     </TouchableOpacity>

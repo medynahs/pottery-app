@@ -378,7 +378,7 @@ export function FiringDetailContent({
 
         </Pressable>
 
-      ) : (
+      ) : isLogEntry ? (
 
         <View
 
@@ -392,13 +392,13 @@ export function FiringDetailContent({
 
           <Text className="text-xs text-muted-foreground mt-2">
 
-            {isLogEntry ? 'Logged firing' : 'Scheduled session'}
+            Logged firing
 
           </Text>
 
         </View>
 
-      )}
+      ) : null}
 
 
 

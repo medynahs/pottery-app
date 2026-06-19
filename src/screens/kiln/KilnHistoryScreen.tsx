@@ -10,12 +10,14 @@ import React from 'react';
 import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Firing } from '../../types/kiln';
+import { ActiveFiringCard } from './components/ActiveFiringCard';
 import { FiringDetailModal } from './components/FiringDetailModal';
 import { FiringLogHistoryCard } from './components/FiringLogHistoryCard';
 import { LogFiringModal } from './components/LogFiringModal';
 import { LogFiringButton } from './components/LogFiringButton';
-import { FIRING_STATE_LABELS, FIRING_TYPE_LABELS, KILN_TYPE_LABELS } from './constants';
-import { formatReadyDate } from './firingEstimations';
+import { ScheduledFiringRow } from './components/FiringRows';
+import { FIRING_TYPE_LABELS, KILN_TYPE_LABELS } from './constants';
+import { formatReadyDate, getAutoFiringStatus, getExpectedReadyAt } from './firingEstimations';
 import {
   getFiringSortTimestamp,
   getKilnMaxTempLabel,
@@ -89,66 +91,6 @@ function StatPill({
       </View>
       <Text className="text-xs font-semibold text-foreground">{value}</Text>
     </View>
-  );
-}
-
-function getStateBadgeColors(state: Firing['state']) {
-  if (state === 'scheduled') return { bg: 'hsl(210 55% 90%)', fg: 'hsl(214 70% 38%)' };
-  if (state === 'loading') return { bg: 'hsl(43 80% 90%)', fg: 'hsl(36 75% 34%)' };
-  if (state === 'firing') return { bg: 'hsl(22 85% 89%)', fg: 'hsl(18 80% 35%)' };
-  if (state === 'cooling') return { bg: 'hsl(196 65% 90%)', fg: 'hsl(197 70% 34%)' };
-  if (state === 'unloading') return { bg: 'hsl(153 45% 88%)', fg: 'hsl(152 55% 32%)' };
-  return { bg: 'hsl(34 30% 85%)', fg: 'hsl(24 20% 40%)' };
-}
-
-function FiringActiveCard({
-  firing,
-  currencySymbol,
-  onPress,
-}: {
-  firing: Firing;
-  currencySymbol: string;
-  onPress: () => void;
-}) {
-  const stateColors = getStateBadgeColors(firing.state);
-  const timingLabel = formatReadyDate(firing.expectedReadyAt ?? firing.scheduledDate ?? firing.createdAt);
-
-  return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress}>
-      <Card className="p-4 mb-3 border border-border/80 bg-card">
-        <View className="flex-row items-start justify-between mb-2">
-          <Text className="text-sm font-semibold text-foreground flex-1 pr-3" numberOfLines={1}>
-            {firing.name}
-          </Text>
-          <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: stateColors.bg }}>
-            <Text className="text-[10px] font-semibold" style={{ color: stateColors.fg }}>
-              {FIRING_STATE_LABELS[firing.state]}
-            </Text>
-          </View>
-        </View>
-
-        <View className="flex-row flex-wrap gap-1.5 mb-2">
-          <View className="px-2 py-1 rounded-full bg-muted/50">
-            <Text className="text-[10px] font-semibold text-foreground">{FIRING_TYPE_LABELS[firing.type]}</Text>
-          </View>
-          {firing.cone ? (
-            <View className="px-2 py-1 rounded-full bg-muted/50">
-              <Text className="text-[10px] font-semibold text-foreground">Cone {firing.cone}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View className="flex-row gap-2">
-          <StatPill icon={Package} label="Pieces" value={`${firing.pieceIds.length}`} />
-          <StatPill icon={Clock3} label="ETA" value={timingLabel} />
-          <StatPill
-            icon={Receipt}
-            label="Planned cost"
-            value={firing.estimatedTotalCost != null ? `${currencySymbol}${firing.estimatedTotalCost.toFixed(0)}` : '—'}
-          />
-        </View>
-      </Card>
-    </TouchableOpacity>
   );
 }
 
@@ -415,14 +357,46 @@ export default function KilnHistoryScreen() {
             <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
               Upcoming & Active
             </Text>
-            {activeFirings.map((firing) => (
-              <FiringActiveCard
-                key={firing.id}
-                firing={firing}
-                currencySymbol={currencySymbol}
-                onPress={() => setDetailFiring(firing)}
-              />
-            ))}
+            {(() => {
+              const featured = activeFirings[0];
+              const rest = activeFirings.slice(1);
+              return (
+                <>
+                  {featured ? (
+                    <ActiveFiringCard
+                      key={featured.id}
+                      firing={featured}
+                      onPress={() => setDetailFiring(featured)}
+                    />
+                  ) : null}
+                  {rest.map((firing) => {
+                    const status = getAutoFiringStatus(firing, kiln);
+                    const statusLabel =
+                      status === 'waiting'
+                        ? 'Waiting'
+                        : status === 'firing'
+                          ? 'Firing'
+                          : status === 'cooling'
+                            ? 'Cooling'
+                            : status === 'ready'
+                              ? 'Ready'
+                              : 'Completed';
+
+                    return (
+                      <ScheduledFiringRow
+                        key={firing.id}
+                        firing={firing}
+                        kilnName={kiln?.name ?? 'Kiln'}
+                        statusLabel={statusLabel}
+                        expectedReadyLabel={formatReadyDate(getExpectedReadyAt(firing, kiln))}
+                        currencySymbol={currencySymbol}
+                        onPress={() => setDetailFiring(firing)}
+                      />
+                    );
+                  })}
+                </>
+              );
+            })()}
             <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 mt-1">
               Completed Sessions
             </Text>

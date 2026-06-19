@@ -11,19 +11,18 @@ import {
     getAutoFiringStatus,
     getCalculatedTimeline
 } from '../firingEstimations';
-import { FIRING_STATE_COLOR } from '../utils/kilnUtils';
+import { KILN_UI } from '../utils/kilnTheme';
 
-/** Per-state gradient: warm at top fading to card background at bottom */
+/** Warm brown gradients — stronger contrast at top, cream at bottom */
 const FIRING_GRADIENT: Record<FiringState, [string, string, string]> = {
-  scheduled: ['#dbeafe', '#eff6ff', '#ffffff'],
-  loading:   ['#fef3c7', '#fffbeb', '#ffffff'],
-  firing:    ['#ffedd5', '#fff7ed', '#ffffff'],
-  cooling:   ['#cffafe', '#ecfeff', '#ffffff'],
-  unloading: ['#dcfce7', '#f0fdf4', '#ffffff'],
-  completed: ['#dcfce7', '#f0fdf4', '#ffffff'],
+  scheduled: ['#D4C4A8', '#EDE4D3', KILN_UI.cream],
+  loading:   ['#C9A66B', '#E8D9BE', KILN_UI.cream],
+  firing:    ['#A67C52', '#DCC9A3', KILN_UI.cream],
+  cooling:   ['#8B7355', '#D4C4A8', KILN_UI.cream],
+  unloading: ['#6B5344', '#C9B896', KILN_UI.cream],
+  completed: ['#5C4A32', '#B8A882', KILN_UI.cream],
 };
 
-/** Map auto status → gradient key */
 const AUTO_STATUS_GRADIENT: Record<string, FiringState> = {
   waiting:  'scheduled',
   firing:   'firing',
@@ -32,8 +31,15 @@ const AUTO_STATUS_GRADIENT: Record<string, FiringState> = {
   completed:'completed',
 };
 
+const AUTO_STATUS_ACCENT: Record<string, string> = {
+  waiting: KILN_UI.brownMuted,
+  firing: '#6B4423',
+  cooling: '#5C4033',
+  ready: KILN_UI.brown,
+  completed: '#3D5C2E',
+};
+
 const MILESTONE_LABELS: [string, string, string] = ['Queued', 'Firing', 'Ready'];
-const MILESTONE_AUTO_STATUSES = ['waiting', 'firing', 'ready'];
 
 function MilestoneStrip({
   autoStatus,
@@ -50,12 +56,22 @@ function MilestoneStrip({
 }) {
   const currentIdx = autoStatus === 'waiting' ? 0 : autoStatus === 'firing' || autoStatus === 'cooling' ? 1 : 2;
   const dateLabels = [submittedLabel, `~${firesOnLabel}`, `~${readyOnLabel}`];
-  const muted = 'rgba(0,0,0,0.18)';
+  const trackColor = 'rgba(58, 40, 16, 0.18)';
+  const muted = 'rgba(58, 40, 16, 0.35)';
 
   return (
     <View className="w-full">
-      {/* Connector line behind dots */}
-      <View style={{ position: 'absolute', top: 6, left: '12%', right: '12%', height: 2, backgroundColor: muted, zIndex: 0 }} />
+      <View
+        style={{
+          position: 'absolute',
+          top: 6,
+          left: '12%',
+          right: '12%',
+          height: 2,
+          backgroundColor: trackColor,
+          zIndex: 0,
+        }}
+      />
       <View className="flex-row justify-between mb-1">
         {MILESTONE_LABELS.map((label, i) => {
           const isPast = i < currentIdx;
@@ -67,9 +83,9 @@ function MilestoneStrip({
                   width: 12,
                   height: 12,
                   borderRadius: 6,
-                  backgroundColor: isPast || isCurrent ? accentColor : muted,
+                  backgroundColor: isPast || isCurrent ? accentColor : trackColor,
                   borderWidth: isCurrent ? 2.5 : 0,
-                  borderColor: isCurrent ? accentColor : 'transparent',
+                  borderColor: isCurrent ? KILN_UI.cream : 'transparent',
                   transform: [{ scale: isCurrent ? 1.35 : 1 }],
                   zIndex: 1,
                   marginBottom: 5,
@@ -79,15 +95,15 @@ function MilestoneStrip({
                 className="text-center"
                 style={{
                   fontSize: 10,
-                  fontWeight: isCurrent ? '700' : '400',
-                  color: isCurrent ? accentColor : 'rgba(0,0,0,0.45)',
+                  fontWeight: isCurrent ? '700' : '500',
+                  color: isCurrent ? accentColor : muted,
                 }}
               >
                 {label}
               </Text>
               <Text
                 className="text-center"
-                style={{ fontSize: 9, color: 'rgba(0,0,0,0.4)', marginTop: 1 }}
+                style={{ fontSize: 9, color: muted, marginTop: 1 }}
               >
                 {dateLabels[i]}
               </Text>
@@ -113,7 +129,7 @@ export function ActiveFiringCard({ firing, onPress }: ActiveFiringCardProps) {
 
   const gradientKey = AUTO_STATUS_GRADIENT[autoStatus] ?? 'scheduled';
   const gradient = FIRING_GRADIENT[gradientKey];
-  const accentColor = FIRING_STATE_COLOR[gradientKey] ?? 'hsl(39 57% 51%)';
+  const accentColor = AUTO_STATUS_ACCENT[autoStatus] ?? KILN_UI.brown;
 
   const statusLabel =
     autoStatus === 'waiting'  ? 'In Queue' :
@@ -126,14 +142,13 @@ export function ActiveFiringCard({ firing, onPress }: ActiveFiringCardProps) {
     <TouchableOpacity onPress={onPress} activeOpacity={0.88} className="mb-3">
       <Card
         className="overflow-hidden"
-        style={{ borderWidth: 1, borderColor: 'hsl(24 15% 82%)', padding: 0 }}
+        style={{ borderWidth: 1, borderColor: KILN_UI.brownSoftBorder, padding: 0 }}
       >
         <LinearGradient
           colors={gradient}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
         >
-          {/* Accent top strip */}
           <View className="h-1" style={{ backgroundColor: accentColor }} />
 
           <View className="px-3.5 pt-3 pb-3 items-center">
@@ -143,29 +158,32 @@ export function ActiveFiringCard({ firing, onPress }: ActiveFiringCardProps) {
               resizeMode="contain"
             />
 
-            {/* Status badge */}
             <View
-              className="px-2.5 py-0.5 rounded-full mb-2"
-              style={{ backgroundColor: `${accentColor}22` }}
+              className="px-2.5 py-0.5 rounded-full mb-2 border"
+              style={{
+                backgroundColor: KILN_UI.brownSoft,
+                borderColor: KILN_UI.brownSoftBorder,
+              }}
             >
               <Text style={{ fontSize: 10, fontWeight: '700', color: accentColor }}>
                 {statusLabel}
               </Text>
             </View>
 
-            {/* Firing name */}
-            <Text className="text-lg font-serif font-bold text-foreground mb-0.5 text-center" numberOfLines={1}>
+            <Text
+              className="text-lg font-serif font-bold mb-0.5 text-center"
+              style={{ color: KILN_UI.brown }}
+              numberOfLines={1}
+            >
               {liveFiring.name}
             </Text>
 
-            {/* Subtitle — type · cone · kiln · pieces */}
-            <Text className="text-xs text-muted-foreground mb-3 text-center" numberOfLines={1}>
+            <Text className="text-xs mb-3 text-center" style={{ color: KILN_UI.brownMuted }} numberOfLines={1}>
               {FIRING_TYPE_LABELS[liveFiring.type]} · Cone {liveFiring.cone}
               {kiln ? ` · ${kiln.name}` : ''}
               {` · ${liveFiring.pieceIds.length} piece${liveFiring.pieceIds.length !== 1 ? 's' : ''}`}
             </Text>
 
-            {/* Milestone strip */}
             <View className="w-full mb-2">
               <MilestoneStrip
                 autoStatus={autoStatus}

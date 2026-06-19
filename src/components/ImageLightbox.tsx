@@ -1,7 +1,15 @@
 import { Image } from 'expo-image';
 import { X } from 'lucide-react-native';
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ImageLightboxProps = {
@@ -9,71 +17,119 @@ type ImageLightboxProps = {
   uri?: string;
   caption?: string;
   onClose: () => void;
+  /** Render inside an existing modal (avoids RN modal stacking issues). */
+  embedded?: boolean;
 };
 
-export function ImageLightbox({ visible, uri, caption, onClose }: ImageLightboxProps) {
+function LightboxContent({
+  uri,
+  caption,
+  onClose,
+}: {
+  uri: string;
+  caption?: string;
+  onClose: () => void;
+}) {
   const insets = useSafeAreaInsets();
-
-  if (!uri) return null;
+  const { width, height } = useWindowDimensions();
+  const imageHeight = Math.max(240, height - insets.top - insets.bottom - 120);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={StyleSheet.absoluteFill} className="bg-black/95">
-        <TouchableOpacity
-          onPress={onClose}
-          hitSlop={12}
-          activeOpacity={0.7}
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(8, 6, 4, 0.96)' }]}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close photo" />
+
+      <TouchableOpacity
+        onPress={onClose}
+        hitSlop={12}
+        activeOpacity={0.7}
+        style={{
+          position: 'absolute',
+          top: insets.top + 8,
+          right: 16,
+          zIndex: 2,
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: 'rgba(255,255,255,0.15)',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Close photo"
+      >
+        <X size={20} color="white" />
+      </TouchableOpacity>
+
+      <View
+        pointerEvents="box-none"
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingTop: insets.top + 48,
+          paddingBottom: insets.bottom + (caption ? 56 : 24),
+          paddingHorizontal: 12,
+        }}
+      >
+        <Image
+          source={{ uri }}
+          style={{ width: width - 24, height: imageHeight }}
+          contentFit="contain"
+        />
+      </View>
+
+      {caption ? (
+        <View
           style={{
             position: 'absolute',
-            top: insets.top + 8,
-            right: 16,
-            zIndex: 2,
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: 'rgba(255,255,255,0.15)',
-            alignItems: 'center',
-            justifyContent: 'center',
+            left: 0,
+            right: 0,
+            bottom: insets.bottom + 16,
+            paddingHorizontal: 20,
           }}
-          accessibilityRole="button"
-          accessibilityLabel="Close photo"
+          pointerEvents="none"
         >
-          <X size={20} color="white" />
-        </TouchableOpacity>
-
-        <Pressable style={{ flex: 1, justifyContent: 'center' }} onPress={onClose}>
-          <Image
-            source={{ uri }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="contain"
-          />
-        </Pressable>
-
-        {caption ? (
-          <View
+          <Text
             style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: insets.bottom + 16,
-              paddingHorizontal: 20,
+              textAlign: 'center',
+              color: 'rgba(255,251,244,0.92)',
+              fontSize: 14,
+              fontWeight: '600',
             }}
-            pointerEvents="none"
+            numberOfLines={2}
           >
-            <Text
-              style={{
-                textAlign: 'center',
-                color: 'rgba(255,251,244,0.92)',
-                fontSize: 14,
-                fontWeight: '600',
-              }}
-              numberOfLines={2}
-            >
-              {caption}
-            </Text>
-          </View>
-        ) : null}
+            {caption}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+export function ImageLightbox({ visible, uri, caption, onClose, embedded = false }: ImageLightboxProps) {
+  if (!uri || !visible) return null;
+
+  if (embedded) {
+    return (
+      <View
+        pointerEvents="box-none"
+        style={[StyleSheet.absoluteFill, { zIndex: 50, elevation: 50 }]}
+      >
+        <LightboxContent uri={uri} caption={caption} onClose={onClose} />
       </View>
+    );
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <LightboxContent uri={uri} caption={caption} onClose={onClose} />
     </Modal>
   );
 }

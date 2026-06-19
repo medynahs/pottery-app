@@ -35,6 +35,7 @@ export default function PiecesScreen() {
   const params = useLocalSearchParams<{
     openJournalPieceId?: string | string[];
     openJournalStage?: string | string[];
+    openJournalNonce?: string | string[];
     stage?: string | string[];
   }>();
   const handledOpenJournalIdRef = React.useRef<string | null>(null);
@@ -127,14 +128,25 @@ export default function PiecesScreen() {
     const rawStage = Array.isArray(params.openJournalStage)
       ? params.openJournalStage[0]
       : params.openJournalStage;
-    const openKey = `${rawId ?? ''}:${rawStage ?? ''}`;
+    const rawNonce = Array.isArray(params.openJournalNonce)
+      ? params.openJournalNonce[0]
+      : params.openJournalNonce;
+    const openKey = `${rawId ?? ''}:${rawStage ?? ''}:${rawNonce ?? ''}`;
 
-    if (!rawId || handledOpenJournalIdRef.current === openKey) return;
+    if (!rawId) {
+      handledOpenJournalIdRef.current = null;
+      return;
+    }
+    if (handledOpenJournalIdRef.current === openKey) return;
 
     const pieceId = Number(rawId);
     if (Number.isNaN(pieceId)) return;
 
-    const piece = pieces.find((current) => current.id === pieceId);
+    const piece = useAppStore
+      .getState()
+      .pieces
+      .filter((current) => !current.deleted)
+      .find((current) => current.id === pieceId || String(current.id) === String(rawId));
     if (!piece) return;
 
     openJournal(
@@ -142,8 +154,17 @@ export default function PiecesScreen() {
       rawStage ? { initialStage: rawStage } : {},
     );
     handledOpenJournalIdRef.current = openKey;
-    router.replace('/(tabs)/pieces');
-  }, [params.openJournalPieceId, params.openJournalStage, pieces, router, openJournal]);
+    requestAnimationFrame(() => {
+      router.replace('/(tabs)/pieces');
+    });
+  }, [
+    params.openJournalPieceId,
+    params.openJournalStage,
+    params.openJournalNonce,
+    pieces,
+    router,
+    openJournal,
+  ]);
 
   React.useEffect(() => {
     const stageParam = Array.isArray(params.stage) ? params.stage[0] : params.stage;

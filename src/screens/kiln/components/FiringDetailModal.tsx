@@ -9,7 +9,7 @@ import { useVisiblePieces, useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Trash2, X } from 'lucide-react-native';
 import React from 'react';
-import { InteractionManager, ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import type { Firing, FiringResult, FiringStatusOverride } from '../../../types/kiln';
 import type { GlazeOutcome, Piece } from '../../../types/pieces';
 import { FIRING_SOURCE_STAGE, FIRING_TYPE_LABELS } from '../constants';
@@ -83,13 +83,15 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   };
 
   const handleOpenPieceJournal = (piece: Piece) => {
-    const pieceId = String(piece.id);
-    router.push({
-      pathname: '/(tabs)/pieces',
-      params: { openJournalPieceId: pieceId },
-    });
-    InteractionManager.runAfterInteractions(() => {
-      onClose();
+    onClose();
+    requestAnimationFrame(() => {
+      router.push({
+        pathname: '/(tabs)/pieces',
+        params: {
+          openJournalPieceId: String(piece.id),
+          openJournalNonce: String(Date.now()),
+        },
+      });
     });
   };
 
@@ -301,7 +303,22 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
       durationMs={3000}
       onDismiss={() => { setFiringCeremonyVisible(false); onClose(); }}
     />
-    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.5)">
+    <ModalShell
+      visible={visible}
+      onClose={onClose}
+      backdropColor="rgba(0,0,0,0.5)"
+      overlay={
+        lightbox ? (
+          <ImageLightbox
+            embedded
+            visible
+            uri={lightbox.uri}
+            caption={lightbox.caption}
+            onClose={() => setLightbox(null)}
+          />
+        ) : null
+      }
+    >
       <ModalCard maxHeight={height * 0.95}>
         <View
           className="px-6 pt-5 pb-4 border-b"
@@ -395,13 +412,6 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
         </ScrollView>
       </ModalCard>
     </ModalShell>
-
-    <ImageLightbox
-      visible={lightbox !== null}
-      uri={lightbox?.uri}
-      caption={lightbox?.caption}
-      onClose={() => setLightbox(null)}
-    />
     </>
   );
 }

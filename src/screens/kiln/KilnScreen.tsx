@@ -53,13 +53,16 @@ export default function KilnScreen() {
   );
   const getKilnById = React.useCallback((kilnId: string) => kilnsById.get(kilnId), [kilnsById]);
 
-  const featuredActiveFiring = activeFirings[0] ?? null;
+  const featuredOpenFiring = activeFirings[0] ?? scheduledFirings[0] ?? null;
   const sessionRows = React.useMemo(() => {
-    const featuredId = featuredActiveFiring?.id;
-    return [...activeFirings.filter((firing) => firing.id !== featuredId), ...scheduledFirings].sort(
+    const featuredId = featuredOpenFiring?.id;
+    return [
+      ...activeFirings.filter((firing) => firing.id !== featuredId),
+      ...scheduledFirings.filter((firing) => firing.id !== featuredId),
+    ].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [activeFirings, featuredActiveFiring?.id, scheduledFirings]);
+  }, [activeFirings, featuredOpenFiring?.id, scheduledFirings]);
 
   const waitingCount = waitingForBisque.length + waitingForGlaze.length;
   const [sectionMode, setSectionMode] = React.useState<'kilns' | 'sessions' | 'queue'>('kilns');
@@ -76,7 +79,7 @@ export default function KilnScreen() {
   const firings = useAppStore((s) => s.firings);
   const visibleSessionRows = showAllSessions ? sessionRows : sessionRows.slice(0, 4);
   const hiddenSessionCount = Math.max(0, sessionRows.length - visibleSessionRows.length);
-  const hasOpenSessionContent = featuredActiveFiring !== null || sessionRows.length > 0;
+  const hasOpenSessionContent = featuredOpenFiring !== null || sessionRows.length > 0;
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
 
   const getQueueEnteredAt = React.useCallback((piece: Piece, queueStage: 'bone-dry' | 'glazing') => {
@@ -222,8 +225,8 @@ export default function KilnScreen() {
             <View className="mb-8">
               <SectionHeader title="Firing Sessions" icon={<Flame size={18} />} />
 
-              {featuredActiveFiring ? (
-                <ActiveFiringCard firing={featuredActiveFiring} onPress={() => setDetailFiring(featuredActiveFiring)} />
+              {featuredOpenFiring ? (
+                <ActiveFiringCard firing={featuredOpenFiring} onPress={() => setDetailFiring(featuredOpenFiring)} />
               ) : null}
 
               {hasOpenSessionContent ? (

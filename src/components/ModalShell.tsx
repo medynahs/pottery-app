@@ -31,6 +31,8 @@ export interface ModalShellProps {
   onClose: () => void;
   children: React.ReactNode;
   backdropColor?: string;
+  /** Full-screen overlay rendered above the sheet (e.g. embedded lightbox). */
+  overlay?: React.ReactNode;
 }
 
 type ModalSheetPanContextValue = {
@@ -47,6 +49,7 @@ export function ModalShell({
   onClose,
   children,
   backdropColor = MODAL_BACKDROP_COLOR,
+  overlay,
 }: ModalShellProps) {
   const { height } = useWindowDimensions();
   const backdropOpacity = React.useRef(new Animated.Value(0)).current;
@@ -170,6 +173,7 @@ export function ModalShell({
               </Animated.View>
             </KeyboardAvoidingView>
             {visible ? <PhotoPickerOverlay /> : null}
+            {visible ? overlay : null}
           </View>
         </ModalSheetPanContext.Provider>
       </ModalSheetCloseContext.Provider>
