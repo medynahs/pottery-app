@@ -16,7 +16,7 @@ export default function GlazeLibraryRoute() {
       return;
     }
     if (typeof collection === 'string' && collection.length > 0) {
-      router.replace(`/glaze-collection/${collectionNameToSlug(collection)}` as never);
+      router.replace(`/(tabs)/library?collection=${collectionNameToSlug(collection)}` as never);
       return;
     }
     router.replace('/(tabs)/library' as never);

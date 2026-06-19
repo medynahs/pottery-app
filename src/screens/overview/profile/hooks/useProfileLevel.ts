@@ -11,9 +11,10 @@ import {
 export function useProfileLevel() {
   const pieces = useVisiblePieces();
   const firings = useAppStore((s) => s.firings);
+  const glazes = useAppStore((s) => s.glazes);
 
   return useMemo(() => {
-    const ctx = buildBadgeContext(pieces, firings);
+    const ctx = buildBadgeContext(pieces, firings, glazes);
     const earnedCount = countEarnedBadges(ctx);
     const totalBadges = BADGE_REGISTRY.length;
     const progress = totalBadges > 0 ? earnedCount / totalBadges : 0;
@@ -28,5 +29,5 @@ export function useProfileLevel() {
       nextTitle: nextTitle?.title ?? null,
       badgesUntilNext: nextTitle ? nextTitle.min - earnedCount : 0,
     };
-  }, [pieces, firings]);
+  }, [pieces, firings, glazes]);
 }

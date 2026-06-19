@@ -21,8 +21,9 @@ interface KeyStat {
 export function JourneyTab() {
   const pieces = useVisiblePieces();
   const firings = useAppStore((s) => s.firings);
+  const glazes = useAppStore((s) => s.glazes);
 
-  const ctx = useMemo(() => buildBadgeContext(pieces, firings), [pieces, firings]);
+  const ctx = useMemo(() => buildBadgeContext(pieces, firings, glazes), [pieces, firings, glazes]);
 
   const badges = useMemo(() => computeBadgeStates(ctx), [ctx]);
 

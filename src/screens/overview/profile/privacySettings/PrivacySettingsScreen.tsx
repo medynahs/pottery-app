@@ -2,7 +2,10 @@ import { SectionLabel } from '@/src/components/SectionLabel';
 import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
+import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useAppStore } from '@/src/store';
+import { buildStudioExportPayload, shareStudioExport } from '@/src/utils/exportStudioData';
+import { PremiumFeature } from '@/src/utils/premiumGate';
 import { useRouter } from 'expo-router';
 import {
     BarChart2,
@@ -12,15 +15,46 @@ import {
     Sparkles,
 } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 
 export default function PrivacySettingsScreen() {
   const router = useRouter();
   const privacyPrefs = useAppStore((s) => s.privacyPrefs);
   const setPrivacyPref = useAppStore((s) => s.setPrivacyPref);
+  const pieces = useAppStore((s) => s.pieces);
+  const firings = useAppStore((s) => s.firings);
+  const kilns = useAppStore((s) => s.kilns);
+  const glazes = useAppStore((s) => s.glazes);
+  const glazeTests = useAppStore((s) => s.glazeTests);
+  const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
+  const showToast = useAppStore((s) => s.showToast);
+  const { requestAccess, PaywallGate } = usePremiumGate();
+  const [exporting, setExporting] = React.useState(false);
+
+  const handleExport = async () => {
+    if (!requestAccess(PremiumFeature.Export)) return;
+
+    setExporting(true);
+    try {
+      const payload = buildStudioExportPayload({
+        pieces,
+        firings,
+        kilns,
+        glazes,
+        glazeTests,
+        glazeCollectionNames,
+      });
+      await shareStudioExport(payload);
+    } catch {
+      showToast('Export failed — try again', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <View className="flex-1 bg-background">
+      {PaywallGate}
       <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
         <TouchableOpacity
           onPress={() => router.back()}
@@ -93,6 +127,8 @@ export default function PrivacySettingsScreen() {
         <SettingsGroup>
           <TouchableOpacity
             activeOpacity={0.65}
+            onPress={handleExport}
+            disabled={exporting}
             className="flex-row items-center gap-3 py-3.5"
             accessibilityRole="button"
             accessibilityLabel="Export my data"
@@ -100,8 +136,15 @@ export default function PrivacySettingsScreen() {
             <View className="w-9 h-9 rounded-xl items-center justify-center bg-green-50">
               <BarChart2 size={17} color="hsl(100 40% 45%)" />
             </View>
-            <Text className="flex-1 text-sm font-medium text-foreground">Export My Data</Text>
-            <Text className="text-xs text-muted-foreground mr-1">Coming soon</Text>
+            <View className="flex-1">
+              <Text className="text-sm font-medium text-foreground">Export My Data</Text>
+              <Text className="text-[11px] text-muted-foreground mt-0.5">
+                Pieces, firings, glazes, and test tiles (Premium)
+              </Text>
+            </View>
+            {exporting ? (
+              <ActivityIndicator size="small" color="hsl(24 20% 40%)" />
+            ) : null}
           </TouchableOpacity>
         </SettingsGroup>
 

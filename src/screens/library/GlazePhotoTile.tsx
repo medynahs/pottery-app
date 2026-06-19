@@ -24,6 +24,8 @@ export type GlazePhotoTileProps = {
   colorHex: string;
   matchesCone?: boolean;
   favorite?: boolean;
+  /** Corner badge on the photo, e.g. "Saved" on Discover tiles. */
+  cornerBadge?: { label: string; tone?: 'neutral' | 'success' | 'accent' };
   onPress: () => void;
 };
 
@@ -82,6 +84,7 @@ export function GlazePhotoTile({
   colorHex,
   matchesCone = false,
   favorite = false,
+  cornerBadge,
   onPress,
 }: GlazePhotoTileProps) {
   const detailLine = subtitle ?? finishLabel;
@@ -154,6 +157,9 @@ export function GlazePhotoTile({
         >
           <PhotoBadge label={coneLabel} />
           <View style={{ flexDirection: 'row', gap: 6, flexShrink: 1, justifyContent: 'flex-end' }}>
+            {cornerBadge ? (
+              <PhotoBadge label={cornerBadge.label} tone={cornerBadge.tone ?? 'success'} />
+            ) : null}
             {status ? (
               <GlazeStatusOrb status={status} size="sm" />
             ) : matchesCone ? (

@@ -485,6 +485,8 @@ interface AppState {
   setupProgress: SetupProgress;
   markSetupProgress: (key: keyof SetupProgress) => void;
   hasCreatedPost: boolean;
+  /** Bumped when a community post is created — feeds subscribe to refresh. */
+  communityFeedRevision: number;
   markPostCreated: () => void;
 
   // ── Pricing Rules ───────────────────────────────────────────
@@ -1172,7 +1174,12 @@ export const useAppStore = create<AppState>()(
       setupProgress: { ...state.setupProgress, [key]: true },
     })),
   hasCreatedPost: false,
-  markPostCreated: () => set({ hasCreatedPost: true }),
+  communityFeedRevision: 0,
+  markPostCreated: () =>
+    set((state) => ({
+      hasCreatedPost: true,
+      communityFeedRevision: state.communityFeedRevision + 1,
+    })),
 
   // ── Pricing Rules ───────────────────────────────────────────
   pricingSettings: buildDefaultPricingSettings(),

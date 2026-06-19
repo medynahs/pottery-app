@@ -10,11 +10,13 @@ function DiscoverTile({
   recipe,
   width,
   matchesCone,
+  saved,
   onPress,
 }: {
   recipe: DiscoverRecipe;
   width: number;
   matchesCone: boolean;
+  saved: boolean;
   onPress: () => void;
 }) {
   const finishLabel =
@@ -29,6 +31,7 @@ function DiscoverTile({
       previewUri={recipe.previewUri}
       colorHex={recipe.colorHex}
       matchesCone={matchesCone}
+      cornerBadge={saved ? { label: 'Saved', tone: 'success' } : undefined}
       onPress={onPress}
     />
   );
@@ -37,10 +40,12 @@ function DiscoverTile({
 export function DiscoverGrid({
   recipes,
   userConeNorm,
+  savedRecipeIds,
   onPressRecipe,
 }: {
   recipes: DiscoverRecipe[];
   userConeNorm: string | null;
+  savedRecipeIds?: Set<string>;
   onPressRecipe: (recipe: DiscoverRecipe) => void;
 }) {
   const { width } = useWindowDimensions();
@@ -60,6 +65,7 @@ export function DiscoverGrid({
             recipe={recipe}
             width={tileWidth}
             matchesCone={userConeNorm !== null && recipe.cone === userConeNorm}
+            saved={savedRecipeIds?.has(recipe.id) ?? false}
             onPress={() => onPressRecipe(recipe)}
           />
         ))}
@@ -71,6 +77,7 @@ export function DiscoverGrid({
             recipe={recipe}
             width={tileWidth}
             matchesCone={userConeNorm !== null && recipe.cone === userConeNorm}
+            saved={savedRecipeIds?.has(recipe.id) ?? false}
             onPress={() => onPressRecipe(recipe)}
           />
         ))}

@@ -4,7 +4,8 @@ import { Text } from '@/src/components/ui/text';
 import { AddGlazeModal } from '@/src/screens/library/atlas/AddGlazeModal';
 import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
 import { buildGlazeTestFromDraft } from '@/src/screens/library/atlas/glazeTestDraft';
-import { Pill } from '@/src/screens/library/atlas/Pill';
+import { GlazeStatusPill, GlazeStatusPillRow } from '@/src/screens/glazes/components/GlazeStatusPill';
+import { ShareGlazeRecipeSheet } from '@/src/screens/glazes/ShareGlazeRecipeSheet';
 import {
   formatShortDate,
   glazeCardColor,
@@ -26,6 +27,7 @@ import {
 } from '@/src/screens/glazes/glazeTestStats';
 import { glazeCardColorForItem, resolveGlazePhotoUri, selectPiecesByGlazeId } from '@/src/screens/glazes/glazePieceLink';
 import { CompareVersionsModal } from '@/src/screens/glazes/CompareVersionsModal';
+import { GlazeStatusOrb } from '@/src/screens/glazes/components/GlazeStatusOrb';
 import {
   buildNewVersionDraft,
   computeNextVersionNumber,
@@ -41,7 +43,7 @@ import { formatDateShort } from '@/src/utils/dates';
 import { useAppStore, useVisiblePieces } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, GitBranchPlus, Pencil, Sparkles, Star, Trash2, ArrowLeftRight } from 'lucide-react-native';
+import { ChevronLeft, GitBranchPlus, Pencil, Share2, Sparkles, Star, Trash2, ArrowLeftRight } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -50,7 +52,6 @@ import {
   GLAZE_CLAY_TYPE_LABELS,
   GLAZE_FINISH_LABELS,
   GLAZE_RESULT_LABELS,
-  GLAZE_STATUS_EMOJI,
   GLAZE_STATUS_LABELS,
   GLAZE_STATUS_OPTIONS,
   type GlazeLibraryItem,
@@ -147,6 +148,7 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
   const [lightboxOpen, setLightboxOpen] = React.useState(false);
   const [confirmDeleteGlaze, setConfirmDeleteGlaze] = React.useState(false);
   const [pendingDeleteTest, setPendingDeleteTest] = React.useState<GlazeTestTile | null>(null);
+  const [shareOpen, setShareOpen] = React.useState(false);
 
   const glaze = glazes.find((g) => g.id === glazeId);
 
@@ -407,6 +409,13 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
         pieces={pieces}
       />
 
+      <ShareGlazeRecipeSheet
+        glaze={glaze ?? null}
+        linkedPieces={linkedPieces}
+        visible={shareOpen}
+        onClose={() => setShareOpen(false)}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
@@ -500,6 +509,14 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity
+              onPress={() => setShareOpen(true)}
+              activeOpacity={0.85}
+              className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-border bg-card"
+            >
+              <Share2 size={15} color="hsl(24 20% 40%)" />
+              <Text className="text-xs font-semibold text-foreground">Share</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={() => {
                 toggleFavoriteGlaze(glaze.id);
                 scheduleGlazesSync();
@@ -530,16 +547,16 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
             <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
               Status
             </Text>
-            <View className="flex-row flex-wrap gap-2">
+            <GlazeStatusPillRow>
               {GLAZE_STATUS_OPTIONS.map((option) => (
-                <Pill
+                <GlazeStatusPill
                   key={option}
-                  label={`${GLAZE_STATUS_EMOJI[option]} ${GLAZE_STATUS_LABELS[option]}`}
+                  status={option}
                   active={status === option}
                   onPress={() => handleStatusChange(option)}
                 />
               ))}
-            </View>
+            </GlazeStatusPillRow>
           </View>
 
           <View className="mt-5 rounded-2xl border border-border bg-muted/30 px-4 py-3">
@@ -650,10 +667,12 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
                           Mixed {formatDateShort(version.dateMixed ?? version.createdAt)}
                           {version.batchId ? ` · ${version.batchId}` : ''}
                         </Text>
-                        <Text className="text-[11px] text-muted-foreground mt-1">
-                          {GLAZE_STATUS_EMOJI[version.status ?? 'experimental']}{' '}
-                          {GLAZE_STATUS_LABELS[version.status ?? 'experimental']}
-                        </Text>
+                        <View className="flex-row items-center gap-2 mt-1">
+                          <GlazeStatusOrb status={version.status ?? 'experimental'} size="sm" />
+                          <Text className="text-[11px] text-muted-foreground">
+                            {GLAZE_STATUS_LABELS[version.status ?? 'experimental']}
+                          </Text>
+                        </View>
                         <Text className="text-xs text-foreground mt-2">{versionStats}</Text>
                       </View>
                     </TouchableOpacity>

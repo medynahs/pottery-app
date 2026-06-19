@@ -17,9 +17,9 @@
 
 | Status | Count |
 |---|---|
-| ✅ Done | 31 |
+| ✅ Done | 32 |
 | 🟡 Partial | 15 |
-| ❌ Not started | 26 |
+| ❌ Not started | 25 |
 | 🔶 BE only | 15 |
 
 > BE tickets marked 🔶 may already be deployed; this audit only covers the mobile app repo.
@@ -225,7 +225,7 @@ Pricing: **€4.99/month · €34.99/year** · Platform: **RevenueCat** (free up
 | 61 | ❌ | **[FE] Premium — Photo gate** | Free users: 1 cover photo per piece. Tapping "Add photo" in journal entries or `StageAdvanceFlowModal` when free triggers `PremiumPaywallSheet` with `featureName: 'unlimited-photos'`, description: "Document every stage of your process." Cover photo always free. Gate checks `photos.length >= 1 && !isPremium`. |
 | 62 | ❌ | **[FE] Premium — Analytics screen gate** | Tapping Studio Stats entry in Profile checks `checkPremium('analytics')`. Free users see `PremiumPaywallSheet` with `featureName: 'analytics'`. Screen does not render for free users. |
 | 64 | ❌ | **[FE] Premium — Kilnkin companion swap gate** | All 4 companions selectable freely during onboarding (no gate). Post-onboarding: "Change Companion" option in Profile/Settings checks `checkPremium('companion-swap')`. Free users see `PremiumPaywallSheet` with `featureName: 'companion-swap'`, description: "Switch between your elemental companions anytime." Premium users can swap freely. |
-| 65 | ❌ | **[FE] Premium — Glaze atlas gate (15 glazes)** | When free user attempts to add a 16th glaze, `AddGlazeModal` intercepts and triggers `PremiumPaywallSheet` with `featureName: 'full-glaze-atlas'`, description: "Build your complete glaze library without limits." Gate: `appStore.glazes.length >= 15 && !isPremium`. |
+| 65 | ✅ | **[FE] Premium — Glaze atlas gate (15 glazes)** | When free user attempts to add a 16th glaze, `AddGlazeModal` intercepts and triggers `PremiumPaywallSheet` with `featureName: 'full-glaze-atlas'`, description: "Build your complete glaze library without limits." Gate: `appStore.glazes.length >= 15 && !isPremium`. **Wired via `canAddGlaze()` in `useGlazeAtlas`, Discover save, and new-version flows.** |
 
 > Note: Ticket 63 removed — Library tab cut from V1.
 
@@ -334,7 +334,7 @@ These tickets close the remaining reliability + production-delivery gaps after l
 | Analytics | 7 | — | — | 7 | 5 | 1 | 1 | 0 |
 | Onboarding Redesign | 7 | — | — | 7 | 3 | 4 | 0 | 0 |
 | Kilnkins (4 elements) | 2 | — | — | 2 | 1 | 0 | 1 | 0 |
-| Monetization / Premium | 8 | 1 | — | 9 | 3 | 1 | 4 | 1 |
+| Monetization / Premium | 8 | 1 | — | 9 | 4 | 1 | 3 | 1 |
 | Product Telemetry | 2 | — | — | 2 | 0 | 0 | 2 | 0 |
 | Notifications | 4 | 1 | — | 5 | 3 | 1 | 0 | 1 |
 | Notifications Backlog | 1 | 1 | 3 | 5 | 0 | 0 | 4 | 1 |

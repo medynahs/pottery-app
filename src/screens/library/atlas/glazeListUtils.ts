@@ -3,7 +3,6 @@ import {
   GLAZE_CLAY_TYPE_LABELS,
   GLAZE_FINISH_LABELS,
   GLAZE_SOURCE_LABELS,
-  GLAZE_STATUS_EMOJI,
   GLAZE_STATUS_LABELS,
   GLAZE_ATMOSPHERE_OPTIONS,
   GLAZE_FINISH_OPTIONS,
@@ -52,9 +51,9 @@ export const DEFAULT_GLAZE_FILTERS: GlazeFilters = {
 
 export const GLAZE_STATUS_FILTER_OPTIONS: Array<{ key: GlazeStatusFilter; label: string }> = [
   { key: 'all', label: 'All' },
-  { key: 'works_great', label: `${GLAZE_STATUS_EMOJI.works_great} Works Great` },
-  { key: 'experimental', label: `${GLAZE_STATUS_EMOJI.experimental} Experimental` },
-  { key: 'failed', label: `${GLAZE_STATUS_EMOJI.failed} Failed` },
+  { key: 'works_great', label: GLAZE_STATUS_LABELS.works_great },
+  { key: 'experimental', label: GLAZE_STATUS_LABELS.experimental },
+  { key: 'failed', label: GLAZE_STATUS_LABELS.failed },
 ];
 
 export const GLAZE_CLAY_FILTER_OPTIONS: Array<{ key: GlazeClayFilter; label: string }> = [

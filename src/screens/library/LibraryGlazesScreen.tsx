@@ -24,6 +24,8 @@ import { scheduleGlazesSync } from './useGlazesSync';
 type LibraryGlazesScreenProps = {
   glazes: GlazeLibraryItem[];
   onAddGlaze: () => void;
+  /** Deep-link / legacy collection route — applies once on mount. */
+  initialCollectionKey?: string;
 };
 
 function ActiveFilterChip({
@@ -48,6 +50,7 @@ function ActiveFilterChip({
 export default function LibraryGlazesScreen({
   glazes,
   onAddGlaze,
+  initialCollectionKey,
 }: LibraryGlazesScreenProps) {
   const insets = useSafeAreaInsets();
   const pieces = useVisiblePieces();
@@ -61,6 +64,11 @@ export default function LibraryGlazesScreen({
   const [filters, setFilters] = React.useState<GlazeFilters>(DEFAULT_GLAZE_FILTERS);
   const [search, setSearch] = React.useState('');
   const [pendingDelete, setPendingDelete] = React.useState<GlazeLibraryItem | null>(null);
+
+  React.useEffect(() => {
+    if (!initialCollectionKey) return;
+    setFilters((current) => ({ ...current, collection: initialCollectionKey }));
+  }, [initialCollectionKey]);
 
   const patchFilters = React.useCallback((patch: Partial<GlazeFilters>) => {
     setFilters((current) => ({ ...current, ...patch }));

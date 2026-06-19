@@ -11,10 +11,12 @@ import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import {
   apiGetFeed,
   apiGetPolls,
+  apiListMyPosts,
   apiVotePoll,
   type BackendFeedPost,
   type BackendPoll,
 } from '../../../services/community';
+import { mergeCommunityFeedPosts } from '@/src/utils/communityFeedMerge';
 import { FeedPostCard } from '../components/FeedPostCard';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -123,6 +125,8 @@ function PollCard({
 
 export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
   const sessionToken = useAppStore((s) => s.sessionToken);
+  const backendUserId = useAppStore((s) => s.backendUserId);
+  const communityFeedRevision = useAppStore((s) => s.communityFeedRevision);
 
   const [posts, setPosts] = useState<BackendFeedPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -153,13 +157,36 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
         setIsLoadingMore(true);
       }
       try {
-        const page = await apiGetFeed(sessionToken, { limit: 20, cursor });
+        const friendsPage = await apiGetFeed(sessionToken, { limit: 20, cursor });
+        const friendsPosts = friendsPage.items ?? friendsPage.posts ?? [];
+
+        let merged = friendsPosts;
         if (isFirstPage) {
-          setPosts(page.items ?? page.posts ?? []);
-        } else {
-          setPosts((prev) => [...prev, ...(page.items ?? page.posts ?? [])]);
+          try {
+            const myPage = await apiListMyPosts(sessionToken, { limit: 20 });
+            const myPosts = myPage.items ?? myPage.posts ?? [];
+            merged = mergeCommunityFeedPosts(myPosts, friendsPosts);
+          } catch {
+            merged = friendsPosts;
+          }
         }
-        setNextCursor(page.next_cursor);
+
+        if (isFirstPage) {
+          setPosts(merged);
+        } else {
+          setPosts((prev) => {
+            const seen = new Set(prev.map((post) => post.id));
+            const next = [...prev];
+            friendsPosts.forEach((post) => {
+              if (!seen.has(post.id)) {
+                seen.add(post.id);
+                next.push(post);
+              }
+            });
+            return next;
+          });
+        }
+        setNextCursor(friendsPage.next_cursor);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to load feed';
         if (isFirstPage) setError(msg);
@@ -184,13 +211,20 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionToken]);
 
-  // Refresh triggered by parent (pull-to-refresh).
+  // Refresh triggered by parent (pull-to-refresh) or global post creation.
   useEffect(() => {
     if (refreshKey === 0) return;
     isRefreshRef.current = true;
     fetchFeed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
+
+  useEffect(() => {
+    if (communityFeedRevision === 0) return;
+    isRefreshRef.current = true;
+    fetchFeed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [communityFeedRevision]);
 
   return (
     <>
@@ -212,9 +246,15 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
         <EmptyState
           icon={Users}
           title="Nothing here yet"
-          description="Follow other potters to see their work in your feed — or share your first piece with the community."
+          description="Your posts appear here once shared. Follow other potters to see their work too."
         />
       )}
+
+      {!isLoading && !error && posts.some((p) => backendUserId && p.user_id === backendUserId) ? (
+        <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-1">
+          Includes your posts
+        </Text>
+      ) : null}
 
       {posts.map((post) => (
         <FeedPostCard key={post.id} post={post} sessionToken={sessionToken!} />

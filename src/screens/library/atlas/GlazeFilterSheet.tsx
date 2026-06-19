@@ -19,6 +19,7 @@ import {
   GLAZE_STATUS_FILTER_OPTIONS,
   type GlazeFilters,
 } from './glazeListUtils';
+import { GlazeFilterPill, GlazeStatusPill } from '@/src/screens/glazes/components/GlazeStatusPill';
 import { Pill } from './Pill';
 
 const SECTION_GAP = 24;
@@ -130,15 +131,25 @@ export function GlazeFilterSheet({
         >
           <FilterSection title="Status" first>
             <PillRow>
-              {GLAZE_STATUS_FILTER_OPTIONS.map((option) => (
-                <Pill
-                  key={option.key}
-                  label={option.label}
-                  active={filters.status === option.key}
-                  accessibilityLabel={`Filter by status: ${option.label}`}
-                  onPress={() => onPatchFilters({ status: option.key })}
-                />
-              ))}
+              {GLAZE_STATUS_FILTER_OPTIONS.map((option) =>
+                option.key === 'all' ? (
+                  <GlazeFilterPill
+                    key={option.key}
+                    label={option.label}
+                    active={filters.status === option.key}
+                    accessibilityLabel={`Filter by status: ${option.label}`}
+                    onPress={() => onPatchFilters({ status: option.key })}
+                  />
+                ) : (
+                  <GlazeStatusPill
+                    key={option.key}
+                    status={option.key}
+                    active={filters.status === option.key}
+                    accessibilityLabel={`Filter by status: ${option.label}`}
+                    onPress={() => onPatchFilters({ status: option.key })}
+                  />
+                ),
+              )}
             </PillRow>
           </FilterSection>
 

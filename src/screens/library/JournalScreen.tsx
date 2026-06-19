@@ -8,6 +8,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { Plus, Sparkles } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
+import { slugToCollectionKey } from './atlas/collections';
 import { MainTabHeader } from '../../components/MainTabHeader';
 import { Text } from '../../components/ui/text';
 
@@ -19,10 +20,20 @@ const TABS: { key: AtlasTab; label: string }[] = [
 ];
 
 export default function JournalScreen() {
-  const { action } = useLocalSearchParams<{ action?: string }>();
+  const { action, collection } = useLocalSearchParams<{ action?: string; collection?: string }>();
   const [activeTab, setActiveTab] = useState<AtlasTab>('my-atlas');
   const atlas = useGlazeAtlas();
   const didAutoOpen = React.useRef(false);
+  const initialCollectionKey = React.useMemo(
+    () => (typeof collection === 'string' && collection.length > 0
+      ? slugToCollectionKey(collection)
+      : undefined),
+    [collection],
+  );
+
+  React.useEffect(() => {
+    if (initialCollectionKey) setActiveTab('my-atlas');
+  }, [initialCollectionKey]);
 
   React.useEffect(() => {
     if (didAutoOpen.current) return;
@@ -119,6 +130,7 @@ export default function JournalScreen() {
           <LibraryGlazesScreen
             glazes={atlas.glazes}
             onAddGlaze={atlas.openAddGlaze}
+            initialCollectionKey={initialCollectionKey}
           />
         ) : (
           <GlazeDiscoverScreen />

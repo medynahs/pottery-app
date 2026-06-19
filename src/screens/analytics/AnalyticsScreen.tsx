@@ -14,17 +14,19 @@ import {
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { formatGlazeUsageHint } from '@/src/screens/glazes/glazeUsageAnalytics';
 import { checkPremium, PremiumFeature } from '@/src/utils/premiumGate';
+import { buildStudioExportPayload, shareStudioExport, summarizeExport } from '@/src/utils/exportStudioData';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
   Coins,
+  Download,
   FlameKindling,
   Layers,
   Receipt,
   TrendingUp,
 } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FIRING_TYPE_LABELS } from '../kiln/constants';
 import { formatReadyDate } from '../kiln/firingEstimations';
@@ -97,6 +99,9 @@ export default function AnalyticsScreen() {
   const firings = useAppStore((s) => s.firings);
   const glazeTests = useAppStore((s) => s.glazeTests);
   const glazes = useAppStore((s) => s.glazes);
+  const kilns = useAppStore((s) => s.kilns);
+  const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
+  const showToast = useAppStore((s) => s.showToast);
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
   const userType = useAppStore((s) => s.onboardingProfile.userType);
 
@@ -104,12 +109,45 @@ export default function AnalyticsScreen() {
   const [tab, setTab] = React.useState<AnalyticsTab>('overview');
   const [trendMetric, setTrendMetric] = React.useState<'cost' | 'fired'>('cost');
   const [economicsFilter, setEconomicsFilter] = React.useState<EconomicsFilter>('all');
+  const [exporting, setExporting] = React.useState(false);
+
+  const handleExport = async () => {
+    if (!requestAccess(PremiumFeature.Export)) return;
+    setExporting(true);
+    try {
+      const payload = buildStudioExportPayload({
+        pieces,
+        firings,
+        kilns,
+        glazes,
+        glazeTests,
+        glazeCollectionNames,
+      });
+      await shareStudioExport(payload);
+    } catch {
+      showToast('Export failed — try again', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportSummary = React.useMemo(
+    () => summarizeExport(buildStudioExportPayload({
+      pieces,
+      firings,
+      kilns,
+      glazes,
+      glazeTests,
+      glazeCollectionNames,
+    })),
+    [pieces, firings, kilns, glazes, glazeTests, glazeCollectionNames],
+  );
 
   const isStudioOwner = userType === 'studio-owner-technician';
 
   const glazeUsageHint = React.useMemo(
-    () => formatGlazeUsageHint(pieces, glazeTests, glazes),
-    [pieces, glazeTests, glazes],
+    () => formatGlazeUsageHint(pieces, glazeTests, glazes, periodId),
+    [pieces, glazeTests, glazes, periodId],
   );
 
   const stats = React.useMemo(
@@ -451,9 +489,7 @@ export default function AnalyticsScreen() {
 
         {tab === 'materials' ? (
           <>
-            <SectionLabel title="Materials" icon={<Layers size={14} color="hsl(24 20% 40%)" />} hint="All time" />
-            <RankedCard title="Clay bodies" rows={stats.materials.clayBodies} />
-            <RankedCard title="Forming methods" rows={stats.materials.formingMethods} />
+            <SectionLabel title="Materials" icon={<Layers size={14} color="hsl(24 20% 40%)" />} hint={stats.period.label} />
             {stats.materials.glazes.length > 0 ? (
               <RankedCard
                 title="Glaze usage"
@@ -463,8 +499,36 @@ export default function AnalyticsScreen() {
             ) : (
               <EmptyHint text="Link glazes to pieces or log test tiles to see usage here." />
             )}
+            <RankedCard title="Clay bodies" rows={stats.materials.clayBodies} />
+            <RankedCard title="Forming methods" rows={stats.materials.formingMethods} />
           </>
         ) : null}
+
+        <SectionLabel title="Your data" icon={<Download size={14} color="hsl(24 20% 40%)" />} hint="Premium" />
+        <Card className="p-4 mb-2">
+          <Text className="text-sm font-semibold text-foreground">Export studio data</Text>
+          <Text className="text-xs text-muted-foreground mt-1 leading-5">
+            Download pieces, firings, glazes, and test tiles as JSON — {exportSummary}.
+          </Text>
+          <TouchableOpacity
+            onPress={handleExport}
+            disabled={exporting}
+            activeOpacity={0.82}
+            className="mt-3 rounded-xl bg-primary py-3 items-center flex-row justify-center gap-2"
+          >
+            {exporting ? <ActivityIndicator color="white" size="small" /> : <Download size={15} color="white" />}
+            <Text className="text-sm font-semibold text-white">
+              {exporting ? 'Preparing…' : 'Export my data'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/privacy-settings' as never)}
+            activeOpacity={0.7}
+            className="mt-2 py-1 items-center"
+          >
+            <Text className="text-[11px] text-muted-foreground">Also in Privacy Settings</Text>
+          </TouchableOpacity>
+        </Card>
       </ScrollView>
     </View>
   );

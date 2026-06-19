@@ -1,7 +1,9 @@
+import { useAnalytics } from '@/src/hooks/useAnalytics';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { glazeDraftToItem } from '@/src/screens/glazes/glazeItemHelpers';
 import { useAppStore } from '@/src/store';
-import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';import React from 'react';
+import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
+import React from 'react';
 import { deriveCustomCollectionNames, sanitizeCustomCollections } from './atlas/collections';
 import { hasValidRecipeIngredients } from './atlas/GlazeRecipeBuilder';
 import { buildGlazeTestFromDraft } from './atlas/glazeTestDraft';
@@ -20,6 +22,7 @@ export function useGlazeAtlas() {
   const addGlazeCollection = useAppStore((state) => state.addGlazeCollection);
   const showToast = useAppStore((state) => state.showToast);
   const { requestAccess, PaywallGate } = usePremiumGate();
+  const { trackGlazeCreated, trackTestTileLogged } = useAnalytics();
 
   const collections = React.useMemo(
     () => deriveCustomCollectionNames(glazes, glazeCollectionNames),
@@ -66,10 +69,14 @@ export function useGlazeAtlas() {
         { id },
       ),
     );
+    trackGlazeCreated({
+      source: 'atlas',
+      hasRecipe: hasValidRecipeIngredients(draft.recipeIngredients),
+    });
     scheduleGlazesSync();
     setAddOpen(false);
     showToast('Glaze saved', 'success');
-  }, [addGlaze, glazes, registerGlazeCollections, requestAccess, showToast]);
+  }, [addGlaze, glazes, registerGlazeCollections, requestAccess, showToast, trackGlazeCreated]);
 
   const handleSaveTest = React.useCallback((testDraft: TestDraft) => {
     const selectedGlaze = glazes.find((g) => g.id === testDraft.glazeId);
@@ -81,10 +88,14 @@ export function useGlazeAtlas() {
         glazeName: selectedGlaze.name,
       }),
     );
+    trackTestTileLogged({
+      glazeId: testDraft.glazeId,
+      resultRating: testDraft.resultRating,
+    });
     scheduleGlazesSync();
     setTestOpen(false);
     showToast('Test tile saved', 'success');
-  }, [addGlazeTest, glazes, showToast]);
+  }, [addGlazeTest, glazes, showToast, trackTestTileLogged]);
 
   return {
     glazes,

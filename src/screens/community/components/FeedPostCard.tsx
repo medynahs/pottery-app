@@ -100,9 +100,14 @@ interface Props {
 
 export function FeedPostCard({ post, sessionToken }: Props) {
   const backendUserId = useAppStore((s) => s.backendUserId);
+  const user = useAppStore((s) => s.user);
   const showToast = useAppStore((s) => s.showToast);
   const firstAsset = post.assets?.[0];
   const initial = post.user_id.slice(0, 1).toUpperCase();
+  const isOwnPost = Boolean(backendUserId && backendUserId === post.user_id);
+  const authorLabel = isOwnPost
+    ? (user.studioName?.trim() || user.name?.trim() || 'You')
+    : 'Community Member';
   const canSendFriendRequest = Boolean(backendUserId && backendUserId !== post.user_id);
 
   const [selectedReaction, setSelectedReaction] = useState<ReactionKey | null>(
@@ -163,8 +168,11 @@ export function FeedPostCard({ post, sessionToken }: Props) {
       <View className="flex-row items-center gap-3 mb-3">
         <UserAvatar initial={initial} size={36} />
         <View className="flex-1">
-          <Text className="text-xs font-bold text-foreground">Community Member</Text>
-          <Text className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</Text>
+          <Text className="text-xs font-bold text-foreground">{authorLabel}</Text>
+          <Text className="text-xs text-muted-foreground">
+            {timeAgo(post.created_at)}
+            {isOwnPost ? ' · your post' : ''}
+          </Text>
         </View>
         {canSendFriendRequest && (
           <TouchableOpacity

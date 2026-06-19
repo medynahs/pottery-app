@@ -88,10 +88,18 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
     () => pieces.filter((piece) => !assignedPieceIdSet.has(piece.id) && piece.stage !== 'cemetery'),
     [assignedPieceIdSet, pieces]
   );
-  const pieceRows = React.useMemo(
-    () => (showPiecePicker ? [...assignedPieces, ...unassignedPieces] : assignedPieces),
-    [assignedPieces, showPiecePicker, unassignedPieces]
+  const glazeReadyPieces = React.useMemo(
+    () => unassignedPieces.filter((piece) => piece.stage.trim().toLowerCase() === 'glazing'),
+    [unassignedPieces],
   );
+  const pieceRows = React.useMemo(() => {
+    if (!showPiecePicker) return assignedPieces;
+    const unassigned =
+      firing?.type === 'glaze'
+        ? [...glazeReadyPieces, ...unassignedPieces.filter((p) => p.stage.trim().toLowerCase() !== 'glazing')]
+        : unassignedPieces;
+    return [...assignedPieces, ...unassigned];
+  }, [assignedPieces, firing?.type, glazeReadyPieces, showPiecePicker, unassignedPieces]);
 
   const linkedGlazePieces = React.useMemo(
     () => assignedPieces.filter((piece) => piece.glazeId),
@@ -148,6 +156,16 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
     updateFiringMutation.mutate({
       ...liveFiring,
       pieceIds: Array.from(new Set([...liveFiring.pieceIds, pieceId])),
+    });
+  };
+
+  const assignAllGlazeReady = () => {
+    if (glazeReadyPieces.length === 0) return;
+    const ids = glazeReadyPieces.map((piece) => piece.id);
+    assignPiecesToFiring(liveFiring.id, ids);
+    updateFiringMutation.mutate({
+      ...liveFiring,
+      pieceIds: Array.from(new Set([...liveFiring.pieceIds, ...ids])),
     });
   };
 
@@ -239,6 +257,8 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
               onSelectGlazeOutcome={(outcome) =>
                 setSelectedGlazeOutcome(outcome as GlazeOutcome | '')
               }
+              glazeReadyPieces={glazeReadyPieces}
+              onAssignAllGlazeReady={assignAllGlazeReady}
             />
           </ScrollView>
 

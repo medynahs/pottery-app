@@ -4,6 +4,7 @@ import {
   Camera,
   Crown,
   Disc,
+  Droplets,
   Flame,
   FlaskConical,
   Gem,
@@ -21,6 +22,8 @@ import {
 import type React from 'react';
 import type { Firing } from '@/src/types/kiln';
 import type { Piece } from '@/src/types/pieces';
+import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
+import { getGlazeRootId } from '@/src/screens/glazes/glazeVersionUtils';
 
 export type BadgeIconComponent = React.ComponentType<{ size?: number; color?: string }>;
 
@@ -38,6 +41,8 @@ export interface BadgeContext {
   handBuiltPieces: number;
   piecesWithPhoto: number;
   soldPieces: number;
+  /** Distinct glaze recipe families saved in the atlas. */
+  atlasRecipeFamilies: number;
 }
 
 export interface BadgeDef {
@@ -96,6 +101,39 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     border: 'border-teal-200',
     current: (ctx) => ctx.glazeFirings,
     target: 10,
+  },
+  {
+    id: 'atlas-starter',
+    name: 'Atlas Starter',
+    desc: '5 recipes saved in atlas',
+    icon: Droplets,
+    iconColor: 'hsl(200 75% 48%)',
+    bg: 'bg-sky-50',
+    border: 'border-sky-200',
+    current: (ctx) => ctx.atlasRecipeFamilies,
+    target: 5,
+  },
+  {
+    id: 'atlas-curator',
+    name: 'Atlas Curator',
+    desc: '15 recipes saved in atlas',
+    icon: BookOpen,
+    iconColor: 'hsl(213 70% 45%)',
+    bg: 'bg-indigo-50',
+    border: 'border-indigo-200',
+    current: (ctx) => ctx.atlasRecipeFamilies,
+    target: 15,
+  },
+  {
+    id: 'atlas-master',
+    name: 'Atlas Master',
+    desc: '30 recipes saved in atlas',
+    icon: Gem,
+    iconColor: 'hsl(270 60% 55%)',
+    bg: 'bg-purple-50',
+    border: 'border-purple-200',
+    current: (ctx) => ctx.atlasRecipeFamilies,
+    target: 30,
   },
   {
     id: 'centering',
@@ -264,7 +302,13 @@ export const PROFILE_TITLES: { min: number; title: string }[] = [
   { min: 18, title: 'Studio Legend' },
 ];
 
-export function buildBadgeContext(pieces: Piece[], firings: Firing[]): BadgeContext {
+export function buildBadgeContext(
+  pieces: Piece[],
+  firings: Firing[],
+  glazes: GlazeLibraryItem[] = [],
+): BadgeContext {
+  const atlasRecipeFamilies = new Set(glazes.map((glaze) => getGlazeRootId(glaze))).size;
+
   return {
     totalPieces: pieces.length,
     finishedPieces: pieces.filter((p) => p.stage === 'finished').length,
@@ -279,6 +323,7 @@ export function buildBadgeContext(pieces: Piece[], firings: Firing[]): BadgeCont
     handBuiltPieces: pieces.filter((p) => ['coiled', 'pinched', 'slab-built'].includes(p.formingMethod ?? '')).length,
     piecesWithPhoto: pieces.filter((p) => !!(p.photo || p.imgUrl)).length,
     soldPieces: pieces.filter((p) => p.status === 'sold').length,
+    atlasRecipeFamilies,
   };
 }
 

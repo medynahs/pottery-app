@@ -17,7 +17,6 @@ import {
   GLAZE_CLAY_TYPE_OPTIONS,
   GLAZE_FINISH_LABELS,
   GLAZE_FINISH_OPTIONS,
-  GLAZE_STATUS_EMOJI,
   GLAZE_STATUS_LABELS,
   GLAZE_STATUS_OPTIONS,
 } from '@/src/screens/glazes/types';
@@ -29,6 +28,7 @@ import { FormField, FormFieldRow } from './FormField';
 import { GlazeRecipeBuilder, hasValidRecipeIngredients } from './GlazeRecipeBuilder';
 import { MediaSlot } from './MediaSlot';
 import { Pill } from './Pill';
+import { GlazeStatusPill, GlazeStatusPillRow } from '@/src/screens/glazes/components/GlazeStatusPill';
 import type { GlazeDraft } from './types';
 
 export function AddGlazeModal({
@@ -140,17 +140,17 @@ export function AddGlazeModal({
           </FormField>
 
           <FormField label="Status">
-            <View className="flex-row flex-wrap gap-2">
+            <GlazeStatusPillRow>
               {GLAZE_STATUS_OPTIONS.map((option) => (
-                <Pill
+                <GlazeStatusPill
                   key={option}
-                  label={`${GLAZE_STATUS_EMOJI[option]} ${GLAZE_STATUS_LABELS[option]}`}
+                  status={option}
                   active={draft.status === option}
                   accessibilityLabel={`Set status to ${GLAZE_STATUS_LABELS[option]}`}
                   onPress={() => setDraft((d) => ({ ...d, status: option }))}
                 />
               ))}
-            </View>
+            </GlazeStatusPillRow>
           </FormField>
 
           <FormFieldRow>

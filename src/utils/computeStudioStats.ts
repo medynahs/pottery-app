@@ -321,7 +321,7 @@ export function computeStudioStats({
     const name = t.glazeNameSnapshot?.trim() || 'Unknown';
     glazeCounts.set(name, (glazeCounts.get(name) ?? 0) + 1);
   });
-  const glazeUsage = buildGlazeUsageRankings(pieces, glazeTests, glazes);
+  const glazeUsage = buildGlazeUsageRankings(pieces, glazeTests, glazes, periodId, now);
 
   // ── Process (median days in stage) ─────────────────────────────────
   const process: StageDuration[] = STAGE_TRANSITIONS.map(({ from, to }) => {

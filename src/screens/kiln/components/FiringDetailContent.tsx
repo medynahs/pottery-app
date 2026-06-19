@@ -61,6 +61,8 @@ interface FiringDetailContentProps {
   linkedGlazePieceCount?: number;
   selectedGlazeOutcome?: string;
   onSelectGlazeOutcome?: (outcome: string) => void;
+  glazeReadyPieces?: Piece[];
+  onAssignAllGlazeReady?: () => void;
 }
 
 export function FiringDetailContent({
@@ -89,6 +91,8 @@ export function FiringDetailContent({
   linkedGlazePieceCount = 0,
   selectedGlazeOutcome = '',
   onSelectGlazeOutcome,
+  glazeReadyPieces = [],
+  onAssignAllGlazeReady,
 }: FiringDetailContentProps) {
   const autoStatus = getAutoFiringStatus(liveFiring, kiln);
   const timeline = getCalculatedTimeline(liveFiring, kiln);
@@ -248,6 +252,34 @@ export function FiringDetailContent({
           </TouchableOpacity>
         ) : null}
       </View>
+
+      {isGlazeFiring && !isCompleted && showPiecePicker && glazeReadyPieces.length > 0 ? (
+        <Card className="p-4 mb-3 bg-primary/5 border-primary/20">
+          <Text className="text-sm font-semibold text-foreground mb-1">Glaze-ready pieces</Text>
+          <Text className="text-xs text-muted-foreground mb-3 leading-5">
+            {glazeReadyPieces.length} piece{glazeReadyPieces.length === 1 ? '' : 's'} waiting in glazing — tap to add or assign all.
+          </Text>
+          <View className="flex-row flex-wrap gap-2 mb-3">
+            {glazeReadyPieces.map((piece) => (
+              <TouchableOpacity
+                key={piece.id}
+                onPress={() => onToggleAssignPiece(piece.id)}
+                activeOpacity={0.75}
+                className="px-3 py-1.5 rounded-full border border-primary/30 bg-background"
+              >
+                <Text className="text-xs font-semibold text-primary" numberOfLines={1}>
+                  {piece.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {onAssignAllGlazeReady ? (
+            <Button onPress={onAssignAllGlazeReady} variant="outline" className="w-full">
+              <Text className="font-semibold text-primary">Assign all glaze-ready</Text>
+            </Button>
+          ) : null}
+        </Card>
+      ) : null}
 
       {pieceRows.length === 0 ? (
         <Text className="text-sm text-muted-foreground mb-4">No pieces assigned yet.</Text>

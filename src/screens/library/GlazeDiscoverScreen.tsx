@@ -7,6 +7,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DiscoverGrid } from './discover/DiscoverGrid';
 import { FilterPanel, SearchBar } from './discover/FilterPanel';
+import { isDiscoverRecipeSaved } from './discover/recipeLookup';
 import { DISCOVER_RECIPES } from './discover/recipes';
 import {
   normalizeCone,
@@ -20,7 +21,18 @@ export default function GlazeDiscoverScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
+  const glazes = useAppStore((s) => s.glazes);
   const userConeNorm = defaultGlazeTemp ? normalizeCone(defaultGlazeTemp) : null;
+
+  const savedRecipeIds = React.useMemo(() => {
+    const ids = new Set<string>();
+    for (const recipe of DISCOVER_RECIPES) {
+      if (isDiscoverRecipeSaved(recipe.id, glazes.map((g) => g.id))) {
+        ids.add(recipe.id);
+      }
+    }
+    return ids;
+  }, [glazes]);
 
   const [search, setSearch] = React.useState('');
   const [showFilters, setShowFilters] = React.useState(false);
@@ -102,6 +114,7 @@ export default function GlazeDiscoverScreen() {
           <DiscoverGrid
             recipes={filtered}
             userConeNorm={userConeNorm}
+            savedRecipeIds={savedRecipeIds}
             onPressRecipe={(recipe) =>
               router.push(`/discover-recipe?id=${encodeURIComponent(recipe.id)}` as never)
             }
