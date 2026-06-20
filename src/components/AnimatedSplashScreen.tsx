@@ -1,4 +1,8 @@
-import { SplashPotteryRing } from '@/src/components/SplashPotteryRing';
+import {
+  SplashBackgroundOrnaments,
+  SplashLettering,
+  SPLASH_LETTERING_SIZE,
+} from '@/src/components/SplashPotteryRing';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
@@ -8,79 +12,96 @@ type AnimatedSplashScreenProps = {
 };
 
 const SPLASH_HOLD_MS = 2600;
-const LOGO_STAGE_SIZE = 320;
+const LOGO_STAGE_SIZE = 420;
 
 export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
   const containerOpacity = useRef(new Animated.Value(1)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
-  const logoScale = useRef(new Animated.Value(0.92)).current;
-  const logoTranslateY = useRef(new Animated.Value(18)).current;
-  const ornamentOpacity = useRef(new Animated.Value(0)).current;
-  const ornamentScale = useRef(new Animated.Value(0.88)).current;
+  const logoScale = useRef(new Animated.Value(0.88)).current;
+  const logoTranslateY = useRef(new Animated.Value(22)).current;
+  const logoRotate = useRef(new Animated.Value(0)).current;
+  const letteringOpacity = useRef(new Animated.Value(0)).current;
+  const letteringScale = useRef(new Animated.Value(0.9)).current;
   const glowOpacity = useRef(new Animated.Value(0)).current;
-  const glowScale = useRef(new Animated.Value(0.8)).current;
-  const titleOpacity = useRef(new Animated.Value(0)).current;
-  const titleTranslateY = useRef(new Animated.Value(10)).current;
+  const glowScale = useRef(new Animated.Value(0.72)).current;
+  const glowPulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    let glowPulseLoop: Animated.CompositeAnimation | undefined;
+    const pulseTimer = setTimeout(() => {
+      glowPulseLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowPulse, {
+            toValue: 1,
+            duration: 1800,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowPulse, {
+            toValue: 0,
+            duration: 1800,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      glowPulseLoop.start();
+    }, 1200);
+
     const animation = Animated.sequence([
       Animated.parallel([
         Animated.timing(glowOpacity, {
           toValue: 1,
-          duration: 800,
+          duration: 900,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(glowScale, {
           toValue: 1,
-          duration: 1200,
+          duration: 1300,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(logoOpacity, {
           toValue: 1,
-          duration: 650,
+          duration: 700,
+          delay: 120,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
-        Animated.timing(logoScale, {
+        Animated.spring(logoScale, {
           toValue: 1,
-          duration: 1100,
-          easing: Easing.out(Easing.back(1.1)),
+          friction: 6,
+          tension: 70,
+          delay: 120,
           useNativeDriver: true,
         }),
         Animated.timing(logoTranslateY, {
           toValue: 0,
           duration: 1100,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(ornamentOpacity, {
-          toValue: 1,
-          duration: 720,
-          delay: 180,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(ornamentScale, {
-          toValue: 1,
-          duration: 900,
           delay: 120,
-          easing: Easing.out(Easing.back(1.05)),
+          easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
-      ]),
-      Animated.parallel([
-        Animated.timing(titleOpacity, {
+        Animated.timing(logoRotate, {
           toValue: 1,
-          duration: 420,
+          duration: 1100,
+          delay: 120,
+          easing: Easing.out(Easing.back(1.2)),
+          useNativeDriver: true,
+        }),
+        Animated.timing(letteringOpacity, {
+          toValue: 1,
+          duration: 800,
+          delay: 380,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
-        Animated.timing(titleTranslateY, {
-          toValue: 0,
-          duration: 520,
-          easing: Easing.out(Easing.cubic),
+        Animated.spring(letteringScale, {
+          toValue: 1,
+          friction: 7,
+          tension: 60,
+          delay: 380,
           useNativeDriver: true,
         }),
       ]),
@@ -97,46 +118,62 @@ export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
       if (finished) onFinish();
     });
 
-    return () => animation.stop();
+    return () => {
+      clearTimeout(pulseTimer);
+      animation.stop();
+      glowPulseLoop?.stop();
+    };
   }, [
     containerOpacity,
     glowOpacity,
+    glowPulse,
     glowScale,
+    letteringOpacity,
+    letteringScale,
     logoOpacity,
+    logoRotate,
     logoScale,
     logoTranslateY,
     onFinish,
-    ornamentOpacity,
-    ornamentScale,
-    titleOpacity,
-    titleTranslateY,
   ]);
+
+  const logoRotation = logoRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['-4deg', '0deg'],
+  });
+
+  const glowPulseScale = glowPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.04],
+  });
 
   return (
     <Animated.View
       pointerEvents="none"
       style={[styles.container, { opacity: containerOpacity }]}
     >
-      <View style={styles.logoWrap}>
+      <SplashBackgroundOrnaments />
+
+      <View style={styles.centerStage}>
         <Animated.View
           style={[
             styles.glow,
             {
               opacity: glowOpacity,
-              transform: [{ scale: glowScale }],
+              transform: [{ scale: Animated.multiply(glowScale, glowPulseScale) }],
             },
           ]}
         />
         <Animated.View
           style={[
-            styles.ornamentLayer,
+            styles.letteringWrap,
             {
-              opacity: ornamentOpacity,
-              transform: [{ scale: ornamentScale }],
+              opacity: letteringOpacity,
+              transform: [{ scale: letteringScale }],
             },
           ]}
         >
-          <SplashPotteryRing size={LOGO_STAGE_SIZE} />
+          <SplashLettering size={SPLASH_LETTERING_SIZE} />
         </Animated.View>
         <Animated.View
           style={{
@@ -144,6 +181,7 @@ export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
             transform: [
               { translateY: logoTranslateY },
               { scale: logoScale },
+              { rotate: logoRotation },
             ],
           }}
         >
@@ -154,37 +192,23 @@ export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
           />
         </Animated.View>
       </View>
-      <Animated.Text
-        style={[
-          styles.title,
-          {
-            opacity: titleOpacity,
-            transform: [{ translateY: titleTranslateY }],
-          },
-        ]}
-      >
-        Pottery Nook
-      </Animated.Text>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  centerStage: {
+    alignItems: 'center',
+    height: LOGO_STAGE_SIZE,
+    justifyContent: 'center',
+    width: LOGO_STAGE_SIZE,
+  },
   container: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     backgroundColor: '#FBF0E0',
     justifyContent: 'center',
     zIndex: 999,
-  },
-  logoWrap: {
-    alignItems: 'center',
-    height: LOGO_STAGE_SIZE,
-    justifyContent: 'center',
-    width: LOGO_STAGE_SIZE,
-  },
-  ornamentLayer: {
-    ...StyleSheet.absoluteFillObject,
   },
   glow: {
     backgroundColor: '#F1D7B4',
@@ -193,15 +217,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 240,
   },
+  letteringWrap: {
+    position: 'absolute',
+  },
   logo: {
     height: 220,
     width: 220,
-  },
-  title: {
-    color: '#7A4328',
-    fontFamily: 'Fraunces_700Bold',
-    fontSize: 26,
-    letterSpacing: 0.4,
-    marginTop: 12,
   },
 });

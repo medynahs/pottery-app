@@ -3,7 +3,7 @@
 **Purpose:** API and sync work needed so Glaze Atlas data survives cross-device use, account restore, and matches the mobile app model.
 
 **Last updated:** June 19, 2026  
-**FE status:** Glaze Atlas Phases 0–7 complete locally (`GLAZE-TAB-TASKS.md`)
+**FE status:** See [`GLAZE-TAB-TASKS.md`](./GLAZE-TAB-TASKS.md) — atlas ~65–70% complete; full glaze tracker ~35–40%
 
 ---
 
@@ -134,6 +134,20 @@ Discover tab ships a **bundled static catalog** today (`recipes.ts`, `inspiratio
 | BE-10.9 | Optional: full-text search index on catalog | Recipes (name, materials) + inspirations (title, notes) |
 
 **Acceptance:** Save Floating Blue from Discover → one atlas entry with provenance → reinstall restores saved state; catalog update bumps version → app fetches new content without release.
+
+---
+
+## P2 — Glaze mix logs (when FE Phase 1 ships)
+
+Proposed when `GlazeMixLog` lands in the app (`GLAZE-TAB-TASKS.md` FE-1.x).
+
+| # | Task | Notes |
+|---|------|-------|
+| BE-11.1 | `glaze_mix_logs` table + sync payload | `glaze_id`, `mixed_at`, `target_batch_g`, `ingredient_snapshot_json`, `notes` |
+| BE-11.2 | Optional weigh rows per mix | `{ material, target_g, actual_g, checked_at }[]` |
+| BE-11.3 | Return mix logs on glaze pull | Powers mix history on glaze detail across devices |
+
+**Acceptance:** Log mix on device A → mix history visible on device B on same glaze batch.
 
 ---
 

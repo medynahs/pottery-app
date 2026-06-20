@@ -1,202 +1,309 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import Svg, { Ellipse, Path } from 'react-native-svg';
+import { Image } from 'expo-image';
+import React, { useEffect, useRef } from 'react';
+import {
+  Animated,
+  Easing,
+  ImageSourcePropType,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
-const SILHOUETTE_COLOR = '#B8653A';
-const SILHOUETTE_OPACITY = 0.52;
+const CANVAS_WIDTH = 2048;
+const CANVAS_HEIGHT = 2732;
 
-type SilhouetteProps = {
-  size?: number;
-  color?: string;
-  opacity?: number;
+type BBox = {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
 };
 
-function BowlSilhouette({
-  size = 36,
-  color = SILHOUETTE_COLOR,
-  opacity = SILHOUETTE_OPACITY,
-}: SilhouetteProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path
-        d="M4.5 12.5C4.5 9.5 12 7 19.5 12.5C18.5 17.5 12.5 19.5 6 17.5C4.8 16.2 4.5 14.2 4.5 12.5Z"
-        fill={color}
-        opacity={opacity}
-      />
-      <Path
-        d="M6 12.5C12 14.5 18 12.5 18 12.5"
-        stroke={color}
-        strokeWidth={1.2}
-        opacity={opacity * 0.7}
-        fill="none"
-      />
-    </Svg>
-  );
-}
-
-function MugSilhouette({
-  size = 36,
-  color = SILHOUETTE_COLOR,
-  opacity = SILHOUETTE_OPACITY,
-}: SilhouetteProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path
-        d="M6.5 8.5H15.5V20.5H6.5V8.5Z"
-        fill={color}
-        opacity={opacity}
-      />
-      <Path
-        d="M15.5 10.5C19 11.5 19.5 15 16.5 17C15.5 17.8 15.5 16.5 15.5 15.5V10.5Z"
-        fill={color}
-        opacity={opacity}
-      />
-      <Path
-        d="M8 8.5V7C8 5.8 9.2 5 11 5H12"
-        stroke={color}
-        strokeWidth={1.4}
-        opacity={opacity * 0.85}
-        fill="none"
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function VaseSilhouette({
-  size = 36,
-  color = SILHOUETTE_COLOR,
-  opacity = SILHOUETTE_OPACITY,
-}: SilhouetteProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path
-        d="M9.5 4.5H14.5L16.5 19.5C15.5 21 8.5 21 7.5 19.5L9.5 4.5Z"
-        fill={color}
-        opacity={opacity}
-      />
-      <Path
-        d="M9.5 4.5H14.5"
-        stroke={color}
-        strokeWidth={1.2}
-        opacity={opacity * 0.9}
-      />
-    </Svg>
-  );
-}
-
-function PlateSilhouette({
-  size = 36,
-  color = SILHOUETTE_COLOR,
-  opacity = SILHOUETTE_OPACITY,
-}: SilhouetteProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Ellipse cx={12} cy={12} rx={9.5} ry={3.8} fill={color} opacity={opacity} />
-      <Ellipse
-        cx={12}
-        cy={11.2}
-        rx={6.5}
-        ry={2.2}
-        fill={color}
-        opacity={opacity * 0.45}
-      />
-    </Svg>
-  );
-}
-
-function WireToolSilhouette({
-  size = 36,
-  color = SILHOUETTE_COLOR,
-  opacity = SILHOUETTE_OPACITY,
-}: SilhouetteProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path
-        d="M5.5 17.5C8 13.5 16 10.5 18.5 6.5"
-        stroke={color}
-        strokeWidth={1.5}
-        opacity={opacity}
-        fill="none"
-        strokeLinecap="round"
-      />
-      <Ellipse cx={5.5} cy={17.5} rx={2.2} ry={1.6} fill={color} opacity={opacity} />
-      <Ellipse cx={18.5} cy={6.5} rx={2.2} ry={1.6} fill={color} opacity={opacity} />
-    </Svg>
-  );
-}
-
-function RibSilhouette({
-  size = 36,
-  color = SILHOUETTE_COLOR,
-  opacity = SILHOUETTE_OPACITY,
-}: SilhouetteProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path
-        d="M7 5.5C16 8.5 16 15.5 7 18.5C9 13 9 11 7 5.5Z"
-        fill={color}
-        opacity={opacity}
-      />
-    </Svg>
-  );
-}
-
-const RING_ITEMS: Array<{
-  angle: number;
-  Silhouette: React.ComponentType<SilhouetteProps>;
+type CanvasCropImageProps = {
+  source: ImageSourcePropType;
   size: number;
-}> = [
-  { angle: -90, Silhouette: BowlSilhouette, size: 38 },
-  { angle: -30, Silhouette: MugSilhouette, size: 36 },
-  { angle: 30, Silhouette: VaseSilhouette, size: 34 },
-  { angle: 90, Silhouette: PlateSilhouette, size: 40 },
-  { angle: 150, Silhouette: WireToolSilhouette, size: 36 },
-  { angle: 210, Silhouette: RibSilhouette, size: 34 },
+  bbox: BBox;
+};
+
+export function CanvasCropImage({ source, size, bbox }: CanvasCropImageProps) {
+  const bboxWidth = bbox.maxX - bbox.minX;
+  const bboxHeight = bbox.maxY - bbox.minY;
+  const scale = size / Math.max(bboxWidth, bboxHeight);
+  const imageWidth = CANVAS_WIDTH * scale;
+  const imageHeight = CANVAS_HEIGHT * scale;
+  const offsetX = -bbox.minX * scale + (size - bboxWidth * scale) / 2;
+  const offsetY = -bbox.minY * scale + (size - bboxHeight * scale) / 2;
+
+  return (
+    <View style={[styles.crop, { width: size, height: size }]}>
+      <Image
+        source={source}
+        style={{
+          height: imageHeight,
+          left: offsetX,
+          position: 'absolute',
+          top: offsetY,
+          width: imageWidth,
+        }}
+        contentFit="fill"
+      />
+    </View>
+  );
+}
+
+const LETTERING_BBOX = { minX: 716, minY: 630, maxX: 1330, maxY: 1749 };
+export const SPLASH_LETTERING_SIZE = 370;
+
+type SplashLetteringProps = {
+  size?: number;
+};
+
+export function SplashLettering({ size = SPLASH_LETTERING_SIZE }: SplashLetteringProps) {
+  return (
+    <CanvasCropImage
+      source={require('../../assets/images/lettering.png')}
+      size={size}
+      bbox={LETTERING_BBOX}
+    />
+  );
+}
+
+type OrnamentPlacement = {
+  bbox: BBox;
+  bottom?: number;
+  enterX: number;
+  enterY: number;
+  floatAmplitude: number;
+  key: string;
+  left?: number;
+  right?: number;
+  sizeRatio: number;
+  source: ImageSourcePropType;
+  top?: number;
+};
+
+const BACKGROUND_ORNAMENTS: OrnamentPlacement[] = [
+  {
+    key: 'rib',
+    source: require('../../assets/images/ribtool.png'),
+    sizeRatio: 0.17,
+    top: 0.055,
+    left: 0.035,
+    bbox: { minX: 382, minY: 180, maxX: 712, maxY: 528 },
+    enterX: -24,
+    enterY: -18,
+    floatAmplitude: 5,
+  },
+  {
+    key: 'kiln',
+    source: require('../../assets/images/kilnsplash.png'),
+    sizeRatio: 0.17,
+    top: 0.05,
+    right: 0.03,
+    bbox: { minX: 1580, minY: 177, maxX: 1912, maxY: 596 },
+    enterX: 22,
+    enterY: -16,
+    floatAmplitude: 4,
+  },
+  {
+    key: 'trim2',
+    source: require('../../assets/images/trimmingtool2.png'),
+    sizeRatio: 0.15,
+    top: 0.24,
+    right: 0.02,
+    bbox: { minX: 1664, minY: 976, maxX: 1843, maxY: 1405 },
+    enterX: 28,
+    enterY: 0,
+    floatAmplitude: 6,
+  },
+  {
+    key: 'wood',
+    source: require('../../assets/images/woodtool.png'),
+    sizeRatio: 0.14,
+    top: 0.4,
+    left: 0.02,
+    bbox: { minX: 272, minY: 954, maxX: 417, maxY: 1363 },
+    enterX: -26,
+    enterY: 0,
+    floatAmplitude: 5,
+  },
+  {
+    key: 'turntable',
+    source: require('../../assets/images/turntablewithvase.png'),
+    sizeRatio: 0.17,
+    bottom: 0.1,
+    right: 0.04,
+    bbox: { minX: 1414, minY: 1758, maxX: 1743, maxY: 2141 },
+    enterX: 18,
+    enterY: 22,
+    floatAmplitude: 5,
+  },
+  {
+    key: 'trim',
+    source: require('../../assets/images/trimmingtool.png'),
+    sizeRatio: 0.15,
+    bottom: 0.075,
+    left: 0.42,
+    bbox: { minX: 972, minY: 1902, maxX: 1087, maxY: 2342 },
+    enterX: 0,
+    enterY: 26,
+    floatAmplitude: 7,
+  },
+  {
+    key: 'whimsy',
+    source: require('../../assets/images/whimsyvase.png'),
+    sizeRatio: 0.16,
+    bottom: 0.115,
+    left: 0.035,
+    bbox: { minX: 258, minY: 1717, maxX: 534, maxY: 2159 },
+    enterX: -20,
+    enterY: 24,
+    floatAmplitude: 6,
+  },
 ];
 
-type SplashPotteryRingProps = {
-  size?: number;
+type AnimatedOrnamentProps = {
+  height: number;
+  index: number;
+  ornament: OrnamentPlacement;
+  width: number;
 };
 
-export function SplashPotteryRing({ size = 320 }: SplashPotteryRingProps) {
-  const center = size / 2;
-  const radius = size * 0.4125;
+function AnimatedOrnament({ ornament, index, width, height }: AnimatedOrnamentProps) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.55)).current;
+  const translateX = useRef(new Animated.Value(ornament.enterX)).current;
+  const translateY = useRef(new Animated.Value(ornament.enterY)).current;
+  const float = useRef(new Animated.Value(0)).current;
+
+  const iconSize = Math.round(
+    Math.min(width, height) * ornament.sizeRatio
+  );
+
+  useEffect(() => {
+    const enterDelay = 240 + index * 100;
+    let floatLoop: Animated.CompositeAnimation | undefined;
+
+    const enter = Animated.sequence([
+      Animated.delay(enterDelay),
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 0.88,
+          duration: 650,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.spring(scale, {
+          toValue: 1,
+          friction: 7,
+          tension: 70,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateX, {
+          toValue: 0,
+          duration: 720,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 720,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]);
+
+    enter.start(({ finished }) => {
+      if (!finished) return;
+
+      floatLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(float, {
+            toValue: 1,
+            duration: 2400 + index * 120,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(float, {
+            toValue: 0,
+            duration: 2400 + index * 120,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      floatLoop.start();
+    });
+
+    return () => {
+      enter.stop();
+      floatLoop?.stop();
+    };
+  }, [float, index, opacity, scale, translateX, translateY]);
+
+  const floatOffset = float.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, ornament.floatAmplitude],
+  });
+
+  const positionStyle = {
+    ...(ornament.top != null ? { top: height * ornament.top } : {}),
+    ...(ornament.bottom != null ? { bottom: height * ornament.bottom } : {}),
+    ...(ornament.left != null ? { left: width * ornament.left } : {}),
+    ...(ornament.right != null ? { right: width * ornament.right } : {}),
+  };
 
   return (
-    <View style={[styles.ring, { width: size, height: size }]}>
-      {RING_ITEMS.map(({ angle, Silhouette, size: iconSize }) => {
-        const rad = (angle * Math.PI) / 180;
-        const left = center + radius * Math.cos(rad) - iconSize / 2;
-        const top = center + radius * Math.sin(rad) - iconSize / 2;
+    <Animated.View
+      style={[
+        styles.ornament,
+        positionStyle,
+        {
+          opacity,
+          transform: [
+            { translateX },
+            { translateY: Animated.add(translateY, floatOffset) },
+            { scale },
+          ],
+        },
+      ]}
+    >
+      <CanvasCropImage
+        source={ornament.source}
+        size={iconSize}
+        bbox={ornament.bbox}
+      />
+    </Animated.View>
+  );
+}
 
-        return (
-          <View
-            key={angle}
-            style={[
-              styles.item,
-              {
-                left,
-                top,
-                width: iconSize,
-                height: iconSize,
-              },
-            ]}
-          >
-            <Silhouette size={iconSize} />
-          </View>
-        );
-      })}
+export function SplashBackgroundOrnaments() {
+  const { width, height } = useWindowDimensions();
+
+  return (
+    <View pointerEvents="none" style={styles.ornamentLayer}>
+      {BACKGROUND_ORNAMENTS.map((ornament, index) => (
+        <AnimatedOrnament
+          key={ornament.key}
+          ornament={ornament}
+          index={index}
+          width={width}
+          height={height}
+        />
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  ring: {
-    height: '100%',
-    width: '100%',
+  crop: {
+    overflow: 'hidden',
   },
-  item: {
+  ornament: {
     position: 'absolute',
+  },
+  ornamentLayer: {
+    ...StyleSheet.absoluteFillObject,
   },
 });
