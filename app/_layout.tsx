@@ -150,6 +150,8 @@ function AppShell() {
         <Stack.Screen name="friends" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="studios" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="notifications" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="challenge-gallery" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="hall-of-fame-winner/[id]" options={{ headerShown: false, presentation: 'card' }} />
       </Stack>
       <OfflineBanner />
       <ToastOverlay />

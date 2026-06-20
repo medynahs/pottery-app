@@ -9,15 +9,21 @@ import { ACTIVE_FESTIVAL } from '@/src/screens/community/data';
 import { FestivalSignUpSheet } from '@/src/screens/community/components/FestivalSignUpSheet';
 import { SubmitPieceSheet } from '@/src/screens/community/components/SubmitPieceSheet';
 import {
+  ChallengePhaseChip,
+  ChallengePhaseDevBar,
+} from '@/src/screens/community/components/challenge/ChallengePhaseUI';
+import { HallOfFameWinnerCard } from '@/src/screens/community/components/challenge/HallOfFameWinnerCard';
+import {
   challengeEntryId,
   pickPrimaryChallenge,
   toChallengeDisplay,
   type ChallengeDisplay,
 } from '@/src/screens/community/utils/challengeDisplay';
 import {
-  createMockEntryId,
   MOCK_UNDERWATER_CHALLENGE,
 } from '@/src/screens/community/utils/mockUnderwaterChallenge';
+import { useMockChallengeStore } from '@/src/screens/community/mock/mockChallengeStore';
+import type { ChallengePhase } from '@/src/screens/community/mock/challengeMockTypes';
 import {
   apiListChallenges,
   apiSubmitChallengeEntry,
@@ -26,6 +32,7 @@ import {
 } from '@/src/services/challenges';
 import { useAppStore } from '@/src/store';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import {
   Calendar,
   CheckCircle2,
@@ -118,22 +125,34 @@ function ChallengeStepRow({
 
 function ChallengeHero({
   challenge,
+  phase,
+  phaseSubtitle,
   joined,
+  hasSubmitted,
   enrolledTrackTitle,
   onPrimaryPress,
+  onSecondaryPress,
+  secondaryLabel,
   onLeavePress,
   onChangeTrackPress,
   loading,
   submitting,
+  primaryLabel,
 }: {
   challenge: ChallengeDisplay;
+  phase?: ChallengePhase;
+  phaseSubtitle?: string;
   joined: boolean;
+  hasSubmitted?: boolean;
   enrolledTrackTitle?: string | null;
   onPrimaryPress: () => void;
+  onSecondaryPress?: () => void;
+  secondaryLabel?: string;
   onLeavePress: () => void;
   onChangeTrackPress?: () => void;
   loading: boolean;
   submitting: boolean;
+  primaryLabel: string;
 }) {
   const deadlineLabel =
     challenge.daysLeft === null
@@ -220,6 +239,7 @@ function ChallengeHero({
         </Text>
 
         <View className="flex-row flex-wrap gap-2 mt-4">
+          {phase ? <ChallengePhaseChip phase={phase} subtitle={phaseSubtitle} /> : null}
           <View
             className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
             style={{
@@ -261,10 +281,33 @@ function ChallengeHero({
         </Text>
 
         <ChallengeStepRow step={1} title="Join the challenge" done={joined} active={!joined} isLast={false} />
-        <ChallengeStepRow step={2} title="Make your piece" done={false} active={joined} isLast={false} />
-        <ChallengeStepRow step={3} title="Share on the feed" done={false} active={false} isLast />
+        <ChallengeStepRow
+          step={2}
+          title="Make your piece"
+          done={joined && Boolean(hasSubmitted)}
+          active={joined && !hasSubmitted}
+          isLast={false}
+        />
+        <ChallengeStepRow
+          step={3}
+          title="Share on the feed"
+          done={joined && Boolean(hasSubmitted)}
+          active={false}
+          isLast
+        />
 
-        {joined ? (
+        {phase === 'closed' ? (
+          <View className="mt-1">
+            <PrimaryButton label={primaryLabel} onPress={onPrimaryPress} />
+            {secondaryLabel && onSecondaryPress ? (
+              <TouchableOpacity className="items-center mt-3 py-1" activeOpacity={0.7} onPress={onSecondaryPress}>
+                <Text className="text-xs font-semibold" style={{ color: COMMUNITY_THEME.accent }}>
+                  {secondaryLabel}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : joined ? (
           <View
             className="rounded-2xl p-4 mt-1 border"
             style={{
@@ -285,12 +328,19 @@ function ChallengeHero({
             </Text>
             <View className="mt-3">
               <PrimaryButton
-                label="Submit my entry"
+                label={primaryLabel}
                 onPress={onPrimaryPress}
                 loading={submitting}
                 disabled={submitting}
               />
             </View>
+            {secondaryLabel && onSecondaryPress ? (
+              <TouchableOpacity className="items-center mt-2.5 py-1" activeOpacity={0.7} onPress={onSecondaryPress}>
+                <Text className="text-xs font-semibold" style={{ color: COMMUNITY_THEME.accent }}>
+                  {secondaryLabel}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
             {onChangeTrackPress ? (
               <TouchableOpacity
                 className="items-center mt-2.5 py-1"
@@ -315,11 +365,18 @@ function ChallengeHero({
         ) : (
           <View className="mt-1">
             <PrimaryButton
-              label="Join this challenge"
+              label={primaryLabel}
               onPress={onPrimaryPress}
               loading={loading || submitting}
               disabled={loading || submitting}
             />
+            {secondaryLabel && onSecondaryPress ? (
+              <TouchableOpacity className="items-center mt-2.5 py-1" activeOpacity={0.7} onPress={onSecondaryPress}>
+                <Text className="text-xs font-semibold" style={{ color: COMMUNITY_THEME.accent }}>
+                  {secondaryLabel}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         )}
       </View>
@@ -425,14 +482,14 @@ function ComingSoonFestivals() {
 export function ChallengesTab() {
   const sessionToken = useAppStore((s) => s.sessionToken);
   const showToast = useAppStore((s) => s.showToast);
+  const router = useRouter();
+  const mock = useMockChallengeStore();
 
   const [challengeApi, setChallengeApi] = useState<BackendChallenge | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [apiEntryId, setApiEntryId] = useState<string | null>(null);
-  const [mockEntryId, setMockEntryId] = useState<string | null>(null);
-  const [mockTrackId, setMockTrackId] = useState<string | null>(null);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
@@ -442,9 +499,27 @@ export function ChallengesTab() {
     [challengeApi],
   );
   const isMock = !challengeApi || challenge.isMock === true;
-  const entryId = isMock ? mockEntryId : apiEntryId;
-  const joined = entryId !== null;
-  const enrolledTrack = ACTIVE_FESTIVAL.tracks.find((t) => t.id === mockTrackId) ?? null;
+  const joined = isMock ? mock.joinedTrackId !== null : apiEntryId !== null;
+  const hasSubmitted = isMock ? mock.hasSubmitted : false;
+  const enrolledTrack = ACTIVE_FESTIVAL.tracks.find((t) =>
+    t.id === (isMock ? mock.joinedTrackId : null),
+  ) ?? null;
+  const phase = isMock ? mock.phase : 'open';
+  const phaseSubtitle = isMock ? mock.getPhaseLabel().split(' · ')[1] : undefined;
+  const closedWinners = isMock ? mock.getClosedWinners() : [];
+
+  const primaryLabel = isMock
+    ? mock.getPrimaryCta()
+    : joined
+      ? 'Submit my entry'
+      : 'Join this challenge';
+
+  const openGallery = () => router.push('/challenge-gallery' as never);
+
+  const openHallOfFameTab = () => {
+    router.push('/(tabs)/community' as never);
+    showToast('Switch to the Hall of Fame tab to browse all winners', 'success');
+  };
 
   const load = useCallback(async () => {
     if (!sessionToken) {
@@ -477,14 +552,17 @@ export function ChallengesTab() {
   }, [load]);
 
   const handleMockJoin = (trackId: string) => {
-    setMockTrackId(trackId);
-    setMockEntryId(createMockEntryId());
+    mock.join(trackId);
     setSignUpOpen(false);
     showToast('You joined the preview challenge!', 'success');
   };
 
   const handleQuickJoin = async () => {
     if (isMock) {
+      if (phase === 'voting' || phase === 'closed') {
+        openGallery();
+        return;
+      }
       setSignUpOpen(true);
       return;
     }
@@ -510,6 +588,27 @@ export function ChallengesTab() {
   };
 
   const handlePrimaryPress = () => {
+    if (isMock) {
+      if (phase === 'voting') {
+        openGallery();
+        return;
+      }
+      if (phase === 'closed') {
+        openHallOfFameTab();
+        return;
+      }
+      if (joined && hasSubmitted) {
+        openGallery();
+        return;
+      }
+      if (joined) {
+        setSubmitOpen(true);
+        return;
+      }
+      setSignUpOpen(true);
+      return;
+    }
+
     if (joined) {
       setSubmitOpen(true);
       return;
@@ -517,10 +616,28 @@ export function ChallengesTab() {
     void handleQuickJoin();
   };
 
+  const handleSecondaryPress = () => {
+    if (phase === 'closed') {
+      openGallery();
+      return;
+    }
+    if (joined && hasSubmitted) {
+      openGallery();
+    }
+  };
+
+  const secondaryLabel =
+    phase === 'closed'
+      ? 'Browse all submissions'
+      : joined && hasSubmitted && phase === 'open'
+        ? 'Browse submissions'
+        : undefined;
+
   const handleSubmitEntry = async (payload?: { note: string; hasPhoto: boolean }) => {
     if (isMock) {
+      mock.submit(payload?.note ?? 'Submitted from preview flow');
       setSubmitOpen(false);
-      showToast('Preview entry saved — connect the API to publish for real', 'success');
+      showToast('Preview entry saved — browse the gallery to vote', 'success');
       return;
     }
 
@@ -548,8 +665,7 @@ export function ChallengesTab() {
 
   const handleLeave = async () => {
     if (isMock) {
-      setMockEntryId(null);
-      setMockTrackId(null);
+      mock.leave();
       setDropOpen(false);
       showToast('Left preview challenge', 'success');
       return;
@@ -593,29 +709,25 @@ export function ChallengesTab() {
 
   return (
     <>
-      {isMock && __DEV__ ? (
-        <View
-          className="rounded-2xl border px-3 py-2 mb-3"
-          style={{
-            backgroundColor: 'hsl(195 40% 94%)',
-            borderColor: 'hsl(195 30% 82%)',
-          }}
-        >
-          <Text className="text-[11px] leading-relaxed" style={{ color: 'hsl(195 45% 32%)' }}>
-            Preview mode — underwater challenge mock for testing join, track pick, submit, and leave.
-          </Text>
-        </View>
+      {isMock ? (
+        <ChallengePhaseDevBar phase={mock.phase} onChange={mock.setPhase} />
       ) : null}
 
       <ChallengeHero
         challenge={challenge}
+        phase={isMock ? phase : undefined}
+        phaseSubtitle={phaseSubtitle}
         joined={joined}
+        hasSubmitted={hasSubmitted}
         enrolledTrackTitle={enrolledTrack?.title ?? null}
         onPrimaryPress={handlePrimaryPress}
+        onSecondaryPress={secondaryLabel ? handleSecondaryPress : undefined}
+        secondaryLabel={secondaryLabel}
         onLeavePress={() => setDropOpen(true)}
-        onChangeTrackPress={isMock && joined ? () => setSignUpOpen(true) : undefined}
+        onChangeTrackPress={isMock && joined && phase === 'open' ? () => setSignUpOpen(true) : undefined}
         loading={loading}
         submitting={submitting}
+        primaryLabel={primaryLabel}
       />
 
       <View className="mt-2">
@@ -670,7 +782,18 @@ export function ChallengesTab() {
         </View>
       </View>
 
-      {isMock ? <MockTrackCards enrolledTrackId={mockTrackId} /> : null}
+      {isMock && phase === 'closed' ? (
+        <View className="mt-2">
+          <Text className="text-base font-serif font-bold mb-3" style={{ color: COMMUNITY_THEME.ink }}>
+            This challenge winners
+          </Text>
+          {closedWinners.map((winner) => (
+            <HallOfFameWinnerCard key={winner.id} winner={winner} compact />
+          ))}
+        </View>
+      ) : null}
+
+      {isMock && phase !== 'closed' ? <MockTrackCards enrolledTrackId={mock.joinedTrackId} /> : null}
 
       {!isMock ? <ComingSoonFestivals /> : null}
 
