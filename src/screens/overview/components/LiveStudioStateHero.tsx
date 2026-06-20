@@ -1,4 +1,5 @@
 import { Text } from '@/src/components/ui/text';
+import type { QueuePreview } from '@/src/screens/overview/utils/buildQueuePreview';
 import type { PulseCard } from '@/src/screens/overview/utils/oneThingCard';
 import type { PetMood } from '@/src/screens/overview/utils/petMood';
 import { PET_MOOD_META } from '@/src/screens/overview/utils/petMood';
@@ -22,6 +23,7 @@ type StageChip = {
 type LiveStudioStateHeroProps = {
   heroReveal: Animated.Value;
   oneThingCard: PulseCard | null;
+  queuePreview: QueuePreview | null;
   pieceCount: number;
   missionsCompleted: number;
   missionsTotal: number;
@@ -39,6 +41,7 @@ type LiveStudioStateHeroProps = {
 export function LiveStudioStateHero({
   heroReveal,
   oneThingCard,
+  queuePreview,
   pieceCount,
   missionsCompleted,
   missionsTotal,
@@ -139,6 +142,29 @@ export function LiveStudioStateHero({
               </TouchableOpacity>
             ))}
           </View>
+
+          {queuePreview ? (
+            <TouchableOpacity
+              onPress={() => onOneThingPress(queuePreview.route)}
+              activeOpacity={0.82}
+              className="flex-row items-center justify-between rounded-2xl px-3 py-2 mb-2.5"
+              style={{
+                backgroundColor: 'rgba(255, 247, 236, 0.14)',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 244, 224, 0.28)',
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={queuePreview.label}
+            >
+              <View className="flex-row items-center gap-2 flex-1 pr-2">
+                <Text style={{ fontSize: 13 }}>📋</Text>
+                <Text className="text-[12px] font-medium flex-1" style={{ color: HERO_CREAM }}>
+                  {queuePreview.label}
+                </Text>
+              </View>
+              <Text className="text-[10px] font-semibold" style={{ color: '#FFD4A8' }}>View queue</Text>
+            </TouchableOpacity>
+          ) : null}
 
           <View className="rounded-2xl px-3 py-2.5 mt-1" style={{ backgroundColor: 'rgba(255, 252, 245, 0.94)' }}>
           <View className="flex-row items-start justify-between gap-3">

@@ -298,7 +298,7 @@ export function generateStudioRhythmSuggestions(
     for (const ritual of todayRituals) {
       suggestions.push({
         type: 'goal-focus',
-        text: `${ritual.emoji} Today's your ${ritual.label.toLowerCase()} day.`,
+        text: `Today's your ${ritual.label.toLowerCase()} day.`,
         route: '/profile/studio-rhythm',
         actionLabel: 'Open Rhythm',
       });

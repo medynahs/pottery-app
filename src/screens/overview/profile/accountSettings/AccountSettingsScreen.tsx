@@ -6,7 +6,6 @@ import { SettingsRow } from '@/src/components/SettingsRow';
 import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
 import { ME_QUERY_KEY } from '@/src/hooks/useCurrentUser';
-import { presentCustomerCenter } from '@/src/hooks/useEntitlements';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { AVAILABLE_KILNKIN_COMPANIONS, type KilnkinCompanion } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
 import { PremiumFeature } from '@/src/utils/premiumGate';
@@ -228,7 +227,7 @@ export default function AccountSettingsScreen() {
             iconBg="bg-amber-50"
             label={isPremium ? 'Manage Subscription' : 'Upgrade to Premium'}
             value={isPremium ? 'Premium' : undefined}
-            onPress={isPremium ? () => void presentCustomerCenter() : () => router.push('/premium')}
+            onPress={() => router.push(isPremium ? '/manage-subscription' : '/premium')}
           />
           <SettingsRow
             icon={PawPrint}

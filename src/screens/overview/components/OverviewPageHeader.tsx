@@ -1,5 +1,6 @@
 import { Text } from '@/src/components/ui/text';
 import { STAGE_CONFIG } from '@/src/screens/overview/studioRythm/studioRhythm';
+import { STAGE_RHYTHM_ICONS } from '@/src/screens/overview/studioRythm/studioRhythmIcons';
 import { BarChart2 } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
@@ -52,18 +53,22 @@ export function OverviewPageHeader({
             ) : (
               <>
                 <Text className="text-xs text-muted-foreground">{todayLabel} ·</Text>
-                {todayRhythm.stages.map((s) => (
+                {todayRhythm.stages.map((s) => {
+                  const stageKey = s as keyof typeof STAGE_CONFIG;
+                  const cfg = STAGE_CONFIG[stageKey];
+                  const StageIcon = STAGE_RHYTHM_ICONS[stageKey];
+                  return (
                   <View
                     key={s}
                     className="flex-row items-center gap-1 rounded-full px-2 py-0.5"
                     style={{ backgroundColor: 'hsl(35 55% 86%)' }}
                   >
-                    <Text style={{ fontSize: 11 }}>{STAGE_CONFIG[s as keyof typeof STAGE_CONFIG].emoji}</Text>
+                    <StageIcon size={11} color={cfg.text} />
                     <Text className="text-[11px] font-medium" style={{ color: 'hsl(32 60% 35%)' }}>
-                      {STAGE_CONFIG[s as keyof typeof STAGE_CONFIG].label}
+                      {cfg.label}
                     </Text>
                   </View>
-                ))}
+                );})}
               </>
             )}
           </View>

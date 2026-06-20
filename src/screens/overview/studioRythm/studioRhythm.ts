@@ -83,7 +83,9 @@ export interface StudioEvent {
 export interface Ritual {
   id: string;
   label: string;
-  emoji: string;
+  /** @deprecated Use iconKey — kept for persisted data migration */
+  emoji?: string;
+  iconKey?: string;
   enabled: boolean;
   cadence: 'weekly' | 'fortnightly' | 'monthly';
   dayOfWeek?: number;
@@ -113,18 +115,18 @@ export const EVENT_CATEGORIES: EventCategory[] = [
   { id: 'custom',       label: 'Custom',       emoji: '⭐', color: '#888780' },
 ];
 
-export const STAGE_CONFIG: Record<StageKey, { label: string; bg: string; text: string; emoji: string }> = {
-  throw:  { label: 'Throw',  bg: '#FAEEDA', text: '#854F0B', emoji: '🏺' },
-  trim:   { label: 'Trim',   bg: '#E1F5EE', text: '#0F6E56', emoji: '✂️' },
-  glaze:  { label: 'Glaze',  bg: '#EEEDFE', text: '#3C3489', emoji: '🖌️' },
-  bisque: { label: 'Bisque', bg: '#FAECE7', text: '#712B13', emoji: '🔥' },
+export const STAGE_CONFIG: Record<StageKey, { label: string; bg: string; text: string }> = {
+  throw:  { label: 'Throw',  bg: '#FAEEDA', text: '#854F0B' },
+  trim:   { label: 'Trim',   bg: '#E1F5EE', text: '#0F6E56' },
+  glaze:  { label: 'Glaze',  bg: '#EEEDFE', text: '#3C3489' },
+  bisque: { label: 'Bisque', bg: '#FAECE7', text: '#712B13' },
 };
 
 export const DEFAULT_RITUALS: Ritual[] = [
-  { id: 'ritual-glaze-mixing',   label: 'Glaze mixing session', emoji: '🧪', enabled: false, cadence: 'weekly',      dayOfWeek: 4 },
-  { id: 'ritual-studio-cleanup', label: 'Studio deep clean',    emoji: '🧹', enabled: false, cadence: 'weekly',      dayOfWeek: 5 },
-  { id: 'ritual-photo-shoot',    label: 'Product photos',       emoji: '📷', enabled: false, cadence: 'fortnightly', dayOfWeek: 6 },
-  { id: 'ritual-test-tiles',     label: 'Test tile review',     emoji: '🔬', enabled: false, cadence: 'monthly' },
+  { id: 'ritual-glaze-mixing',   label: 'Glaze mixing session', iconKey: 'palette',  enabled: false, cadence: 'weekly',      dayOfWeek: 4 },
+  { id: 'ritual-studio-cleanup', label: 'Studio deep clean',    iconKey: 'sparkles', enabled: false, cadence: 'weekly',      dayOfWeek: 5 },
+  { id: 'ritual-photo-shoot',    label: 'Product photos',       iconKey: 'camera',   enabled: false, cadence: 'fortnightly', dayOfWeek: 6 },
+  { id: 'ritual-test-tiles',     label: 'Test tile review',     iconKey: 'layers',   enabled: false, cadence: 'monthly' },
 ];
 
 /** Suggested weekly rhythm shown as a template in the rhythm editor — not applied until the user configures it. */

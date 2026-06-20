@@ -34,6 +34,7 @@ export function OverviewPage() {
     glazeTests,
     glazes,
     oneThingCard,
+    queuePreview,
     pieces,
     missionsSummary,
     stageChips,
@@ -110,6 +111,7 @@ export function OverviewPage() {
           <LiveStudioStateHero
             heroReveal={heroReveal}
             oneThingCard={oneThingCard}
+            queuePreview={queuePreview}
             pieceCount={pieces.length}
             missionsCompleted={missionsSummary.completedCount}
             missionsTotal={missionsSummary.total}

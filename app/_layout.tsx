@@ -119,6 +119,7 @@ function AppShell() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="premium" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="manage-subscription" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="stage-customization" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="clay-bodies" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="forming-methods" options={{ headerShown: false, presentation: 'modal' }} />
@@ -136,7 +137,7 @@ function AppShell() {
         <Stack.Screen name="app-customization" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="account-settings" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="privacy-settings" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="profile/studio-rhythm" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="profile/studio-rhythm" options={{ headerShown: false }} />
         <Stack.Screen name="overview-alerts" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="kilnkin" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="analytics" options={{ headerShown: false }} />

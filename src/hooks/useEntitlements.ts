@@ -14,12 +14,43 @@ import Purchases, {
     type PurchasesPackage,
 } from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
+import { planLabelFromProductId, openPlatformSubscriptionSettings } from '../utils/subscriptionSettings';
 import { useAppStore } from '../store/appStore';
 
 const IOS_KEY     = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY     ?? '';
 const ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? '';
+const ENTITLEMENT_ID = 'PotteryNook Pro';
 
 let rcConfigured = false;
+
+export interface SubscriptionDetails {
+  planLabel: string | null;
+  expirationDate: string | null;
+  willRenew: boolean;
+  store: string | null;
+}
+
+export function isRevenueCatConfigured(): boolean {
+  return rcConfigured;
+}
+
+export async function getSubscriptionDetails(): Promise<SubscriptionDetails | null> {
+  if (!rcConfigured) return null;
+  try {
+    const info = await Purchases.getCustomerInfo();
+    const entitlement = info.entitlements.active[ENTITLEMENT_ID];
+    if (!entitlement) return null;
+
+    return {
+      planLabel: planLabelFromProductId(entitlement.productIdentifier) ?? entitlement.productIdentifier,
+      expirationDate: entitlement.expirationDate ?? null,
+      willRenew: entitlement.willRenew,
+      store: entitlement.store ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
 
 /** Idempotent — safe to call multiple times; configures RC once per process. */
 export function configureRevenueCat(): void {
@@ -36,7 +67,7 @@ export function configureRevenueCat(): void {
     // this covers purchases from the native paywall, restores, expirations, etc.
     Purchases.addCustomerInfoUpdateListener((info) => {
       useAppStore.getState().setIsPremium(
-        !!info.entitlements.active['PotteryNook Pro'],
+        !!info.entitlements.active[ENTITLEMENT_ID],
       );
     });
 
@@ -71,7 +102,7 @@ export function useEntitlements() {
       try {
         const { customerInfo } = await Purchases.logIn(backendUserId);
         identifiedRef.current = backendUserId;
-        setIsPremium(!!customerInfo.entitlements.active['PotteryNook Pro']);
+        setIsPremium(!!customerInfo.entitlements.active[ENTITLEMENT_ID]);
       } catch {
         // RC identification failure is non-fatal — entitlements stay unchanged
       }
@@ -97,7 +128,7 @@ export function useEntitlements() {
     if (!rcConfigured) return;
     try {
       const info = await Purchases.getCustomerInfo();
-      setIsPremium(!!info.entitlements.active['PotteryNook Pro']);
+      setIsPremium(!!info.entitlements.active[ENTITLEMENT_ID]);
     } catch {
       // suppress
     }
@@ -110,7 +141,7 @@ export function useEntitlements() {
     setError(null);
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
-      setIsPremium(!!customerInfo.entitlements.active['PotteryNook Pro']);
+      setIsPremium(!!customerInfo.entitlements.active[ENTITLEMENT_ID]);
       return true;
     } catch (e: unknown) {
       const rcError = e as { userCancelled?: boolean };
@@ -130,7 +161,7 @@ export function useEntitlements() {
     setError(null);
     try {
       const customerInfo = await Purchases.restorePurchases();
-      setIsPremium(!!customerInfo.entitlements.active['PotteryNook Pro']);
+      setIsPremium(!!customerInfo.entitlements.active[ENTITLEMENT_ID]);
     } catch {
       setError('Restore failed. Please try again.');
     } finally {
@@ -158,7 +189,7 @@ export async function presentPaywall(): Promise<boolean> {
   if (!rcConfigured) return false;
   try {
     const result = await RevenueCatUI.presentPaywallIfNeeded({
-      requiredEntitlementIdentifier: 'PotteryNook Pro',
+      requiredEntitlementIdentifier: ENTITLEMENT_ID,
     });
     return result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED;
   } catch (e) {
@@ -168,14 +199,26 @@ export async function presentPaywall(): Promise<boolean> {
 }
 
 /**
+ * Open subscription management — RevenueCat Customer Center when available,
+ * otherwise the platform subscription settings page.
+ */
+export async function openSubscriptionManagement(): Promise<boolean> {
+  if (isRevenueCatConfigured()) {
+    try {
+      await RevenueCatUI.presentCustomerCenter();
+      return true;
+    } catch (e) {
+      console.warn('[RC] Error presenting Customer Center:', e);
+    }
+  }
+
+  return openPlatformSubscriptionSettings();
+}
+
+/**
  * Open the RevenueCat Customer Center (subscription management self-service UI).
  * No-ops in Expo Go / web where the native module is unavailable.
  */
 export async function presentCustomerCenter(): Promise<void> {
-  if (!rcConfigured) return;
-  try {
-    await RevenueCatUI.presentCustomerCenter();
-  } catch (e) {
-    console.warn('[RC] Error presenting Customer Center:', e);
-  }
+  await openSubscriptionManagement();
 }

@@ -1,15 +1,32 @@
 import { Text } from '@/src/components/ui/text';
 import React from 'react';
 import { View } from 'react-native';
+import type { RhythmIconComponent } from '../studioRhythmIcons';
+import { RhythmIconBadge } from './RhythmIconBadge';
 
-export function DryingChip({ emoji, label, value, unit = 'd' }: { emoji: string; label: string; value: number; unit?: string }) {
+export function DryingChip({
+  Icon,
+  label,
+  value,
+  unit = 'd',
+  color,
+  bg,
+}: {
+  Icon: RhythmIconComponent;
+  label: string;
+  value: number;
+  unit?: string;
+  color: string;
+  bg: string;
+}) {
   return (
-    <View className="flex-row items-center gap-2 bg-muted/40 rounded-xl px-3 py-2">
-      <Text className="text-sm">{emoji}</Text>
-      <View>
-        <Text className="text-xs text-muted-foreground">{label}</Text>
-        <Text className="text-sm font-semibold text-foreground">{value}{unit}</Text>
-      </View>
+    <View className="flex-1 min-w-[46%] rounded-xl border border-border bg-background px-3 py-3">
+      <RhythmIconBadge Icon={Icon} color={color} backgroundColor={bg} size="sm" />
+      <Text className="text-xs font-medium text-muted-foreground mt-2">{label}</Text>
+      <Text className="text-lg font-bold text-foreground mt-0.5">
+        {value}
+        <Text className="text-sm font-semibold text-muted-foreground">{unit}</Text>
+      </Text>
     </View>
   );
 }

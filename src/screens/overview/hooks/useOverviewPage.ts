@@ -8,6 +8,7 @@ import { getStudioSignals } from '@/src/screens/overview/utils/getStudioSignals'
 import { getKilnkinNudge } from '@/src/screens/overview/utils/kilnkinNudge';
 import { mapPiecesToStudioPositions } from '@/src/screens/overview/utils/mapPiecesToStudioPositions';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
+import { buildQueuePreview } from '@/src/screens/overview/utils/buildQueuePreview';
 import { ACTIVE_FIRING_STATES, buildOneThingCard } from '@/src/screens/overview/utils/oneThingCard';
 import { getPetMood, PAT_REACTIONS } from '@/src/screens/overview/utils/petMood';
 import { useAppStore, useVisiblePieces } from '@/src/store';
@@ -228,6 +229,11 @@ export function useOverviewPage() {
     [activeFiring, studioSignals, stagePositions]
   );
 
+  const queuePreview = React.useMemo(
+    () => buildQueuePreview(firings, kilns),
+    [firings, kilns]
+  );
+
   const activityFeed = React.useMemo(() => buildActivityFeed(pieces), [pieces]);
 
   const hour = new Date().getHours();
@@ -301,6 +307,7 @@ export function useOverviewPage() {
     glazeTests,
     glazes,
     oneThingCard,
+    queuePreview,
     pieces,
     missionsSummary,
     stageChips,

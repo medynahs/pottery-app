@@ -10,7 +10,9 @@ import {
   PREMIUM_MONTHLY_PRICE_EUR,
   premiumDisplayPrice,
 } from '@/src/constants/premium';
-import { presentCustomerCenter, useEntitlements } from '@/src/hooks/useEntitlements';
+import { openSubscriptionManagement, useEntitlements } from '@/src/hooks/useEntitlements';
+import { openPlatformSubscriptionSettings } from '@/src/utils/subscriptionSettings';
+import { useAppStore } from '@/src/store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
@@ -33,7 +35,7 @@ import {
   View,
 } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type PlanKey = 'annual' | 'monthly';
 
@@ -45,8 +47,17 @@ const ONBOARDING_GRADIENT = {
 };
 
 function PaywallScreenShell({ children }: { children: React.ReactNode }) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff7ea' }} edges={['top', 'bottom']}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: '#fff7ea',
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
+    >
       <LinearGradient
         colors={[...ONBOARDING_GRADIENT.colors]}
         locations={[...ONBOARDING_GRADIENT.locations]}
@@ -54,7 +65,7 @@ function PaywallScreenShell({ children }: { children: React.ReactNode }) {
       />
       <StatusBar barStyle="dark-content" />
       {children}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -92,9 +103,11 @@ function CloseButton({ onPress }: { onPress: () => void }) {
 
 export default function PremiumUpgradeScreen() {
   const router = useRouter();
+  const showToast = useAppStore((s) => s.showToast);
   const { isPremium, offering, purchase, restore, isLoading, error } = useEntitlements();
   const [selected, setSelected] = useState<PlanKey>('annual');
   const [busy, setBusy] = useState(false);
+  const [managing, setManaging] = useState(false);
 
   const plans: Array<{
     key: PlanKey;
@@ -137,19 +150,26 @@ export default function PremiumUpgradeScreen() {
     }
   }
 
-  async function handleManage() {
-    setBusy(true);
+  async function handleManageSubscription() {
+    setManaging(true);
     try {
-      await presentCustomerCenter();
+      // Prefer App Store / Play Store — most reliable right after a native purchase.
+      let opened = await openPlatformSubscriptionSettings();
+      if (!opened) {
+        opened = await openSubscriptionManagement();
+      }
+      if (!opened) {
+        showToast('Could not open subscription settings', 'error');
+      }
     } finally {
-      setBusy(false);
+      setManaging(false);
     }
   }
 
   if (isPremium) {
     return (
       <PaywallScreenShell>
-        <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4, alignItems: 'flex-end' }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, alignItems: 'flex-end' }}>
           <CloseButton onPress={() => router.back()} />
         </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 }}>
@@ -182,8 +202,8 @@ export default function PremiumUpgradeScreen() {
 
           <TouchableOpacity
             activeOpacity={0.85}
-            disabled={busy}
-            onPress={handleManage}
+            disabled={managing}
+            onPress={() => void handleManageSubscription()}
             style={{
               marginTop: 36,
               backgroundColor: 'rgba(255, 252, 246, 0.94)',
@@ -193,9 +213,10 @@ export default function PremiumUpgradeScreen() {
               paddingVertical: 15,
               paddingHorizontal: 32,
               alignItems: 'center',
+              opacity: managing ? 0.72 : 1,
             }}
           >
-            {busy ? (
+            {managing ? (
               <ActivityIndicator color="hsl(24 25% 40%)" />
             ) : (
               <Text style={{ color: 'hsl(24 25% 25%)', fontWeight: '700', fontSize: 15 }}>
