@@ -2,6 +2,7 @@ import type { Firing } from '@/src/types/kiln';
 import type { Piece } from '@/src/types/pieces';
 import type { GlazeLibraryItem, GlazeTestTile } from '@/src/screens/glazes/types';
 import { buildGlazeUsageRankings } from '@/src/screens/glazes/glazeUsageAnalytics';
+import { LIFECYCLE_ORDER, STAGE_LABEL } from '@/src/screens/pieces/utils/constants';
 import {
   buildMonthBuckets,
   isWithinPeriod,
@@ -60,6 +61,36 @@ export type RankedUsage = {
 
 export type StageDuration = { from: string; to: string; medianDays: number; sample: number };
 
+export type PipelineStage = {
+  stage: string;
+  label: string;
+  count: number;
+  pct: number;
+};
+
+export type StudioInventory = {
+  wipTotal: number;
+  finishedUnsoldCount: number;
+  finishedUnsoldValue: number;
+  finishedUnsoldCost: number;
+  potentialMargin: number | null;
+};
+
+export type CycleInsight = {
+  medianDays: number | null;
+  sample: number;
+  bottleneck: StageDuration | null;
+};
+
+export type MarginGroupRow = {
+  label: string;
+  count: number;
+  avgCost: number;
+  avgPrice: number | null;
+  avgMargin: number | null;
+  marginPct: number | null;
+};
+
 export type StudioStats = {
   period: { id: AnalyticsPeriodId; label: string };
   summary: {
@@ -107,6 +138,20 @@ export type StudioStats = {
     glazes: RankedUsage[];
   };
   process: StageDuration[];
+  /** Active pieces by lifecycle stage (current snapshot, not period-scoped). */
+  pipeline: PipelineStage[];
+  /** Finished unsold shelf inventory (current snapshot). */
+  inventory: StudioInventory;
+  /** Forming → finished cycle time and slowest stage transition. */
+  cycle: CycleInsight;
+  margins: {
+    byForm: MarginGroupRow[];
+    byClay: MarginGroupRow[];
+    byFormingMethod: MarginGroupRow[];
+    effectiveHourlyRate: number | null;
+  };
+  /** Cemetery cause-of-death breakdown for the selected period. */
+  losses: RankedUsage[];
 };
 
 function num(v: number | undefined | null): number {
@@ -171,6 +216,150 @@ const STAGE_TRANSITIONS: { from: string; to: string }[] = [
   { from: 'bone-dry', to: 'bisque' },
   { from: 'glazing', to: 'glaze-fired' },
 ];
+
+const CYCLE_START_STAGES = new Set(['idea', 'forming']);
+const CYCLE_END_STAGES = FINISHED_STAGES;
+
+function pieceListPrice(piece: Piece): number | null {
+  const price = num(piece.retailPriceTarget) || num(piece.suggestedPrice);
+  return price > 0 ? price : null;
+}
+
+function computePipeline(pieces: Piece[]): PipelineStage[] {
+  const active = pieces.filter((p) => p.stage.trim().toLowerCase() !== 'cemetery');
+  const total = active.length;
+  const counts = new Map<string, number>();
+  active.forEach((p) => {
+    const stage = p.stage.trim().toLowerCase();
+    counts.set(stage, (counts.get(stage) ?? 0) + 1);
+  });
+
+  return LIFECYCLE_ORDER.map((stage) => {
+    const count = counts.get(stage) ?? 0;
+    return {
+      stage,
+      label: STAGE_LABEL[stage] ?? stage,
+      count,
+      pct: total > 0 ? (count / total) * 100 : 0,
+    };
+  });
+}
+
+function computeInventory(pieces: Piece[]): StudioInventory {
+  const active = pieces.filter((p) => p.stage.trim().toLowerCase() !== 'cemetery');
+  const wipTotal = active.filter((p) => !FINISHED_STAGES.has(p.stage.trim().toLowerCase())).length;
+  const unsoldFinished = pieces.filter(
+    (p) => FINISHED_STAGES.has(p.stage.trim().toLowerCase()) && p.status !== 'sold',
+  );
+  const finishedUnsoldValue = unsoldFinished.reduce((sum, p) => sum + (pieceListPrice(p) ?? 0), 0);
+  const finishedUnsoldCost = unsoldFinished.reduce((sum, p) => sum + num(p.totalCost), 0);
+  const potentialMargin =
+    finishedUnsoldValue > 0 ? finishedUnsoldValue - finishedUnsoldCost : null;
+
+  return {
+    wipTotal,
+    finishedUnsoldCount: unsoldFinished.length,
+    finishedUnsoldValue,
+    finishedUnsoldCost,
+    potentialMargin,
+  };
+}
+
+function computeCycleInsight(pieces: Piece[], process: StageDuration[]): CycleInsight {
+  const durations: number[] = [];
+  pieces.forEach((p) => {
+    if (p.stage.trim().toLowerCase() === 'cemetery') return;
+    let startTs: string | null = null;
+    for (const entry of p.timeline) {
+      if (CYCLE_START_STAGES.has(entry.stage.trim().toLowerCase())) {
+        startTs = entry.timestamp;
+        break;
+      }
+    }
+    startTs ??= p.createdAt;
+
+    let endTs: string | null = null;
+    for (let i = p.timeline.length - 1; i >= 0; i--) {
+      if (CYCLE_END_STAGES.has(p.timeline[i].stage.trim().toLowerCase())) {
+        endTs = p.timeline[i].timestamp;
+        break;
+      }
+    }
+    if (!startTs || !endTs) return;
+    const days =
+      (new Date(endTs).getTime() - new Date(startTs).getTime()) / (1000 * 60 * 60 * 24);
+    if (Number.isFinite(days) && days >= 0) durations.push(days);
+  });
+
+  const bottleneck =
+    process.length > 0
+      ? process.reduce((best, row) => (row.medianDays > best.medianDays ? row : best), process[0])
+      : null;
+
+  return {
+    medianDays: durations.length > 0 ? median(durations) : null,
+    sample: durations.length,
+    bottleneck: bottleneck && bottleneck.sample > 0 ? bottleneck : null,
+  };
+}
+
+function computeMarginGroups(
+  pieces: Piece[],
+  key: 'form' | 'clay' | 'formingMethod',
+): MarginGroupRow[] {
+  const eligible = pieces.filter(
+    (p) =>
+      (FINISHED_STAGES.has(p.stage.trim().toLowerCase()) || p.status === 'sold') &&
+      num(p.totalCost) > 0,
+  );
+  const groups = new Map<string, Piece[]>();
+
+  eligible.forEach((p) => {
+    const label =
+      key === 'form'
+        ? p.form?.trim() || 'Unspecified form'
+        : key === 'clay'
+          ? p.clay?.trim() || 'Unspecified clay'
+          : p.formingMethod?.trim() || 'Unspecified method';
+    const bucket = groups.get(label) ?? [];
+    bucket.push(p);
+    groups.set(label, bucket);
+  });
+
+  return [...groups.entries()]
+    .map(([label, items]) => {
+      const avgCost = items.reduce((sum, p) => sum + num(p.totalCost), 0) / items.length;
+      const prices = items.map((p) => pieceListPrice(p)).filter((v): v is number => v != null);
+      const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
+      const margins = items
+        .map((p) => {
+          const price = pieceListPrice(p);
+          return price != null ? price - num(p.totalCost) : null;
+        })
+        .filter((v): v is number => v != null);
+      const avgMargin = margins.length > 0 ? margins.reduce((a, b) => a + b, 0) / margins.length : null;
+      const marginPct =
+        avgPrice != null && avgPrice > 0 && avgMargin != null
+          ? (avgMargin / avgPrice) * 100
+          : null;
+      return { label, count: items.length, avgCost, avgPrice, avgMargin, marginPct };
+    })
+    .sort((a, b) => b.count - a.count);
+}
+
+function computeLosses(pieces: Piece[], period: AnalyticsPeriod): RankedUsage[] {
+  const cemetery = pieces.filter(
+    (p) =>
+      p.stage.trim().toLowerCase() === 'cemetery' &&
+      isWithinPeriod(pieceEffectiveDate(p), period),
+  );
+  const counts = new Map<string, number>();
+  cemetery.forEach((p) => {
+    const cause = p.causeOfDeath?.trim() || 'Unspecified';
+    counts.set(cause, (counts.get(cause) ?? 0) + 1);
+  });
+  return rankUsage(counts, cemetery.length);
+}
 
 export type ComputeStudioStatsArgs = {
   pieces: Piece[];
@@ -346,6 +535,14 @@ export function computeStudioStats({
     return { from, to, medianDays: median(durations), sample: durations.length };
   }).filter((d) => d.sample > 0);
 
+  const pipeline = computePipeline(pieces);
+  const inventory = computeInventory(pieces);
+  const cycle = computeCycleInsight(pieces, process);
+  const soldWorkHours = soldPieces.reduce((sum, p) => sum + num(p.workHours), 0);
+  const effectiveHourlyRate =
+    soldWorkHours > 0 ? (soldRevenue - soldCost) / soldWorkHours : null;
+  const losses = computeLosses(pieces, period);
+
   return {
     period: { id: period.id, label: period.label },
     summary: {
@@ -393,6 +590,16 @@ export function computeStudioStats({
       glazes: glazeUsage.length > 0 ? glazeUsage : rankUsage(glazeCounts, glazeTests.length),
     },
     process,
+    pipeline,
+    inventory,
+    cycle,
+    margins: {
+      byForm: computeMarginGroups(pieces, 'form'),
+      byClay: computeMarginGroups(pieces, 'clay'),
+      byFormingMethod: computeMarginGroups(pieces, 'formingMethod'),
+      effectiveHourlyRate,
+    },
+    losses,
   };
 }
 

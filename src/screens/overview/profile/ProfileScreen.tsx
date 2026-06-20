@@ -6,16 +6,15 @@ import { useRouter } from 'expo-router';
 import { BarChart2, CalendarDays, Crown } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { TabBar } from '../../../config/TabBar';
+import { ProfileTabBar } from './components/ProfileTabBar';
 import { ProfileHeader } from './components/ProfileHeader';
 import { JourneyTab } from './tabs/JourneyTab';
-import { PortfolioTab } from './tabs/PortfolioTab';
 import { PostsTab } from './tabs/PostsTab';
 import type { Tab } from './types';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>('portfolio');
+  const [activeTab, setActiveTab] = useState<Tab>('journey');
   const meQuery = useCurrentUser();
   const isPremium = useAppStore((s) => s.isPremium);
   const { requestAccess, PaywallGate } = usePremiumGate();
@@ -154,10 +153,9 @@ export default function ProfileScreen() {
         </View>
       </TouchableOpacity>
 
-      <TabBar active={activeTab} onSelect={setActiveTab} />
-      {activeTab === 'portfolio' && <PortfolioTab />}
-      {activeTab === 'journey'   && <JourneyTab />}
-      {activeTab === 'posts'     && <PostsTab />}
+      <ProfileTabBar active={activeTab} onSelect={setActiveTab} />
+      {activeTab === 'journey' && <JourneyTab />}
+      {activeTab === 'posts'   && <PostsTab />}
       {PaywallGate}
       <View className="h-8" />
     </ScrollView>

@@ -10,6 +10,7 @@ import type { StageAdvanceCelebration } from '../modals/StageAdvanceCelebrationM
 import type { StageAdvanceCapture, StageAdvanceRequest } from '../modals/StageAdvanceFlowModal';
 import type { GlazeOutcome } from '@/src/types/pieces';
 import { isGlazeOutcome } from '@/src/screens/glazes/glazePieceLink';
+import { isPieceForSale } from '../utils/pieceListing';
 import { FINISHED_STAGE_ID, getAdvanceOrder, getConfiguredNextStage } from '../utils/stageFlow';
 import { STAGE_ICONS, resolveStageIcon } from '../utils/stageIconUtils';
 import { schedulePiecesSync, usePiecesSyncStatus } from './usePiecesSync';
@@ -113,7 +114,8 @@ export function usePiecesScreen() {
       (filters.forms.length === 0 || (!!p.form && filters.forms.includes(p.form))) &&
       (filters.formingMethods.length === 0 || (!!p.formingMethod && filters.formingMethods.includes(p.formingMethod))) &&
       (filters.statuses.length === 0 || (!!p.status && filters.statuses.includes(p.status))) &&
-      (filters.firingTypes.length === 0 || (!!p.firingType && filters.firingTypes.includes(p.firingType)))
+      (filters.firingTypes.length === 0 || (!!p.firingType && filters.firingTypes.includes(p.firingType))) &&
+      (!filters.forSaleOnly || isPieceForSale(p))
     );
     switch (sortKey) {
       case 'oldest':

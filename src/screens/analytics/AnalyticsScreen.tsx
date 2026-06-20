@@ -1,5 +1,7 @@
-import { Card } from '@/src/components/ui/card';
+import { SectionLabel } from '@/src/components/SectionLabel';
 import { Text } from '@/src/components/ui/text';
+import { usePremiumGate } from '@/src/hooks/usePremiumGate';
+import { formatGlazeUsageHint } from '@/src/screens/glazes/glazeUsageAnalytics';
 import { useVisiblePieces, useAppStore } from '@/src/store';
 import {
   computeStudioStats,
@@ -7,36 +9,48 @@ import {
   type PieceEconomicRow,
   type RankedUsage,
 } from '@/src/utils/computeStudioStats';
-import {
-  ANALYTICS_PERIOD_OPTIONS,
-  type AnalyticsPeriodId,
-} from '@/src/utils/analyticsPeriods';
-import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { formatGlazeUsageHint } from '@/src/screens/glazes/glazeUsageAnalytics';
-import { GlazeUsageDrillDownSheet } from '@/src/screens/analytics/GlazeUsageDrillDownSheet';
-import { checkPremium, PremiumFeature } from '@/src/utils/premiumGate';
+import { type AnalyticsPeriodId } from '@/src/utils/analyticsPeriods';
 import { buildStudioExportPayload, shareStudioExport, summarizeExport } from '@/src/utils/exportStudioData';
+import { checkPremium, PremiumFeature } from '@/src/utils/premiumGate';
 import { useRouter } from 'expo-router';
 import {
-  ArrowLeft,
   Coins,
   Download,
   FlameKindling,
   Layers,
   Receipt,
   TrendingUp,
+  Workflow,
 } from 'lucide-react-native';
 import React from 'react';
 import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { Firing } from '@/src/types/kiln';
 import { FIRING_TYPE_LABELS } from '../kiln/constants';
 import { formatReadyDate } from '../kiln/firingEstimations';
+import { GlazeUsageDrillDownSheet } from './GlazeUsageDrillDownSheet';
+import { ANALYTICS_THEME, CHART_COLORS } from './analyticsTheme';
+import {
+  AnalyticsSectionCard,
+  EmptyHint,
+  MetricGrid,
+  MetricTile,
+} from './components/AnalyticsCards';
+import { AnalyticsHeroBanner, AnalyticsStickyChrome, type DashboardStat } from './components/AnalyticsDashboardShell';
+import { SegmentedControl } from './components/AnalyticsControls';
+import { AnalyticsTabBar, type AnalyticsTab, type AnalyticsTabId } from './components/AnalyticsTabBar';
+import { DonutChart } from './components/charts/DonutChart';
+import { FiringSplitChart } from './components/charts/FiringSplitChart';
+import { HorizontalBarChart, StageDurationChart } from './components/charts/HorizontalBarChart';
+import { MonthlyTrendChart } from './components/charts/MonthlyTrendChart';
+import { PipelineChart } from './components/charts/PipelineChart';
+import { BottleneckCallout, InventorySummary } from './components/charts/InsightCards';
+import { MarginByGroupList } from './components/charts/MarginByGroupList';
 
 type EconomicsFilter = 'all' | 'finished' | 'sold' | 'lost';
+type MarginGroupView = 'form' | 'clay' | 'method';
 
-type AnalyticsTab = 'overview' | 'costs' | 'firings' | 'pieces' | 'materials';
-
-const ANALYTICS_TABS: { id: AnalyticsTab; label: string; icon: React.ComponentType<{ size?: number; color?: string }> }[] = [
+const ANALYTICS_TABS: AnalyticsTab[] = [
   { id: 'overview', label: 'Overview', icon: TrendingUp },
   { id: 'costs', label: 'Costs', icon: Coins },
   { id: 'firings', label: 'Firings', icon: FlameKindling },
@@ -45,44 +59,29 @@ const ANALYTICS_TABS: { id: AnalyticsTab; label: string; icon: React.ComponentTy
 ];
 
 const STAGE_LABELS: Record<string, string> = {
-  idea: 'Idea', forming: 'Forming', 'leather-hard': 'Leather Hard',
-  trimming: 'Trimming', drying: 'Drying', 'bone-dry': 'Bone Dry',
-  bisque: 'Bisque', glazing: 'Glazing', 'glaze-fired': 'Glaze Fired',
-  finished: 'Finished', cemetery: 'Cemetery',
+  idea: 'Idea',
+  forming: 'Forming',
+  'leather-hard': 'Leather Hard',
+  trimming: 'Trimming',
+  drying: 'Drying',
+  'bone-dry': 'Bone Dry',
+  bisque: 'Bisque',
+  glazing: 'Glazing',
+  'glaze-fired': 'Glaze Fired',
+  finished: 'Finished',
+  cemetery: 'Cemetery',
 };
 
 const COST_BREAKDOWN_META: { key: keyof CostBreakdown; label: string; color: string }[] = [
-  { key: 'clay', label: 'Clay', color: 'hsl(24 45% 55%)' },
-  { key: 'glaze', label: 'Glaze', color: 'hsl(200 45% 55%)' },
-  { key: 'energy', label: 'Energy', color: 'hsl(44 70% 55%)' },
-  { key: 'firing', label: 'Firing fee', color: 'hsl(8 60% 58%)' },
-  { key: 'labor', label: 'Labor', color: 'hsl(142 40% 50%)' },
-  { key: 'admin', label: 'Admin', color: 'hsl(280 35% 60%)' },
-  { key: 'overhead', label: 'Overhead', color: 'hsl(24 20% 55%)' },
-  { key: 'other', label: 'Other', color: 'hsl(24 10% 70%)' },
+  { key: 'clay', label: 'Clay', color: CHART_COLORS.clay },
+  { key: 'glaze', label: 'Glaze', color: CHART_COLORS.glazeMaterial },
+  { key: 'energy', label: 'Energy', color: CHART_COLORS.energy },
+  { key: 'firing', label: 'Firing fee', color: CHART_COLORS.firing },
+  { key: 'labor', label: 'Labor', color: CHART_COLORS.labor },
+  { key: 'admin', label: 'Admin', color: CHART_COLORS.admin },
+  { key: 'overhead', label: 'Overhead', color: CHART_COLORS.overhead },
+  { key: 'other', label: 'Other', color: CHART_COLORS.other },
 ];
-
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <Card className="flex-1 p-4">
-      <Text className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</Text>
-      <Text className="text-2xl font-serif font-bold text-foreground">{value}</Text>
-      {sub ? <Text className="text-[11px] text-muted-foreground mt-0.5">{sub}</Text> : null}
-    </Card>
-  );
-}
-
-function SectionLabel({ title, icon, hint }: { title: string; icon: React.ReactNode; hint?: string }) {
-  return (
-    <View className="mb-3 mt-5">
-      <View className="flex-row items-center gap-2">
-        {icon}
-        <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</Text>
-      </View>
-      {hint ? <Text className="text-[11px] text-muted-foreground mt-1">{hint}</Text> : null}
-    </View>
-  );
-}
 
 export default function AnalyticsScreen() {
   const router = useRouter();
@@ -107,9 +106,10 @@ export default function AnalyticsScreen() {
   const userType = useAppStore((s) => s.onboardingProfile.userType);
 
   const [periodId, setPeriodId] = React.useState<AnalyticsPeriodId>('this-month');
-  const [tab, setTab] = React.useState<AnalyticsTab>('overview');
+  const [tab, setTab] = React.useState<AnalyticsTabId>('overview');
   const [trendMetric, setTrendMetric] = React.useState<'cost' | 'fired'>('cost');
   const [economicsFilter, setEconomicsFilter] = React.useState<EconomicsFilter>('all');
+  const [marginGroupView, setMarginGroupView] = React.useState<MarginGroupView>('form');
   const [exporting, setExporting] = React.useState(false);
   const [glazeUsageFamilyKey, setGlazeUsageFamilyKey] = React.useState<string | null>(null);
 
@@ -134,14 +134,17 @@ export default function AnalyticsScreen() {
   };
 
   const exportSummary = React.useMemo(
-    () => summarizeExport(buildStudioExportPayload({
-      pieces,
-      firings,
-      kilns,
-      glazes,
-      glazeTests,
-      glazeCollectionNames,
-    })),
+    () =>
+      summarizeExport(
+        buildStudioExportPayload({
+          pieces,
+          firings,
+          kilns,
+          glazes,
+          glazeTests,
+          glazeCollectionNames,
+        }),
+      ),
     [pieces, firings, kilns, glazes, glazeTests, glazeCollectionNames],
   );
 
@@ -179,180 +182,265 @@ export default function AnalyticsScreen() {
     }
   }, [stats.economics, economicsFilter]);
 
-  // ── Role-ordered KPI strip ──────────────────────────────────────────
-  const summaryCards = React.useMemo(() => {
-    const finished = (
-      <StatCard key="finished" label="Finished" value={String(stats.summary.piecesFinished)} sub={`${stats.summary.piecesCreated} created`} />
-    );
-    const productionCost = (
-      <StatCard key="prod" label="Production cost" value={money(stats.costs.productionTotal, { dash: true })} sub="est. to make" />
-    );
-    const soldRevenue = (
-      <StatCard key="rev" label="Sold revenue" value={money(stats.revenue.soldRevenue, { dash: true })} sub={`${stats.summary.soldCount} sold`} />
-    );
-    const avgCost = (
-      <StatCard key="avg" label="Avg cost / piece" value={money(stats.costs.avgPerPiece, { dash: true })} />
-    );
-    const firingsDone = (
-      <StatCard key="firings" label="Firings" value={String(stats.firings.count)} sub={`${stats.firings.bisqueCount} bisque · ${stats.firings.glazeCount} glaze`} />
-    );
-    const piecesFired = (
-      <StatCard key="fired" label="Pieces fired" value={String(stats.firings.piecesFired)} sub={`${stats.firings.uniquePiecesFired} unique`} />
-    );
-    const firingSpend = (
-      <StatCard key="spend" label="Firing fees paid" value={money(stats.firings.totalCost, { dash: true })} />
-    );
-    const avgFiring = (
-      <StatCard key="avgfir" label="Avg / firing" value={money(stats.firings.avgCostPerFiring, { dash: true })} />
-    );
+  const dashboard = React.useMemo(() => {
+    if (isStudioOwner) {
+      const statsRow: DashboardStat[] = [
+        { key: 'fees', label: 'Fees paid', value: money(stats.firings.totalCost, { dash: true }), sub: 'to kiln', emoji: '🔥' },
+        { key: 'avg', label: 'Avg / firing', value: money(stats.firings.avgCostPerFiring, { dash: true }), emoji: '💰' },
+        { key: 'load', label: 'Avg load', value: stats.firings.avgPiecesPerFiring != null ? stats.firings.avgPiecesPerFiring.toFixed(1) : '—', sub: 'pieces', emoji: '📦' },
+        { key: 'unique', label: 'Unique fired', value: String(stats.firings.uniquePiecesFired), emoji: '🏺' },
+      ];
+      return {
+        headline: String(stats.firings.count),
+        headlineSub: `${stats.firings.piecesFired} pieces through the kiln · ${stats.firings.bisqueCount} bisque · ${stats.firings.glazeCount} glaze`,
+        ringValue: stats.firings.successRate,
+        ringLabel: 'Success',
+        ringSub: stats.firings.piecesLost > 0 ? `${stats.firings.piecesLost} lost` : undefined,
+        stats: statsRow,
+      };
+    }
 
-    return isStudioOwner
-      ? [firingsDone, piecesFired, firingSpend, avgFiring]
-      : [finished, productionCost, soldRevenue, avgCost];
+    const statsRow: DashboardStat[] = [
+      { key: 'cost', label: 'Production', value: money(stats.costs.productionTotal, { dash: true }), sub: 'est. cost', emoji: '🧱' },
+      { key: 'rev', label: 'Sold', value: money(stats.revenue.soldRevenue, { dash: true }), sub: `${stats.summary.soldCount} pieces`, emoji: '💵' },
+      { key: 'avg', label: 'Avg / piece', value: money(stats.costs.avgPerPiece, { dash: true }), emoji: '📊' },
+      { key: 'hours', label: 'Work hours', value: stats.summary.workHours > 0 ? `${Math.round(stats.summary.workHours)}h` : '—', emoji: '⏱️' },
+    ];
+
+    return {
+      headline: String(stats.summary.piecesFinished),
+      headlineSub: `${stats.summary.piecesCreated} created this period · ${stats.summary.soldCount} sold · ${stats.summary.piecesInCemetery} lost`,
+      ringValue: stats.summary.survivalRate,
+      ringLabel: 'Survival',
+      ringSub: 'finished vs lost',
+      stats: statsRow,
+    };
   }, [isStudioOwner, money, stats]);
+
+  const costDonutSegments = React.useMemo(
+    () =>
+      COST_BREAKDOWN_META.map((m) => ({
+        label: m.label,
+        color: m.color,
+        value: stats.costs.breakdown[m.key],
+      })).filter((s) => s.value > 0),
+    [stats.costs.breakdown],
+  );
+
+  const marginGroupRows = React.useMemo(() => {
+    switch (marginGroupView) {
+      case 'clay':
+        return stats.margins.byClay;
+      case 'method':
+        return stats.margins.byFormingMethod;
+      default:
+        return stats.margins.byForm;
+    }
+  }, [marginGroupView, stats.margins]);
+
+  const openPiecesStage = React.useCallback(
+    (stage: string) => {
+      router.push(`/(tabs)/pieces?stage=${stage}` as never);
+    },
+    [router],
+  );
 
   if (!isPremium) {
     return <>{PaywallGate}</>;
   }
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      {/* Header */}
-      <View className="flex-row items-center gap-3 px-5 py-4 border-b border-border">
-        <TouchableOpacity onPress={() => router.back()} className="p-1 -ml-1">
-          <ArrowLeft size={20} color="hsl(24 20% 40%)" />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-lg font-serif font-bold text-foreground">Studio Analytics</Text>
-          <Text className="text-[11px] text-muted-foreground">{stats.period.label} · estimated figures</Text>
-        </View>
-        <TrendingUp size={20} color="hsl(24 20% 45%)" />
-      </View>
-
-      {/* Period picker */}
-      <View className="flex-row gap-2 px-4 pt-3 pb-3">
-        {ANALYTICS_PERIOD_OPTIONS.map((opt) => {
-          const active = opt.id === periodId;
-          return (
-            <TouchableOpacity
-              key={opt.id}
-              onPress={() => setPeriodId(opt.id)}
-              activeOpacity={0.8}
-              className={`flex-1 rounded-xl py-2 items-center border ${active ? 'bg-primary border-primary' : 'bg-card border-border'}`}
-            >
-              <Text className={`text-[11px] font-semibold ${active ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Category tabs */}
-      <View className="border-b border-border">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 12, gap: 4 }}
-        >
-          {ANALYTICS_TABS.map(({ id, label, icon: Icon }) => {
-            const active = id === tab;
-            return (
-              <TouchableOpacity
-                key={id}
-                onPress={() => setTab(id)}
-                activeOpacity={0.8}
-                className="flex-row items-center gap-1.5 px-3 py-3"
-                style={active ? { borderBottomWidth: 2, borderBottomColor: 'hsl(24 45% 45%)' } : undefined}
-              >
-                <Icon size={15} color={active ? 'hsl(24 45% 40%)' : 'hsl(24 10% 60%)'} />
-                <Text className={`text-xs font-semibold ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+    <View className="flex-1" style={{ backgroundColor: ANALYTICS_THEME.pageBg }}>
+      <AnalyticsStickyChrome
+        paddingTop={insets.top}
+        periodId={periodId}
+        periodLabel={stats.period.label}
+        onPeriodChange={setPeriodId}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 32,
+        }}
       >
+        <AnalyticsHeroBanner
+          periodLabel={stats.period.label}
+          headline={dashboard.headline}
+          headlineSub={dashboard.headlineSub}
+          ringValue={dashboard.ringValue}
+          ringLabel={dashboard.ringLabel}
+          ringSub={dashboard.ringSub}
+          stats={dashboard.stats}
+        />
+
+        <AnalyticsTabBar tabs={ANALYTICS_TABS} activeTab={tab} onChange={setTab} />
+
+        <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
         {tab === 'overview' ? (
           <>
-            <SectionLabel title="Summary" icon={<TrendingUp size={14} color="hsl(24 20% 40%)" />} />
-            <View className="flex-row gap-3 mb-3">{summaryCards.slice(0, 2)}</View>
-            <View className="flex-row gap-3">{summaryCards.slice(2, 4)}</View>
+            <AnalyticsSectionCard
+              title="Studio pipeline"
+              hint="Where your active work sits right now"
+              accent="overview"
+              icon={<Workflow size={18} color={CHART_COLORS.production} />}
+            >
+              <PipelineChart stages={stats.pipeline} onStagePress={openPiecesStage} />
+            </AnalyticsSectionCard>
 
-            <SectionLabel
+            <AnalyticsSectionCard
+              title="Shelf & flow"
+              hint="Work in progress and finished inventory on hand"
+              accent="pieces"
+              icon={<Receipt size={18} color={CHART_COLORS.success} />}
+            >
+              <InventorySummary
+                wipTotal={stats.inventory.wipTotal}
+                finishedUnsoldCount={stats.inventory.finishedUnsoldCount}
+                finishedUnsoldValue={stats.inventory.finishedUnsoldValue}
+                potentialMargin={stats.inventory.potentialMargin}
+                money={money}
+              />
+            </AnalyticsSectionCard>
+
+            {stats.cycle.medianDays != null || stats.cycle.bottleneck ? (
+              <AnalyticsSectionCard
+                title="Cycle & bottlenecks"
+                hint="How long pieces take and where they stall"
+                accent="overview"
+                icon={<TrendingUp size={18} color={CHART_COLORS.pieces} />}
+              >
+                <BottleneckCallout cycle={stats.cycle} stageLabels={STAGE_LABELS} />
+              </AnalyticsSectionCard>
+            ) : null}
+
+            <AnalyticsSectionCard
               title="Monthly trend"
-              icon={<TrendingUp size={14} color="hsl(24 20% 40%)" />}
-              hint="Rolling 6 months"
-            />
-            <Card className="p-4">
-              <View className="flex-row gap-2 mb-4 self-start">
-                {(['cost', 'fired'] as const).map((m) => {
-                  const active = m === trendMetric;
-                  return (
-                    <TouchableOpacity
-                      key={m}
-                      onPress={() => setTrendMetric(m)}
-                      activeOpacity={0.8}
-                      className={`rounded-lg px-3 py-1 border ${active ? 'bg-primary border-primary' : 'bg-muted/40 border-border'}`}
-                    >
-                      <Text className={`text-[11px] font-semibold ${active ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
-                        {m === 'cost' ? 'Costs' : 'Pieces fired'}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+              hint="6-month rolling view with area chart"
+              accent="overview"
+              icon={<TrendingUp size={18} color={CHART_COLORS.production} />}
+            >
+              <SegmentedControl
+                options={[
+                  { value: 'cost', label: 'Costs' },
+                  { value: 'fired', label: 'Pieces fired' },
+                ]}
+                value={trendMetric}
+                onChange={setTrendMetric}
+              />
+              <View className="mt-5 -mx-1">
+                <MonthlyTrendChart data={stats.monthlyTrend} metric={trendMetric} money={money} />
               </View>
-              <TrendChart data={stats.monthlyTrend} metric={trendMetric} money={money} />
-            </Card>
+            </AnalyticsSectionCard>
+
+            {!isStudioOwner && stats.costs.productionTotal > 0 ? (
+              <AnalyticsSectionCard
+                title="Where costs go"
+                hint="Production spend by category"
+                accent="costs"
+                icon={<Coins size={18} color={CHART_COLORS.production} />}
+              >
+                <DonutChart
+                  segments={costDonutSegments}
+                  centerLabel="Total"
+                  centerValue={money(stats.costs.productionTotal)}
+                  layout="side"
+                />
+              </AnalyticsSectionCard>
+            ) : null}
+
+            {stats.materials.glazes.length > 0 ? (
+              <AnalyticsSectionCard
+                title="Top glazes"
+                hint="Most-used glaze families"
+                accent="materials"
+                icon={<Layers size={18} color={CHART_COLORS.glazeMaterial} />}
+              >
+                <HorizontalBarChart
+                  rows={stats.materials.glazes.map((r) => ({
+                    label: r.label,
+                    value: r.count,
+                    pct: r.pct,
+                    color: CHART_COLORS.glazeMaterial,
+                    detail: `${r.count} · ${Math.round(r.pct)}%`,
+                  }))}
+                  maxRows={4}
+                />
+              </AnalyticsSectionCard>
+            ) : null}
           </>
         ) : null}
 
         {tab === 'costs' ? (
           <>
-            <SectionLabel
-              title="Costs"
-              icon={<Coins size={14} color="hsl(24 20% 40%)" />}
-              hint="What it cost to make your work vs. firing fees paid"
-            />
-            <View className="flex-row gap-3 mb-3">
-              <StatCard label="Production cost" value={money(stats.costs.productionTotal, { dash: true })} sub="materials + labor" />
-              <StatCard label="Firing fees" value={money(stats.costs.firingTotal, { dash: true })} sub="paid to kiln" />
-            </View>
-            <View className="flex-row gap-3 mb-3">
-              <StatCard label="Avg / piece" value={money(stats.costs.avgPerPiece, { dash: true })} />
-              <StatCard label="Cost / work hr" value={money(stats.costs.costPerWorkHour, { dash: true })} />
-            </View>
+            <MetricGrid>
+              <MetricTile tone="production" emoji="🧱" label="Production cost" value={money(stats.costs.productionTotal, { dash: true })} sub="materials + labor" />
+              <MetricTile tone="firing" emoji="🔥" label="Firing fees" value={money(stats.costs.firingTotal, { dash: true })} sub="paid to kiln" />
+              <MetricTile tone="neutral" emoji="🏺" label="Avg / piece" value={money(stats.costs.avgPerPiece, { dash: true })} />
+              <MetricTile tone="neutral" emoji="⏱️" label="Cost / work hr" value={money(stats.costs.costPerWorkHour, { dash: true })} />
+            </MetricGrid>
 
             {stats.costs.productionTotal > 0 ? (
-              <Card className="p-4 mb-1">
-                <Text className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3">Cost breakdown</Text>
-                <CostBreakdownBars breakdown={stats.costs.breakdown} total={stats.costs.productionTotal} money={money} />
-              </Card>
+              <AnalyticsSectionCard
+                title="Cost breakdown"
+                hint="Share of production spend"
+                accent="costs"
+                icon={<Coins size={18} color={CHART_COLORS.production} />}
+              >
+                <DonutChart
+                  segments={costDonutSegments}
+                  centerLabel="Total"
+                  centerValue={money(stats.costs.productionTotal)}
+                  layout="side"
+                />
+              </AnalyticsSectionCard>
             ) : (
               <EmptyHint text="No costed pieces in this period yet." />
             )}
 
+            {(stats.margins.byForm.length > 0 ||
+              stats.margins.byClay.length > 0 ||
+              stats.margins.byFormingMethod.length > 0) ? (
+              <AnalyticsSectionCard
+                title="Margin by product line"
+                hint="Avg list price vs cost for finished & sold work"
+                accent="costs"
+                icon={<Coins size={18} color={CHART_COLORS.production} />}
+              >
+                <SegmentedControl
+                  options={[
+                    { value: 'form', label: 'Form' },
+                    { value: 'clay', label: 'Clay body' },
+                    { value: 'method', label: 'Method' },
+                  ]}
+                  value={marginGroupView}
+                  onChange={setMarginGroupView}
+                />
+                <View className="mt-4">
+                  <MarginByGroupList rows={marginGroupRows} money={money} />
+                </View>
+              </AnalyticsSectionCard>
+            ) : null}
+
             {!isStudioOwner ? (
               <>
-                <SectionLabel
-                  title="Revenue & margin"
-                  icon={<Coins size={14} color="hsl(24 20% 40%)" />}
-                  hint="Based on target prices — sale dates not yet tracked"
-                />
-                <View className="flex-row gap-3 mb-3">
-                  <StatCard label="Sold revenue" value={money(stats.revenue.soldRevenue, { dash: true })} sub={`${stats.summary.soldCount} sold`} />
-                  <StatCard label="Realized margin" value={money(stats.revenue.realizedMargin, { dash: true })} />
-                </View>
-                <View className="flex-row gap-3 mb-1">
-                  <StatCard label="Avg sale price" value={money(stats.revenue.avgSalePrice, { dash: true })} />
-                  <StatCard label="Potential" value={money(stats.revenue.potentialRevenue, { dash: true })} sub="finished, unsold" />
-                </View>
+                <SectionLabel title="Revenue & margin" />
+                <MetricGrid>
+                  <MetricTile tone="revenue" emoji="💵" label="Sold revenue" value={money(stats.revenue.soldRevenue, { dash: true })} sub={`${stats.summary.soldCount} sold`} />
+                  <MetricTile tone="revenue" emoji="📈" label="Realized margin" value={money(stats.revenue.realizedMargin, { dash: true })} />
+                  <MetricTile
+                    tone="revenue"
+                    emoji="⏱️"
+                    label="Effective $/hr"
+                    value={stats.margins.effectiveHourlyRate != null ? money(stats.margins.effectiveHourlyRate) : '—'}
+                    sub="sold margin ÷ hours"
+                  />
+                  <MetricTile tone="neutral" emoji="✨" label="Shelf potential" value={money(stats.revenue.potentialRevenue, { dash: true })} sub="finished, unsold" />
+                </MetricGrid>
+
+                <Text className="text-[11px] px-1 -mt-2 mb-4 leading-4" style={{ color: ANALYTICS_THEME.inkMuted }}>
+                  Based on target prices — sale dates not yet tracked
+                </Text>
               </>
             ) : null}
           </>
@@ -360,65 +448,36 @@ export default function AnalyticsScreen() {
 
         {tab === 'firings' ? (
           stats.firings.count === 0 ? (
-            <View className="mt-1">
-              <EmptyHint
-                icon={<FlameKindling size={26} color="hsl(24 20% 60%)" />}
-                text="No completed firings in this period."
-              />
-            </View>
+            <EmptyHint
+              icon={<FlameKindling size={32} color={ANALYTICS_THEME.inkMuted} />}
+              text="No completed firings in this period."
+            />
           ) : (
             <>
-              <SectionLabel title="Firing costs" icon={<FlameKindling size={14} color="hsl(24 20% 40%)" />} />
-              <View className="flex-row gap-3 mb-3">
-                <StatCard label="Firings" value={String(stats.firings.count)} sub={`${stats.firings.bisqueCount} bisque · ${stats.firings.glazeCount} glaze`} />
-                <StatCard label="Pieces fired" value={String(stats.firings.piecesFired)} sub={`${stats.firings.uniquePiecesFired} unique`} />
-              </View>
-              <View className="flex-row gap-3 mb-3">
-                <StatCard label="Avg / firing" value={money(stats.firings.avgCostPerFiring, { dash: true })} />
-                <StatCard label="Cost / piece fired" value={money(stats.firings.avgCostPerPiece, { dash: true })} />
-              </View>
-              <View className="flex-row gap-3 mb-4">
-                <StatCard
-                  label="Avg load"
-                  value={stats.firings.avgPiecesPerFiring != null ? stats.firings.avgPiecesPerFiring.toFixed(1) : '—'}
-                  sub="pieces / firing"
+              <AnalyticsSectionCard
+                title="Firing mix"
+                hint="Bisque vs glaze firings this period"
+                accent="firings"
+                icon={<FlameKindling size={18} color={CHART_COLORS.firing} />}
+              >
+                <FiringSplitChart
+                  bisqueCount={stats.firings.bisqueCount}
+                  glazeCount={stats.firings.glazeCount}
+                  successRate={stats.firings.successRate}
                 />
-                <StatCard
-                  label="Firing success"
-                  value={stats.firings.successRate != null ? `${Math.round(stats.firings.successRate)}%` : '—'}
-                  sub={stats.firings.piecesLost > 0 ? `${stats.firings.piecesLost} lost` : undefined}
-                />
-              </View>
+              </AnalyticsSectionCard>
 
-              <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                Recent firings
-              </Text>
-              <View className="gap-2">
+              <MetricGrid>
+                <MetricTile tone="firing" emoji="🔥" label="Avg / firing" value={money(stats.firings.avgCostPerFiring, { dash: true })} />
+                <MetricTile tone="firing" emoji="🏺" label="Cost / piece" value={money(stats.firings.avgCostPerPiece, { dash: true })} />
+                <MetricTile tone="neutral" emoji="📦" label="Avg load" value={stats.firings.avgPiecesPerFiring != null ? stats.firings.avgPiecesPerFiring.toFixed(1) : '—'} sub="pieces / firing" />
+                <MetricTile tone="neutral" emoji="✅" label="Pieces fired" value={String(stats.firings.piecesFired)} sub={`${stats.firings.uniquePiecesFired} unique`} />
+              </MetricGrid>
+
+              <SectionLabel title="Recent firings" />
+              <View className="gap-3 mb-4">
                 {stats.firings.recent.map((firing) => (
-                  <Card key={firing.id} className="p-4">
-                    <View className="flex-row items-start justify-between">
-                      <View className="flex-1 pr-3">
-                        <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>{firing.name}</Text>
-                        <Text className="text-xs text-muted-foreground mt-0.5">
-                          {FIRING_TYPE_LABELS[firing.type]} · Cone {firing.cone}
-                        </Text>
-                      </View>
-                      <View className="items-end">
-                        {firing.estimatedTotalCost ? (
-                          <Text className="text-sm font-semibold text-foreground">{money(firing.estimatedTotalCost)}</Text>
-                        ) : null}
-                        <Text className="text-[11px] text-muted-foreground mt-0.5">
-                          {firing.pieceIds.length} piece{firing.pieceIds.length !== 1 ? 's' : ''}
-                        </Text>
-                      </View>
-                    </View>
-                    <View className="flex-row items-center justify-between mt-2.5 pt-2.5 border-t border-border">
-                      <Text className="text-[11px] text-muted-foreground">
-                        Completed {formatReadyDate(firing.completedAt ?? undefined)}
-                      </Text>
-                      <ResultBadge result={firing.result} />
-                    </View>
-                  </Card>
+                  <FiringRow key={firing.id} firing={firing} money={money} />
                 ))}
               </View>
             </>
@@ -427,102 +486,149 @@ export default function AnalyticsScreen() {
 
         {tab === 'pieces' ? (
           <>
-            <SectionLabel
+            <AnalyticsSectionCard
               title="Piece economics"
-              icon={<Receipt size={14} color="hsl(24 20% 40%)" />}
               hint="Cost and price per piece"
-            />
-            <View className="flex-row gap-2 mb-3">
-              {(['all', 'finished', 'sold', 'lost'] as EconomicsFilter[]).map((f) => {
-                const active = f === economicsFilter;
-                return (
-                  <TouchableOpacity
-                    key={f}
-                    onPress={() => setEconomicsFilter(f)}
-                    activeOpacity={0.8}
-                    className={`rounded-lg px-3 py-1.5 border ${active ? 'bg-primary border-primary' : 'bg-card border-border'}`}
-                  >
-                    <Text className={`text-[11px] font-semibold capitalize ${active ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
-                      {f}
+              accent="pieces"
+              icon={<Receipt size={18} color={CHART_COLORS.success} />}
+            >
+              <SegmentedControl
+                options={[
+                  { value: 'all', label: 'All' },
+                  { value: 'finished', label: 'Finished' },
+                  { value: 'sold', label: 'Sold' },
+                  { value: 'lost', label: 'Lost' },
+                ]}
+                value={economicsFilter}
+                onChange={setEconomicsFilter}
+              />
+              {filteredEconomics.length === 0 ? (
+                <View className="mt-5">
+                  <EmptyHint text="No pieces match this filter for the selected period." />
+                </View>
+              ) : (
+                <View className="gap-3 mt-5">
+                  {filteredEconomics.slice(0, 25).map((row) => (
+                    <PieceEconomicsRow
+                      key={row.id}
+                      row={row}
+                      money={money}
+                      onPress={() => router.push(`/(tabs)/pieces?stage=${row.stage}` as never)}
+                    />
+                  ))}
+                  {filteredEconomics.length > 25 ? (
+                    <Text className="text-[11px] text-center mt-1" style={{ color: ANALYTICS_THEME.inkMuted }}>
+                      Showing 25 of {filteredEconomics.length}
                     </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            {filteredEconomics.length === 0 ? (
-              <EmptyHint text="No pieces match this filter for the selected period." />
-            ) : (
-              <View className="gap-2">
-                {filteredEconomics.slice(0, 25).map((row) => (
-                  <PieceEconomicsRow
-                    key={row.id}
-                    row={row}
-                    money={money}
-                    onPress={() => router.push(`/(tabs)/pieces?stage=${row.stage}` as never)}
-                  />
-                ))}
-                {filteredEconomics.length > 25 ? (
-                  <Text className="text-[11px] text-muted-foreground mt-1 text-center">
-                    Showing 25 of {filteredEconomics.length}
-                  </Text>
-                ) : null}
-              </View>
-            )}
+                  ) : null}
+                </View>
+              )}
+            </AnalyticsSectionCard>
 
             {stats.process.length > 0 ? (
-              <>
-                <SectionLabel title="Time in stage" icon={<Layers size={14} color="hsl(24 20% 40%)" />} hint="Median days, all time" />
-                <Card className="p-4 gap-3">
-                  {stats.process.map((d) => (
-                    <View key={`${d.from}-${d.to}`} className="flex-row items-center justify-between">
-                      <Text className="text-xs text-foreground flex-1" numberOfLines={1}>
-                        {STAGE_LABELS[d.from] ?? d.from} → {STAGE_LABELS[d.to] ?? d.to}
-                      </Text>
-                      <Text className="text-xs font-semibold text-foreground">
-                        {d.medianDays < 1 ? '<1 day' : `${d.medianDays.toFixed(1)} days`}
-                      </Text>
-                    </View>
-                  ))}
-                </Card>
-              </>
+              <AnalyticsSectionCard
+                title="Time in stage"
+                hint="Median days between transitions — all time"
+                accent="pieces"
+                icon={<TrendingUp size={18} color={CHART_COLORS.success} />}
+              >
+                <StageDurationChart rows={stats.process} stageLabels={STAGE_LABELS} />
+              </AnalyticsSectionCard>
+            ) : null}
+
+            {stats.losses.length > 0 ? (
+              <AnalyticsSectionCard
+                title="Loss breakdown"
+                hint={`Cause of death — ${stats.period.label}`}
+                accent="firings"
+                icon={<FlameKindling size={18} color={CHART_COLORS.firing} />}
+              >
+                <HorizontalBarChart
+                  rows={stats.losses.map((r) => ({
+                    label: r.label,
+                    value: r.count,
+                    pct: r.pct,
+                    color: CHART_COLORS.firing,
+                    detail: `${r.count} · ${Math.round(r.pct)}%`,
+                  }))}
+                  maxRows={8}
+                />
+              </AnalyticsSectionCard>
             ) : null}
           </>
         ) : null}
 
         {tab === 'materials' ? (
           <>
-            <SectionLabel title="Materials" icon={<Layers size={14} color="hsl(24 20% 40%)" />} hint={stats.period.label} />
             {stats.materials.glazes.length > 0 ? (
-              <GlazeUsageRankedCard
+              <AnalyticsSectionCard
                 title="Glaze usage"
-                rows={stats.materials.glazes}
                 hint={glazeUsageHint ?? 'Linked pieces and test tiles, grouped by glaze family'}
-                onRowPress={(row) => {
-                  if (row.familyKey) setGlazeUsageFamilyKey(row.familyKey);
-                }}
-              />
+                accent="materials"
+                icon={<Layers size={18} color={CHART_COLORS.glazeMaterial} />}
+              >
+                <GlazeUsageList
+                  rows={stats.materials.glazes}
+                  onRowPress={(row) => {
+                    if (row.familyKey) setGlazeUsageFamilyKey(row.familyKey);
+                  }}
+                />
+              </AnalyticsSectionCard>
             ) : (
               <EmptyHint text="Link glazes to pieces or log test tiles to see usage here." />
             )}
-            <RankedCard title="Clay bodies" rows={stats.materials.clayBodies} />
-            <RankedCard title="Forming methods" rows={stats.materials.formingMethods} />
+
+            {stats.materials.clayBodies.length > 0 ? (
+              <AnalyticsSectionCard title="Clay bodies" hint={stats.period.label} accent="materials" icon={<Layers size={18} color={CHART_COLORS.clay} />}>
+                <HorizontalBarChart
+                  rows={stats.materials.clayBodies.map((r) => ({
+                    label: r.label,
+                    value: r.count,
+                    pct: r.pct,
+                    color: CHART_COLORS.clay,
+                  }))}
+                />
+              </AnalyticsSectionCard>
+            ) : null}
+
+            {stats.materials.formingMethods.length > 0 ? (
+              <AnalyticsSectionCard title="Forming methods" hint={stats.period.label} accent="materials" icon={<Layers size={18} color={CHART_COLORS.pieces} />}>
+                <HorizontalBarChart
+                  rows={stats.materials.formingMethods.map((r) => ({
+                    label: r.label,
+                    value: r.count,
+                    pct: r.pct,
+                    color: CHART_COLORS.pieces,
+                  }))}
+                />
+              </AnalyticsSectionCard>
+            ) : null}
           </>
         ) : null}
 
-        <SectionLabel title="Your data" icon={<Download size={14} color="hsl(24 20% 40%)" />} hint="Premium" />
-        <Card className="p-4 mb-2">
-          <Text className="text-sm font-semibold text-foreground">Export studio data</Text>
-          <Text className="text-xs text-muted-foreground mt-1 leading-5">
-            Download pieces, firings, glazes, and test tiles as JSON — {exportSummary}.
+        <SectionLabel title="Your data" />
+        <AnalyticsSectionCard
+          title="Export studio data"
+          hint="Premium · JSON backup of your studio"
+          accent="export"
+          icon={<Download size={18} color="hsl(280 35% 48%)" />}
+        >
+          <Text className="text-xs leading-5" style={{ color: ANALYTICS_THEME.inkMuted }}>
+            Download pieces, firings, glazes, and test tiles — {exportSummary}.
           </Text>
           <TouchableOpacity
             onPress={handleExport}
             disabled={exporting}
             activeOpacity={0.82}
-            className="mt-3 rounded-xl bg-primary py-3 items-center flex-row justify-center gap-2"
+            className="mt-4 rounded-2xl py-3.5 items-center flex-row justify-center gap-2"
+            style={{ backgroundColor: ANALYTICS_THEME.chipActiveBg }}
           >
-            {exporting ? <ActivityIndicator color="white" size="small" /> : <Download size={15} color="white" />}
-            <Text className="text-sm font-semibold text-white">
+            {exporting ? (
+              <ActivityIndicator color={ANALYTICS_THEME.heroText} size="small" />
+            ) : (
+              <Download size={16} color={ANALYTICS_THEME.heroText} />
+            )}
+            <Text className="text-sm font-semibold" style={{ color: ANALYTICS_THEME.heroText }}>
               {exporting ? 'Preparing…' : 'Export my data'}
             </Text>
           </TouchableOpacity>
@@ -531,10 +637,14 @@ export default function AnalyticsScreen() {
             activeOpacity={0.7}
             className="mt-2 py-1 items-center"
           >
-            <Text className="text-[11px] text-muted-foreground">Also in Privacy Settings</Text>
+            <Text className="text-[11px]" style={{ color: ANALYTICS_THEME.inkMuted }}>
+              Also in Privacy Settings
+            </Text>
           </TouchableOpacity>
-        </Card>
+        </AnalyticsSectionCard>
+        </View>
       </ScrollView>
+
       <GlazeUsageDrillDownSheet
         familyKey={glazeUsageFamilyKey}
         pieces={pieces}
@@ -547,83 +657,37 @@ export default function AnalyticsScreen() {
   );
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────
-
-function TrendChart({
-  data,
-  metric,
-  money,
+function GlazeUsageList({
+  rows,
+  onRowPress,
 }: {
-  data: { label: string; productionCost: number; firingCost: number; piecesFired: number }[];
-  metric: 'cost' | 'fired';
-  money: (v: number | null | undefined) => string;
+  rows: RankedUsage[];
+  onRowPress?: (row: RankedUsage) => void;
 }) {
-  const values = data.map((d) =>
-    metric === 'cost' ? d.productionCost + d.firingCost : d.piecesFired,
-  );
-  const max = Math.max(1, ...values);
+  const chartRows = rows.slice(0, 6).map((row) => ({
+    label: row.label,
+    value: row.count,
+    pct: row.pct,
+    color: CHART_COLORS.glazeMaterial,
+    detail:
+      row.pieceCount != null && row.testCount != null
+        ? `${row.count} · ${Math.round(row.pct)}% (${row.pieceCount}p · ${row.testCount}t)`
+        : `${row.count} · ${Math.round(row.pct)}%`,
+  }));
 
   return (
-    <View className="flex-row items-end justify-between gap-2" style={{ height: 140 }}>
-      {data.map((d, i) => {
-        const value = values[i];
-        const heightPct = (value / max) * 100;
-        const prodPct = metric === 'cost' && value > 0 ? (d.productionCost / value) * 100 : 100;
-        return (
-          <View key={d.label} className="flex-1 items-center justify-end" style={{ height: '100%' }}>
-            <Text className="text-[9px] text-muted-foreground mb-1" numberOfLines={1}>
-              {metric === 'cost' ? (value > 0 ? money(value) : '') : value > 0 ? String(value) : ''}
-            </Text>
-            <View
-              className="w-full rounded-md overflow-hidden bg-muted/40"
-              style={{ height: `${Math.max(2, heightPct)}%`, maxWidth: 36 }}
-            >
-              {metric === 'cost' ? (
-                <>
-                  <View style={{ height: `${100 - prodPct}%`, backgroundColor: 'hsl(8 60% 58%)' }} />
-                  <View style={{ flex: 1, backgroundColor: 'hsl(24 45% 55%)' }} />
-                </>
-              ) : (
-                <View style={{ flex: 1, backgroundColor: 'hsl(24 45% 55%)' }} />
-              )}
-            </View>
-            <Text className="text-[9px] text-muted-foreground mt-1">{d.label}</Text>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-function CostBreakdownBars({
-  breakdown,
-  total,
-  money,
-}: {
-  breakdown: CostBreakdown;
-  total: number;
-  money: (v: number | null | undefined) => string;
-}) {
-  const rows = COST_BREAKDOWN_META.map((m) => ({ ...m, value: breakdown[m.key] })).filter((r) => r.value > 0);
-  return (
-    <View className="gap-2.5">
-      {rows.map((r) => {
-        const pct = total > 0 ? (r.value / total) * 100 : 0;
-        return (
-          <View key={r.key}>
-            <View className="flex-row items-center justify-between mb-1">
-              <Text className="text-xs text-foreground">{r.label}</Text>
-              <Text className="text-xs text-muted-foreground">
-                {money(r.value)} · {Math.round(pct)}%
-              </Text>
-            </View>
-            <View className="h-2 rounded-full bg-muted/50 overflow-hidden">
-              <View style={{ width: `${Math.max(2, pct)}%`, height: '100%', backgroundColor: r.color }} />
-            </View>
-          </View>
-        );
-      })}
-    </View>
+    <HorizontalBarChart
+      rows={chartRows}
+      maxRows={6}
+      onRowPress={
+        onRowPress
+          ? (_, index) => {
+              const row = rows[index];
+              if (row?.familyKey) onRowPress(row);
+            }
+          : undefined
+      }
+    />
   );
 }
 
@@ -636,135 +700,139 @@ function PieceEconomicsRow({
   money: (v: number | null | undefined) => string;
   onPress: () => void;
 }) {
+  const marginPositive = row.margin != null && row.margin >= 0;
+
   return (
-    <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
-      <Card className="p-3.5">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-1 pr-3">
-            <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>{row.name}</Text>
-            <Text className="text-[11px] text-muted-foreground mt-0.5">
-              {STAGE_LABELS[row.stage.trim().toLowerCase()] ?? row.stage} · {row.dateLabel}
-            </Text>
+    <TouchableOpacity activeOpacity={0.82} onPress={onPress}>
+      <View
+        className="rounded-2xl border overflow-hidden"
+        style={{ backgroundColor: ANALYTICS_THEME.cardBg, borderColor: ANALYTICS_THEME.cardBorder }}
+      >
+        <View
+          className="h-1"
+          style={{ backgroundColor: marginPositive ? CHART_COLORS.success : CHART_COLORS.firing }}
+        />
+        <View className="p-3.5">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 pr-3">
+              <Text className="text-sm font-semibold" style={{ color: ANALYTICS_THEME.ink }} numberOfLines={1}>
+                {row.name}
+              </Text>
+              <Text className="text-[11px] mt-0.5" style={{ color: ANALYTICS_THEME.inkMuted }}>
+                {STAGE_LABELS[row.stage.trim().toLowerCase()] ?? row.stage} · {row.dateLabel}
+              </Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-base font-serif font-bold" style={{ color: ANALYTICS_THEME.ink }}>
+                {money(row.totalCost)}
+              </Text>
+              {row.listPrice != null ? (
+                <Text className="text-[11px] mt-0.5" style={{ color: ANALYTICS_THEME.inkMuted }}>
+                  list {money(row.listPrice)}
+                </Text>
+              ) : null}
+            </View>
           </View>
-          <View className="items-end">
-            <Text className="text-sm font-semibold text-foreground">{money(row.totalCost)}</Text>
-            {row.listPrice != null ? (
-              <Text className="text-[11px] text-muted-foreground mt-0.5">list {money(row.listPrice)}</Text>
-            ) : null}
-          </View>
-        </View>
-        {row.margin != null ? (
-          <View className="flex-row items-center justify-between mt-2 pt-2 border-t border-border">
-            <Text className="text-[11px] text-muted-foreground">Margin</Text>
-            <Text
-              className="text-[11px] font-semibold"
-              style={{ color: row.margin >= 0 ? 'hsl(142 50% 35%)' : 'hsl(0 60% 45%)' }}
+          {row.margin != null ? (
+            <View
+              className="flex-row items-center justify-between mt-2.5 pt-2.5 border-t"
+              style={{ borderTopColor: ANALYTICS_THEME.cardBorder }}
             >
-              {money(row.margin)}
-            </Text>
-          </View>
-        ) : null}
-      </Card>
+              <Text className="text-[11px]" style={{ color: ANALYTICS_THEME.inkMuted }}>
+                Margin
+              </Text>
+              <Text
+                className="text-[11px] font-bold"
+                style={{ color: marginPositive ? CHART_COLORS.success : CHART_COLORS.firing }}
+              >
+                {money(row.margin)}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
     </TouchableOpacity>
   );
 }
 
-function GlazeUsageRankedCard({
-  title,
-  rows,
-  hint,
-  onRowPress,
+function FiringRow({
+  firing,
+  money,
 }: {
-  title: string;
-  rows: RankedUsage[];
-  hint?: string;
-  onRowPress?: (row: RankedUsage) => void;
+  firing: Firing;
+  money: (v: number | null | undefined) => string;
 }) {
-  if (rows.length === 0) return null;
+  const resultColor =
+    firing.result === 'success'
+      ? CHART_COLORS.success
+      : firing.result === 'issues'
+        ? CHART_COLORS.energy
+        : CHART_COLORS.firing;
+
   return (
-    <Card className="p-4 mb-3 gap-2.5">
-      <Text className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</Text>
-      {hint ? (
-        <Text className="text-[11px] text-muted-foreground -mt-1 mb-0.5">{hint}</Text>
-      ) : null}
-      {rows.slice(0, 5).map((r) => {
-        const body = (
-          <>
-            <View className="flex-row items-center justify-between mb-1">
-              <Text className="text-xs text-foreground flex-1" numberOfLines={1}>{r.label}</Text>
-              <Text className="text-xs text-muted-foreground">
-                {r.count} · {Math.round(r.pct)}%
-                {r.pieceCount != null && r.testCount != null
-                  ? ` (${r.pieceCount}p · ${r.testCount}t)`
-                  : ''}
-              </Text>
-            </View>
-            <View className="h-2 rounded-full bg-muted/50 overflow-hidden">
-              <View style={{ width: `${Math.max(2, r.pct)}%`, height: '100%', backgroundColor: 'hsl(24 45% 55%)' }} />
-            </View>
-          </>
-        );
-
-        if (!onRowPress || !r.familyKey) {
-          return <View key={r.label}>{body}</View>;
-        }
-
-        return (
-          <TouchableOpacity
-            key={r.label}
-            activeOpacity={0.82}
-            onPress={() => onRowPress(r)}
-          >
-            {body}
-          </TouchableOpacity>
-        );
-      })}
-    </Card>
-  );
-}
-
-function RankedCard({ title, rows, hint }: { title: string; rows: RankedUsage[]; hint?: string }) {
-  if (rows.length === 0) return null;
-  return (
-    <Card className="p-4 mb-3 gap-2.5">
-      <Text className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</Text>
-      {hint ? (
-        <Text className="text-[11px] text-muted-foreground -mt-1 mb-0.5">{hint}</Text>
-      ) : null}
-      {rows.slice(0, 5).map((r) => (
-        <View key={r.label}>
-          <View className="flex-row items-center justify-between mb-1">
-            <Text className="text-xs text-foreground flex-1" numberOfLines={1}>{r.label}</Text>
-            <Text className="text-xs text-muted-foreground">{r.count} · {Math.round(r.pct)}%</Text>
+    <View
+      className="rounded-2xl border overflow-hidden"
+      style={{ backgroundColor: ANALYTICS_THEME.cardBg, borderColor: ANALYTICS_THEME.cardBorder }}
+    >
+      <View className="h-1" style={{ backgroundColor: resultColor }} />
+      <View className="p-4">
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1 pr-3">
+            <Text className="text-sm font-semibold" style={{ color: ANALYTICS_THEME.ink }} numberOfLines={1}>
+              {firing.name}
+            </Text>
+            <Text className="text-xs mt-0.5" style={{ color: ANALYTICS_THEME.inkMuted }}>
+              {FIRING_TYPE_LABELS[firing.type]} · Cone {firing.cone}
+            </Text>
           </View>
-          <View className="h-2 rounded-full bg-muted/50 overflow-hidden">
-            <View style={{ width: `${Math.max(2, r.pct)}%`, height: '100%', backgroundColor: 'hsl(24 45% 55%)' }} />
+          <View className="items-end">
+            {firing.estimatedTotalCost ? (
+              <Text className="text-base font-serif font-bold" style={{ color: ANALYTICS_THEME.ink }}>
+                {money(firing.estimatedTotalCost)}
+              </Text>
+            ) : null}
+            <Text className="text-[11px] mt-0.5" style={{ color: ANALYTICS_THEME.inkMuted }}>
+              {firing.pieceIds.length} piece{firing.pieceIds.length !== 1 ? 's' : ''}
+            </Text>
           </View>
         </View>
-      ))}
-    </Card>
+        <View
+          className="flex-row items-center justify-between mt-2.5 pt-2.5 border-t"
+          style={{ borderTopColor: ANALYTICS_THEME.cardBorder }}
+        >
+          <Text className="text-[11px]" style={{ color: ANALYTICS_THEME.inkMuted }}>
+            Completed {formatReadyDate(firing.completedAt ?? undefined)}
+          </Text>
+          <ResultBadge result={firing.result} />
+        </View>
+      </View>
+    </View>
   );
 }
 
 function ResultBadge({ result }: { result?: 'success' | 'issues' | 'failure' }) {
   const bg =
-    result === 'success' ? 'hsl(142 40% 88%)' : result === 'issues' ? 'hsl(44 70% 88%)' : result === 'failure' ? 'hsl(0 60% 88%)' : 'hsl(24 15% 90%)';
+    result === 'success'
+      ? 'hsl(142 40% 88%)'
+      : result === 'issues'
+        ? 'hsl(44 70% 88%)'
+        : result === 'failure'
+          ? 'hsl(0 60% 88%)'
+          : 'hsl(35 42% 88%)';
   const fg =
-    result === 'success' ? 'hsl(142 50% 35%)' : result === 'issues' ? 'hsl(44 70% 35%)' : result === 'failure' ? 'hsl(0 60% 38%)' : 'hsl(24 20% 45%)';
+    result === 'success'
+      ? 'hsl(142 50% 35%)'
+      : result === 'issues'
+        ? 'hsl(44 70% 35%)'
+        : result === 'failure'
+          ? 'hsl(0 60% 38%)'
+          : ANALYTICS_THEME.inkSoft;
+
   return (
-    <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: bg }}>
+    <View className="px-2.5 py-1 rounded-full" style={{ backgroundColor: bg }}>
       <Text className="text-[10px] font-semibold capitalize" style={{ color: fg }}>
         {result ?? 'completed'}
       </Text>
     </View>
-  );
-}
-
-function EmptyHint({ text, icon }: { text: string; icon?: React.ReactNode }) {
-  return (
-    <Card className="p-6 items-center">
-      {icon}
-      <Text className="text-xs text-muted-foreground text-center mt-2">{text}</Text>
-    </Card>
   );
 }

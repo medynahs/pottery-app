@@ -5,9 +5,8 @@ import type { Tab } from '../screens/overview/profile/types';
 
 export function TabBar({ active, onSelect }: { active: Tab; onSelect: (t: Tab) => void }) {
   const tabs: { key: Tab; label: string }[] = [
-    { key: 'portfolio', label: 'Portfolio' },
-    { key: 'journey',   label: 'Journey'   },
-    { key: 'posts',     label: 'Posts'     },
+    { key: 'journey', label: 'Journey' },
+    { key: 'posts', label: 'Posts' },
   ];
   return (
     <View className="mx-6 mb-5 flex-row bg-muted rounded-2xl p-1">

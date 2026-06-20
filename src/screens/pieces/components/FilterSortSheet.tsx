@@ -16,6 +16,7 @@ export type ActiveFilters = {
   formingMethods: string[];
   statuses: string[];
   firingTypes: string[];
+  forSaleOnly: boolean;
 };
 
 export const EMPTY_FILTERS: ActiveFilters = {
@@ -24,6 +25,7 @@ export const EMPTY_FILTERS: ActiveFilters = {
   formingMethods: [],
   statuses: [],
   firingTypes: [],
+  forSaleOnly: false,
 };
 
 export function countActiveFilters(filters: ActiveFilters): number {
@@ -32,7 +34,8 @@ export function countActiveFilters(filters: ActiveFilters): number {
     filters.forms.length +
     filters.formingMethods.length +
     filters.statuses.length +
-    filters.firingTypes.length
+    filters.firingTypes.length +
+    (filters.forSaleOnly ? 1 : 0)
   );
 }
 
@@ -184,6 +187,18 @@ export function FilterSortSheet({
                     colors={colors}
                   />
                 ))}
+              </PillRow>
+            </Section>
+
+            {/* Listing */}
+            <Section label="Listing">
+              <PillRow>
+                <Pill
+                  label="For sale"
+                  active={filters.forSaleOnly}
+                  onPress={() => onFiltersChange({ ...filters, forSaleOnly: !filters.forSaleOnly })}
+                  colors={colors}
+                />
               </PillRow>
             </Section>
 

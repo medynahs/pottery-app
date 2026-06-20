@@ -1,1 +1,1 @@
-export type Tab = 'portfolio' | 'journey' | 'posts';
+export type Tab = 'journey' | 'posts';
