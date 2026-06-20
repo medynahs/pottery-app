@@ -1,7 +1,7 @@
 # V1 Release Tickets
 
 **Total: 85 tickets** — 20 BE · 63 FE · 2 FE+BE  
-**Last updated:** June 12, 2026  
+**Last updated:** June 21, 2026  
 **Audit:** June 12, 2026 (frontend repo)
 
 ### Status legend
@@ -66,6 +66,11 @@
 ### Community
 - Real backend required for V1: UGC feed, reactions, challenge join/submit/leaderboard, polls, Hall of Fame, pottery news
 - All current static/hardcoded data replaced
+- **Events sub-tab hidden for V1** — `EventsTab` + `GET /api/events` remain in repo but are not shown in the Community filter bar
+  - **Why:** An empty or sparse events list hurts trust more than it helps discovery. V1 Community focus is the core loop (feed → challenge → vote → Hall of Fame), not a second content pipeline.
+  - **Gap today:** No reliable free API for location-based pottery/ceramics workshops globally; existing event model has no city, venue, or external URL.
+  - **V2 options (when revisiting):** (1) “Discover” link-out cards (Eventbrite/Google search from user city), (2) manual admin-curated featured events, (3) backend ingest from Eventbrite or whitelisted iCal feeds + optional GPS radius
+  - Personal studio scheduling stays in **Studio Rhythm** — not the same as public Community events
 
 ### Analytics
 - FE-computed from local store (no new BE beyond pieces sync)

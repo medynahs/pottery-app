@@ -4,7 +4,6 @@ export type FilterTab =
   | 'For You'
   | 'Challenges'
   | 'Hall of Fame'
-  | 'Events'
   | 'Drops';
 
 export type MonthlyChallenge = {

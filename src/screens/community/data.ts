@@ -1,7 +1,7 @@
 // src/screens/community/data.ts
 import type { Creator, Festival, FestivalTrack, FilterTab, MonthlyChallenge, PollOption, WallOfFameEntry } from './types';
 
-export const FILTERS: FilterTab[] = ['For You', 'Challenges', 'Hall of Fame', 'Events'];
+export const FILTERS: FilterTab[] = ['For You', 'Challenges', 'Hall of Fame'];
 
 export const ACTIVE_CHALLENGE: MonthlyChallenge = {
   emoji: '🥣',

@@ -9,7 +9,6 @@ import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native
 import { MainTabHeader } from '../../components/MainTabHeader';
 import { CreatePostSheet } from './components/CreatePostSheet';
 import { FilterBar } from './components/FilterBar';
-import { EventsTab } from './tabs/EventsTab';
 import { ChallengesTab } from './tabs/FestivalsTab';
 import { ForYouFeed } from './tabs/ForYouFeed';
 import { HallOfFameTab } from './tabs/HallOfFameTab';
@@ -66,7 +65,6 @@ export default function CommunityScreen() {
     switch (activeFilter) {
       case 'Challenges':   return <ChallengesTab />;
       case 'Hall of Fame': return <HallOfFameTab />;
-      case 'Events':       return <EventsTab />;
       default:
         return (
           <ForYouFeed
