@@ -1,471 +1,703 @@
-﻿// src/screens/community/tabs/FestivalsTab.tsx
-// Exported as ChallengesTab — houses monthly challenges + the seasonal festival
-import { Card } from '@/src/components/ui/card';
+﻿// Exported as ChallengesTab — monthly challenge hub
+import { InlineErrorCard } from '@/src/components/InlineErrorCard';
+import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
+import { ConfirmSheet } from '@/src/components/AppSheets';
+import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
+import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
+import { ACTIVE_FESTIVAL } from '@/src/screens/community/data';
+import { FestivalSignUpSheet } from '@/src/screens/community/components/FestivalSignUpSheet';
+import { SubmitPieceSheet } from '@/src/screens/community/components/SubmitPieceSheet';
 import {
-    apiListChallenges,
-    apiSubmitChallengeEntry,
-    apiWithdrawChallengeEntry,
-    type BackendChallenge,
+  challengeEntryId,
+  pickPrimaryChallenge,
+  toChallengeDisplay,
+  type ChallengeDisplay,
+} from '@/src/screens/community/utils/challengeDisplay';
+import {
+  createMockEntryId,
+  MOCK_UNDERWATER_CHALLENGE,
+} from '@/src/screens/community/utils/mockUnderwaterChallenge';
+import {
+  apiListChallenges,
+  apiSubmitChallengeEntry,
+  apiWithdrawChallengeEntry,
+  type BackendChallenge,
 } from '@/src/services/challenges';
 import { useAppStore } from '@/src/store';
-import { Award, CheckCircle, ChevronDown, ChevronUp, Flame, Trophy, Vote } from 'lucide-react-native';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Image, TouchableOpacity, View } from 'react-native';
-import { ConfirmSheet } from '../../../components/AppSheets';
-import { FestivalSignUpSheet } from '../components/FestivalSignUpSheet';
-import { SubmitPieceSheet } from '../components/SubmitPieceSheet';
-import { ACTIVE_CHALLENGE, ACTIVE_FESTIVAL } from '../data';
+import { LinearGradient } from 'expo-linear-gradient';
+import {
+  Calendar,
+  CheckCircle2,
+  Circle,
+  Flame,
+  Share2,
+  Sparkles,
+  Trophy,
+  Users,
+} from 'lucide-react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 
 const HOW_IT_WORKS = [
   {
-    step: '01',
+    step: 1,
+    icon: Sparkles,
+    title: 'Join the theme',
+    body: 'Each month brings a new form or technique to explore. Join to commit — no pressure until you are ready to share.',
+  },
+  {
+    step: 2,
     icon: Flame,
-    title: 'A theme is revealed',
-    body: 'Every couple of months a new festival theme is announced. The community can vote on the next theme or it may be curator-chosen. Rules are posted with the reveal.',
+    title: 'Make & document',
+    body: 'Throw, trim, glaze, and fire on your own timeline. Snap progress photos in your piece journal as you go.',
   },
   {
-    step: '02',
-    icon: Trophy,
-    title: 'Throw, build & submit',
-    body: 'You have two months to make your piece and submit it directly in the app — photo, a short note on your process, and your chosen track. Plenty of time even if your kiln queue is backed up.',
+    step: 3,
+    icon: Share2,
+    title: 'Submit to the feed',
+    body: 'Post your finished piece with the challenge tag. Fellow potters kiln it on the feed and climb the Hall of Fame.',
   },
-  {
-    step: '03',
-    icon: Vote,
-    title: 'The community votes',
-    body: 'All submissions go live on the community feed. Every potter gets a vote — browse the gallery and back your favourite piece.',
-  },
-  {
-    step: '04',
-    icon: Award,
-    title: 'Fired in glory',
-    body: 'One winner per track — Beginner, Intermediate, and Advanced. The three winners are immortalised in the Hall of Fame and shared with the wider pottery world.',
-  },
-];
+] as const;
+
+function ChallengeStepRow({
+  step,
+  title,
+  done,
+  active,
+  isLast,
+}: {
+  step: number;
+  title: string;
+  done: boolean;
+  active: boolean;
+  isLast: boolean;
+}) {
+  return (
+    <View className="flex-row gap-3">
+      <View className="items-center" style={{ width: 28 }}>
+        {done ? (
+          <CheckCircle2 size={22} color={COMMUNITY_THEME.stepDone} />
+        ) : (
+          <Circle
+            size={22}
+            color={active ? COMMUNITY_THEME.accent : COMMUNITY_THEME.stepPending}
+            strokeWidth={active ? 2.5 : 1.5}
+          />
+        )}
+        {!isLast ? (
+          <View
+            style={{
+              width: 2,
+              flex: 1,
+              minHeight: 20,
+              marginTop: 4,
+              backgroundColor: done ? COMMUNITY_THEME.stepDone : COMMUNITY_THEME.stepPending,
+            }}
+          />
+        ) : null}
+      </View>
+      <View className="flex-1 pb-4">
+        <Text
+          className="text-[10px] font-bold uppercase tracking-widest mb-0.5"
+          style={{ color: COMMUNITY_THEME.inkMuted }}
+        >
+          Step {step}
+        </Text>
+        <Text
+          className="text-sm font-bold"
+          style={{ color: done || active ? COMMUNITY_THEME.ink : COMMUNITY_THEME.inkMuted }}
+        >
+          {title}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function ChallengeHero({
+  challenge,
+  joined,
+  enrolledTrackTitle,
+  onPrimaryPress,
+  onLeavePress,
+  onChangeTrackPress,
+  loading,
+  submitting,
+}: {
+  challenge: ChallengeDisplay;
+  joined: boolean;
+  enrolledTrackTitle?: string | null;
+  onPrimaryPress: () => void;
+  onLeavePress: () => void;
+  onChangeTrackPress?: () => void;
+  loading: boolean;
+  submitting: boolean;
+}) {
+  const deadlineLabel =
+    challenge.daysLeft === null
+      ? 'Open deadline'
+      : challenge.daysLeft === 0
+        ? 'Last day'
+        : `${challenge.daysLeft} day${challenge.daysLeft === 1 ? '' : 's'} left`;
+
+  const gradient = challenge.gradientColors ?? COMMUNITY_THEME.challengeHero;
+
+  return (
+    <View
+      className="rounded-3xl overflow-hidden border"
+      style={{
+        borderColor: COMMUNITY_THEME.cardBorder,
+        shadowColor: COMMUNITY_THEME.shadow,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.12,
+        shadowRadius: 14,
+        elevation: 4,
+      }}
+    >
+      {challenge.heroImage ? (
+        <Image
+          source={challenge.heroImage}
+          style={{ width: '100%', height: 200 }}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+      ) : null}
+
+      <LinearGradient
+        colors={[...gradient]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: challenge.heroImage ? 18 : 22,
+          paddingBottom: 24,
+        }}
+      >
+        <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center gap-2 flex-1">
+            {challenge.emoji ? (
+              <Text style={{ fontSize: 22 }}>{challenge.emoji}</Text>
+            ) : (
+              <View
+                className="w-8 h-8 rounded-xl items-center justify-center"
+                style={{ backgroundColor: 'rgba(255, 247, 236, 0.18)' }}
+              >
+                <Trophy size={16} color={COMMUNITY_THEME.heroText} />
+              </View>
+            )}
+            <Text
+              className="text-xs font-bold uppercase tracking-widest flex-1"
+              style={{ color: COMMUNITY_THEME.heroLabel }}
+            >
+              {challenge.label}
+            </Text>
+          </View>
+          {challenge.isMock ? (
+            <View
+              className="rounded-full px-2.5 py-1"
+              style={{ backgroundColor: 'rgba(255, 247, 236, 0.2)' }}
+            >
+              <Text className="text-[10px] font-bold" style={{ color: COMMUNITY_THEME.heroText }}>
+                Preview
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <Text
+          className="text-2xl font-serif font-bold leading-tight"
+          style={{ color: COMMUNITY_THEME.heroText }}
+        >
+          {challenge.title}
+        </Text>
+        <Text
+          className="text-sm leading-relaxed mt-2"
+          style={{ color: COMMUNITY_THEME.heroMuted }}
+        >
+          {challenge.description}
+        </Text>
+
+        <View className="flex-row flex-wrap gap-2 mt-4">
+          <View
+            className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
+            style={{
+              backgroundColor: COMMUNITY_THEME.heroChip,
+              borderWidth: 1,
+              borderColor: COMMUNITY_THEME.heroChipBorder,
+            }}
+          >
+            <Users size={12} color={COMMUNITY_THEME.heroText} />
+            <Text className="text-xs font-semibold" style={{ color: COMMUNITY_THEME.heroText }}>
+              {challenge.participantCount} joined
+            </Text>
+          </View>
+          <View
+            className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
+            style={{
+              backgroundColor: COMMUNITY_THEME.heroChip,
+              borderWidth: 1,
+              borderColor: COMMUNITY_THEME.heroChipBorder,
+            }}
+          >
+            <Calendar size={12} color={COMMUNITY_THEME.heroText} />
+            <Text className="text-xs font-semibold" style={{ color: COMMUNITY_THEME.heroText }}>
+              {deadlineLabel}
+            </Text>
+          </View>
+        </View>
+      </LinearGradient>
+
+      <View
+        className="px-5 py-5"
+        style={{ backgroundColor: COMMUNITY_THEME.cardBg }}
+      >
+        <Text
+          className="text-xs font-bold uppercase tracking-widest mb-3"
+          style={{ color: COMMUNITY_THEME.inkMuted }}
+        >
+          Your progress
+        </Text>
+
+        <ChallengeStepRow step={1} title="Join the challenge" done={joined} active={!joined} isLast={false} />
+        <ChallengeStepRow step={2} title="Make your piece" done={false} active={joined} isLast={false} />
+        <ChallengeStepRow step={3} title="Share on the feed" done={false} active={false} isLast />
+
+        {joined ? (
+          <View
+            className="rounded-2xl p-4 mt-1 border"
+            style={{
+              backgroundColor: COMMUNITY_THEME.accentSoft,
+              borderColor: COMMUNITY_THEME.cardBorder,
+            }}
+          >
+            <View className="flex-row items-center gap-2 mb-1">
+              <CheckCircle2 size={16} color={COMMUNITY_THEME.stepDone} />
+              <Text className="text-sm font-bold" style={{ color: COMMUNITY_THEME.ink }}>
+                You&apos;re in!
+              </Text>
+            </View>
+            <Text className="text-xs leading-relaxed" style={{ color: COMMUNITY_THEME.inkSoft }}>
+              {enrolledTrackTitle
+                ? `${enrolledTrackTitle} — finish your piece, then submit a photo and note for the feed.`
+                : 'Finish your piece, then submit a photo and note so it appears on the community feed.'}
+            </Text>
+            <View className="mt-3">
+              <PrimaryButton
+                label="Submit my entry"
+                onPress={onPrimaryPress}
+                loading={submitting}
+                disabled={submitting}
+              />
+            </View>
+            {onChangeTrackPress ? (
+              <TouchableOpacity
+                className="items-center mt-2.5 py-1"
+                activeOpacity={0.7}
+                onPress={onChangeTrackPress}
+              >
+                <Text className="text-xs font-semibold" style={{ color: COMMUNITY_THEME.accent }}>
+                  Change track
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              className="items-center mt-3 py-1"
+              activeOpacity={0.7}
+              onPress={onLeavePress}
+            >
+              <Text className="text-xs font-semibold" style={{ color: 'hsl(0 45% 52%)' }}>
+                Leave challenge
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View className="mt-1">
+            <PrimaryButton
+              label="Join this challenge"
+              onPress={onPrimaryPress}
+              loading={loading || submitting}
+              disabled={loading || submitting}
+            />
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function MockTrackCards({
+  enrolledTrackId,
+}: {
+  enrolledTrackId: string | null;
+}) {
+  return (
+    <View className="gap-3">
+      <Text
+        className="text-xs font-bold uppercase tracking-widest"
+        style={{ color: COMMUNITY_THEME.inkMuted }}
+      >
+        Festival tracks
+      </Text>
+      {ACTIVE_FESTIVAL.tracks.map((track) => {
+        const isEnrolled = enrolledTrackId === track.id;
+        return (
+          <View
+            key={track.id}
+            className="rounded-2xl border p-4"
+            style={{
+              backgroundColor: COMMUNITY_THEME.cardBg,
+              borderColor: isEnrolled ? ACTIVE_FESTIVAL.accentColor : COMMUNITY_THEME.cardBorder,
+            }}
+          >
+            <View className="flex-row items-start gap-3">
+              <View
+                className="w-10 h-10 rounded-2xl items-center justify-center"
+                style={{ backgroundColor: 'hsl(195 40% 92%)' }}
+              >
+                {isEnrolled ? (
+                  <CheckCircle2 size={18} color={ACTIVE_FESTIVAL.accentColor} />
+                ) : (
+                  <Trophy size={16} color={ACTIVE_FESTIVAL.accentColor} />
+                )}
+              </View>
+              <View className="flex-1">
+                <View className="flex-row items-center gap-2 flex-wrap">
+                  <Text className="text-sm font-bold" style={{ color: COMMUNITY_THEME.ink }}>
+                    {track.title}
+                  </Text>
+                  {isEnrolled ? (
+                    <View
+                      className="px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: 'hsl(195 35% 90%)' }}
+                    >
+                      <Text
+                        className="text-[10px] font-bold"
+                        style={{ color: ACTIVE_FESTIVAL.accentColor }}
+                      >
+                        Your track
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text className="text-xs leading-relaxed mt-1" style={{ color: COMMUNITY_THEME.inkSoft }}>
+                  {track.summary}
+                </Text>
+                <Text className="text-xs font-medium mt-2" style={{ color: COMMUNITY_THEME.accent }}>
+                  {track.participants} potters joined
+                </Text>
+              </View>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function ComingSoonFestivals() {
+  return (
+    <View
+      className="rounded-3xl border p-5"
+      style={{
+        backgroundColor: COMMUNITY_THEME.festivalMuted,
+        borderColor: COMMUNITY_THEME.cardBorder,
+      }}
+    >
+      <Text
+        className="text-xs font-bold uppercase tracking-widest mb-2"
+        style={{ color: COMMUNITY_THEME.inkMuted }}
+      >
+        Coming soon
+      </Text>
+      <Text className="text-lg font-serif font-bold" style={{ color: COMMUNITY_THEME.ink }}>
+        Seasonal festivals
+      </Text>
+      <Text className="text-sm leading-relaxed mt-2" style={{ color: COMMUNITY_THEME.inkSoft }}>
+        Multi-track community events with voting and Hall of Fame winners are on the way. For now,
+        jump into the monthly challenge above.
+      </Text>
+    </View>
+  );
+}
 
 export function ChallengesTab() {
   const sessionToken = useAppStore((s) => s.sessionToken);
   const showToast = useAppStore((s) => s.showToast);
 
-  // Festival state
-  const [signUpOpen, setSignUpOpen] = useState(false);
-  const [dropOutOpen, setDropOutOpen] = useState(false);
-  const [enrolledTrackId, setEnrolledTrackId] = useState<string | null>(null);
-  const [rulesOpen, setRulesOpen] = useState(false);
-
-  // Monthly challenge state (API-backed)
   const [challengeApi, setChallengeApi] = useState<BackendChallenge | null>(null);
-  const [challengeLoading, setChallengeLoading] = useState(false);
-  const [challengeSubmitting, setChallengeSubmitting] = useState(false);
-  const [challengeEntryId, setChallengeEntryId] = useState<string | null>(null);
-  const [challengeDropOpen, setChallengeDropOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [apiEntryId, setApiEntryId] = useState<string | null>(null);
+  const [mockEntryId, setMockEntryId] = useState<string | null>(null);
+  const [mockTrackId, setMockTrackId] = useState<string | null>(null);
+  const [submitOpen, setSubmitOpen] = useState(false);
+  const [signUpOpen, setSignUpOpen] = useState(false);
+  const [dropOpen, setDropOpen] = useState(false);
 
-  // Submit sheet — which context triggered it
-  const [submitFor, setSubmitFor] = useState<'challenge' | 'festival' | null>(null);
+  const challenge = useMemo(
+    () => (challengeApi ? toChallengeDisplay(challengeApi) : MOCK_UNDERWATER_CHALLENGE),
+    [challengeApi],
+  );
+  const isMock = !challengeApi || challenge.isMock === true;
+  const entryId = isMock ? mockEntryId : apiEntryId;
+  const joined = entryId !== null;
+  const enrolledTrack = ACTIVE_FESTIVAL.tracks.find((t) => t.id === mockTrackId) ?? null;
 
-  const festival = ACTIVE_FESTIVAL;
-  const challenge = useMemo(() => {
-    if (!challengeApi) return ACTIVE_CHALLENGE;
-    return {
-      ...ACTIVE_CHALLENGE,
-      title: challengeApi.title || ACTIVE_CHALLENGE.title,
-      description: challengeApi.description || ACTIVE_CHALLENGE.description,
-      joined: challengeApi.participant_count ?? ACTIVE_CHALLENGE.joined,
-    };
-  }, [challengeApi]);
-  const challengeJoined = challengeEntryId !== null;
-  const enrolledTrack = festival.tracks.find(t => t.id === enrolledTrackId);
-
-  useEffect(() => {
-    if (!sessionToken) return;
-    let mounted = true;
-    setChallengeLoading(true);
-    apiListChallenges(sessionToken)
-      .then((items) => {
-        if (!mounted) return;
-        const active = items?.[0] ?? null;
-        setChallengeApi(active);
-
-        const maybeEntryId = ((active as unknown as { my_entry_id?: string | null })?.my_entry_id) ?? null;
-        if (maybeEntryId) {
-          setChallengeEntryId(maybeEntryId);
-        }
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setChallengeApi(null);
-      })
-      .finally(() => {
-        if (!mounted) return;
-        setChallengeLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [sessionToken]);
-
-  const handleJoinFestival = (trackId: string) => {
-    setEnrolledTrackId(trackId);
-    setSignUpOpen(false);
-  };
-
-  const handleDropOutFestival = () => {
-    setEnrolledTrackId(null);
-    setDropOutOpen(false);
-  };
-
-  const handleSubmitChallengeEntry = async (payload?: { note: string; hasPhoto: boolean }) => {
+  const load = useCallback(async () => {
     if (!sessionToken) {
-      setSubmitFor(null);
-      showToast('Please sign in to join challenges', 'error');
+      setChallengeApi(null);
+      setApiEntryId(null);
+      setLoading(false);
       return;
     }
-    if (!challengeApi?.id) {
-      setSubmitFor(null);
+
+    setLoading(true);
+    setError(null);
+    try {
+      const items = await apiListChallenges(sessionToken);
+      const primary = pickPrimaryChallenge(items);
+      setChallengeApi(primary);
+      setApiEntryId(challengeEntryId(primary));
+    } catch (err) {
+      setChallengeApi(null);
+      setApiEntryId(null);
+      if (!__DEV__) {
+        setError(err instanceof Error ? err.message : 'Failed to load challenges');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionToken]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const handleMockJoin = (trackId: string) => {
+    setMockTrackId(trackId);
+    setMockEntryId(createMockEntryId());
+    setSignUpOpen(false);
+    showToast('You joined the preview challenge!', 'success');
+  };
+
+  const handleQuickJoin = async () => {
+    if (isMock) {
+      setSignUpOpen(true);
+      return;
+    }
+
+    if (!sessionToken || !challengeApi?.id) {
       showToast('No active challenge available', 'error');
       return;
     }
 
-    setChallengeSubmitting(true);
+    setSubmitting(true);
     try {
       const entry = await apiSubmitChallengeEntry(sessionToken, challengeApi.id, {
-        note: payload?.note || 'Submitted from app challenge flow',
+        note: 'Joined from Pottery Life app',
       });
-      setChallengeEntryId(entry.id);
-      setSubmitFor(null);
+      setApiEntryId(entry.id);
+      showToast('You joined the challenge!', 'success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not join challenge';
+      showToast(message, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePrimaryPress = () => {
+    if (joined) {
+      setSubmitOpen(true);
+      return;
+    }
+    void handleQuickJoin();
+  };
+
+  const handleSubmitEntry = async (payload?: { note: string; hasPhoto: boolean }) => {
+    if (isMock) {
+      setSubmitOpen(false);
+      showToast('Preview entry saved — connect the API to publish for real', 'success');
+      return;
+    }
+
+    if (!sessionToken || !challengeApi?.id) {
+      setSubmitOpen(false);
+      showToast('No active challenge available', 'error');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const entry = await apiSubmitChallengeEntry(sessionToken, challengeApi.id, {
+        note: payload?.note?.trim() || 'Submitted from Pottery Life app',
+      });
+      setApiEntryId(entry.id);
+      setSubmitOpen(false);
       showToast('Challenge entry submitted', 'success');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not submit entry';
       showToast(message, 'error');
     } finally {
-      setChallengeSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  const handleLeaveChallenge = async () => {
-    if (!sessionToken || !challengeApi?.id || !challengeEntryId) {
-      setChallengeDropOpen(false);
+  const handleLeave = async () => {
+    if (isMock) {
+      setMockEntryId(null);
+      setMockTrackId(null);
+      setDropOpen(false);
+      showToast('Left preview challenge', 'success');
+      return;
+    }
+
+    if (!sessionToken || !challengeApi?.id || !apiEntryId) {
+      setDropOpen(false);
       return;
     }
 
     try {
-      await apiWithdrawChallengeEntry(sessionToken, challengeApi.id, challengeEntryId);
-      setChallengeEntryId(null);
+      await apiWithdrawChallengeEntry(sessionToken, challengeApi.id, apiEntryId);
+      setApiEntryId(null);
       showToast('Challenge entry withdrawn', 'success');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not leave challenge';
       showToast(message, 'error');
     } finally {
-      setChallengeDropOpen(false);
+      setDropOpen(false);
     }
   };
 
+  if (loading) {
+    return (
+      <View className="gap-3">
+        <View
+          className="rounded-3xl overflow-hidden border py-2"
+          style={{ borderColor: COMMUNITY_THEME.cardBorder, backgroundColor: COMMUNITY_THEME.cardBg }}
+        >
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonLeaderboardRow key={i} />
+          ))}
+        </View>
+      </View>
+    );
+  }
+
+  if (error && !isMock) {
+    return <InlineErrorCard message={error} onRetry={() => { void load(); }} />;
+  }
+
   return (
     <>
-      {/* ── Monthly Challenge ── */}
-      <View
-        className="rounded-3xl overflow-hidden border"
-        style={{ backgroundColor: challenge.bgColor, borderColor: challenge.borderColor }}
-      >
+      {isMock && __DEV__ ? (
         <View
-          className="items-center justify-center"
-          style={{ height: 140, backgroundColor: 'hsl(100 30% 90%)' }}
+          className="rounded-2xl border px-3 py-2 mb-3"
+          style={{
+            backgroundColor: 'hsl(195 40% 94%)',
+            borderColor: 'hsl(195 30% 82%)',
+          }}
         >
-          <Text style={{ fontSize: 72 }}>{challenge.emoji}</Text>
+          <Text className="text-[11px] leading-relaxed" style={{ color: 'hsl(195 45% 32%)' }}>
+            Preview mode — underwater challenge mock for testing join, track pick, submit, and leave.
+          </Text>
         </View>
+      ) : null}
 
-        <View className="px-5 pt-4 pb-5">
-          <View className="flex-row items-center gap-2 mb-1">
-            <Trophy size={13} color={challenge.accentColor} />
-            <Text className="text-xs font-bold" style={{ color: challenge.accentColor }}>{challenge.label}</Text>
-          </View>
-          <Text className="text-2xl font-serif font-bold text-foreground">{challenge.title}</Text>
-          <Text className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{challenge.description}</Text>
+      <ChallengeHero
+        challenge={challenge}
+        joined={joined}
+        enrolledTrackTitle={enrolledTrack?.title ?? null}
+        onPrimaryPress={handlePrimaryPress}
+        onLeavePress={() => setDropOpen(true)}
+        onChangeTrackPress={isMock && joined ? () => setSignUpOpen(true) : undefined}
+        loading={loading}
+        submitting={submitting}
+      />
 
-          <View className="flex-row gap-4 mt-3 mb-4">
-            <View>
-              <Text className="text-lg font-bold text-foreground">{challenge.joined}</Text>
-              <Text className="text-xs text-muted-foreground">potters in</Text>
-            </View>
-            <View className="w-px bg-border" />
-            <View>
-              <Text className="text-lg font-bold text-foreground">{challenge.daysLeft}</Text>
-              <Text className="text-xs text-muted-foreground">days left</Text>
-            </View>
-          </View>
-
-          {challengeJoined ? (
-            <View
-              className="rounded-2xl p-4 border"
-              style={{ backgroundColor: 'hsl(100 30% 92%)', borderColor: 'hsl(100 25% 82%)' }}
-            >
-              <View className="flex-row items-center gap-2 mb-1">
-                <CheckCircle size={14} color={challenge.accentColor} />
-                <Text className="text-xs font-bold" style={{ color: challenge.accentColor }}>You're in!</Text>
-              </View>
-              <Text className="text-xs text-muted-foreground">Make your bowl and submit before time runs out.</Text>
-              <TouchableOpacity
-                className="py-2.5 rounded-xl items-center mt-3"
-                style={{ backgroundColor: challenge.accentColor }}
-                activeOpacity={0.85}
-                disabled={challengeSubmitting}
-                onPress={() => setSubmitFor('challenge')}
-              >
-                <Text className="text-white text-xs font-bold">{challengeSubmitting ? 'Submitting...' : 'Submit My Entry'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                className="items-center mt-2.5"
-                activeOpacity={0.6}
-                onPress={() => setChallengeDropOpen(true)}
-              >
-                <Text className="text-xs" style={{ color: 'hsl(0 50% 55%)' }}>Leave challenge</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              className="py-3 rounded-xl items-center"
-              style={{ backgroundColor: challenge.accentColor }}
-              activeOpacity={0.85}
-              disabled={challengeLoading || challengeSubmitting}
-              onPress={() => setSubmitFor('challenge')}
-            >
-              <Text className="text-white text-sm font-bold">
-                {challengeLoading ? 'Loading challenge...' : challengeSubmitting ? 'Submitting...' : 'Take the Challenge'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* ── Section divider ── */}
-      <View className="flex-row items-center gap-3 my-1">
-        <View className="flex-1 h-px bg-border" />
-        <Text className="text-[10px] font-bold tracking-widest text-muted-foreground">SEASONAL FESTIVAL</Text>
-        <View className="flex-1 h-px bg-border" />
-      </View>
-
-      {/* ── Festival hero ── */}
-      <View
-        className="rounded-3xl overflow-hidden border"
-        style={{ backgroundColor: festival.bgColor, borderColor: festival.borderColor }}
-      >
-        <Image
-          source={require('../../../../assets/images/under.jpg')}
-          style={{ width: '100%', height: 200 }}
-          resizeMode="cover"
-        />
-
-        <View className="px-5 pt-4 pb-5">
-          <View className="flex-row items-center gap-2 mb-1">
-            <Trophy size={13} color={festival.accentColor} />
-            <Text className="text-xs font-bold" style={{ color: festival.accentColor }}>Festival Active</Text>
-          </View>
-          <Text className="text-2xl font-serif font-bold text-foreground">{festival.name}</Text>
-          <Text className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{festival.tagline}</Text>
-
-          {/* Stats row */}
-          <View className="flex-row gap-4 mt-3 mb-1">
-            <View>
-              <Text className="text-lg font-bold text-foreground">{festival.totalParticipants}</Text>
-              <Text className="text-xs text-muted-foreground">potters in</Text>
-            </View>
-            <View className="w-px bg-border" />
-            <View>
-              <Text className="text-lg font-bold text-foreground">{festival.daysLeft}</Text>
-              <Text className="text-xs text-muted-foreground">days to submit</Text>
-            </View>
-            <View className="w-px bg-border" />
-            <View>
-              <Text className="text-lg font-bold text-foreground">3</Text>
-              <Text className="text-xs text-muted-foreground">winners (1/track)</Text>
-            </View>
-          </View>
-
-          {/* Rules inline toggle */}
-          <TouchableOpacity
-            className="flex-row items-center gap-1.5 py-2 self-start"
-            activeOpacity={0.7}
-            onPress={() => setRulesOpen(o => !o)}
-          >
-            {rulesOpen
-              ? <ChevronUp size={13} color={festival.accentColor} />
-              : <ChevronDown size={13} color={festival.accentColor} />
-            }
-            <Text className="text-xs font-semibold" style={{ color: festival.accentColor }}>
-              {rulesOpen ? 'Hide rules' : 'See rules'}
-            </Text>
-          </TouchableOpacity>
-
-          {rulesOpen && (
-            <View className="mt-1 mb-3 gap-2">
-              {festival.rules.map((rule, i) => (
-                <View key={i} className="flex-row gap-2.5 items-start">
-                  <View
-                    className="mt-1.5 rounded-full flex-shrink-0"
-                    style={{ width: 5, height: 5, backgroundColor: festival.accentColor }}
-                  />
-                  <Text className="text-xs text-muted-foreground flex-1 leading-relaxed">{rule}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Enrolled state vs join CTA */}
-          {enrolledTrack ? (
-            <View
-              className="rounded-2xl p-4 border"
-              style={{ backgroundColor: 'hsl(100 30% 92%)', borderColor: 'hsl(100 25% 82%)' }}
-            >
-              <View className="flex-row items-center gap-2 mb-1">
-                <CheckCircle size={14} color={festival.accentColor} />
-                <Text className="text-xs font-bold" style={{ color: festival.accentColor }}>You're in!</Text>
-              </View>
-              <Text className="text-sm font-bold text-foreground">{enrolledTrack.title}</Text>
-              <Text className="text-xs text-muted-foreground mt-0.5">Start making your piece and submit before the deadline.</Text>
-              <View className="flex-row gap-2 mt-3">
-                <TouchableOpacity
-                  className="flex-1 py-2.5 rounded-xl items-center"
-                  style={{ backgroundColor: festival.accentColor }}
-                  activeOpacity={0.85}
-                  onPress={() => setSubmitFor('festival')}
-                >
-                  <Text className="text-white text-xs font-bold">Submit My Piece</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="px-4 py-2.5 rounded-xl items-center bg-white/60 border"
-                  style={{ borderColor: 'hsl(100 25% 78%)' }}
-                  activeOpacity={0.75}
-                  onPress={() => setSignUpOpen(true)}
-                >
-                  <Text className="text-xs font-semibold" style={{ color: festival.accentColor }}>Change Track</Text>
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity
-                className="items-center mt-3"
-                activeOpacity={0.6}
-                onPress={() => setDropOutOpen(true)}
-              >
-                <Text className="text-xs" style={{ color: 'hsl(0 50% 55%)' }}>Leave festival</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              className="py-3 rounded-xl items-center"
-              style={{ backgroundColor: festival.accentColor }}
-              activeOpacity={0.85}
-              onPress={() => setSignUpOpen(true)}
-            >
-              <Text className="text-white text-sm font-bold">Join Festival</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* ── Tracks ── */}
-      {festival.tracks.map((track) => {
-        const isEnrolled = enrolledTrackId === track.id;
-        return (
-          <Card key={track.id} className="p-4">
-            <View className="flex-row items-start gap-3">
-              <View className="w-10 h-10 rounded-2xl bg-green-50 items-center justify-center flex-shrink-0">
-                {isEnrolled
-                  ? <CheckCircle size={18} color={festival.accentColor} />
-                  : <Trophy size={16} color={festival.accentColor} />
-                }
-              </View>
-              <View className="flex-1">
-                <View className="flex-row items-center gap-2 flex-wrap">
-                  <Text className="text-sm font-bold text-foreground">{track.title}</Text>
-                  {isEnrolled && (
-                    <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: 'hsl(100 25% 90%)' }}>
-                      <Text className="text-[10px] font-bold" style={{ color: festival.accentColor }}>Your track</Text>
-                    </View>
-                  )}
-                </View>
-                <Text className="text-xs text-muted-foreground mt-1 leading-relaxed">{track.summary}</Text>
-                <View className="flex-row items-center justify-between mt-2">
-                  <Text className="text-xs font-medium text-primary">{track.participants} potters joined</Text>
-                  <View className="px-2 py-0.5 rounded-full bg-muted border border-border">
-                    <Text className="text-[10px] text-muted-foreground font-medium">1 winner</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </Card>
-        );
-      })}
-
-      {/* ── How does it work ── */}
       <View className="mt-2">
-        <Text className="text-base font-serif font-bold text-foreground mb-3">How does it work?</Text>
-        <View className="gap-0">
+        <Text
+          className="text-base font-serif font-bold mb-3"
+          style={{ color: COMMUNITY_THEME.ink }}
+        >
+          How it works
+        </Text>
+        <View
+          className="rounded-3xl border p-4"
+          style={{
+            backgroundColor: COMMUNITY_THEME.cardBg,
+            borderColor: COMMUNITY_THEME.cardBorder,
+          }}
+        >
           {HOW_IT_WORKS.map(({ step, icon: Icon, title, body }, index) => (
             <View key={step} className="flex-row gap-4">
               <View className="items-center" style={{ width: 36 }}>
                 <View
                   className="w-9 h-9 rounded-full items-center justify-center"
-                  style={{ backgroundColor: 'hsl(100 25% 92%)' }}
+                  style={{ backgroundColor: COMMUNITY_THEME.accentSoft }}
                 >
-                  <Icon size={16} color={festival.accentColor} />
+                  <Icon size={16} color={COMMUNITY_THEME.accent} />
                 </View>
-                {index < HOW_IT_WORKS.length - 1 && (
-                  <View className="flex-1 w-px mt-1" style={{ backgroundColor: 'hsl(100 25% 88%)', minHeight: 24 }} />
-                )}
+                {index < HOW_IT_WORKS.length - 1 ? (
+                  <View
+                    className="flex-1 w-px mt-1"
+                    style={{
+                      backgroundColor: COMMUNITY_THEME.cardBorder,
+                      minHeight: 20,
+                    }}
+                  />
+                ) : null}
               </View>
-              <View className="flex-1 pb-5">
-                <Text className="text-[10px] font-bold tracking-widest mb-0.5" style={{ color: 'hsl(100 35% 55%)' }}>
-                  {step}
+              <View className="flex-1 pb-4">
+                <Text
+                  className="text-[10px] font-bold tracking-widest mb-0.5"
+                  style={{ color: COMMUNITY_THEME.inkMuted }}
+                >
+                  0{step}
                 </Text>
-                <Text className="text-sm font-bold text-foreground">{title}</Text>
-                <Text className="text-xs text-muted-foreground mt-1 leading-relaxed">{body}</Text>
+                <Text className="text-sm font-bold" style={{ color: COMMUNITY_THEME.ink }}>
+                  {title}
+                </Text>
+                <Text className="text-xs leading-relaxed mt-1" style={{ color: COMMUNITY_THEME.inkSoft }}>
+                  {body}
+                </Text>
               </View>
             </View>
           ))}
         </View>
       </View>
 
-      {/* ── Sheets ── */}
+      {isMock ? <MockTrackCards enrolledTrackId={mockTrackId} /> : null}
+
+      {!isMock ? <ComingSoonFestivals /> : null}
+
       <FestivalSignUpSheet
         visible={signUpOpen}
-        festival={festival}
-        onConfirm={handleJoinFestival}
+        festival={ACTIVE_FESTIVAL}
+        onConfirm={handleMockJoin}
         onClose={() => setSignUpOpen(false)}
       />
 
       <SubmitPieceSheet
-        visible={submitFor !== null}
-        contextName={submitFor === 'challenge' ? challenge.title : festival.name}
-        contextSubtitle={submitFor === 'challenge' ? challenge.label : (enrolledTrack?.title ?? '')}
-        accentColor={festival.accentColor}
-        onSubmit={(payload) => {
-          if (submitFor === 'challenge') {
-            void handleSubmitChallengeEntry(payload);
-            return;
-          }
-          setSubmitFor(null);
-        }}
-        onClose={() => setSubmitFor(null)}
+        visible={submitOpen}
+        contextName={challenge.title}
+        contextSubtitle={enrolledTrack?.title ?? challenge.label}
+        accentColor={challenge.accentColor ?? COMMUNITY_THEME.accent}
+        onSubmit={(payload) => { void handleSubmitEntry(payload); }}
+        onClose={() => setSubmitOpen(false)}
       />
 
       <ConfirmSheet
-        visible={dropOutOpen}
-        title="Leave the festival?"
-        body="Your spot will be freed. You can rejoin before submissions close, but you'll need to pick a track again."
-        confirmLabel="Leave Festival"
-        destructive
-        onConfirm={handleDropOutFestival}
-        onCancel={() => setDropOutOpen(false)}
-      />
-
-      <ConfirmSheet
-        visible={challengeDropOpen}
+        visible={dropOpen}
         title="Leave the challenge?"
-        body="You can rejoin any time before the deadline."
-        confirmLabel="Leave Challenge"
+        body="You can rejoin before the deadline, but your current spot will be cleared."
+        confirmLabel="Leave challenge"
         destructive
-        onConfirm={() => { void handleLeaveChallenge(); }}
-        onCancel={() => setChallengeDropOpen(false)}
+        onConfirm={() => { void handleLeave(); }}
+        onCancel={() => setDropOpen(false)}
       />
     </>
   );

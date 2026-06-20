@@ -24,84 +24,16 @@ import {
 } from '@/src/screens/community/utils/feedDisplayContent';
 import { parseCommunityPostMeta } from '@/src/screens/community/utils/communityPostPayload';
 import { parsePieceJournalFromPost } from '@/src/screens/community/utils/pieceJournalPostPayload';
-import { apiAddReaction, apiRemoveReaction } from '@/src/services/community';
+import { PostReactionBar } from '@/src/screens/community/components/PostReactionBar';
 import { apiSendFriendRequest } from '@/src/services/friends';
 import { useAppStore } from '@/src/store';
 import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
 import { Image } from 'expo-image';
-import { Bookmark, Check, MessageCircle, Users } from 'lucide-react-native';
-import React, { useRef, useState } from 'react';
-import { Animated, ScrollView, TouchableOpacity, View } from 'react-native';
+import { Bookmark, Check, Users } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { BackendFeedPost } from '../../../services/community';
-
-// ─── Pottery reactions ────────────────────────────────────────────────────────
-
-type ReactionKey = 'fired' | 'glazed' | 'centered' | 'thrown';
-
-const REACTIONS: { key: ReactionKey; emoji: string; label: string; activeColor: string }[] = [
-  { key: 'fired',    emoji: '🔥', label: 'Kiln it!',       activeColor: 'hsl(39 57% 51%)'  },
-  { key: 'glazed',   emoji: '✨', label: 'Glaze-mazing!',  activeColor: 'hsl(213 75% 52%)' },
-  { key: 'centered', emoji: '🎯', label: 'Well Centered!', activeColor: 'hsl(145 50% 42%)' },
-  { key: 'thrown',   emoji: '💫', label: 'Spin the Wheel!', activeColor: 'hsl(270 55% 52%)' },
-];
-
-// ─── Single reaction button ───────────────────────────────────────────────────
-
-function ReactionButton({
-  emoji,
-  label,
-  activeColor,
-  isActive,
-  count,
-  disabled,
-  onPress,
-}: {
-  emoji: string;
-  label: string;
-  activeColor: string;
-  isActive: boolean;
-  count: number;
-  disabled: boolean;
-  onPress: () => void;
-}) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const [showLabel, setShowLabel] = useState(false);
-  const labelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handlePress = () => {
-    if (disabled) return;
-    onPress();
-    Animated.sequence([
-      Animated.timing(scale, { toValue: 1.5, duration: 100, useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 4 }),
-    ]).start();
-    // keep the label visible for at least 2.5s regardless of API outcome
-    if (labelTimer.current) clearTimeout(labelTimer.current);
-    setShowLabel(true);
-    labelTimer.current = setTimeout(() => setShowLabel(false), 2500);
-  };
-
-  const labelVisible = isActive || showLabel;
-
-  return (
-    <TouchableOpacity
-      onPress={handlePress}
-      disabled={disabled}
-      activeOpacity={0.7}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-    >
-      <Animated.Text style={{ fontSize: 20, transform: [{ scale }] }}>
-        {emoji}
-      </Animated.Text>
-      {labelVisible && (
-        <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? activeColor : 'hsl(24 20% 50%)' }}>
-          {isActive && count > 0 ? `${count} · ${label}` : label}
-        </Text>
-      )}
-    </TouchableOpacity>
-  );
-}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -191,11 +123,6 @@ export function FeedPostCard({ post, sessionToken }: Props) {
   const isGlazeRecipePost = isSavableGlazeRecipePayload(recipePayload);
   const canSendFriendRequest = Boolean(backendUserId && backendUserId !== post.user_id);
 
-  const [selectedReaction, setSelectedReaction] = useState<ReactionKey | null>(
-    post.has_reacted ? 'fired' : null,
-  );
-  const [reactionCount, setReactionCount] = useState(post.reaction_count ?? 0);
-  const [reacting, setReacting] = useState(false);
   const [requestState, setRequestState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [saveSheetOpen, setSaveSheetOpen] = useState(false);
 
@@ -248,38 +175,6 @@ export function FeedPostCard({ post, sessionToken }: Props) {
     }
   };
 
-  const handleReaction = async (key: ReactionKey) => {
-    if (reacting) return;
-    setReacting(true);
-
-    const isSame = selectedReaction === key;
-    const wasReacted = selectedReaction !== null;
-
-    setSelectedReaction(isSame ? null : key);
-    setReactionCount((c) => {
-      if (isSame) return Math.max(0, c - 1);
-      if (!wasReacted) return c + 1;
-      return c;
-    });
-
-    try {
-      if (isSame) {
-        await apiRemoveReaction(sessionToken, post.id);
-      } else if (!wasReacted) {
-        await apiAddReaction(sessionToken, post.id);
-      }
-    } catch {
-      setSelectedReaction(wasReacted ? (isSame ? key : selectedReaction) : null);
-      setReactionCount((c) => {
-        if (isSame) return c + 1;
-        if (!wasReacted) return Math.max(0, c - 1);
-        return c;
-      });
-    } finally {
-      setReacting(false);
-    }
-  };
-
   return (
     <>
       {PaywallGate}
@@ -291,7 +186,7 @@ export function FeedPostCard({ post, sessionToken }: Props) {
         onSave={handleSaveToAtlas}
       />
 
-      <Card className="p-4">
+      <Card className="p-4 overflow-visible">
       {/* Header */}
       <View className="flex-row items-center gap-3 mb-3">
         <UserAvatar initial={initial} size={36} />
@@ -412,30 +307,12 @@ export function FeedPostCard({ post, sessionToken }: Props) {
         </View>
       ) : null}
 
-      {/* Reactions row */}
-      <View className="flex-row items-center">
-        <View className="flex-row items-center gap-5">
-          {REACTIONS.map(({ key, emoji, label, activeColor }) => (
-            <ReactionButton
-              key={key}
-              emoji={emoji}
-              label={label}
-              activeColor={activeColor}
-              isActive={selectedReaction === key}
-              count={reactionCount}
-              disabled={reacting}
-              onPress={() => handleReaction(key)}
-            />
-          ))}
-        </View>
-
-        {/* Comment count — right side */}
-        <View style={{ flex: 1 }} />
-        <TouchableOpacity className="flex-row items-center gap-1.5" activeOpacity={0.7}>
-          <MessageCircle size={16} color="hsl(24 20% 55%)" />
-          <Text className="text-xs text-muted-foreground">{post.comment_count ?? 0}</Text>
-        </TouchableOpacity>
-      </View>
+      <PostReactionBar
+        postId={post.id}
+        sessionToken={sessionToken}
+        initialCount={post.reaction_count ?? 0}
+        initialHasReacted={post.has_reacted}
+      />
     </Card>
     </>
   );

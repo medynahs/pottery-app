@@ -1,24 +1,12 @@
 import { Text } from '@/src/components/ui/text';
+import { useRouter } from 'expo-router';
 import { Award, Lock } from 'lucide-react-native';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
-import type { BadgeIconComponent } from '../constants/badgeRegistry';
+import type { BadgeState } from '../constants/badgeRegistry';
 import { PROFILE_THEME } from '../profileTheme';
 import { ProfileSectionCard } from './ProfileSectionCard';
-
-export type BadgeState = {
-  id: string;
-  name: string;
-  desc: string;
-  icon: BadgeIconComponent;
-  iconColor: string;
-  bg: string;
-  border: string;
-  current: number;
-  target: number;
-  unlocked: boolean;
-  progress: number;
-};
+import { ViewAllBadgesCard } from './ViewAllBadgesCard';
 
 function EarnedBadgeCard({
   name,
@@ -90,16 +78,17 @@ function LockedBadgeRow({
   );
 }
 
-export function JourneyBadgesSection({
-  unlocked,
-  locked,
-}: {
-  unlocked: BadgeState[];
-  locked: BadgeState[];
-}) {
-  const nextUp = [...locked].sort((a, b) => b.progress - a.progress).slice(0, 4);
+export function JourneyBadgesSection({ badges }: { badges: BadgeState[] }) {
+  const router = useRouter();
 
-  if (unlocked.length === 0 && locked.length === 0) return null;
+  const unlocked = useMemo(() => badges.filter((badge) => badge.unlocked), [badges]);
+  const locked = useMemo(() => badges.filter((badge) => !badge.unlocked), [badges]);
+  const closest = useMemo(
+    () => [...locked].sort((a, b) => b.progress - a.progress).slice(0, 3),
+    [locked],
+  );
+
+  if (badges.length === 0) return null;
 
   return (
     <>
@@ -122,25 +111,23 @@ export function JourneyBadgesSection({
         </ProfileSectionCard>
       )}
 
-      {nextUp.length > 0 && (
+      {closest.length > 0 && (
         <ProfileSectionCard
-          title="Next up"
-          hint="Closest badges to unlock"
+          title="Closest to unlock"
+          hint="Your nearest badge milestones"
           accent="badges"
           icon={<Lock size={18} color={PROFILE_THEME.inkSoft} />}
-          trailing={
-            locked.length > nextUp.length ? (
-              <Text className="text-[10px] font-semibold" style={{ color: PROFILE_THEME.inkMuted }}>
-                +{locked.length - nextUp.length} more
-              </Text>
-            ) : undefined
-          }
         >
-          {nextUp.map((badge) => (
+          {closest.map((badge) => (
             <LockedBadgeRow key={badge.id} {...badge} />
           ))}
         </ProfileSectionCard>
       )}
+
+      <ViewAllBadgesCard
+        badges={badges}
+        onPress={() => router.push('/profile/badges' as never)}
+      />
     </>
   );
 }

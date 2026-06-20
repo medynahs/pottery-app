@@ -27,6 +27,26 @@ import { getGlazeRootId } from '@/src/screens/glazes/glazeVersionUtils';
 
 export type BadgeIconComponent = React.ComponentType<{ size?: number; color?: string }>;
 
+export type BadgeCategory = 'kiln' | 'atlas' | 'volume' | 'technique' | 'studio' | 'sales';
+
+export const BADGE_CATEGORY_LABELS: Record<BadgeCategory, string> = {
+  kiln: 'Kiln & firing',
+  atlas: 'Glaze atlas',
+  volume: 'Piece milestones',
+  technique: 'Technique',
+  studio: 'Studio habits',
+  sales: 'Sales & sharing',
+};
+
+export const BADGE_CATEGORY_ORDER: BadgeCategory[] = [
+  'kiln',
+  'atlas',
+  'volume',
+  'technique',
+  'studio',
+  'sales',
+];
+
 export interface BadgeContext {
   totalPieces: number;
   finishedPieces: number;
@@ -49,6 +69,7 @@ export interface BadgeDef {
   id: string;
   name: string;
   desc: string;
+  category: BadgeCategory;
   icon: BadgeIconComponent;
   iconColor: string;
   bg: string;
@@ -57,11 +78,18 @@ export interface BadgeDef {
   target: number;
 }
 
+export type BadgeState = Omit<BadgeDef, 'current'> & {
+  current: number;
+  unlocked: boolean;
+  progress: number;
+};
+
 export const BADGE_REGISTRY: BadgeDef[] = [
   {
     id: 'first-fire',
     name: 'First Fire',
     desc: '1 bisque firing',
+    category: 'kiln',
     icon: Flame,
     iconColor: 'hsl(39 57% 51%)',
     bg: 'bg-primary/10',
@@ -73,6 +101,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'first-glaze',
     name: 'First Glaze',
     desc: '1 glaze firing',
+    category: 'kiln',
     icon: Gem,
     iconColor: 'hsl(200 75% 48%)',
     bg: 'bg-cyan-50',
@@ -84,6 +113,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'kiln-master',
     name: 'Kiln Master',
     desc: '25 firings',
+    category: 'kiln',
     icon: Trophy,
     iconColor: 'hsl(38 80% 50%)',
     bg: 'bg-amber-50',
@@ -95,6 +125,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'glaze-alchemist',
     name: 'Glaze Alchemist',
     desc: '10 glaze firings',
+    category: 'kiln',
     icon: FlaskConical,
     iconColor: 'hsl(168 60% 40%)',
     bg: 'bg-teal-50',
@@ -106,6 +137,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'atlas-starter',
     name: 'Atlas Starter',
     desc: '5 recipes saved in atlas',
+    category: 'atlas',
     icon: Droplets,
     iconColor: 'hsl(200 75% 48%)',
     bg: 'bg-sky-50',
@@ -117,6 +149,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'atlas-curator',
     name: 'Atlas Curator',
     desc: '15 recipes saved in atlas',
+    category: 'atlas',
     icon: BookOpen,
     iconColor: 'hsl(213 70% 45%)',
     bg: 'bg-indigo-50',
@@ -128,6 +161,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'atlas-master',
     name: 'Atlas Master',
     desc: '30 recipes saved in atlas',
+    category: 'atlas',
     icon: Gem,
     iconColor: 'hsl(270 60% 55%)',
     bg: 'bg-purple-50',
@@ -139,6 +173,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'centering',
     name: 'Centering',
     desc: '50 pieces made',
+    category: 'volume',
     icon: Layers,
     iconColor: 'hsl(213 80% 55%)',
     bg: 'bg-blue-50',
@@ -150,6 +185,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'centurion',
     name: 'Centurion',
     desc: '100 pieces made',
+    category: 'volume',
     icon: Medal,
     iconColor: 'hsl(44 80% 46%)',
     bg: 'bg-yellow-50',
@@ -161,6 +197,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'prolific',
     name: 'Prolific',
     desc: '150 pieces made',
+    category: 'volume',
     icon: TrendingUp,
     iconColor: 'hsl(145 50% 45%)',
     bg: 'bg-emerald-50',
@@ -172,6 +209,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'studio-veteran',
     name: 'Studio Veteran',
     desc: '300 pieces made',
+    category: 'volume',
     icon: Crown,
     iconColor: 'hsl(38 90% 42%)',
     bg: 'bg-amber-50',
@@ -183,6 +221,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'wheel-warrior',
     name: 'Wheel Warrior',
     desc: '25 wheel-thrown pieces',
+    category: 'technique',
     icon: Disc,
     iconColor: 'hsl(213 65% 50%)',
     bg: 'bg-blue-50',
@@ -194,6 +233,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'hand-builder',
     name: 'Hand Builder',
     desc: '25 hand-built pieces',
+    category: 'technique',
     icon: Hammer,
     iconColor: 'hsl(28 55% 45%)',
     bg: 'bg-stone-50',
@@ -205,6 +245,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'glazing-artist',
     name: 'Glazing Artist',
     desc: '50 pieces glazed',
+    category: 'studio',
     icon: Star,
     iconColor: 'hsl(270 60% 55%)',
     bg: 'bg-purple-50',
@@ -216,6 +257,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'finisher',
     name: 'Finisher',
     desc: '30 pieces finished',
+    category: 'studio',
     icon: Award,
     iconColor: 'hsl(100 40% 45%)',
     bg: 'bg-green-50',
@@ -227,6 +269,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'record-keeper',
     name: 'Record Keeper',
     desc: '10 pieces with notes',
+    category: 'studio',
     icon: BookOpen,
     iconColor: 'hsl(213 70% 45%)',
     bg: 'bg-sky-50',
@@ -238,6 +281,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'photo-story',
     name: 'Photo Story',
     desc: '10 pieces with photos',
+    category: 'studio',
     icon: Camera,
     iconColor: 'hsl(240 30% 50%)',
     bg: 'bg-indigo-50',
@@ -249,6 +293,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'resilient',
     name: 'Resilient',
     desc: '5 pieces failed',
+    category: 'studio',
     icon: Sparkles,
     iconColor: 'hsl(340 75% 50%)',
     bg: 'bg-pink-50',
@@ -260,6 +305,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'first-sale',
     name: 'First Sale',
     desc: '1 piece sold',
+    category: 'sales',
     icon: Tag,
     iconColor: 'hsl(145 55% 42%)',
     bg: 'bg-green-50',
@@ -271,6 +317,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'market-ready',
     name: 'Market Ready',
     desc: '10 pieces sold',
+    category: 'sales',
     icon: ShoppingBag,
     iconColor: 'hsl(145 55% 35%)',
     bg: 'bg-emerald-50',
@@ -282,6 +329,7 @@ export const BADGE_REGISTRY: BadgeDef[] = [
     id: 'giver',
     name: 'Giver',
     desc: '15 pieces gifted',
+    category: 'sales',
     icon: Gift,
     iconColor: 'hsl(310 60% 55%)',
     bg: 'bg-fuchsia-50',
@@ -331,13 +379,34 @@ export function countEarnedBadges(ctx: BadgeContext): number {
   return BADGE_REGISTRY.filter((badge) => badge.current(ctx) >= badge.target).length;
 }
 
-export function computeBadgeStates(ctx: BadgeContext) {
+export function computeBadgeStates(ctx: BadgeContext): BadgeState[] {
   return BADGE_REGISTRY.map((badge) => {
     const current = badge.current(ctx);
     const unlocked = current >= badge.target;
     const progress = Math.min(1, current / badge.target);
     return { ...badge, current, unlocked, progress };
   });
+}
+
+export function groupBadgesByCategory(badges: BadgeState[]) {
+  const grouped = new Map<BadgeCategory, BadgeState[]>();
+
+  for (const badge of badges) {
+    const list = grouped.get(badge.category) ?? [];
+    list.push(badge);
+    grouped.set(badge.category, list);
+  }
+
+  return BADGE_CATEGORY_ORDER
+    .map((category) => {
+      const categoryBadges = grouped.get(category) ?? [];
+      const sorted = [...categoryBadges].sort((a, b) => {
+        if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
+        return b.progress - a.progress;
+      });
+      return { category, label: BADGE_CATEGORY_LABELS[category], badges: sorted };
+    })
+    .filter((group) => group.badges.length > 0);
 }
 
 export function getTitleForBadges(earned: number) {

@@ -4,10 +4,8 @@ import { useVisiblePieces, useAppStore } from '@/src/store/appStore';
 import { Box, BookOpen, Flame, Layers, Star } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
-import {
-  buildBadgeContext,
-  computeBadgeStates,
-} from '../constants/badgeRegistry';
+import { buildBadgeContext } from '../constants/badgeRegistry';
+import { useBadgeStates } from '../hooks/useBadgeStates';
 import { useProfileLevel } from '../hooks/useProfileLevel';
 import { buildJourneyMilestones } from '../utils/buildJourneyMilestones';
 import { JourneyBadgesSection } from '../components/JourneyBadgesSection';
@@ -22,8 +20,8 @@ export function JourneyTab() {
   const glazes = useAppStore((s) => s.glazes);
   const level = useProfileLevel();
 
+  const badges = useBadgeStates();
   const ctx = useMemo(() => buildBadgeContext(pieces, firings, glazes), [pieces, firings, glazes]);
-  const badges = useMemo(() => computeBadgeStates(ctx), [ctx]);
 
   const survivalRate = useMemo(() => {
     if (ctx.totalPieces === 0) return 0;
@@ -50,8 +48,6 @@ export function JourneyTab() {
     [ctx],
   );
 
-  const unlocked = badges.filter((b) => b.unlocked);
-  const locked = badges.filter((b) => !b.unlocked);
   const timeline = useMemo(() => buildJourneyMilestones(pieces, firings), [pieces, firings]);
 
   if (ctx.totalPieces === 0) {
@@ -74,6 +70,9 @@ export function JourneyTab() {
           description="Add pieces, log firings, and build your glaze atlas to unlock badges and timeline milestones."
           variant="card"
         />
+        <View className="mt-4">
+          <JourneyBadgesSection badges={badges} />
+        </View>
       </View>
     );
   }
@@ -110,7 +109,7 @@ export function JourneyTab() {
       <JourneyStatGrid stats={stats} />
 
       <View className="px-4">
-        <JourneyBadgesSection unlocked={unlocked} locked={locked} />
+        <JourneyBadgesSection badges={badges} />
         <JourneyTimeline milestones={timeline} />
       </View>
     </View>

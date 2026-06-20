@@ -138,6 +138,7 @@ function AppShell() {
         <Stack.Screen name="account-settings" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="privacy-settings" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="profile/studio-rhythm" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/badges" options={{ headerShown: false }} />
         <Stack.Screen name="overview-alerts" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="kilnkin" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="analytics" options={{ headerShown: false }} />

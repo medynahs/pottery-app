@@ -117,7 +117,7 @@ function SheetCard({ visible, children, onBackdrop }: { visible: boolean; childr
   );
 }
 
-function SheetBtn({
+export function SheetButton({
   label,
   onPress,
   variant = 'cancel',
@@ -128,26 +128,23 @@ function SheetBtn({
   variant?: 'confirm' | 'destructive' | 'cancel';
   disabled?: boolean;
 }) {
-  const bg =
-    variant === 'destructive'
-      ? 'hsl(0 65% 48%)'
-      : variant === 'confirm'
-        ? 'hsl(39 57% 51%)'
-        : undefined;
+  const isBlocked = Boolean(disabled);
 
   if (variant === 'cancel') {
     return (
       <TouchableOpacity
         onPress={onPress}
-        disabled={disabled}
-        activeOpacity={0.75}
+        disabled={isBlocked}
+        activeOpacity={0.82}
         style={{
-          borderRadius: 14,
-          paddingVertical: 13,
+          minHeight: 56,
+          borderRadius: 16,
           alignItems: 'center',
-          backgroundColor: '#F5EDD8',
+          justifyContent: 'center',
+          backgroundColor: '#FFFBF2',
           borderWidth: 1,
           borderColor: '#E8D9BE',
+          opacity: isBlocked ? 0.6 : 1,
         }}
       >
         <Text style={{ color: 'hsl(24 30% 35%)', fontWeight: '600', fontSize: 15 }}>{label}</Text>
@@ -155,22 +152,33 @@ function SheetBtn({
     );
   }
 
+  const bg =
+    variant === 'destructive'
+      ? 'hsl(0 65% 48%)'
+      : 'hsl(39 57% 51%)';
+
   return (
     <TouchableOpacity
       onPress={onPress}
-      disabled={disabled}
-      activeOpacity={0.8}
+      disabled={isBlocked}
+      activeOpacity={0.82}
       style={{
-        borderRadius: 14,
-        paddingVertical: 14,
+        minHeight: 56,
+        borderRadius: 16,
         alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: bg,
-        opacity: disabled ? 0.6 : 1,
+        opacity: isBlocked ? 0.6 : 1,
       }}
     >
       <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>{label}</Text>
     </TouchableOpacity>
   );
+}
+
+/** Stacked sheet footer actions — matches PrimaryButton sizing app-wide. */
+export function ModalSheetActions({ children }: { children: React.ReactNode }) {
+  return <View style={{ gap: 10 }}>{children}</View>;
 }
 
 export {
@@ -215,13 +223,13 @@ export function ConfirmSheet({
         <Text className="text-sm text-muted-foreground mt-2 leading-5">{body}</Text>
       </View>
       <View style={{ paddingHorizontal: 24, paddingTop: 20, gap: 10 }}>
-        <SheetBtn
+        <SheetButton
           label={loading ? 'Please wait…' : confirmLabel}
           onPress={onConfirm}
           variant={destructive ? 'destructive' : 'confirm'}
           disabled={loading}
         />
-        <SheetBtn label="Cancel" onPress={onCancel} variant="cancel" disabled={loading} />
+        <SheetButton label="Cancel" onPress={onCancel} variant="cancel" disabled={loading} />
       </View>
     </SheetCard>
   );
@@ -245,7 +253,7 @@ export function InfoSheet({ visible, title, body, buttonLabel = 'Got it', onDism
         <Text className="text-sm text-muted-foreground mt-2 leading-5">{body}</Text>
       </View>
       <View style={{ paddingHorizontal: 24, paddingTop: 20 }}>
-        <SheetBtn label={buttonLabel} onPress={onDismiss} variant="confirm" />
+        <SheetButton label={buttonLabel} onPress={onDismiss} variant="confirm" />
       </View>
     </SheetCard>
   );
@@ -283,7 +291,7 @@ function PickSheetContent({
       </View>
       <View style={{ paddingHorizontal: 24, paddingTop: 20, gap: 10 }}>
         {options.map((opt) => (
-          <SheetBtn
+          <SheetButton
             key={opt.label}
             label={opt.label}
             onPress={() => {
@@ -293,7 +301,7 @@ function PickSheetContent({
             variant={opt.destructive ? 'destructive' : 'confirm'}
           />
         ))}
-        <SheetBtn label="Cancel" onPress={onCancel} variant="cancel" />
+        <SheetButton label="Cancel" onPress={onCancel} variant="cancel" />
       </View>
     </>
   );
