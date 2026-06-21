@@ -1,6 +1,6 @@
 import { BrandColors, Colors } from '@/src/constants/theme';
 
-/** Shared journal palette — aligned with app theme tokens. */
+/** Shared journal palette, aligned with app theme tokens. */
 export const JournalTheme = {
   shellGradient: ['#2D221C', '#4C3226', '#6C4433'] as const,
   headerIconBg: 'rgba(255, 244, 228, 0.12)',
@@ -31,7 +31,7 @@ export const JournalTheme = {
   polaroidLabel: BrandColors.primaryMuted,
   cameraOverlay: 'rgba(71, 44, 31, 0.72)',
 
-  /** Cover spread — editorial title page */
+  /** Cover spread, editorial title page */
   coverWash: ['rgba(215, 180, 141, 0.22)', 'rgba(255, 252, 245, 0)'] as const,
   coverRule: 'rgba(156, 73, 41, 0.22)',
   coverMastheadInk: BrandColors.primaryMuted,
@@ -39,10 +39,10 @@ export const JournalTheme = {
   coverNotesBorder: BrandColors.primary,
   coverMemorialBg: 'rgba(60, 45, 38, 0.08)',
   coverMemorialBorder: 'rgba(60, 45, 38, 0.18)',
-  /** Cover title — brand gold on parchment */
+  /** Cover title, brand gold on parchment */
   coverTitleColor: BrandColors.primary,
   coverTitleAccent: BrandColors.primaryMuted,
-  /** Stage tab / label accents — warm studio palette harmonized with primary gold. */
+  /** Stage tab / label accents, warm studio palette harmonized with primary gold. */
   pageAccents: [
     BrandColors.primary,
     'hsl(38 55% 55%)',

@@ -12,7 +12,8 @@ import type { StageAdvanceCelebration } from '../modals/StageAdvanceCelebrationM
 import type { StageAdvanceCapture, StageAdvanceRequest } from '../modals/StageAdvanceFlowModal';
 import { isGlazeOutcome } from '@/src/screens/glazes/glazePieceLink';
 import { isPieceForSale } from '../utils/pieceListing';
-import { FINISHED_STAGE_ID, getAdvanceOrder, getConfiguredNextStage, isExpectedStageAdvance } from '../utils/stageFlow';
+import { pieceMatchesSearch } from '../utils/pieceSearch';
+import { FINISHED_STAGE_ID, CEMETERY_STAGE_ID, getAdvanceOrder, getConfiguredNextStage, isExpectedStageAdvance } from '../utils/stageFlow';
 import { STAGE_ICONS, resolveStageIcon } from '../utils/stageIconUtils';
 import { schedulePiecesSync, usePiecesSyncStatus } from './usePiecesSync';
 
@@ -53,7 +54,7 @@ export function usePiecesScreen() {
   const [advanceRequest, setAdvanceRequest] = React.useState<StageAdvanceRequest | null>(null);
   const scrollRef = React.useRef<ScrollViewType>(null);
 
-  // Lifted out of Alert.alert — screen renders ConfirmSheet / PickSheet for these
+  // Lifted out of Alert.alert, screen renders ConfirmSheet / PickSheet for these
   const [pendingDeletePieceId, setPendingDeletePieceId] = React.useState<number | null>(null);
   const [pendingAdvanceChoice, setPendingAdvanceChoice] = React.useState<{
     pieceName: string;
@@ -66,13 +67,13 @@ export function usePiecesScreen() {
 
   const { enabledStages, stages } = useStageConfig();
   const stageTabs = React.useMemo(() => [
-    { id: 'all', label: 'All', Icon: STAGE_ICONS.all },
+    { id: 'all', label: 'Active', Icon: STAGE_ICONS.all },
     ...enabledStages.map(s => ({ id: s.id, label: s.label, Icon: resolveStageIcon(s) })),
   ], [enabledStages]);
 
   const stageLookup = React.useMemo(() => {
     const lookup: Record<string, { label: string; Icon: LucideIcon }> = {
-      all: { label: 'All', Icon: STAGE_ICONS.all as LucideIcon },
+      all: { label: 'Active', Icon: STAGE_ICONS.all as LucideIcon },
     };
 
     for (const stage of stages) {
@@ -111,11 +112,16 @@ export function usePiecesScreen() {
   const filteredPieces = React.useMemo(() => {
     const stageIds = activeStage.includes(',') ? activeStage.split(',') : null;
     const result = pieces.filter(p =>
-      (stageIds ? stageIds.includes(p.stage) : (activeStage === 'all' || p.stage === activeStage)) &&
-      (search === '' || p.name.toLowerCase().includes(search.toLowerCase())) &&
+      (stageIds
+        ? stageIds.includes(p.stage)
+        : activeStage === 'all'
+          ? p.stage !== CEMETERY_STAGE_ID
+          : p.stage === activeStage) &&
+      pieceMatchesSearch(p, search) &&
       (filters.clays.length === 0 || filters.clays.includes(p.clay)) &&
       (filters.forms.length === 0 || (!!p.form && filters.forms.includes(p.form))) &&
       (filters.formingMethods.length === 0 || (!!p.formingMethod && filters.formingMethods.includes(p.formingMethod))) &&
+      (filters.glazes.length === 0 || (!!p.glazeId && filters.glazes.includes(p.glazeId))) &&
       (filters.statuses.length === 0 || (!!p.status && filters.statuses.includes(p.status))) &&
       (filters.firingTypes.length === 0 || (!!p.firingType && filters.firingTypes.includes(p.firingType))) &&
       (!filters.forSaleOnly || isPieceForSale(p))
@@ -385,7 +391,7 @@ export function usePiecesScreen() {
     });
 
     if (advancedCount === 0) {
-      showToast('Could not advance — the piece may have already moved stages.', 'error');
+      showToast('Could not advance, the piece may have already moved stages.', 'error');
       setAdvanceRequest(null);
       return;
     }

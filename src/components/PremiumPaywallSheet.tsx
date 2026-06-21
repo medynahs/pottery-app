@@ -1,5 +1,5 @@
 /**
- * PremiumPaywallSheet — contextual upgrade prompt (T59)
+ * PremiumPaywallSheet, contextual upgrade prompt (T59)
  *
  * When `visible` flips to true, navigates to /premium and resets the gate
  * so it can be triggered again on the next attempt.

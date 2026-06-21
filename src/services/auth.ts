@@ -1,11 +1,11 @@
 // Ory Kratos native (API) flow helpers for React Native.
-// Browser flows use cookies + redirects which don't work in RN — the native
+// Browser flows use cookies + redirects which don't work in RN, the native
 // flow returns a session_token instead which we store and send as
 // X-Session-Token on every authenticated request.
 //
 // Google OAuth uses Ory's "code exchange" pattern for native apps:
 //   1. Init a native flow with return_session_token_exchange_code=true
-//   2. Grab the request_url from the flow — open it in expo-web-browser
+//   2. Grab the request_url from the flow, open it in expo-web-browser
 //   3. Ory redirects to potterynook://auth-callback?code=xxx
 //   4. Exchange the code for a session_token via /self-service/login/exchange-code
 
@@ -16,7 +16,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 const ORY_BASE = 'https://nostalgic-colden-731swclsox.projects.oryapis.com';
-// Hardcoded — must match exactly what is registered in Ory's allowed redirect URIs.
+// Hardcoded, must match exactly what is registered in Ory's allowed redirect URIs.
 // Linking.createURL() produces exp://... in Expo Go which Ory would reject.
 const OAUTH_RETURN_TO = 'potterynook://auth-callback';
 
@@ -43,7 +43,7 @@ export interface OryRegistrationResult {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** HTTP error from Ory — carries the status code so callers can distinguish
+/** HTTP error from Ory, carries the status code so callers can distinguish
  *  an invalid/expired session (401) from network failures or other errors. */
 export class OryHttpError extends Error {
   constructor(message: string, public readonly status: number) {
@@ -303,14 +303,14 @@ interface OryLoginFlowContext {
   };
 }
 
-// Response when submitting oidc method to a native flow — contains the Google redirect URL
+// Response when submitting oidc method to a native flow, contains the Google redirect URL
 interface OryOidcSubmitResult {
   redirect_browser_to: string;
 }
 
 // Tracks return_to_codes already exchanged in this JS runtime session.
 // Stale iOS deep links are detected here (in-session) or via Ory's 404 (cross-restart).
-// In both cases we restart oryGoogleOAuth — the stale URL was consumed by the first
+// In both cases we restart oryGoogleOAuth, the stale URL was consumed by the first
 // openAuthSessionAsync call, so the restart opens cleanly without any stale delivery.
 const _consumedReturnToCodes = new Set<string>();
 
@@ -329,7 +329,7 @@ const _consumedReturnToCodes = new Set<string>();
  *
  *   Fix: up to MAX_ATTEMPTS outer retries. Each retry creates a completely fresh
  *   Ory flow (new STC + new Google OAuth URL). We NEVER re-open the same
- *   browserUrl on failure because Google's OAuth state is single-use — re-using
+ *   browserUrl on failure because Google's OAuth state is single-use, re-using
  *   it causes Ory to reject the callback as a replay, causing an infinite loop.
  *
  *   On the first retry the iOS-queued stale URL has already been consumed by
@@ -400,7 +400,7 @@ async function oryGoogleOAuth(
     }
 
     const callbackUrl = (res as { url: string }).url;
-    // Stop at & or # — a fragment suffix would corrupt the code value
+    // Stop at & or #, a fragment suffix would corrupt the code value
     const codeMatch   = callbackUrl.match(/[?&]code=([^&#]+)/);
     const flowMatch   = callbackUrl.match(/[?&]flow=([^&#]+)/);
     const code        = codeMatch?.[1] ? decodeURIComponent(codeMatch[1]) : null;
@@ -410,7 +410,7 @@ async function oryGoogleOAuth(
       throw new Error('No return_to_code (code/flow) found in the redirect URL.');
     }
 
-    // OIDC completed but Ory returned a flow ID instead of an exchange code —
+    // OIDC completed but Ory returned a flow ID instead of an exchange code -
     // fetch the flow to surface a human-readable error message.
     if (!code && flowId) {
       let flowMessage = '';
@@ -447,7 +447,7 @@ async function oryGoogleOAuth(
     }
 
     // 5. Exchange STC + code for a session token.
-    // "no session yet for this code" is a transient 422 — Ory hasn't finished
+    // "no session yet for this code" is a transient 422, Ory hasn't finished
     // creating the session after the OIDC callback yet. Poll with short retries.
     const exchangeUrl = `/sessions/token-exchange?init_code=${encodeURIComponent(flow.session_token_exchange_code)}&return_to_code=${encodeURIComponent(code as string)}`;
     const EXCHANGE_POLLS = 6;
@@ -462,11 +462,11 @@ async function oryGoogleOAuth(
         // Ory 422: "The native session hasn't been set yet, try again later."
         if (/no session yet|hasn't been set yet|wait for native session/i.test(msg)) {
           if (ex < EXCHANGE_POLLS - 1) {
-            // Transient: Ory is still processing the OIDC callback — wait and poll
+            // Transient: Ory is still processing the OIDC callback, wait and poll
             await sleep(700);
             continue;
           }
-          // Polls exhausted — code is a permanent mismatch (stale return_to_code),
+          // Polls exhausted, code is a permanent mismatch (stale return_to_code),
           // restart with a completely fresh flow + new browser session
           if (attempt < MAX_ATTEMPTS - 1) {
             _consumedReturnToCodes.add(code as string);

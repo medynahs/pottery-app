@@ -13,7 +13,7 @@ import {
 } from '../firingEstimations';
 import { KILN_UI } from '../utils/kilnTheme';
 
-/** Warm brown gradients — stronger contrast at top, cream at bottom */
+/** Warm brown gradients, stronger contrast at top, cream at bottom */
 const FIRING_GRADIENT: Record<FiringState, [string, string, string]> = {
   scheduled: ['#D4C4A8', '#EDE4D3', KILN_UI.cream],
   loading:   ['#C9A66B', '#E8D9BE', KILN_UI.cream],

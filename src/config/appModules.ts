@@ -1,7 +1,7 @@
 import type { AppModule } from '@/src/store/appStore';
 import { BookOpen, Box, Flame, Users } from 'lucide-react-native';
 
-/** Expo tab route — file remains `app/(tabs)/library.tsx`. */
+/** Expo tab route, file remains `app/(tabs)/library.tsx`. */
 export const GLAZE_ATLAS_TAB_ROUTE = '/(tabs)/library' as const;
 
 export const APP_MODULE_LABELS: Record<AppModule, string> = {

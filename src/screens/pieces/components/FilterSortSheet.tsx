@@ -7,6 +7,7 @@ import {
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
+import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
 import { useAppStore } from '@/src/store/appStore';
 import { Check, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
@@ -20,6 +21,7 @@ export type ActiveFilters = {
   clays: string[];
   forms: string[];
   formingMethods: string[];
+  glazes: string[];
   statuses: string[];
   firingTypes: string[];
   forSaleOnly: boolean;
@@ -29,6 +31,7 @@ export const EMPTY_FILTERS: ActiveFilters = {
   clays: [],
   forms: [],
   formingMethods: [],
+  glazes: [],
   statuses: [],
   firingTypes: [],
   forSaleOnly: false,
@@ -39,6 +42,7 @@ export function countActiveFilters(filters: ActiveFilters): number {
     filters.clays.length +
     filters.forms.length +
     filters.formingMethods.length +
+    filters.glazes.length +
     filters.statuses.length +
     filters.firingTypes.length +
     (filters.forSaleOnly ? 1 : 0)
@@ -78,16 +82,32 @@ export function FilterSortSheet({
 
   const storeFormOptions = useAppStore(s => s.pieceFormOptions);
   const storeFormingMethods = useAppStore(s => s.formingMethods);
+  const glazes = useAppStore(s => s.glazes);
+  const piecesCompactCards = useAppStore(s => s.piecesCompactCards);
+  const setPiecesCompactCards = useAppStore(s => s.setPiecesCompactCards);
 
   const clayOptions = React.useMemo(() => {
     const set = new Set(allPieces.map(p => p.clay));
     return Array.from(set).sort();
   }, [allPieces]);
 
+  const glazeOptions = React.useMemo(() => {
+    const ids = new Set(allPieces.filter(p => p.glazeId).map(p => p.glazeId!));
+    return Array.from(ids)
+      .map((id) => {
+        const glaze = glazes.find((item) => item.id === id);
+        return {
+          id,
+          label: glaze ? formatGlazeDisplayName(glaze) : 'Unknown glaze',
+        };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [allPieces, glazes]);
+
   const formOptions = storeFormOptions.map(f => f.name);
   const methodOptions = storeFormingMethods.map(m => m.name);
   const filterCount = countActiveFilters(filters);
-  const hasAnyActive = filterCount > 0 || sortKey !== 'newest';
+  const hasAnyActive = filterCount > 0 || sortKey !== 'newest' || piecesCompactCards;
 
   const toggleMulti = <K extends keyof ActiveFilters>(key: K, value: string) => {
     const current = filters[key] as string[];
@@ -100,6 +120,7 @@ export function FilterSortSheet({
   const clearAll = () => {
     onFiltersChange(EMPTY_FILTERS);
     onSortChange('newest');
+    setPiecesCompactCards(false);
   };
 
   return (
@@ -178,6 +199,36 @@ export function FilterSortSheet({
                 />
               ))}
             </PillRow>
+          </Section>
+
+          {glazeOptions.length > 0 && (
+            <Section label="Glaze applied">
+              <PillRow>
+                {glazeOptions.map(({ id, label }) => (
+                  <Pill
+                    key={id}
+                    label={label}
+                    active={filters.glazes.includes(id)}
+                    onPress={() => toggleMulti('glazes', id)}
+                    colors={colors}
+                  />
+                ))}
+              </PillRow>
+            </Section>
+          )}
+
+          <Section label="Display">
+            <PillRow>
+              <Pill
+                label="Compact cards"
+                active={piecesCompactCards}
+                onPress={() => setPiecesCompactCards(!piecesCompactCards)}
+                colors={colors}
+              />
+            </PillRow>
+            <Text className="text-[11px] text-muted-foreground mt-2 leading-4">
+              Compact mode hides pricing on piece cards. Turn off to show cost and sale price.
+            </Text>
           </Section>
 
           <Section label="Listing">

@@ -43,7 +43,7 @@ export const Colors = {
   },
 };
 
-/** Brand gold — use for inline styles where Tailwind `text-primary` / `bg-primary` isn't available. */
+/** Brand gold, use for inline styles where Tailwind `text-primary` / `bg-primary` isn't available. */
 export const BrandColors = {
   primary: 'hsl(39 57% 51%)',
   primaryHex: '#C4A052',

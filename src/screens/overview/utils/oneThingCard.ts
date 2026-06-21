@@ -60,7 +60,7 @@ export function buildOneThingCard(
     return {
       emoji: '🔥',
       title: `${n} piece${n !== 1 ? 's' : ''} ready for the kiln`,
-      subtitle: hasKilnTab ? 'Bone dry and waiting — load when you can' : 'Bone dry and glazing — ready for your studio kiln',
+      subtitle: hasKilnTab ? 'Bone dry and waiting. Load when you can' : 'Bone dry and glazing, ready for your studio kiln',
       route: kilnRoute,
       accentBg: 'hsl(24 70% 94%)',
       accentBorder: 'hsl(24 60% 78%)',

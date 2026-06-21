@@ -154,7 +154,7 @@ export function SessionStatusPanel({
           <StatusAction
             icon={PackageCheck}
             label="Ready to collect"
-            hint="Pieces are out — skip to pickup"
+            hint="Pieces are out. Skip to pickup"
             onPress={() => onSetStatusOverride('ready')}
           />
         ) : null}

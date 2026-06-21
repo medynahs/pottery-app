@@ -2,9 +2,9 @@
  * App-wide custom sheet variants that match the Pottery Nook visual language.
  * Use these everywhere instead of native Alert.alert.
  *
- * ConfirmSheet  — confirm / cancel (optionally destructive)
- * InfoSheet     — informational with a single dismiss button
- * PickSheet     — free-form list of labelled options + cancel
+ * ConfirmSheet , confirm / cancel (optionally destructive)
+ * InfoSheet    , informational with a single dismiss button
+ * PickSheet    , free-form list of labelled options + cancel
  */
 import { Text } from '@/src/components/ui/text';
 import React from 'react';
@@ -176,7 +176,7 @@ export function SheetButton({
   );
 }
 
-/** Stacked sheet footer actions — matches PrimaryButton sizing app-wide. */
+/** Stacked sheet footer actions, matches PrimaryButton sizing app-wide. */
 export function ModalSheetActions({ children }: { children: React.ReactNode }) {
   return <View style={{ gap: 10 }}>{children}</View>;
 }

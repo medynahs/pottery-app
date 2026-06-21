@@ -1,5 +1,5 @@
 /**
- * useGlazesSync — React Query hooks bridging /users/me/glazes with the local
+ * useGlazesSync, React Query hooks bridging /users/me/glazes with the local
  * Zustand store, following the same offline-first model as usePiecesSync.
  *
  * Pull: GET /users/me/glazes (+ /tests) on sign-in, merged by client_ref /
@@ -76,7 +76,7 @@ function mergeGlazes(backend: BackendGlaze[], local: GlazeLibraryItem[]): GlazeL
 
   for (const b of backend) {
     const existing = (b.clientRef ? byClientRef.get(b.clientRef) : undefined) ?? byBackendId.get(b.id);
-    // Don't clobber local edits that haven't been pushed yet — just stamp the id.
+    // Don't clobber local edits that haven't been pushed yet, just stamp the id.
     if (existing?.syncDirty) {
       updatedByBackendId.set(b.id, { ...existing, backendId: b.id });
       continue;
@@ -246,7 +246,7 @@ export async function flushGlazesSync(): Promise<boolean> {
   }
 }
 
-/** Debounce a push sync — call after any local glaze/test mutation. */
+/** Debounce a push sync, call after any local glaze/test mutation. */
 export function scheduleGlazesSync() {
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {

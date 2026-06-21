@@ -1,5 +1,5 @@
 import { Text } from '@/src/components/ui/text';
-import { getKilnkinVoiceLine } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
+import { getKilnkinProfilePreviews } from '@/src/screens/overview/kilnkin/kilnkinVoice';
 import { useVisiblePieces, useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { BellRing, FlaskConical, MoonStar, PawPrint, Scroll, Soup } from 'lucide-react-native';
@@ -70,11 +70,10 @@ export default function KilnkinProfileScreen() {
     [kilnReady, personalityLabel, reclaimOverflow],
   );
 
-  const notificationPreviews = useMemo(() => [
-    getKilnkinVoiceLine(companion, 'your trimming window looks just right today.'),
-    getKilnkinVoiceLine(companion, 'a firing check might be worth a peek this afternoon.'),
-    getKilnkinVoiceLine(companion, 'tomorrow has a planned studio event waiting for you.'),
-  ], [companion]);
+  const notificationPreviews = useMemo(
+    () => getKilnkinProfilePreviews(companion),
+    [companion],
+  );
 
   const bondedOn = formatBornDate(companion.bornOn);
   const daysActive = Math.max(1, Math.round((Date.now() - new Date(companion.bornOn).getTime()) / 86400000));
@@ -204,8 +203,8 @@ export default function KilnkinProfileScreen() {
                 <Text style={{ color: TEXT_GOLD }}>{companion.notificationToneLabel.toLowerCase()}</Text> tone.
               </Text>
             </View>
-            {notificationPreviews.map((preview) => (
-              <View key={preview} style={{ backgroundColor: PANEL, borderWidth: 1, borderColor: BORDER, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8 }}>
+            {notificationPreviews.map((preview, index) => (
+              <View key={`${companion.id}-${index}`} style={{ backgroundColor: PANEL, borderWidth: 1, borderColor: BORDER, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8 }}>
                 <Text style={{ color: TEXT_CREAM, fontSize: 12, lineHeight: 20 }}>"{preview}"</Text>
               </View>
             ))}

@@ -20,7 +20,7 @@ export function DiscoverProvenanceBanner({ glaze }: DiscoverProvenanceBannerProp
         </Text>
       </View>
       <Text className="text-sm text-foreground leading-5">
-        Saved from the Glaze Atlas starter catalog. Edit freely — this is your copy in My Atlas.
+        Saved from the Glaze Atlas starter catalog. Edit freely, this is your copy in My Atlas.
       </Text>
       {glaze.discoverSavedAt ? (
         <Text className="text-[11px] text-muted-foreground mt-1">

@@ -26,7 +26,7 @@ export const FREE_GLAZE_LIMIT = 15;
 
 /** One-line copy shown on contextual paywalls. */
 export const PREMIUM_FEATURE_DESCRIPTIONS: Record<PremiumFeature, string> = {
-  [PremiumFeature.Analytics]: 'Unlock studio analytics — costs, materials, firing trends, and more.',
+  [PremiumFeature.Analytics]: 'Unlock studio analytics: costs, materials, firing trends, and more.',
   [PremiumFeature.UnlimitedPhotos]: 'Document every stage of your process.',
   [PremiumFeature.FullGlazeAtlas]: 'Build your complete glaze library without limits.',
   [PremiumFeature.CompanionSwap]: 'Switch between your elemental companions anytime.',
@@ -40,7 +40,7 @@ export const PREMIUM_FEATURE_DESCRIPTIONS: Record<PremiumFeature, string> = {
 };
 
 /**
- * Synchronous gate check. Reads from the Zustand store snapshot — safe to
+ * Synchronous gate check. Reads from the Zustand store snapshot, safe to
  * call outside of React components (e.g. in event handlers, utility functions).
  * Returns `true` if the user has an active premium entitlement.
  */
@@ -70,7 +70,7 @@ export function canAddPiecePhoto(piece: Piece, isReplacing: boolean): boolean {
 }
 
 /**
- * Each saved batch counts toward the free cap — including new versions
+ * Each saved batch counts toward the free cap, including new versions
  * (every version is its own `GlazeLibraryItem` in the atlas).
  */
 export function countGlazeAtlasEntries(glazes: readonly GlazeLibraryItem[]): number {

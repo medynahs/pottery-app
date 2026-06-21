@@ -75,7 +75,7 @@ export function HallOfFameFeaturedHero({ winner }: { winner: MockHallOfFameWinne
           </Text>
         </View>
         <Text className="text-xl font-serif font-bold" style={{ color: COMMUNITY_THEME.heroText }}>
-          {winner.trackTitle} — {winner.pieceTitle}
+          {winner.trackTitle}, {winner.pieceTitle}
         </Text>
         <View className="flex-row items-center gap-2 mt-3">
           <UserAvatar initial={winner.artistName.slice(0, 1)} size={32} />

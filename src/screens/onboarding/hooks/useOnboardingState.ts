@@ -123,7 +123,7 @@ export function useOnboardingState() {
 
     // Show the ceremony before completing onboarding.
     // completeGeneralOnboarding sets generalOnboardingCompleted = true, which
-    // triggers AppOnboardingGuard to navigate away immediately — so we defer it
+    // triggers AppOnboardingGuard to navigate away immediately, so we defer it
     // until after the ceremony animation has finished.
     setCelebrationCompanionName(selectedCompanion.name);
     setCelebrationCompanionElement(selectedCompanion.element);

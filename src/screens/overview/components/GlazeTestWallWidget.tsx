@@ -210,7 +210,7 @@ export function GlazeTestWallWidget({ reveal, glazes, glazeTests }: GlazeTestWal
                 </Text>
               </View>
               <Text style={{ fontSize: 12, color: 'hsl(32 30% 42%)', marginTop: 8, lineHeight: 17 }}>
-                Recent glaze tests from your atlas — tap a tile to open the batch.
+                Recent glaze tests from your atlas, tap a tile to open the batch.
               </Text>
             </View>
             <View

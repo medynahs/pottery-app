@@ -26,7 +26,7 @@ export interface DiscoverRecipe {
   previewUri?: string;
 }
 
-/** Photo + notes layering idea — no formula, not saved to atlas. */
+/** Photo + notes layering idea, no formula, not saved to atlas. */
 export interface DiscoverInspiration {
   id: string;
   title: string;

@@ -7,7 +7,7 @@ import type {
 import { stripGlazeVersionSuffix } from '@/src/screens/glazes/glazeVersionUtils';
 import type { ShareGlazeDraft } from './shareGlazeDraft';
 
-/** Plain-text delimiters — avoid HTML comments (often stripped server-side). */
+/** Plain-text delimiters, avoid HTML comments (often stripped server-side). */
 export const GLAZE_POST_PAYLOAD_START = '---pottery-life-glaze:v1---';
 export const GLAZE_POST_PAYLOAD_END = '---end-pottery-life-glaze---';
 /** @deprecated Legacy embed format; still parsed for older posts. */

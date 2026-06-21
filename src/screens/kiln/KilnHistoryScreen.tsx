@@ -164,12 +164,12 @@ function FiringHistoryCard({
           <StatPill
             icon={TrendingUp}
             label="Survival"
-            value={survivalPct != null ? `${survivalPct}%` : '—'}
+            value={survivalPct != null ? `${survivalPct}%` : '-'}
           />
           <StatPill
             icon={Receipt}
             label="Cost"
-            value={firing.estimatedTotalCost != null ? `${currencySymbol}${firing.estimatedTotalCost.toFixed(0)}` : '—'}
+            value={firing.estimatedTotalCost != null ? `${currencySymbol}${firing.estimatedTotalCost.toFixed(0)}` : '-'}
           />
           <StatPill
             icon={Clock3}
@@ -303,7 +303,7 @@ export default function KilnHistoryScreen() {
         </TouchableOpacity>
         <View className="flex-1">
           <Text className="text-lg font-serif font-bold text-foreground" numberOfLines={1}>
-            {kiln ? `${kiln.name} — Firing History` : 'Kiln History'}
+            {kiln ? `${kiln.name} · Firing History` : 'Kiln History'}
           </Text>
           {kiln ? (
             <Text className="text-[11px] text-muted-foreground">
@@ -351,19 +351,19 @@ export default function KilnHistoryScreen() {
             <Card className="flex-1 min-w-[72px] p-3 items-center">
               <Text className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Success</Text>
               <Text className="text-xl font-serif font-bold text-foreground">
-                {performance.successPct != null ? `${performance.successPct}%` : '—'}
+                {performance.successPct != null ? `${performance.successPct}%` : '-'}
               </Text>
             </Card>
             <Card className="flex-1 min-w-[72px] p-3 items-center">
               <Text className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Avg temp</Text>
               <Text className="text-xl font-serif font-bold text-foreground">
-                {performance.avgPeakTempC != null ? `${performance.avgPeakTempC}°` : '—'}
+                {performance.avgPeakTempC != null ? `${performance.avgPeakTempC}°` : '-'}
               </Text>
             </Card>
             <Card className="flex-1 min-w-[72px] p-3 items-center">
               <Text className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Avg hold</Text>
               <Text className="text-xl font-serif font-bold text-foreground">
-                {performance.avgHoldMinutes != null ? `${performance.avgHoldMinutes}m` : '—'}
+                {performance.avgHoldMinutes != null ? `${performance.avgHoldMinutes}m` : '-'}
               </Text>
             </Card>
           </View>

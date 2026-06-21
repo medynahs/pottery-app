@@ -96,7 +96,7 @@ export function ChallengePhaseDevBar({
       style={{ backgroundColor: 'hsl(195 40% 94%)', borderColor: 'hsl(195 30% 82%)' }}
     >
       <Text className="text-[11px] font-bold" style={{ color: 'hsl(195 45% 32%)' }}>
-        Preview — switch challenge phase
+        Preview, switch challenge phase
       </Text>
       <View className="flex-row gap-2">
         {options.map((option) => (

@@ -10,7 +10,7 @@ export function formatDate(iso: string) {
 }
 
 export function formatMoney(currencySymbol: string, value?: number | null) {
-  if (value == null || Number.isNaN(value)) return '—';
+  if (value == null || Number.isNaN(value)) return '-';
   return `${currencySymbol}${value.toFixed(2)}`;
 }
 

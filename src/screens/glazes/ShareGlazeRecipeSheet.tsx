@@ -173,7 +173,7 @@ export function ShareGlazeRecipeSheet({
   const handleSaveForLater = async () => {
     if (!glaze || !draft) return;
     await saveShareDraft(glaze.id, draft);
-    showToast('Draft saved — finish posting anytime', 'success');
+    showToast('Draft saved, finish posting anytime', 'success');
     onClose();
   };
 
@@ -188,10 +188,10 @@ export function ShareGlazeRecipeSheet({
           if (uploaded?.assetId) {
             assetIds.push(uploaded.assetId);
           } else if (draft.attachPhoto) {
-            showToast('Photo upload unavailable — posting text only', 'success');
+            showToast('Photo upload unavailable, posting text only', 'success');
           }
         } catch {
-          showToast('Photo upload failed — posting text only', 'success');
+          showToast('Photo upload failed, posting text only', 'success');
         }
       }
 
@@ -210,7 +210,7 @@ export function ShareGlazeRecipeSheet({
             piece_id: linkedPiece?.backendId,
           });
         } catch {
-          showToast('Posted to feed — challenge entry failed', 'error');
+          showToast('Posted to feed, challenge entry failed', 'error');
         }
       }
 
@@ -228,7 +228,7 @@ export function ShareGlazeRecipeSheet({
         console.debug('[ShareGlaze] post created', created.id);
       }
     } catch {
-      showToast('Could not share — check your connection', 'error');
+      showToast('Could not share, check your connection', 'error');
     } finally {
       setPosting(false);
     }
@@ -369,7 +369,7 @@ export function ShareGlazeRecipeSheet({
                   </View>
                   {draft.teaserMode ? (
                     <Text className="text-[11px] text-muted-foreground mt-2 leading-4">
-                      Teaser shares the glaze name, finish, cone, and photo only — no formula.
+                      Teaser shares the glaze name, finish, cone, and photo only, no formula.
                     </Text>
                   ) : null}
                 </View>

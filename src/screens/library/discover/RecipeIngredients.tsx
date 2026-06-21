@@ -73,7 +73,7 @@ export function RecipeIngredients({
       ) : null}
 
       <Text className="text-[10px] text-muted-foreground mt-3 leading-4">
-        Approximate batch cost — verify with your supplier.
+        Approximate batch cost. Verify with your supplier.
       </Text>
     </View>
   );

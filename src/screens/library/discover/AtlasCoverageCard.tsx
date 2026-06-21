@@ -97,7 +97,7 @@ export function AtlasCoverageCard({
       </View>
       {missingFinishes.length > 0 && (
         <Text style={{ fontSize: 11, color: '#A68555', marginTop: 10, lineHeight: 16 }}>
-          No {missingFinishes[0].toLowerCase()} glazes yet — recipes below can fill the gap.
+          No {missingFinishes[0].toLowerCase()} glazes yet, recipes below can fill the gap.
         </Text>
       )}
     </View>

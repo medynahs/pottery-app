@@ -1,5 +1,5 @@
 /**
- * PremiumUpgradeScreen — personal-tone upgrade / subscription management screen
+ * PremiumUpgradeScreen, personal-tone upgrade / subscription management screen
  */
 import { AnimatedLogoHero } from '@/src/components/AnimatedLogoHero';
 import { Banner } from '@/src/components/Banner';
@@ -153,7 +153,7 @@ export default function PremiumUpgradeScreen() {
   async function handleManageSubscription() {
     setManaging(true);
     try {
-      // Prefer App Store / Play Store — most reliable right after a native purchase.
+      // Prefer App Store / Play Store, most reliable right after a native purchase.
       let opened = await openPlatformSubscriptionSettings();
       if (!opened) {
         opened = await openSubscriptionManagement();
@@ -321,7 +321,7 @@ export default function PremiumUpgradeScreen() {
           </View>
 
           <Text style={{ fontSize: 11, color: 'hsl(24 20% 62%)', textAlign: 'center', marginTop: 20, lineHeight: 16 }}>
-            {PREMIUM_MONTHLY_PRICE_EUR}/month · {PREMIUM_ANNUAL_PRICE_EUR}/year. Subscriptions renew automatically — cancel anytime from your subscription settings.
+            {PREMIUM_MONTHLY_PRICE_EUR}/month · {PREMIUM_ANNUAL_PRICE_EUR}/year. Subscriptions renew automatically, cancel anytime from your subscription settings.
           </Text>
 
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.6} style={{ alignItems: 'center', paddingVertical: 16 }}>

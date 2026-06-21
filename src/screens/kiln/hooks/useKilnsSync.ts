@@ -1,5 +1,5 @@
 /**
- * useKilnsSync — React Query hooks that bridge /users/me/kilns with the
+ * useKilnsSync, React Query hooks that bridge /users/me/kilns with the
  * local Zustand store.
  *
  * Responsibilities:
@@ -110,7 +110,7 @@ export function useUpsertKilnMutation() {
   return useMutation({
     mutationFn: async (kiln: Kiln) => {
       if (!sessionToken) {
-        if (__DEV__) console.log(`[kilns:upsert] "${kiln.name}" skipped — not signed in`);
+        if (__DEV__) console.log(`[kilns:upsert] "${kiln.name}" skipped, not signed in`);
         return null;
       }
       const payload = localKilnToUpsertPayload(kiln);
@@ -125,7 +125,7 @@ export function useUpsertKilnMutation() {
       if (!result) return; // skipped (not signed in)
       const { bk } = result;
       if (__DEV__) console.log(`[kilns:upsert] "${kiln.name}" → backendId ${bk.id}`);
-      // Read the latest version from the store — the user may have edited the
+      // Read the latest version from the store, the user may have edited the
       // kiln while the request was in flight, so don't clobber those changes.
       const latest = useAppStore.getState().kilns.find(k => k.id === kiln.id);
       if (latest) updateKiln({ ...latest, backendId: bk.id });
@@ -150,12 +150,12 @@ export function useDeleteKilnMutation() {
   return useMutation({
     mutationFn: async (kiln: Kiln) => {
       if (!sessionToken) {
-        if (__DEV__) console.log(`[kilns:delete] "${kiln.name}" skipped — not signed in`);
+        if (__DEV__) console.log(`[kilns:delete] "${kiln.name}" skipped, not signed in`);
         return;
       }
       if (!kiln.backendId) {
         if (__DEV__)
-          console.log(`[kilns:delete] "${kiln.name}" skipped — no backendId (local-only)`);
+          console.log(`[kilns:delete] "${kiln.name}" skipped, no backendId (local-only)`);
         return;
       }
       if (__DEV__) console.log(`[kilns:delete] DELETE ${kiln.backendId}`);

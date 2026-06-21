@@ -60,7 +60,7 @@ export function ProgressRing({
             className="font-serif font-bold"
             style={{ fontSize: size * 0.22, color: textColor }}
           >
-            {value != null ? `${Math.round(value)}%` : '—'}
+            {value != null ? `${Math.round(value)}%` : '-'}
           </Text>
         </View>
       </View>

@@ -9,7 +9,7 @@ export const SAVED_FROM_COMMUNITY_COLLECTION = 'Saved from Community';
 export const DEFAULT_GLAZE_COLLECTIONS = [MY_GLAZES_COLLECTION, FAVORITES_COLLECTION] as const;
 export type DefaultGlazeCollection = (typeof DEFAULT_GLAZE_COLLECTIONS)[number];
 
-/** Demo seed data shipped before v3 — stripped on store migration. */
+/** Demo seed data shipped before v3, stripped on store migration. */
 export const LEGACY_SEED_GLAZE_IDS = new Set([
   'glaze-satin-blue',
   'glaze-iron-honey',

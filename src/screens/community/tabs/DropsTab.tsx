@@ -19,7 +19,7 @@ export function DropsTab() {
               <Text className="text-xs font-bold" style={{ color: 'hsl(39 57% 45%)' }}>🔥 Just dropped</Text>
             </View>
           </View>
-          <Text className="text-sm text-foreground font-medium">Limited Raku Vase — Batch of 6</Text>
+          <Text className="text-sm text-foreground font-medium">Limited Raku Vase, Batch of 6</Text>
         </View>
       </View>
 

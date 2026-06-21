@@ -14,7 +14,7 @@ export type GlazePhotoTileProps = {
   width: number;
   name: string;
   coneLabel: string;
-  /** Card one-liner — clay, temp, finish. Falls back to finishLabel when omitted. */
+  /** Card one-liner, clay, temp, finish. Falls back to finishLabel when omitted. */
   subtitle?: string;
   finishLabel: string;
   /** Batch ID + days since mixed. */
@@ -71,7 +71,7 @@ function PhotoBadge({
   );
 }
 
-/** Masonry photo card — shared by Discover and My Atlas grids. */
+/** Masonry photo card, shared by Discover and My Atlas grids. */
 export function GlazePhotoTile({
   width,
   name,
@@ -130,7 +130,7 @@ export function GlazePhotoTile({
           <View style={{ flex: 1, backgroundColor: colorHex }} />
         )}
 
-        {/* Soft fade at bottom of photo so badges read cleanly — not a grey caption bar */}
+        {/* Soft fade at bottom of photo so badges read cleanly, not a grey caption bar */}
         <LinearGradient
           colors={['transparent', 'rgba(58, 40, 16, 0.12)']}
           style={{

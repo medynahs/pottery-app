@@ -21,7 +21,7 @@ export type StudioRhythmSuggestion = {
 
 export type GenerateStudioRhythmSuggestionsData = {
   routineConfiguration?: StudioRhythmConfig;
-  /** v2 Studio Rhythm — takes precedence over routineConfiguration when provided */
+  /** v2 Studio Rhythm, takes precedence over routineConfiguration when provided */
   rhythm?: StudioRhythm;
   pieces: Piece[];
   firings: Firing[];
@@ -216,14 +216,14 @@ export function generateStudioRhythmSuggestions(
     if (normalize(firing.type) !== 'bisque') return false;
     if (firing.state !== 'cooling' && firing.state !== 'unloading') return false;
     const cooledSince = toDate(firing.completedAt ?? firing.startedAt);
-    if (!cooledSince) return true; // can't determine — assume ready
+    if (!cooledSince) return true; // can't determine, assume ready
     return diffHours(cooledSince, now) >= postBisqueCoolingHours;
   });
 
   if (bisqueCooled && !suggestions.some((s) => s.type === 'kiln-check')) {
     suggestions.push({
       type: 'kiln-check',
-      text: 'Bisque firing has cooled — pieces should be safe to unload and glaze.',
+      text: 'Bisque firing has cooled, pieces should be safe to unload and glaze.',
       route: '/(tabs)/kiln',
       actionLabel: 'Open Kiln',
     });
@@ -248,7 +248,7 @@ export function generateStudioRhythmSuggestions(
     if (todayStages.includes('throw') && !suggestions.some((s) => s.type === 'wheel-practice')) {
       suggestions.push({
         type: 'wheel-practice',
-        text: 'Today is a throw day — the wheel is calling.',
+        text: 'Today is a throw day, the wheel is calling.',
         route: '/(tabs)/pieces?stage=in-progress',
         actionLabel: 'Open Pieces',
       });
@@ -257,7 +257,7 @@ export function generateStudioRhythmSuggestions(
     if (todayStages.includes('trim') && !suggestions.some((s) => s.type === 'trim')) {
       suggestions.push({
         type: 'trim',
-        text: 'Today is a trim day — check your leather-hard pieces.',
+        text: 'Today is a trim day. Check your leather-hard pieces.',
         route: '/(tabs)/pieces?stage=leather-hard',
         actionLabel: 'Open Pieces',
       });
@@ -266,7 +266,7 @@ export function generateStudioRhythmSuggestions(
     if (todayStages.includes('glaze')) {
       suggestions.push({
         type: 'goal-focus',
-        text: 'Today is a glaze day — lay out your brushes and test tiles.',
+        text: 'Today is a glaze day, lay out your brushes and test tiles.',
         route: '/(tabs)/pieces?stage=bisque',
         actionLabel: 'Open Pieces',
       });
@@ -275,7 +275,7 @@ export function generateStudioRhythmSuggestions(
     if (todayStages.includes('bisque') && !suggestions.some((s) => s.type === 'kiln-check')) {
       suggestions.push({
         type: 'kiln-check',
-        text: 'Today is a bisque day — check if any bone-dry pieces are kiln-ready.',
+        text: 'Today is a bisque day. Check if any bone-dry pieces are kiln-ready.',
         route: '/(tabs)/kiln',
         actionLabel: 'Open Kiln',
       });

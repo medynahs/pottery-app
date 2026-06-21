@@ -102,7 +102,7 @@ export function useKilnScreen() {
     }
     setEditKiln(undefined);
     setAddKilnOpen(false);
-    // Fire-and-forget — store is already updated optimistically above
+    // Fire-and-forget, store is already updated optimistically above
     upsertKilnMutation.mutate(kiln);
   };
 
@@ -113,7 +113,7 @@ export function useKilnScreen() {
 
   const handleDeleteKiln = (kiln: Kiln) => {
     deleteKiln(kiln.id);
-    // Fire-and-forget — store is already updated optimistically above
+    // Fire-and-forget, store is already updated optimistically above
     deleteKilnMutation.mutate(kiln);
   };
 

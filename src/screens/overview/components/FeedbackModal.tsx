@@ -17,10 +17,10 @@ const FEEDBACK_EMAIL = process.env.EXPO_PUBLIC_FEEDBACK_EMAIL ?? 'support@potter
 type FeedbackKind = 'bug' | 'feature' | 'general' | 'support';
 
 const KINDS: { key: FeedbackKind; emoji: string; label: string; subject: string }[] = [
-  { key: 'bug',     emoji: '🐛', label: 'Bug Report',      subject: 'Bug Report — Pottery Nook'      },
-  { key: 'feature', emoji: '✨', label: 'Feature Idea',     subject: 'Feature Idea — Pottery Nook'   },
-  { key: 'general', emoji: '💬', label: 'Just a note',      subject: 'Feedback — Pottery Nook'       },
-  { key: 'support', emoji: '🙋', label: 'Need Help',        subject: 'Support Request — Pottery Nook' },
+  { key: 'bug',     emoji: '🐛', label: 'Bug Report',      subject: 'Bug Report, Pottery Nook'      },
+  { key: 'feature', emoji: '✨', label: 'Feature Idea',     subject: 'Feature Idea, Pottery Nook'   },
+  { key: 'general', emoji: '💬', label: 'Just a note',      subject: 'Feedback, Pottery Nook'       },
+  { key: 'support', emoji: '🙋', label: 'Need Help',        subject: 'Support Request, Pottery Nook' },
 ];
 
 interface Props {
@@ -86,7 +86,7 @@ export function FeedbackModal({ visible, onClose }: Props) {
                 </Text>
               </View>
               <Text className="text-[11px] mt-1 leading-4" style={{ color: '#A68555' }}>
-                Share a bug, a wish, or just say hello — we read every letter 🏺
+                Share a bug, a wish, or just say hello. We read every letter 🏺
               </Text>
             </View>
 
@@ -192,7 +192,7 @@ export function FeedbackModal({ visible, onClose }: Props) {
                   >
                     <Check size={15} color="hsl(100 35% 42%)" />
                     <Text className="text-sm font-semibold" style={{ color: 'hsl(100 35% 36%)' }}>
-                      Letter sealed — thank you!
+                      Letter sealed. Thank you!
                     </Text>
                   </View>
                 ) : (

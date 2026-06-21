@@ -21,9 +21,9 @@ import { STAGE_RHYTHM_ICONS } from './studioRhythmIcons';
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const STAGE_ORDER: StageKey[] = ['throw', 'trim', 'glaze', 'bisque'];
 const RHYTHM_TYPES: { key: RhythmType; label: string; description: string; accent: string }[] = [
-  { key: 'weekly', label: 'Weekly', description: 'Best for most studios — same throw/trim/glaze days each week', accent: RHYTHM_BROWN.accent },
+  { key: 'weekly', label: 'Weekly', description: 'Best for most studios, same throw/trim/glaze days each week', accent: RHYTHM_BROWN.accent },
   { key: 'sprint', label: 'Sprint', description: 'Short focused push with an optional piece goal', accent: RHYTHM_BROWN.accentDark },
-  { key: 'freeform', label: 'Freeform', description: 'No fixed days — just events and rituals', accent: RHYTHM_BROWN.inkSoft },
+  { key: 'freeform', label: 'Freeform', description: 'No fixed days, just events and rituals', accent: RHYTHM_BROWN.inkSoft },
 ];
 
 export default function StudioRhythmScheduleScreen() {
@@ -72,7 +72,7 @@ export default function StudioRhythmScheduleScreen() {
       {PaywallGate}
       <RhythmScreenHeader
         title="Weekly schedule"
-        subtitle="Step 1 of 1 — pick your rhythm, then tap your studio days"
+        subtitle="Step 1 of 1: pick your rhythm, then tap your studio days"
       />
 
       <ScrollView
@@ -229,7 +229,7 @@ export default function StudioRhythmScheduleScreen() {
                 <View className="flex-1 pr-3">
                   <Text className="text-sm font-semibold text-foreground">Target pieces</Text>
                   <Text className="text-xs text-muted-foreground mt-1">
-                    {goalDraft === 0 ? 'Optional — leave at zero for no goal' : `Make ${goalDraft} piece${goalDraft === 1 ? '' : 's'} this sprint`}
+                    {goalDraft === 0 ? 'Optional: leave at zero for no goal' : `Make ${goalDraft} piece${goalDraft === 1 ? '' : 's'} this sprint`}
                   </Text>
                 </View>
                 <View className="flex-row items-center gap-2 rounded-xl border border-border bg-muted/30 px-1 py-1">
@@ -241,7 +241,7 @@ export default function StudioRhythmScheduleScreen() {
                     <ChevronDown size={15} color={goalDraft <= 0 ? 'hsl(24 10% 70%)' : 'hsl(24 25% 15%)'} />
                   </TouchableOpacity>
                   <Text className="text-base font-bold text-foreground w-8 text-center">
-                    {goalDraft === 0 ? '—' : goalDraft}
+                    {goalDraft === 0 ? '-' : goalDraft}
                   </Text>
                   <TouchableOpacity
                     onPress={() => setGoalDraft(Math.min(100, goalDraft + 1))}

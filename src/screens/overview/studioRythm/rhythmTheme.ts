@@ -1,4 +1,4 @@
-/** Warm pottery palette — matches SetupModeSection and app browns */
+/** Warm pottery palette, matches SetupModeSection and app browns */
 export const RHYTHM_BROWN = {
   gradientStart: '#B86A3C',
   gradientEnd: '#7A4022',

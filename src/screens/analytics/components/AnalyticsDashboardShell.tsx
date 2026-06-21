@@ -26,7 +26,7 @@ type AnalyticsStickyChromeProps = {
   onPeriodChange: (id: AnalyticsPeriodId) => void;
 };
 
-/** Fixed top bar — back, title, and period chips only. */
+/** Fixed top bar, back, title, and period chips only. */
 export function AnalyticsStickyChrome({
   paddingTop,
   periodId,
@@ -125,7 +125,7 @@ type AnalyticsHeroBannerProps = {
   stats: DashboardStat[];
 };
 
-/** Scrollable gradient hero — headline, ring, and stat chips. */
+/** Scrollable gradient hero, headline, ring, and stat chips. */
 export function AnalyticsHeroBanner({
   periodLabel,
   headline,

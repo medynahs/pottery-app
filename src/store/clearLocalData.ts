@@ -10,7 +10,7 @@ export async function clearAllLocalData(): Promise<void> {
   await useAppStore.persist.clearStorage();
 }
 
-/** Full local reset for new-user testing — clears storage then reloads the app. */
+/** Full local reset for new-user testing, clears storage then reloads the app. */
 export async function resetLocalDataForTesting(): Promise<void> {
   await clearAllLocalData();
 

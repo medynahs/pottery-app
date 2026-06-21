@@ -9,7 +9,7 @@ interface SectionHeaderProps {
   className?: string;
 }
 
-/** Uppercase section label with optional count badge — used in community tabs. */
+/** Uppercase section label with optional count badge, used in community tabs. */
 export function SectionHeader({ label, count, className = 'mb-1' }: SectionHeaderProps) {
   return (
     <View className={`flex-row items-center gap-2 ${className}`}>

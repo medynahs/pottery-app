@@ -44,7 +44,7 @@ export function summarizeGlazeTests(tests: GlazeTestTile[]) {
   };
 }
 
-/** e.g. "Used 8 times · 7 successful · 1 crawling" — tests + linked pieces */
+/** e.g. "Used 8 times · 7 successful · 1 crawling", tests + linked pieces */
 export function formatGlazeUsageStatsLine(tests: GlazeTestTile[], linkedPieces: Piece[] = []): string {
   return formatUnifiedOutcomeStatsLine(tests, linkedPieces);
 }

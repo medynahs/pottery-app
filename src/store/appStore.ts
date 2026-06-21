@@ -298,12 +298,12 @@ function normalizeModuleList(modules?: readonly string[]): AppModule[] {
   return next;
 }
 
-/** Zustand selector — pair with `useShallow` (see `useNormalizedEnabledModules`). */
+/** Zustand selector, pair with `useShallow` (see `useNormalizedEnabledModules`). */
 export function selectNormalizedEnabledModules(state: Pick<AppState, 'enabledModules'>): AppModule[] {
   return normalizeModuleList(state.enabledModules);
 }
 
-/** Reactive enabled modules list — shallow-compared so tab bar does not loop re-renders. */
+/** Reactive enabled modules list, shallow-compared so tab bar does not loop re-renders. */
 export function useNormalizedEnabledModules(): AppModule[] {
   return useAppStore(useShallow(selectNormalizedEnabledModules));
 }
@@ -351,7 +351,7 @@ interface AppState {
   isModuleEnabled: (module: string) => boolean;
   textScale: TextScale;
   setTextScale: (scale: TextScale) => void;
-  /** Total setup quests when onboarding completed — for progress bar denominator */
+  /** Total setup quests when onboarding completed, for progress bar denominator */
   initialSetupQuestCount: number | null;
   setInitialSetupQuestCount: (count: number) => void;
   /** Analytics tab ids hidden by user preference */
@@ -362,6 +362,9 @@ interface AppState {
   /** One-time ceremony keys that have already been shown (never repeat). */
   seenCeremonies: string[];
   markCeremonyAsSeen: (key: string) => void;
+  /** When true, piece cards hide pricing details for a denser grid. */
+  piecesCompactCards: boolean;
+  setPiecesCompactCards: (compact: boolean) => void;
 
   // ── Notification preferences ──────────────────────────────────
   notificationPrefs: NotificationPrefs;
@@ -514,7 +517,7 @@ interface AppState {
   setupProgress: SetupProgress;
   markSetupProgress: (key: keyof SetupProgress) => void;
   hasCreatedPost: boolean;
-  /** Bumped when a community post is created — feeds subscribe to refresh. */
+  /** Bumped when a community post is created, feeds subscribe to refresh. */
   communityFeedRevision: number;
   /** Pre-fill community composer when opening from journal, kiln, etc. */
   communityPostComposerPreset: CommunityPostComposerPreset | null;
@@ -620,6 +623,8 @@ export const useAppStore = create<AppState>()(
   role: 'owner',
   enabledModules: ['overview', 'pieces', 'kiln', 'glaze-atlas', 'community'],
   seenCeremonies: [],
+  piecesCompactCards: false,
+  setPiecesCompactCards: (compact) => set({ piecesCompactCards: compact }),
   textScale: 'default' as TextScale,
   initialSetupQuestCount: null,
 
@@ -739,7 +744,7 @@ export const useAppStore = create<AppState>()(
         oryEmail: auth.oryEmail,
       });
       // Validate the restored token in the background (never blocks startup).
-      // Only an explicit 401 clears the session — network errors / offline
+      // Only an explicit 401 clears the session, network errors / offline
       // cold starts must not sign the user out.
       void oryGetSession(auth.sessionToken).catch((e: unknown) => {
         if (e instanceof OryHttpError && e.status === 401) {
@@ -747,7 +752,7 @@ export const useAppStore = create<AppState>()(
         }
       });
     } catch {
-      // SecureStore unavailable (e.g. Expo Go simulator) — proceed without session
+      // SecureStore unavailable (e.g. Expo Go simulator), proceed without session
     }
   },
 
@@ -1582,7 +1587,7 @@ export const useAppStore = create<AppState>()(
     const firing: Firing = {
       id: `firing-${Date.now()}`,
       kilnId,
-      name: `${type === 'glaze' ? 'Glaze' : 'Bisque'} firing — ${payload.firedDate}`,
+      name: `${type === 'glaze' ? 'Glaze' : 'Bisque'} firing, ${payload.firedDate}`,
       type,
       cone: kiln?.coneRange?.replace(/[^0-9]/g, '').slice(0, 2) || '04',
       state: 'completed',
@@ -1896,10 +1901,11 @@ export const useAppStore = create<AppState>()(
         textScale: state.textScale,
         initialSetupQuestCount: state.initialSetupQuestCount,
         analyticsHiddenTabs: state.analyticsHiddenTabs,
+        piecesCompactCards: state.piecesCompactCards,
         practiceMode: state.practiceMode,
         role: state.role,
         enabledModules: state.enabledModules,
-        // avatarImageUri is excluded — it's a large base64 string fetched fresh
+        // avatarImageUri is excluded, it's a large base64 string fetched fresh
         // from /api/me on every login. Persisting it leaks one user's avatar to
         // the next account that signs in on the same device.
         user: (({ avatarImageUri, ...rest }) => rest)(state.user),
@@ -1934,7 +1940,7 @@ export const useAppStore = create<AppState>()(
   )
 );
 
-/** Pieces visible in the UI — excludes delete tombstones awaiting sync confirmation. */
+/** Pieces visible in the UI, excludes delete tombstones awaiting sync confirmation. */
 export const selectVisiblePieces = (state: AppState) =>
   state.pieces.filter((p) => !p.deleted);
 

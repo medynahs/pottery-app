@@ -138,7 +138,7 @@ export default function TrophyShelfScreen() {
               <Text className="text-[12px] mt-1 leading-5" style={{ color: 'hsl(24 40% 32%)' }}>
                 {level.nextTitle
                   ? `${level.badgesUntilNext} more badge${level.badgesUntilNext === 1 ? '' : 's'} until ${level.nextTitle}`
-                  : 'Every trophy on the shelf — studio legend.'}
+                  : 'Every trophy on the shelf. Studio legend.'}
               </Text>
             </View>
             <CollectionRing earned={earnedCount} total={badges.length} size={78} stroke={7} />
@@ -209,7 +209,7 @@ export default function TrophyShelfScreen() {
               </Text>
               <Text className="text-[12px] text-center mt-1 leading-5" style={{ color: PROFILE_THEME.inkMuted }}>
                 {filter === 'earned'
-                  ? 'Keep making, firing, and logging — trophies will land here.'
+                  ? 'Keep making, firing, and logging. Trophies will land here.'
                   : 'You have unlocked every badge in this view.'}
               </Text>
             </View>

@@ -1,5 +1,5 @@
 /**
- * usePiecesSync — React Query hooks that bridge the backend /users/me/pieces
+ * usePiecesSync, React Query hooks that bridge the backend /users/me/pieces
  * endpoints with the local Zustand store.
  *
  * Pull: GET /users/me/pieces on sign-in, merged into the store by client_ref /
@@ -147,7 +147,7 @@ function mergeBackendPiecesIntoLocal(
       (bp.client_ref ? byClientRef.get(bp.client_ref) : undefined) ??
       byBackendId.get(bp.id);
 
-    // Never clobber unpushed local edits — server pull must not revert stage advances.
+    // Never clobber unpushed local edits, server pull must not revert stage advances.
     if (existing?.syncDirty) {
       updatedByBackendId.set(bp.id, {
         ...existing,
@@ -203,7 +203,7 @@ function applySyncResponse(localPieces: Piece[], response: SyncPiecesResponse): 
       };
     }
 
-    // Server response still reflects an older stage — keep local advance and retry sync.
+    // Server response still reflects an older stage, keep local advance and retry sync.
     return piece;
   });
 }
@@ -300,7 +300,7 @@ export async function flushPiecesSync(): Promise<boolean> {
 
     if (__DEV__) {
       console.log(
-        `[pieces:sync] ok — ${backendLinked.length} PUT, ${needsBulkSync.length} bulk`,
+        `[pieces:sync] ok, ${backendLinked.length} PUT, ${needsBulkSync.length} bulk`,
       );
     }
     return true;
@@ -314,7 +314,7 @@ export async function flushPiecesSync(): Promise<boolean> {
   }
 }
 
-/** Debounce a push sync — call after any local piece mutation. */
+/** Debounce a push sync, call after any local piece mutation. */
 export function schedulePiecesSync() {
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
@@ -386,7 +386,7 @@ export function usePiecesSyncStatus() {
   };
 }
 
-// ─── Asset mutations (unchanged — still per-op) ───────────────────────────────
+// ─── Asset mutations (unchanged, still per-op) ───────────────────────────────
 
 export interface DeletePieceAssetOptions {
   pieceBackendId: string;

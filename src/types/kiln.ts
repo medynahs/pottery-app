@@ -32,7 +32,7 @@ export type Kiln = {
   lastFiredAt?: string;
   /** Quick-reference safety info: shutoff, contacts, vent procedure, etc. */
   emergencyNotes?: string;
-  /** Element swaps, kiln wash, thermocouple, repairs — the unglamorous stuff. */
+  /** Element swaps, kiln wash, thermocouple, repairs, the unglamorous stuff. */
   maintenanceLogs?: KilnMaintenanceLog[];
   createdAt: string;
 };

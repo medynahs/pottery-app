@@ -1,5 +1,5 @@
-// Events API — /api/events
-// Public endpoint — no authentication required.
+// Events API, /api/events
+// Public endpoint, no authentication required.
 
 import { API_BASE_URL } from './index';
 

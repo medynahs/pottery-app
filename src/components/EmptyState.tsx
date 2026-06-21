@@ -11,8 +11,8 @@ interface EmptyStateProps {
   ctaIcon?: LucideIcon;
   onCtaPress?: () => void;
   /**
-   * 'plain' — bare centered block for full-screen list areas.
-   * 'card'  — bordered card for empty sections embedded between other content.
+   * 'plain', bare centered block for full-screen list areas.
+   * 'card' , bordered card for empty sections embedded between other content.
    */
   variant?: 'plain' | 'card';
 }

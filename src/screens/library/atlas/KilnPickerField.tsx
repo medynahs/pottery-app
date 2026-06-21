@@ -103,7 +103,7 @@ export function KilnPickerField({ value, onChange }: KilnPickerFieldProps) {
         ) : (
           <View className="flex-row items-center justify-between">
             <Text className="text-sm text-muted-foreground">
-              {kilns.length > 0 ? 'Choose a kiln (optional)' : 'No kilns yet — add one in the Kiln tab'}
+              {kilns.length > 0 ? 'Choose a kiln (optional)' : 'No kilns yet, add one in the Kiln tab'}
             </Text>
             {kilns.length > 0 ? (
               <ChevronDown size={18} color="hsl(24 20% 55%)" />
@@ -125,7 +125,7 @@ export function KilnPickerField({ value, onChange }: KilnPickerFieldProps) {
               Select Kiln
             </Text>
             <Text className="text-sm text-muted-foreground mt-1">
-              Optional — link this test to one of your studio kilns.
+              Optional: link this test to one of your studio kilns.
             </Text>
           </ModalSheetHeader>
 

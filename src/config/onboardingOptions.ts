@@ -11,7 +11,7 @@ export const USER_TYPE_CONFIG: Record<OnboardingUserType, UserTypeConfig> = {
 
     'home-potter': {
         label: 'I make pottery at home',
-        description: 'You throw, dry, and fire in your own space — your own kiln or a kiln service.',
+        description: 'You throw, dry, and fire in your own space, your own kiln or a kiln service.',
         help: 'Personal practice with full kiln and piece tracking.',
         practiceMode: 'home',
         role: 'owner',

@@ -7,7 +7,7 @@ export const ACTIVE_CHALLENGE: MonthlyChallenge = {
   emoji: '🥣',
   label: 'March Challenge',
   title: 'The Humble Bowl',
-  description: 'Throw the most honest, beautiful bowl you can. No handles, no decorations — just form.',
+  description: 'Throw the most honest, beautiful bowl you can. No handles, no decorations, just form.',
   joined: 124,
   daysLeft: 23,
   accentColor: 'hsl(100 35% 44%)',
@@ -45,7 +45,7 @@ export const ACTIVE_FESTIVAL: Festival = {
   daysLeft: 6,
   totalParticipants: 162,
   rules: [
-    'One submission per potter — make it count.',
+    'One submission per potter, make it count.',
     'Any forming method is allowed: wheel, hand-building, or sculpting.',
     'The piece must be fired at least once (bisque counts for the submission photo).',
     'Photo must be taken by you and show the finished piece clearly.',

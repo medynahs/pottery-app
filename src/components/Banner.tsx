@@ -10,7 +10,7 @@ interface BannerProps {
 }
 
 /**
- * Inline feedback banner shown above forms — red for errors, green for
+ * Inline feedback banner shown above forms, red for errors, green for
  * success. Replaces the identical bg-red-50 boxes copied across the auth
  * screens and profile modals.
  */

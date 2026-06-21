@@ -77,7 +77,7 @@ export function EventsTab() {
   if (isError || !events?.length) {
     return (
       <View className="items-center py-10">
-        <Text className="text-sm text-muted-foreground">No events right now — check back soon.</Text>
+        <Text className="text-sm text-muted-foreground">No events right now, check back soon.</Text>
       </View>
     );
   }

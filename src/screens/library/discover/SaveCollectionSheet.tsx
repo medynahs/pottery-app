@@ -88,7 +88,7 @@ export function SaveCollectionSheet({
           >
             {collections.length === 0 ? (
               <Text className="text-xs text-muted-foreground mb-3">
-                Optional — create a collection to group this glaze, or save without one.
+                Optional: create a collection to group this glaze, or save without one.
               </Text>
             ) : null}
 

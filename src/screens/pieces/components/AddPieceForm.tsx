@@ -414,7 +414,7 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing, fillHe
               <View className="flex-row items-center justify-between">
                 <Text className="text-xs text-muted-foreground">Estimated Volume</Text>
                 <Text className="text-xs font-semibold text-foreground">
-                  {pricingSnapshot.volumeCm3 ? `${pricingSnapshot.volumeCm3} cm³` : '—'}
+                  {pricingSnapshot.volumeCm3 ? `${pricingSnapshot.volumeCm3} cm³` : '-'}
                 </Text>
               </View>
               <View className="flex-row items-center justify-between mt-2">
@@ -424,7 +424,7 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing, fillHe
                     ? 'N.O.T.K'
                     : pricingSnapshot.firingFee != null
                       ? formatMoney(pricingSnapshot.firingFee)
-                      : '—'}
+                      : '-'}
                 </Text>
               </View>
               <View className="flex-row items-center justify-between mt-2">

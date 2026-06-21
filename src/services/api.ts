@@ -1,6 +1,6 @@
 import { API_BASE_URL as API_BASE } from './index';
 
-/** HTTP error from the app backend — carries the status code so callers can
+/** HTTP error from the app backend, carries the status code so callers can
  *  react to specific failures (e.g. 401 → expired session → sign out). */
 export class ApiError extends Error {
   constructor(message: string, public readonly status: number) {
@@ -38,7 +38,7 @@ export async function fetchMe(sessionToken: string): Promise<BackendProfile> {
 /**
  * Permanently deletes the signed-in user's account and all associated data.
  * The backend cascades to pieces, firings, glazes and removes the Ory identity.
- * Throws on any non-2xx response — callers must NOT clear the local session
+ * Throws on any non-2xx response, callers must NOT clear the local session
  * unless this succeeds, otherwise deletion silently degrades to a sign-out.
  */
 export async function deleteAccount(sessionToken: string): Promise<void> {
@@ -70,7 +70,7 @@ async function uploadUserImage(
     method: 'POST',
     credentials: 'omit',
     headers: { 'X-Session-Token': sessionToken },
-    // Do NOT set Content-Type — let fetch inject the multipart boundary automatically
+    // Do NOT set Content-Type, let fetch inject the multipart boundary automatically
     body: form as unknown as BodyInit_,
   });
   if (!res.ok) {

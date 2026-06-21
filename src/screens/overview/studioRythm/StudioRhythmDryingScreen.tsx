@@ -62,7 +62,7 @@ export default function StudioRhythmDryingScreen() {
     <View className="flex-1 bg-background">
       <RhythmScreenHeader
         title="Drying timers"
-        subtitle="Defaults are fine — tweak only if your clay dries differently"
+        subtitle="Defaults are fine, tweak only if your clay dries differently"
       />
 
       <ScrollView

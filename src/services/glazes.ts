@@ -1,10 +1,10 @@
-// Glazes API — /users/me/glazes
+// Glazes API, /users/me/glazes
 // All endpoints require an X-Session-Token header from Ory Kratos.
 //
 // The backend stores a glaze's images in a child table tagged by gallery type;
 // the app keeps four separate photo fields. The mappers below split a backend
 // `images[]` into those four fields on the way in. Images are NOT part of the
-// sync snapshot — they upload through the dedicated image endpoints.
+// sync snapshot, they upload through the dedicated image endpoints.
 
 import type {
   GlazeApplicationMethod,
@@ -102,7 +102,7 @@ export interface GlazeSyncItem {
   conesTested: string[];
   lastTestedAt?: string;
   deleted?: boolean;
-  /** Client-side batch metadata — server may ignore until supported. */
+  /** Client-side batch metadata, server may ignore until supported. */
   ingredientsText?: string;
   batchId?: string;
   dateMixed?: string;
@@ -113,7 +113,7 @@ export interface GlazeSyncItem {
   versionNumber?: number;
   rootGlazeId?: string;
   parentGlazeId?: string;
-  /** Client-side discover provenance — server may ignore until BE-10. */
+  /** Client-side discover provenance, server may ignore until BE-10. */
   discoverSourceRecipeId?: string;
   discoverSavedAt?: string;
 }
@@ -179,7 +179,7 @@ function imagesToPhotoFields(images: BackendGlazeImage[]): Pick<
  *
  * Photo fields are only derived from the backend `images[]` on a fresh pull. For
  * an existing local glaze they are preserved, because images aren't part of the
- * sync round-trip — overwriting them would wipe a freshly-picked, not-yet-
+ * sync round-trip, overwriting them would wipe a freshly-picked, not-yet-
  * uploaded photo the moment the text sync returns.
  */
 export function backendGlazeToLocal(b: BackendGlaze, existing?: GlazeLibraryItem): GlazeLibraryItem {
@@ -330,14 +330,14 @@ async function authedFetch(sessionToken: string, url: string, init?: RequestInit
 
 // ─── Glaze CRUD ─────────────────────────────────────────────────────────────
 
-/** GET /users/me/glazes — list live glazes (each with its images). */
+/** GET /users/me/glazes, list live glazes (each with its images). */
 export async function apiListGlazes(sessionToken: string): Promise<BackendGlaze[]> {
   const res = await authedFetch(sessionToken, `${API_BASE_URL}/users/me/glazes`);
   if (!res.ok) throw new Error(`listGlazes failed (${res.status})`);
   return res.json() as Promise<BackendGlaze[]>;
 }
 
-/** GET /users/me/glazes/tests — list live test tiles across all glazes. */
+/** GET /users/me/glazes/tests, list live test tiles across all glazes. */
 export async function apiListGlazeTests(sessionToken: string): Promise<BackendGlazeTest[]> {
   const res = await authedFetch(sessionToken, `${API_BASE_URL}/users/me/glazes/tests`);
   if (!res.ok) throw new Error(`listGlazeTests failed (${res.status})`);
@@ -345,7 +345,7 @@ export async function apiListGlazeTests(sessionToken: string): Promise<BackendGl
 }
 
 /**
- * POST /users/me/glazes/sync — push device snapshots of glazes and tests; the
+ * POST /users/me/glazes/sync, push device snapshots of glazes and tests; the
  * server returns the authoritative live lists plus a client_ref → backend id map.
  */
 export async function apiSyncGlazes(
@@ -361,7 +361,7 @@ export async function apiSyncGlazes(
   return res.json() as Promise<SyncGlazesResponse>;
 }
 
-/** POST /users/me/glazes/:glaze_id/images — upload an image under a gallery type. */
+/** POST /users/me/glazes/:glaze_id/images, upload an image under a gallery type. */
 export async function apiUploadGlazeImage(
   sessionToken: string,
   glazeBackendId: string,
@@ -377,7 +377,7 @@ export async function apiUploadGlazeImage(
     `${API_BASE_URL}/users/me/glazes/${glazeBackendId}/images`,
     {
       method: 'POST',
-      // Do NOT set Content-Type — let fetch inject the multipart boundary.
+      // Do NOT set Content-Type, let fetch inject the multipart boundary.
       body: form as unknown as BodyInit_,
     },
   );
@@ -385,7 +385,7 @@ export async function apiUploadGlazeImage(
   return res.json() as Promise<GlazeImageUploadResponse>;
 }
 
-/** DELETE /users/me/glazes/:glaze_id/images/:image_id — remove an image record. */
+/** DELETE /users/me/glazes/:glaze_id/images/:image_id, remove an image record. */
 export async function apiDeleteGlazeImage(
   sessionToken: string,
   glazeBackendId: string,

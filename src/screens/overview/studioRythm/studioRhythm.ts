@@ -83,7 +83,7 @@ export interface StudioEvent {
 export interface Ritual {
   id: string;
   label: string;
-  /** @deprecated Use iconKey — kept for persisted data migration */
+  /** @deprecated Use iconKey, kept for persisted data migration */
   emoji?: string;
   iconKey?: string;
   enabled: boolean;
@@ -131,7 +131,7 @@ export const DEFAULT_RITUALS: Ritual[] = [
   { id: 'ritual-test-tiles',     label: 'Test tile review',     iconKey: 'layers',   enabled: false, cadence: 'monthly' },
 ];
 
-/** Suggested weekly rhythm shown as a template in the rhythm editor — not applied until the user configures it. */
+/** Suggested weekly rhythm shown as a template in the rhythm editor, not applied until the user configures it. */
 export const SUGGESTED_WEEKLY_STAGE_DAYS: StageDay[] = [
   { stage: 'throw',  days: [0, 2] },
   { stage: 'trim',   days: [2, 4] },

@@ -3,38 +3,42 @@ import { Clock } from 'lucide-react-native';
 import React from 'react';
 import { View } from 'react-native';
 import type { JourneyMilestone } from '../utils/buildJourneyMilestones';
-import { PROFILE_THEME } from '../profileTheme';
 import { ProfileSectionCard } from './ProfileSectionCard';
 
 const DOT_COLORS: Record<string, string> = {
   'bg-green-400': '#6B9E78',
   'bg-emerald-400': '#5FAF7A',
-  'bg-primary': PROFILE_THEME.accent,
+  'bg-primary': 'hsl(39 57% 51%)',
   'bg-cyan-400': '#5B8FA8',
   'bg-green-500': '#4A9460',
   'bg-fuchsia-400': '#B87BB8',
   'bg-pink-400': '#D4648A',
   'bg-blue-400': '#6B8FC4',
-  'bg-amber-400': PROFILE_THEME.gold,
+  'bg-amber-400': 'hsl(39 57% 51%)',
 };
 
 function formatTimelineDate(date: Date): string {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export function JourneyTimeline({ milestones }: { milestones: JourneyMilestone[] }) {
+export function JourneyTimeline({
+  milestones,
+  hint,
+}: {
+  milestones: JourneyMilestone[];
+  hint?: string;
+}) {
   if (milestones.length === 0) return null;
 
   return (
     <ProfileSectionCard
-      title="Studio timeline"
-      hint="Key moments from your pottery journey"
-      accent="timeline"
-      icon={<Clock size={18} color="#5B8FA8" />}
+      title="Recent milestones"
+      hint={hint ?? 'Key moments from your pottery journey'}
+      icon={<Clock size={18} color="hsl(200 45% 42%)" />}
     >
       <View className="pl-1">
         {milestones.map((item, index) => {
-          const dotColor = DOT_COLORS[item.color] ?? PROFILE_THEME.accent;
+          const dotColor = DOT_COLORS[item.color] ?? 'hsl(39 57% 51%)';
           const isLast = index === milestones.length - 1;
           return (
             <View key={item.id} className="flex-row">
@@ -47,26 +51,18 @@ export function JourneyTimeline({ milestones }: { milestones: JourneyMilestone[]
                     backgroundColor: dotColor,
                     marginTop: 4,
                     borderWidth: 2,
-                    borderColor: PROFILE_THEME.cardBg,
+                    borderColor: 'hsl(40 30% 99%)',
                   }}
                 />
                 {!isLast ? (
-                  <View
-                    style={{
-                      flex: 1,
-                      width: 2,
-                      backgroundColor: PROFILE_THEME.accentSoft,
-                      marginTop: 2,
-                      minHeight: 32,
-                    }}
-                  />
+                  <View className="flex-1 w-0.5 bg-border mt-0.5" style={{ minHeight: 32 }} />
                 ) : null}
               </View>
               <View className="flex-1 pb-4">
-                <Text className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: PROFILE_THEME.inkMuted }}>
+                <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {formatTimelineDate(item.date)} · {item.year}
                 </Text>
-                <Text className="text-sm leading-5 mt-0.5" style={{ color: PROFILE_THEME.ink }}>
+                <Text className="text-sm leading-5 mt-0.5 text-foreground">
                   {item.label}
                 </Text>
               </View>

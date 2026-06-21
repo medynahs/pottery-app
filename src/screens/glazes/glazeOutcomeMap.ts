@@ -2,7 +2,7 @@ import type { GlazeOutcome, Piece } from '@/src/types/pieces';
 import { GLAZE_OUTCOME_LABELS } from '@/src/screens/pieces/utils/constants';
 import type { GlazeDefect, GlazeResultRating, GlazeTestTile } from './types';
 
-/** Studio-facing firing outcomes — shared by pieces, stats, and glaze detail. */
+/** Studio-facing firing outcomes, shared by pieces, stats, and glaze detail. */
 export type StudioGlazeOutcome = GlazeOutcome;
 
 export const STUDIO_GLAZE_OUTCOME_LABELS = GLAZE_OUTCOME_LABELS;
@@ -16,7 +16,7 @@ export type UnifiedOutcomeSummary = {
   crawling: number;
   underfired: number;
   crack: number;
-  /** Lab tiles marked interesting — tracked separately. */
+  /** Lab tiles marked interesting, tracked separately. */
   interesting: number;
   /** Bad tests without a mapped defect category. */
   unclassified: number;

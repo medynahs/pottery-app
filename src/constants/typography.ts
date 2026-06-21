@@ -18,10 +18,10 @@ export const TEXT_SCALE_DESCRIPTIONS: Record<TextScale, string> = {
   compact: 'Smaller text, more on screen',
   default: 'Standard app sizing',
   comfortable: 'Slightly larger for easier reading',
-  large: 'Larger — best for low vision',
+  large: 'Larger, best for low vision',
 };
 
-/** Base font sizes (px) aligned with text.tsx variants — tightened from prior onboarding inline sizes */
+/** Base font sizes (px) aligned with text.tsx variants, tightened from prior onboarding inline sizes */
 export const FONT_SIZES = {
   eyebrow: 10,
   caption: 11,

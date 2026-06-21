@@ -2,7 +2,7 @@ import { collectionNameToSlug } from '@/src/screens/library/atlas/collections';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 
-/** Legacy collection URLs — open My Atlas with the collection filter applied. */
+/** Legacy collection URLs, open My Atlas with the collection filter applied. */
 export default function GlazeCollectionRoute() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();

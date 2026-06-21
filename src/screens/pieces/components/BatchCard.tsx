@@ -8,7 +8,7 @@ import { Piece } from '@/src/types/pieces';
 
 import { PiecePlaceholderArt } from '@/src/components/PiecePlaceholderArt';
 
-import { Layers, MoreHorizontal } from 'lucide-react-native';
+import { Check, Layers, MoreHorizontal } from 'lucide-react-native';
 
 import React from 'react';
 
@@ -34,17 +34,23 @@ interface BatchCardProps {
 
   nextStageLabel?: string;
 
+  selectionMode?: boolean;
+
+  selectedCount?: number;
+
   onAdvanceAll: () => void;
 
   onExpand: () => void;
 
   onMore?: () => void;
 
+  onToggleBatchSelect?: () => void;
+
 }
 
 
 
-export function BatchCard({ pieces, stageLabel, nextStageLabel, onAdvanceAll, onExpand, onMore }: BatchCardProps) {
+export function BatchCard({ pieces, stageLabel, nextStageLabel, selectionMode = false, selectedCount = 0, onAdvanceAll, onExpand, onMore, onToggleBatchSelect }: BatchCardProps) {
 
   const rep = pieces[0];
 
@@ -57,6 +63,24 @@ export function BatchCard({ pieces, stageLabel, nextStageLabel, onAdvanceAll, on
   const setName = rep.name.replace(/\s+\d+$/, '');
 
   const hasImage = !!(rep.photo || rep.imgUrl);
+
+  const allSelected = selectedCount === count && count > 0;
+
+  const handlePress = () => {
+    if (selectionMode) {
+      onToggleBatchSelect?.();
+      return;
+    }
+    onExpand();
+  };
+
+  const handleLongPress = () => {
+    if (selectionMode) {
+      onToggleBatchSelect?.();
+      return;
+    }
+    onMore?.();
+  };
 
 
 
@@ -92,21 +116,29 @@ export function BatchCard({ pieces, stageLabel, nextStageLabel, onAdvanceAll, on
 
 
 
-        <Card className="overflow-hidden flex-1">
+        <Card className={`overflow-hidden flex-1 ${allSelected ? 'border-2 border-primary' : ''}`}>
 
           <TouchableOpacity
 
             activeOpacity={0.85}
 
-            onPress={onExpand}
+            onPress={handlePress}
 
-            onLongPress={onMore}
+            onLongPress={handleLongPress}
 
             delayLongPress={400}
 
           >
 
             <View className="aspect-square bg-muted/40 relative">
+
+              {selectionMode ? (
+                <View className={`absolute top-3 left-3 w-6 h-6 rounded-full border-2 items-center justify-center z-10 ${
+                  allSelected ? 'bg-primary border-primary' : selectedCount > 0 ? 'bg-card/90 border-primary/50' : 'bg-card/90 border-border'
+                }`}>
+                  {allSelected ? <Check size={13} color="hsl(34 35% 92%)" strokeWidth={3} /> : null}
+                </View>
+              ) : null}
 
               {hasImage ? (
 
@@ -178,7 +210,7 @@ export function BatchCard({ pieces, stageLabel, nextStageLabel, onAdvanceAll, on
 
                   <Text className="text-[10px] font-bold text-primary uppercase tracking-tight">Batch Set</Text>
 
-                  {onMore ? (
+                  {onMore && !selectionMode ? (
 
                     <TouchableOpacity onPress={onMore} activeOpacity={0.7} className="p-1 -mr-1">
 
@@ -200,7 +232,7 @@ export function BatchCard({ pieces, stageLabel, nextStageLabel, onAdvanceAll, on
 
           <View className="px-3 pb-3 flex-row gap-2">
 
-          {nextStageLabel && (
+          {!selectionMode && nextStageLabel && (
 
             <AdvanceStageButton
 

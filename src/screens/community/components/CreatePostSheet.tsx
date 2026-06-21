@@ -316,17 +316,17 @@ export function CreatePostSheet({
           if (uploaded?.assetId) {
             assetIds.push(uploaded.assetId);
           } else if (!finalContent) {
-            showToast('Photo upload unavailable — add a caption or try again', 'error');
+            showToast('Photo upload unavailable, add a caption or try again', 'error');
             return;
           } else {
-            showToast('Photo upload unavailable — posting text only', 'success');
+            showToast('Photo upload unavailable, posting text only', 'success');
           }
         } catch {
           if (!finalContent) {
-            showToast('Photo upload failed — try again or add a caption', 'error');
+            showToast('Photo upload failed, try again or add a caption', 'error');
             return;
           }
-          showToast('Photo upload failed — posting text only', 'success');
+          showToast('Photo upload failed, posting text only', 'success');
         }
       }
 
@@ -362,7 +362,7 @@ export function CreatePostSheet({
       onClose();
     } catch (e) {
       console.error('[CreatePost] error:', e);
-      showToast('Failed to post — please try again', 'error');
+      showToast('Failed to post, please try again', 'error');
     } finally {
       setPosting(false);
     }
@@ -474,7 +474,7 @@ export function CreatePostSheet({
             {postKind === 'studio_notice' ? (
               <View className="rounded-2xl border border-amber-300/50 bg-amber-50/80 px-3 py-2.5 mb-5">
                 <Text className="text-xs font-semibold text-amber-900">
-                  📌 Posts as a studio notice — good for closures, kiln downtime, or schedule changes.
+                  📌 Posts as a studio notice, good for closures, kiln downtime, or schedule changes.
                 </Text>
               </View>
             ) : null}
@@ -573,7 +573,7 @@ export function CreatePostSheet({
                   {postKind === 'piece_journal'
                     ? 'Pick a piece below to use its journal photo, or add your own'
                     : postKind === 'kiln_firing'
-                      ? 'Unload photo optional — piece chips carry the story'
+                      ? 'Unload photo optional, piece chips carry the story'
                       : 'Camera or library'}
                 </Text>
               </TouchableOpacity>
@@ -731,10 +731,10 @@ export function CreatePostSheet({
                       ? askTopic === 'glaze'
                         ? 'Why is my matte glaze crawling on stoneware?'
                         : askTopic === 'firing'
-                          ? 'Cone 6 bisque — hold time or soak tips?'
+                          ? 'Cone 6 bisque, hold time or soak tips?'
                           : 'What would you try differently here?'
                       : postKind === 'kiln_firing'
-                        ? 'Everything came out even — happy with the soda slip.'
+                        ? 'Everything came out even, happy with the soda slip.'
                         : 'Share an update, finished piece, or discovery…'
               }
               placeholderTextColor="hsl(24 10% 65%)"

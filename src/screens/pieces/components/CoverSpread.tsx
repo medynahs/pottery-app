@@ -205,7 +205,7 @@ export function CoverSpread({
 
         <PieceGlazeLinkSection piece={piece} compact={compact} />
 
-        {(piece.stage === 'finished' || economicsRows.some((row) => row.value !== '—')) ? (
+        {(piece.stage === 'finished' || economicsRows.some((row) => row.value !== '-')) ? (
           <CollapsibleLedgerSection title="Studio economics" subtitle="Costs, fees, and pricing targets" compact={compact}>
             {economicsRows.map((row) => (
               <LedgerRowLine key={row.label} {...row} compact={compact} />

@@ -15,7 +15,7 @@ const SIZES = {
   md: { shell: 36, orb: 26, ring: 2.5, shine: 7, speck: 4 },
 } as const;
 
-/** Glossy studio orb — celadon, honey, or blush depending on glaze status. */
+/** Glossy studio orb, celadon, honey, or blush depending on glaze status. */
 export function GlazeStatusOrb({ status, size = 'sm', style }: GlazeStatusOrbProps) {
   const theme = GLAZE_STATUS_ORB_THEME[status];
   const dim = SIZES[size];

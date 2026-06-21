@@ -51,7 +51,7 @@ function PollCard({
       const updated = await apiVotePoll(sessionToken, poll.id, optionId);
       onVoted(updated);
     } catch {
-      // silently ignore — optimistic update not applied on error
+      // silently ignore, optimistic update not applied on error
     } finally {
       setVoting(null);
     }
@@ -200,7 +200,7 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
     [sessionToken, onRefreshingChange],
   );
 
-  // Initial load — feed + polls in parallel.
+  // Initial load, feed + polls in parallel.
   useEffect(() => {
     fetchFeed();
     if (sessionToken) {

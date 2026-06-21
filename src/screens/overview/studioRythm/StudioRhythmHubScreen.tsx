@@ -97,7 +97,7 @@ export default function StudioRhythmHubScreen() {
               textTransform: 'uppercase',
             }}
           >
-            {setup.isNewUser ? 'Optional — explore anytime' : 'Manage'}
+            {setup.isNewUser ? 'Optional: explore anytime' : 'Manage'}
           </Text>
           {setup.isNewUser ? (
             <Text className="text-xs leading-4 mt-1 mb-3" style={{ color: RHYTHM_BROWN.inkMuted }}>

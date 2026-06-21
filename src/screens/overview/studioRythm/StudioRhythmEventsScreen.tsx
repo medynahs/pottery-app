@@ -35,7 +35,7 @@ export default function StudioRhythmEventsScreen() {
     <View className="flex-1 bg-background">
       <RhythmScreenHeader
         title="Events"
-        subtitle="Optional — add when you have markets or deadlines"
+        subtitle="Optional: add when you have markets or deadlines"
       />
 
       <ScrollView

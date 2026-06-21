@@ -1,6 +1,6 @@
 import { ANALYTICS_THEME } from '@/src/screens/analytics/analyticsTheme';
 
-/** Warm studio palette — aligned with Profile and Analytics. */
+/** Warm studio palette, aligned with Profile and Analytics. */
 export const COMMUNITY_THEME = {
   ...ANALYTICS_THEME,
   pageBg: ANALYTICS_THEME.pageBg,

@@ -62,7 +62,7 @@ const STAGE_PROMPTS: Record<string, string> = {
   'bone-dry': 'Final prep before heat. Add any reminders.',
   bisque: 'Optional: save firing cone and quick kiln notes.',
   glazing: 'Capture glaze choices or application notes.',
-  'glaze-fired': 'Log how the glaze fired — this feeds your glaze atlas stats.',
+  'glaze-fired': 'Log how the glaze fired, this feeds your glaze atlas stats.',
   finished: 'Celebrate and optionally set disposition now.',
 };
 

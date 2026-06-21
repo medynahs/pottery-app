@@ -89,7 +89,7 @@ export function InventorySummary({
       <InventoryChip
         emoji="📈"
         label="Potential margin"
-        value={potentialMargin != null ? money(potentialMargin) : '—'}
+        value={potentialMargin != null ? money(potentialMargin) : '-'}
         sub="if all sold at list"
         accent={potentialMargin != null && potentialMargin >= 0 ? CHART_COLORS.success : CHART_COLORS.firing}
       />

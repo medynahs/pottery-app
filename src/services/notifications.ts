@@ -43,6 +43,45 @@ async function ensureAndroidChannel() {
   });
 }
 
+function withAndroidChannel<T extends Notifications.NotificationTriggerInput>(trigger: T): T {
+  if (Platform.OS !== 'android') return trigger;
+  return { ...trigger, channelId: 'kilnkin-default' };
+}
+
+export function buildKilnkinNotificationTrigger(delaySeconds = 2): Notifications.NotificationTriggerInput {
+  return withAndroidChannel({
+    type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+    seconds: Math.max(1, delaySeconds),
+    repeats: false,
+  });
+}
+
+export async function previewKilnkinNotification(
+  companion: KilnkinCompanion,
+  kind: NotificationEventKind,
+  payload?: NotificationEventPayload,
+  variantSalt = 0,
+): Promise<string | null> {
+  const allowed = await ensureNotificationPermission();
+  if (!allowed) return null;
+
+  const body = buildVoicedNotificationMessage(companion, kind, payload, variantSalt);
+
+  return Notifications.scheduleNotificationAsync({
+    content: {
+      title: companion.name,
+      body,
+      sound: 'default',
+      data: {
+        kind,
+        companionId: companion.id,
+        debug: true,
+      },
+    },
+    trigger: buildKilnkinNotificationTrigger(2),
+  });
+}
+
 export async function ensureNotificationPermission(): Promise<boolean> {
   configureNotificationRuntime();
 
@@ -80,6 +119,10 @@ export async function scheduleKilnkinNotification(
 
   const body = buildVoicedNotificationMessage(input.companion, input.kind, input.payload);
 
+  const trigger = typeof input.trigger === 'object' && input.trigger !== null
+    ? withAndroidChannel(input.trigger as Notifications.NotificationTriggerInput)
+    : input.trigger;
+
   return Notifications.scheduleNotificationAsync({
     content: {
       title: input.companion.name,
@@ -90,7 +133,7 @@ export async function scheduleKilnkinNotification(
         companionId: input.companion.id,
       },
     },
-    trigger: input.trigger,
+    trigger,
   });
 }
 
@@ -104,11 +147,10 @@ export async function scheduleWeeklySummaryNotification(
     companion,
     kind: 'weekly-summary',
     payload,
-    trigger: {
+    trigger: withAndroidChannel({
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
       seconds: 7 * 24 * 60 * 60,
       repeats: true,
-      channelId: Platform.OS === 'android' ? 'kilnkin-default' : undefined,
-    },
+    }),
   });
 }

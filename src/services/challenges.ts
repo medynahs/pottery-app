@@ -1,4 +1,4 @@
-// Challenges API — /challenges
+// Challenges API, /challenges
 // All endpoints require an X-Session-Token header from Ory Kratos.
 
 import { API_BASE_URL as API_BASE } from './index';

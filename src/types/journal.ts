@@ -2,7 +2,7 @@ import { TimelineEntry } from "./pieces";
 
 export type EntryDraft = {
   notes: string;
-  /** Ordered list of photo URIs — one per polaroid slot. */
+  /** Ordered list of photo URIs, one per polaroid slot. */
   photos: string[];
 };
 

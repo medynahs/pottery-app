@@ -1,5 +1,5 @@
 /**
- * usePhotoPicker — shared hook for adding photos from camera or library.
+ * usePhotoPicker, shared hook for adding photos from camera or library.
  *
  * Usage:
  *   const { openPickSheet } = usePhotoPicker({ aspect: [4, 3] });

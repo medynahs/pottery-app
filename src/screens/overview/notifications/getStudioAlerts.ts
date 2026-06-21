@@ -1,4 +1,5 @@
-import { getKilnkinVoiceLine, type KilnkinCompanion } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
+import type { KilnkinCompanion } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
+import { getKilnkinStudioAlertLine } from '@/src/screens/overview/kilnkin/kilnkinVoice';
 import { getDateKey, type StudioRhythmConfig } from '@/src/screens/overview/studioRythm/studioRhythm';
 import type { Firing } from '@/src/types/kiln';
 import type { Piece } from '@/src/types/pieces';
@@ -85,7 +86,7 @@ function getKilnAlert(
   return {
     id: `kiln-${latestActiveFiring.id}`,
     title: 'Kiln Update',
-    body: getKilnkinVoiceLine(companion, `the studio just moved ${pieceSummary}.`),
+    body: getKilnkinStudioAlertLine(companion, 'kiln-move', { pieceSummary }),
     route: '/(tabs)/kiln',
     actionLabel: 'Open Kiln',
     freshnessLabel: getFreshnessLabel(alertDate, now),
@@ -114,7 +115,7 @@ function getPlannerAlerts(
       return {
         id: `event-${event.id}`,
         title: event.title,
-        body: getKilnkinVoiceLine(companion, `${event.title.toLowerCase()} is coming up soon.`),
+        body: getKilnkinStudioAlertLine(companion, 'planner-event', { eventTitle: event.title }),
         route: '/profile/studio-rhythm',
         actionLabel: 'Open Calendar',
         freshnessLabel: getFreshnessLabel(eventDate, now),
@@ -134,7 +135,7 @@ function getSeasonalWrapAlert(companion: KilnkinCompanion, pieces: Piece[], now:
   return {
     id: `seasonal-wrap-${getDateKey(now)}`,
     title: `${seasonLabel} Wrap`,
-    body: getKilnkinVoiceLine(companion, `your ${seasonLabel.toLowerCase()} studio wrap is ready to peek at.`),
+    body: getKilnkinStudioAlertLine(companion, 'seasonal-wrap', { seasonLabel }),
     route: '/(tabs)/profile',
     actionLabel: 'View Journey',
     freshnessLabel: 'Fresh',
@@ -152,7 +153,7 @@ function getPieceProgressAlert(companion: KilnkinCompanion, pieces: Piece[], now
   return {
     id: `piece-progress-${finishedCount}`,
     title: 'Studio Shelf',
-    body: getKilnkinVoiceLine(companion, `${finishedCount} finished ${finishedCount === 1 ? 'piece is' : 'pieces are'} ready for admiration.`),
+    body: getKilnkinStudioAlertLine(companion, 'piece-finished', { finishedCount }),
     route: '/(tabs)/pieces?stage=finished',
     actionLabel: 'Open Pieces',
     freshnessLabel: 'Today',

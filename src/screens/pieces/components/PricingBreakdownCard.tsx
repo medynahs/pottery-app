@@ -38,7 +38,7 @@ export function PricingBreakdownCard({
         { label: 'Tax', value: piece.taxAmount },
     ].filter((row) => row.value != null);
 
-    const formatMoney = (value?: number | null) => value == null ? '—' : `${currencySymbol}${value.toFixed(2)}`;
+    const formatMoney = (value?: number | null) => value == null ? '-' : `${currencySymbol}${value.toFixed(2)}`;
 
     return (
         <View

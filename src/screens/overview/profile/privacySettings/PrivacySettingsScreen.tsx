@@ -46,7 +46,7 @@ export default function PrivacySettingsScreen() {
       });
       await shareStudioExport(payload);
     } catch {
-      showToast('Export failed — try again', 'error');
+      showToast('Export failed, try again', 'error');
     } finally {
       setExporting(false);
     }
@@ -92,7 +92,7 @@ export default function PrivacySettingsScreen() {
 
         <View className="mx-6 mb-5 rounded-2xl border border-border bg-muted/40 px-4 py-3">
           <Text className="text-xs text-muted-foreground leading-5">
-            Analytics help us fix bugs and improve the app. Personalised suggestions use your studio activity to shape daily missions and rhythm nudges. All data stays on your device — nothing is sold or shared with third parties.
+            Analytics help us fix bugs and improve the app. Personalised suggestions use your studio activity to shape daily missions and rhythm nudges. All data stays on your device, nothing is sold or shared with third parties.
           </Text>
         </View>
 

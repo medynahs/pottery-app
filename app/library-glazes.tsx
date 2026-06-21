@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
 
-/** Legacy route — redirects to the Glaze Atlas tab. */
+/** Legacy route, redirects to the Glaze Atlas tab. */
 export default function LibraryGlazesRoute() {
   const router = useRouter();
 

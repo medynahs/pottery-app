@@ -53,7 +53,7 @@ export type RankedUsage = {
   label: string;
   count: number;
   pct: number;
-  /** Glaze family root id — present on glaze usage rows. */
+  /** Glaze family root id, present on glaze usage rows. */
   familyKey?: string;
   pieceCount?: number;
   testCount?: number;
@@ -604,9 +604,9 @@ export function computeStudioStats({
 }
 
 function formatShortDate(iso: string | undefined | null): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return '-';
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 

@@ -32,7 +32,7 @@ export function useOfflineSync() {
     if (hasGlazes) {
       await flushGlazesSync();
     }
-    // Legacy queue — non-piece ops only
+    // Legacy queue, non-piece ops only
     if (hasLegacyOps && !hasPendingPiecesSync()) {
       clearSyncQueue();
       setLastSyncedAt(new Date().toISOString());

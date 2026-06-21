@@ -177,7 +177,7 @@ export function LedgerRowLine({
   );
 }
 
-/** Stage metadata ledger — dotted rows aligned with cover registry blocks */
+/** Stage metadata ledger, dotted rows aligned with cover registry blocks */
 export function StageFactsLedger({
   facts,
   compact,

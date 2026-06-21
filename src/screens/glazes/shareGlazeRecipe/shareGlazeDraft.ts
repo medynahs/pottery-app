@@ -29,22 +29,22 @@ export const SHARE_INTRO_PRESETS: Array<{ id: string; label: string; text: strin
   {
     id: 'tested',
     label: 'Just tested this',
-    text: 'Just tested this glaze in my studio — sharing how it turned out!',
+    text: 'Just tested this glaze in my studio, sharing how it turned out!',
   },
   {
     id: 'production',
     label: 'Production batch',
-    text: 'This batch is going into production — documenting the formula for my future self.',
+    text: 'This batch is going into production, documenting the formula for my future self.',
   },
   {
     id: 'feedback',
     label: 'Want feedback',
-    text: 'Looking for feedback on this glaze — has anyone tried something similar?',
+    text: 'Looking for feedback on this glaze, has anyone tried something similar?',
   },
   {
     id: 'favorite',
     label: 'Studio favorite',
-    text: 'One of my studio favorites right now — had to share the recipe.',
+    text: 'One of my studio favorites right now, had to share the recipe.',
   },
 ];
 
@@ -56,7 +56,7 @@ export function buildDefaultShareDraft(
   const featuredPiece = pickFeaturedPiece(linkedPieces);
 
   return {
-    intro: `Sharing a recipe from my glaze atlas — ${name} has been firing well in my studio.`,
+    intro: `Sharing a recipe from my glaze atlas, ${name} has been firing well in my studio.`,
     hashtags: '#glazerecipe #potterylife #ceramics',
     includeRecipe: true,
     includeNotes: Boolean(glaze.notes?.trim()),

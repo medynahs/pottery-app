@@ -5,7 +5,7 @@ import { TouchableOpacity, View } from 'react-native';
 
 interface AdvanceStageButtonProps {
   stageLabel: string;
-  /** Appended on a second line when set — e.g. "all" for batch cards. */
+  /** Appended on a second line when set, e.g. "all" for batch cards. */
   suffix?: string;
   onPress: () => void;
   className?: string;

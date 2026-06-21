@@ -2,7 +2,7 @@ import { collectionNameToSlug } from '@/src/screens/library/atlas/collections';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 
-/** Legacy route — redirects to collection or glaze detail. */
+/** Legacy route, redirects to collection or glaze detail. */
 export default function GlazeLibraryRoute() {
   const { glazeId, collection } = useLocalSearchParams<{
     glazeId?: string;

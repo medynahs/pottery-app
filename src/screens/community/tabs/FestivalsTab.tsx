@@ -1,4 +1,4 @@
-﻿// Exported as ChallengesTab — monthly challenge hub
+﻿// Exported as ChallengesTab, monthly challenge hub
 import { InlineErrorCard } from '@/src/components/InlineErrorCard';
 import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
 import { ConfirmSheet } from '@/src/components/AppSheets';
@@ -52,7 +52,7 @@ const HOW_IT_WORKS = [
     step: 1,
     icon: Sparkles,
     title: 'Join the theme',
-    body: 'Each month brings a new form or technique to explore. Join to commit — no pressure until you are ready to share.',
+    body: 'Each month brings a new form or technique to explore. Join to commit, no pressure until you are ready to share.',
   },
   {
     step: 2,
@@ -323,7 +323,7 @@ function ChallengeHero({
             </View>
             <Text className="text-xs leading-relaxed" style={{ color: COMMUNITY_THEME.inkSoft }}>
               {enrolledTrackTitle
-                ? `${enrolledTrackTitle} — finish your piece, then submit a photo and note for the feed.`
+                ? `${enrolledTrackTitle}, finish your piece, then submit a photo and note for the feed.`
                 : 'Finish your piece, then submit a photo and note so it appears on the community feed.'}
             </Text>
             <View className="mt-3">
@@ -637,7 +637,7 @@ export function ChallengesTab() {
     if (isMock) {
       mock.submit(payload?.note ?? 'Submitted from preview flow');
       setSubmitOpen(false);
-      showToast('Preview entry saved — browse the gallery to vote', 'success');
+      showToast('Preview entry saved, browse the gallery to vote', 'success');
       return;
     }
 

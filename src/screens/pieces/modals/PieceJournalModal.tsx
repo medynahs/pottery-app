@@ -1,10 +1,8 @@
 import { PickSheet, type PickSheetOption } from '@/src/components/AppSheets';
 import { PhotoPickerOverlay } from '@/src/components/PhotoPickerOverlay';
-import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
-import { buildPieceSharePreset } from '../utils/sharePieceToCommunity';
 import { useAppStore } from '@/src/store/appStore';
 import { canAddPiecePhoto, checkPremium, countPiecePhotos, PremiumFeature } from '@/src/utils/premiumGate';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,7 +23,9 @@ import { useJournalDrafts } from '../hooks/useJournalDrafts';
 import { useJournalSpreads } from '../hooks/useJournalSpreads';
 import { formatDuration } from '../utils/journal';
 import { JournalTheme } from '../utils/journalTheme';
+import { collectPiecePhotos } from '../utils/piecePhotos';
 import { JournalStageRail } from '../components/JournalStageRail';
+import { PiecePhotoGalleryModal } from '../modals/PiecePhotoGalleryModal';
 import { resolveStageIcon } from '../utils/stageIconUtils';
 
 const CONTENTS_THRESHOLD = 6;
@@ -63,9 +63,7 @@ export function PieceJournalModal({
 }: PieceJournalModalProps) {
   const { stages } = useStageConfig();
   const currencySymbol = useAppStore((state) => state.pricingSettings.currencySymbol);
-  const sessionToken = useAppStore((state) => state.sessionToken);
   const studioLabel = useAppStore((state) => state.user.studioName?.trim() || state.user.name?.trim());
-  const shareToCommunity = useCommunityComposer();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isCompact = width < 430;
@@ -73,6 +71,7 @@ export function PieceJournalModal({
   const [activePage, setActivePage] = React.useState(0);
   const [journalInitialPage, setJournalInitialPage] = React.useState(0);
   const [contentsOpen, setContentsOpen] = React.useState(false);
+  const [galleryOpen, setGalleryOpen] = React.useState(false);
   const bookRef = React.useRef<JournalBookHandle>(null);
   const notesDebounceRef = React.useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
@@ -88,7 +87,10 @@ export function PieceJournalModal({
   }, [piece?.id, visible, initialStage]);
 
   React.useEffect(() => {
-    if (!visible) setContentsOpen(false);
+    if (!visible) {
+      setContentsOpen(false);
+      setGalleryOpen(false);
+    }
   }, [visible]);
 
   const totalMs = useMemo(() => piece ? Date.now() - new Date(piece.createdAt).getTime() : 0, [piece]);
@@ -100,6 +102,10 @@ export function PieceJournalModal({
   }, [stages]);
 
   const spreads = useJournalSpreads(piece, drafts, stageLabelById, totalMs);
+  const galleryPhotos = React.useMemo(
+    () => (piece ? collectPiecePhotos(piece, stageLabelById) : []),
+    [piece, stageLabelById],
+  );
 
   const icons = spreads.map((spread) => {
     if (spread.kind === 'cover') return PackageCheck;
@@ -114,11 +120,6 @@ export function PieceJournalModal({
     : piece
       ? `${piece.name}${studioLabel ? ` · ${studioLabel}` : ''} · ${formatDuration(totalMs)} in the making`
       : '';
-
-  const handleShareJournal = React.useCallback(() => {
-    if (!piece || !sessionToken) return;
-    shareToCommunity(buildPieceSharePreset(piece));
-  }, [piece, sessionToken, shareToCommunity]);
 
   const handleUpdateNotes = React.useCallback((index: number, notes: string) => {
     if (!piece) return;
@@ -205,10 +206,17 @@ export function PieceJournalModal({
 
   const canAddMorePhotos = checkPremium(PremiumFeature.UnlimitedPhotos) || countPiecePhotos(piece) < 1;
   const showContents = spreads.length >= CONTENTS_THRESHOLD;
+  const showGallery = galleryPhotos.length > 0;
 
   return (
     <Modal visible={visible} animationType="fade" transparent={false} onRequestClose={onClose} statusBarTranslucent>
       {PaywallGate}
+      <PiecePhotoGalleryModal
+        visible={galleryOpen}
+        title={piece.name}
+        photos={galleryPhotos}
+        onClose={() => setGalleryOpen(false)}
+      />
       <PickSheet
         visible={contentsOpen}
         title="Journal contents"
@@ -236,9 +244,10 @@ export function PieceJournalModal({
             subtitle={headerSubtitle}
             isCompact={isCompact}
             onClose={onClose}
-            onShareToCommunity={sessionToken ? handleShareJournal : undefined}
             onOpenContents={() => setContentsOpen(true)}
+            onOpenGallery={() => setGalleryOpen(true)}
             showContents={showContents}
+            showGallery={showGallery}
           />
 
           <JournalBookShell

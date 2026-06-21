@@ -24,7 +24,7 @@ import { scheduleGlazesSync } from './useGlazesSync';
 type LibraryGlazesScreenProps = {
   glazes: GlazeLibraryItem[];
   onAddGlaze: () => void;
-  /** Deep-link / legacy collection route — applies once on mount. */
+  /** Deep-link / legacy collection route, applies once on mount. */
   initialCollectionKey?: string;
 };
 
@@ -272,7 +272,7 @@ export default function LibraryGlazesScreen({
               title="Log your first glaze batch"
               description={
                 pieces.length > 0
-                  ? 'You have pieces in the studio — add a batch recipe so you can link glazes when you fire.'
+                  ? 'You have pieces in the studio. Add a batch recipe so you can link glazes when you fire.'
                   : 'Name your mix, log ingredients, and snap a bucket photo. Your atlas starts with one batch.'
               }
               ctaLabel="Add Glaze Batch"

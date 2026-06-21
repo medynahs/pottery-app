@@ -109,7 +109,7 @@ function StageRow({
           </TouchableOpacity>
         </View>
 
-        {/* Stage icon — tappable for custom stages */}
+        {/* Stage icon, tappable for custom stages */}
         {stage.isCustom ? (
           <TouchableOpacity
             onPress={() => setPickerOpen(v => !v)}
@@ -150,7 +150,7 @@ function StageRow({
           )}
         </View>
 
-        {/* Pencil (rename) + Trash (remove) — hidden for cemetery */}
+        {/* Pencil (rename) + Trash (remove), hidden for cemetery */}
         {!isCemetery && (
           <>
             <TouchableOpacity
@@ -193,7 +193,7 @@ function StageRow({
         )}
       </View>
 
-      {/* Inline icon picker — only for custom stages */}
+      {/* Inline icon picker, only for custom stages */}
       {stage.isCustom && pickerOpen && (
         <View className="px-4 pb-3">
           <Text className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
@@ -344,7 +344,7 @@ export default function StageCustomizationScreen() {
             </React.Fragment>
           ))}
 
-          {/* Cemetery — always last, locked */}
+          {/* Cemetery, always last, locked */}
           {cemetery && (
             <>
               <View className="h-px bg-border" />

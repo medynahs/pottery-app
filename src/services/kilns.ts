@@ -1,4 +1,4 @@
-// Kilns API — /users/me/kilns
+// Kilns API, /users/me/kilns
 // All endpoints require an X-Session-Token header from Ory Kratos.
 
 import type { Kiln, KilnPricingModel, KilnType } from '../types/kiln';

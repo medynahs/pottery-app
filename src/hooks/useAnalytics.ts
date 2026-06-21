@@ -16,7 +16,7 @@ function analyticsEnabled(): boolean {
   return useAppStore.getState().privacyPrefs.analyticsEnabled;
 }
 
-/** Fire-and-forget event capture — gated on privacy prefs + env flag. */
+/** Fire-and-forget event capture, gated on privacy prefs + env flag. */
 export function captureAnalyticsEvent(event: string, properties?: AnalyticsProperties) {
   if (!analyticsEnabled()) return;
 

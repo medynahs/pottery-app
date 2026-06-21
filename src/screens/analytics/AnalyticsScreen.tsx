@@ -139,7 +139,7 @@ export default function AnalyticsScreen() {
       });
       await shareStudioExport(payload);
     } catch {
-      showToast('Export failed — try again', 'error');
+      showToast('Export failed, try again', 'error');
     } finally {
       setExporting(false);
     }
@@ -174,7 +174,7 @@ export default function AnalyticsScreen() {
 
   const money = React.useCallback(
     (v: number | null | undefined, opts?: { dash?: boolean }) => {
-      if (v == null) return '—';
+      if (v == null) return '-';
       if (v === 0 && opts?.dash) return `${currencySymbol}0`;
       return `${currencySymbol}${Math.round(v).toLocaleString()}`;
     },
@@ -200,7 +200,7 @@ export default function AnalyticsScreen() {
       const statsRow: DashboardStat[] = [
         { key: 'fees', label: 'Fees paid', value: money(stats.firings.totalCost, { dash: true }), sub: 'to kiln', emoji: '🔥' },
         { key: 'avg', label: 'Avg / firing', value: money(stats.firings.avgCostPerFiring, { dash: true }), emoji: '💰' },
-        { key: 'load', label: 'Avg load', value: stats.firings.avgPiecesPerFiring != null ? stats.firings.avgPiecesPerFiring.toFixed(1) : '—', sub: 'pieces', emoji: '📦' },
+        { key: 'load', label: 'Avg load', value: stats.firings.avgPiecesPerFiring != null ? stats.firings.avgPiecesPerFiring.toFixed(1) : '-', sub: 'pieces', emoji: '📦' },
         { key: 'unique', label: 'Unique fired', value: String(stats.firings.uniquePiecesFired), emoji: '🏺' },
       ];
       return {
@@ -217,7 +217,7 @@ export default function AnalyticsScreen() {
       { key: 'cost', label: 'Production', value: money(stats.costs.productionTotal, { dash: true }), sub: 'est. cost', emoji: '🧱' },
       { key: 'rev', label: 'Sold', value: money(stats.revenue.soldRevenue, { dash: true }), sub: `${stats.summary.soldCount} pieces`, emoji: '💵' },
       { key: 'avg', label: 'Avg / piece', value: money(stats.costs.avgPerPiece, { dash: true }), emoji: '📊' },
-      { key: 'hours', label: 'Work hours', value: stats.summary.workHours > 0 ? `${Math.round(stats.summary.workHours)}h` : '—', emoji: '⏱️' },
+      { key: 'hours', label: 'Work hours', value: stats.summary.workHours > 0 ? `${Math.round(stats.summary.workHours)}h` : '-', emoji: '⏱️' },
     ];
 
     return {
@@ -465,14 +465,14 @@ export default function AnalyticsScreen() {
                     tone="revenue"
                     emoji="⏱️"
                     label="Effective $/hr"
-                    value={stats.margins.effectiveHourlyRate != null ? money(stats.margins.effectiveHourlyRate) : '—'}
+                    value={stats.margins.effectiveHourlyRate != null ? money(stats.margins.effectiveHourlyRate) : '-'}
                     sub="sold margin ÷ hours"
                   />
                   <MetricTile tone="neutral" emoji="✨" label="Shelf potential" value={money(stats.revenue.potentialRevenue, { dash: true })} sub="finished, unsold" />
                 </MetricGrid>
 
                 <Text className="text-[11px] px-1 -mt-2 mb-4 leading-4" style={{ color: ANALYTICS_THEME.inkMuted }}>
-                  Based on target prices — sale dates not yet tracked
+                  Based on target prices, sale dates not yet tracked
                 </Text>
               </>
             ) : null}
@@ -503,7 +503,7 @@ export default function AnalyticsScreen() {
               <MetricGrid>
                 <MetricTile tone="firing" emoji="🔥" label="Avg / firing" value={money(stats.firings.avgCostPerFiring, { dash: true })} />
                 <MetricTile tone="firing" emoji="🏺" label="Cost / piece" value={money(stats.firings.avgCostPerPiece, { dash: true })} />
-                <MetricTile tone="neutral" emoji="📦" label="Avg load" value={stats.firings.avgPiecesPerFiring != null ? stats.firings.avgPiecesPerFiring.toFixed(1) : '—'} sub="pieces / firing" />
+                <MetricTile tone="neutral" emoji="📦" label="Avg load" value={stats.firings.avgPiecesPerFiring != null ? stats.firings.avgPiecesPerFiring.toFixed(1) : '-'} sub="pieces / firing" />
                 <MetricTile tone="neutral" emoji="✅" label="Pieces fired" value={String(stats.firings.piecesFired)} sub={`${stats.firings.uniquePiecesFired} unique`} />
               </MetricGrid>
 
@@ -561,7 +561,7 @@ export default function AnalyticsScreen() {
             {stats.process.length > 0 ? (
               <AnalyticsSectionCard
                 title="Time in stage"
-                hint="Median days between transitions — all time"
+                hint="Median days between transitions, all time"
                 accent="pieces"
                 icon={<TrendingUp size={18} color={CHART_COLORS.success} />}
               >
@@ -572,7 +572,7 @@ export default function AnalyticsScreen() {
             {stats.losses.length > 0 ? (
               <AnalyticsSectionCard
                 title="Loss breakdown"
-                hint={`Cause of death — ${stats.period.label}`}
+                hint={`Cause of death, ${stats.period.label}`}
                 accent="firings"
                 icon={<FlameKindling size={18} color={CHART_COLORS.firing} />}
               >
@@ -647,7 +647,7 @@ export default function AnalyticsScreen() {
           icon={<Download size={18} color="hsl(280 35% 48%)" />}
         >
           <Text className="text-xs leading-5" style={{ color: ANALYTICS_THEME.inkMuted }}>
-            Download pieces, firings, glazes, and test tiles — {exportSummary}.
+            Download pieces, firings, glazes, and test tiles, {exportSummary}.
           </Text>
           <TouchableOpacity
             onPress={handleExport}

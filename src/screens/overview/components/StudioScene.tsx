@@ -251,7 +251,7 @@ export function StudioScene({ height }: StudioSceneProps) {
     () => ambientPulse.interpolate({ inputRange: [0, 1], outputRange: [0.08, 0.22] }),
     [ambientPulse]
   );
-  // fillOpacity for the tote bag polygon highlight — low enough to be subtle, > 0 so SVG hit-tests it
+  // fillOpacity for the tote bag polygon highlight, low enough to be subtle, > 0 so SVG hit-tests it
   const totePolygonFillOpacity = useMemo(
     () => ambientPulse.interpolate({ inputRange: [0, 1], outputRange: [0.05, 0.15] }),
     [ambientPulse]

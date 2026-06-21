@@ -13,7 +13,7 @@ function isSessionExpired(error: unknown): boolean {
  * Fetches /users/me whenever a session token is present.
  * Automatically syncs the result into Zustand (user.name, user.avatarImageUri,
  * backendUserId) so all existing components update reactively.
- * A 401 means the Ory session token is no longer valid — the user is signed
+ * A 401 means the Ory session token is no longer valid, the user is signed
  * out locally so they land back on the auth screens instead of seeing
  * silently-failing requests.
  */
@@ -75,7 +75,7 @@ export function useUploadAvatar() {
   return async (imageUri: string, mimeType?: string): Promise<void> => {
     if (!sessionToken) throw new Error('Not signed in');
     const updatedProfile = await uploadAvatar(sessionToken, imageUri, mimeType);
-    // Seed the cache directly with the upload response — the POST endpoint
+    // Seed the cache directly with the upload response, the POST endpoint
     // already returns the updated profile with the new avatar_url.
     // This avoids a redundant GET /users/me and prevents the race condition
     // where a re-fetch returns a stale avatar_url and overwrites the

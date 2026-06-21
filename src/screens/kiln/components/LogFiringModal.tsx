@@ -227,7 +227,7 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
 
           <FormField
             label="Pieces in this firing"
-            hint={`Optional — ${readyPieces.length} piece${readyPieces.length !== 1 ? 's' : ''} ready for ${form.type}. ${pricingHint}`}
+            hint={`Optional: ${readyPieces.length} piece${readyPieces.length !== 1 ? 's' : ''} ready for ${form.type}. ${pricingHint}`}
           >
             {readyPieces.length === 0 ? (
               <Text className="text-sm text-muted-foreground leading-5">

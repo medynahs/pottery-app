@@ -114,7 +114,7 @@ export function LogTestModal({
               Log Test Tile
             </Text>
             <Text className="text-sm text-muted-foreground mt-1">
-              Photo, result, clay, and cone — the essentials for a useful record.
+              Photo, result, clay, and cone: the essentials for a useful record.
             </Text>
           </ModalSheetHeader>
 
@@ -176,7 +176,7 @@ export function LogTestModal({
                 <Text className="font-semibold text-foreground">
                   {labelForMappedOutcome(mappedOutcomePreview)}
                 </Text>
-                . Test tiles stay in your lab notebook — piece firings use the same outcome labels.
+                . Test tiles stay in your lab notebook, piece firings use the same outcome labels.
               </Text>
             ) : null}
 

@@ -127,7 +127,7 @@ export function ScheduledFiringRow({
           <MiniStat
             icon={Receipt}
             label="Est. cost"
-            value={firing.estimatedTotalCost != null ? `${currencySymbol}${firing.estimatedTotalCost.toFixed(0)}` : '—'}
+            value={firing.estimatedTotalCost != null ? `${currencySymbol}${firing.estimatedTotalCost.toFixed(0)}` : '-'}
           />
         </View>
 
@@ -172,7 +172,7 @@ export function FiringHistoryRow({ firing, kilnName, summary, onPress }: FiringH
           <View className="flex-1 pr-2">
             <Text className="font-semibold text-sm text-foreground">{firing.name}</Text>
             <Text className="text-xs text-muted-foreground mt-0.5">
-              {firing.completedAt ? formatDate(firing.completedAt) : '—'}
+              {firing.completedAt ? formatDate(firing.completedAt) : '-'}
               {kilnName ? `  ·  ${kilnName}` : ''}
               {firing.cone ? `  ·  Cone ${firing.cone}` : ''}
             </Text>

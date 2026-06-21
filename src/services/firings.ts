@@ -1,4 +1,4 @@
-// Firings API — /users/me/firings
+// Firings API, /users/me/firings
 // All endpoints require an X-Session-Token header from Ory Kratos.
 
 import { API_BASE_URL as API_BASE } from './index';

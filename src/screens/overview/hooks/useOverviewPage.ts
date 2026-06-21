@@ -19,6 +19,7 @@ import {
   shouldShowFiringQueueWidget,
 } from '@/src/screens/overview/utils/firingQueueUtils';
 import { PremiumFeature } from '@/src/utils/premiumGate';
+import { computeStudioStats } from '@/src/utils/computeStudioStats';
 import { useRouter, type Href } from 'expo-router';
 import React from 'react';
 import { Animated, Easing } from 'react-native';
@@ -38,6 +39,7 @@ export function useOverviewPage() {
   useCurrentUser();
   const { requestAccess, PaywallGate } = usePremiumGate();
   const user = useAppStore((state) => state.user);
+  const isPremium = useAppStore((state) => state.isPremium);
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
   const kilns = useAppStore((state) => state.kilns);
   const onboardingProfile = useAppStore((state) => state.onboardingProfile);
@@ -129,11 +131,22 @@ export function useOverviewPage() {
 
   const isSetupMode = setupQuests.length > 0;
 
+  const finishedThisMonth = React.useMemo(
+    () => computeStudioStats({
+      pieces,
+      firings,
+      glazeTests,
+      glazes,
+      periodId: 'this-month',
+    }).summary.piecesFinished,
+    [pieces, firings, glazeTests, glazes],
+  );
+
   const stagePositions = React.useMemo(() => mapPiecesToStudioPositions(pieces), [pieces]);
   const studioSignals = React.useMemo(() => getStudioSignals({ pieces, firings }), [pieces, firings]);
   const kilnkinNudge = React.useMemo(
-    () => getKilnkinNudge({ ...studioSignals, stagePositions, pieces, personality: kilnkinCompanion.personality }),
-    [studioSignals, stagePositions, pieces, kilnkinCompanion.personality]
+    () => getKilnkinNudge({ ...studioSignals, stagePositions, pieces, companion: kilnkinCompanion }),
+    [studioSignals, stagePositions, pieces, kilnkinCompanion],
   );
 
   const activeFiring = React.useMemo(
@@ -359,6 +372,7 @@ export function useOverviewPage() {
     insets,
     PaywallGate,
     user,
+    isPremium,
     kilnkinCompanion,
     feedbackOpen,
     setFeedbackOpen,
@@ -380,6 +394,7 @@ export function useOverviewPage() {
     oneThingCard,
     queuePreview,
     pieces,
+    finishedThisMonth,
     missionsSummary,
     stageChips,
     kilnkinNudge,

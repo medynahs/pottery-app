@@ -20,7 +20,7 @@ const WARM = {
   idleText: '#7A6040',
 };
 
-/** Status chip with gradient orb — matches atlas card indicators. */
+/** Status chip with gradient orb, matches atlas card indicators. */
 export function GlazeStatusPill({
   status,
   active = false,

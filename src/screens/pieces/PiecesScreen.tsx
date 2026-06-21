@@ -9,7 +9,7 @@ import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
 import { useAppStore } from '@/src/store';
 import { countPiecePhotos } from '@/src/utils/premiumGate';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { BookOpen, ChevronUp, Copy, Edit3, Layers, Plus, Search, Share2, SlidersHorizontal, Trash2 } from 'lucide-react-native';
+import { BookOpen, CheckSquare, ChevronUp, Copy, Edit3, Images, Layers, Plus, Search, Share2, SlidersHorizontal, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
@@ -19,13 +19,16 @@ import { BatchCard } from './components/BatchCard';
 import { CemeteryBanner } from './components/CemeteryBanner';
 import { FilterSortSheet } from './components/FilterSortSheet';
 import { PieceCard } from './components/PieceCard';
+import { PieceSelectionBar } from './components/PieceSelectionBar';
 import { usePiecesScreen } from './hooks/usePiecesScreen';
 import { AddPieceModal } from './modals/AddPieceModal';
 import { CemeterySacrificeModal } from './modals/CemeterySacrificeModal';
 import { PieceJournalModal } from './modals/PieceJournalModal';
+import { PiecePhotoGalleryModal } from './modals/PiecePhotoGalleryModal';
 import { StageAdvanceCelebrationModal, type StageAdvanceCelebration } from './modals/StageAdvanceCelebrationModal';
 import { StageAdvanceFlowModal } from './modals/StageAdvanceFlowModal';
 import { STAGE_LABEL } from './utils/constants';
+import { collectPiecePhotos } from './utils/piecePhotos';
 
 const itemLayout = LinearTransition
   .duration(420)
@@ -46,8 +49,12 @@ export default function PiecesScreen() {
   const [stageTransition, setStageTransition] = React.useState<StageAdvanceCelebration | null>(null);
   const [firstPieceCeremony, setFirstPieceCeremony] = React.useState(false);
   const [batchActionPieces, setBatchActionPieces] = React.useState<Piece[] | null>(null);
+  const [selectionMode, setSelectionMode] = React.useState(false);
+  const [selectedPieceIds, setSelectedPieceIds] = React.useState<Set<number>>(() => new Set());
+  const [galleryPiece, setGalleryPiece] = React.useState<Piece | null>(null);
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
   const glazes = useAppStore((s) => s.glazes);
+  const piecesCompactCards = useAppStore((s) => s.piecesCompactCards);
   const markCeremonyAsSeen = useAppStore((s) => s.markCeremonyAsSeen);
 
   const {
@@ -98,6 +105,94 @@ export default function PiecesScreen() {
     handleSharePiece,
     sessionToken,
   } = usePiecesScreen();
+
+  const exitSelectionMode = React.useCallback(() => {
+    setSelectionMode(false);
+    setSelectedPieceIds(new Set());
+  }, []);
+
+  const enterSelectionWith = React.useCallback((targetPieces: Piece[]) => {
+    if (targetPieces.length === 0) return;
+    setSelectionMode(true);
+    setSelectedPieceIds(new Set(targetPieces.map((piece) => piece.id)));
+  }, []);
+
+  const togglePieceSelection = React.useCallback((pieceId: number) => {
+    setSelectedPieceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(pieceId)) next.delete(pieceId);
+      else next.add(pieceId);
+      if (next.size === 0) setSelectionMode(false);
+      return next;
+    });
+  }, []);
+
+  const toggleBatchSelection = React.useCallback((batchPieces: Piece[]) => {
+    setSelectionMode(true);
+    setSelectedPieceIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = batchPieces.every((piece) => next.has(piece.id));
+      if (allSelected) {
+        batchPieces.forEach((piece) => next.delete(piece.id));
+      } else {
+        batchPieces.forEach((piece) => next.add(piece.id));
+      }
+      if (next.size === 0) setSelectionMode(false);
+      return next;
+    });
+  }, []);
+
+  const selectedPieces = React.useMemo(
+    () => pieces.filter((piece) => selectedPieceIds.has(piece.id)),
+    [pieces, selectedPieceIds],
+  );
+
+  const selectionAdvanceInfo = React.useMemo(() => {
+    if (selectedPieces.length === 0) return null;
+
+    const stages = new Set(selectedPieces.map((piece) => piece.stage));
+    if (stages.size !== 1) {
+      return { canAdvance: false as const, reason: 'mixed-stages' as const };
+    }
+
+    const stage = selectedPieces[0].stage;
+    const nextStageId = getNextStageId(stage);
+    if (!nextStageId || stage === 'cemetery') {
+      return { canAdvance: false as const, reason: 'terminal-stage' as const };
+    }
+
+    return {
+      canAdvance: true as const,
+      nextStageLabel: stageLookup[nextStageId]?.label ?? nextStageId,
+    };
+  }, [selectedPieces, getNextStageId, stageLookup]);
+
+  const handleSelectionAdvance = React.useCallback(() => {
+    if (!selectionAdvanceInfo?.canAdvance) return;
+    handleAdvanceBatch(selectedPieces);
+    exitSelectionMode();
+  }, [selectionAdvanceInfo, selectedPieces, handleAdvanceBatch, exitSelectionMode]);
+
+  const pieceStageLabels = React.useMemo(() => {
+    const labels: Record<string, string> = {};
+    for (const [id, info] of Object.entries(stageLookup)) {
+      if (id !== 'all') labels[id] = info.label;
+    }
+    return labels;
+  }, [stageLookup]);
+
+  const galleryPhotos = React.useMemo(
+    () => (galleryPiece ? collectPiecePhotos(galleryPiece, pieceStageLabels) : []),
+    [galleryPiece, pieceStageLabels],
+  );
+
+  const selectionHint = React.useMemo(() => {
+    if (!selectionAdvanceInfo || selectionAdvanceInfo.canAdvance) return undefined;
+    if (selectionAdvanceInfo.reason === 'mixed-stages') {
+      return 'Select pieces at the same stage to advance together';
+    }
+    return 'Selected pieces cannot advance further';
+  }, [selectionAdvanceInfo]);
 
   const advanceLinkedGlazeNames = React.useMemo(() => {
     if (!advanceRequest) return [];
@@ -182,9 +277,25 @@ export default function PiecesScreen() {
     const piece = actionSheetPiece;
     const options: PickSheetOption[] = [
       { label: 'Open journal', icon: BookOpen, onPress: () => openJournal(piece) },
+    ];
+
+    if (collectPiecePhotos(piece, pieceStageLabels).length > 0) {
+      options.push({
+        label: 'View photo gallery',
+        icon: Images,
+        onPress: () => setGalleryPiece(piece),
+      });
+    }
+
+    options.push(
       { label: 'Edit details', icon: Edit3, onPress: () => setEditPiece(piece) },
       { label: 'Duplicate piece', icon: Copy, onPress: () => handleDuplicate(piece) },
-    ];
+      {
+        label: 'Select for batch advance',
+        icon: CheckSquare,
+        onPress: () => enterSelectionWith([piece]),
+      },
+    );
 
     if (piece.batchId) {
       options.push({
@@ -213,6 +324,7 @@ export default function PiecesScreen() {
     return options;
   }, [
     actionSheetPiece,
+    pieceStageLabels,
     openJournal,
     setEditPiece,
     handleDuplicate,
@@ -220,6 +332,7 @@ export default function PiecesScreen() {
     sessionToken,
     handleSharePiece,
     handleDelete,
+    enterSelectionWith,
   ]);
 
   const batchActionOptions = React.useMemo((): PickSheetOption[] => {
@@ -230,6 +343,11 @@ export default function PiecesScreen() {
     const batchId = rep.batchId ?? String(rep.id);
     const options: PickSheetOption[] = [];
 
+    options.push({
+      label: 'Select batch',
+      icon: CheckSquare,
+      onPress: () => enterSelectionWith(batchActionPieces),
+    });
     if (nextStageLabel) {
       options.push({
         label: `Advance all to ${nextStageLabel}`,
@@ -253,7 +371,7 @@ export default function PiecesScreen() {
     });
 
     return options;
-  }, [batchActionPieces, getNextStageId, stageLookup, handleAdvanceBatch, handleDuplicateBatch, toggleExpand]);
+  }, [batchActionPieces, getNextStageId, stageLookup, handleAdvanceBatch, handleDuplicateBatch, toggleExpand, enterSelectionWith]);
 
   return (
     <StudioTabScreen>
@@ -286,7 +404,7 @@ export default function PiecesScreen() {
               <Search size={16} color="hsl(24 20% 40%)" />
             </View>
             <Input
-              placeholder="Search pieces..."
+              placeholder="Search name or notes..."
               value={search}
               onChangeText={setSearch}
               className="pl-11 rounded-2xl bg-card/75 border-border"
@@ -314,6 +432,7 @@ export default function PiecesScreen() {
         ref={scrollRef}
         className="flex-1"
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={selectionMode ? { paddingBottom: 52 } : undefined}
         refreshControl={
           <RefreshControl refreshing={isSyncing} onRefresh={refetchPieces} />
         }
@@ -392,8 +511,11 @@ export default function PiecesScreen() {
                       onAdvanceAll={() => handleAdvanceBatch(item.pieces)}
                       stageLabel={stageLabel}
                       nextStageLabel={nextStageLabel}
+                      selectionMode={selectionMode}
+                      selectedCount={item.pieces.filter((piece) => selectedPieceIds.has(piece.id)).length}
                       onExpand={() => toggleExpand(item.batchId)}
                       onMore={() => setBatchActionPieces(item.pieces)}
+                      onToggleBatchSelect={() => toggleBatchSelection(item.pieces)}
                     />
                   </Animated.View>
                 );
@@ -409,7 +531,12 @@ export default function PiecesScreen() {
                 >
                   <PieceCard
                     piece={item.piece}
+                    compact={piecesCompactCards}
+                    selectionMode={selectionMode}
+                    selected={selectedPieceIds.has(item.piece.id)}
                     onPress={() => openJournal(item.piece)}
+                    onToggleSelect={() => togglePieceSelection(item.piece.id)}
+                    onLongPress={() => setActionSheetPiece(item.piece)}
                     onAdvance={() => handleAdvance(item.piece.id)}
                     stageLabel={stageLookup[item.piece.stage]?.label}
                     nextStageLabel={(() => {
@@ -420,7 +547,6 @@ export default function PiecesScreen() {
                     onSendToCemetery={item.piece.stage !== 'cemetery' ? () => handleSendToCemetery(item.piece.id) : undefined}
                     onJournal={() => openJournal(item.piece)}
                     onMore={() => setActionSheetPiece(item.piece)}
-                    onLongPressMore={() => setActionSheetPiece(item.piece)}
                   />
                 </Animated.View>
               );
@@ -442,12 +568,34 @@ export default function PiecesScreen() {
                 title="No pieces match"
                 description={search.trim() || activeFilterCount > 0
                   ? 'Try a different search or loosen your filters.'
-                  : 'Nothing at this stage right now — your pieces are busy elsewhere in the studio.'}
+                  : 'Nothing at this stage right now, your pieces are busy elsewhere in the studio.'}
               />
             )
           )}
         </View>
       </ScrollView>
+
+      {selectionMode ? (
+        <PieceSelectionBar
+          selectedCount={selectedPieceIds.size}
+          advanceLabel={
+            selectionAdvanceInfo?.canAdvance
+              ? `Advance to ${selectionAdvanceInfo.nextStageLabel}`
+              : 'Advance'
+          }
+          canAdvance={!!selectionAdvanceInfo?.canAdvance}
+          hint={selectionHint}
+          onCancel={exitSelectionMode}
+          onAdvance={handleSelectionAdvance}
+        />
+      ) : null}
+
+      <PiecePhotoGalleryModal
+        visible={galleryPiece !== null && galleryPhotos.length > 0}
+        title={galleryPiece?.name ?? 'Photos'}
+        photos={galleryPhotos}
+        onClose={() => setGalleryPiece(null)}
+      />
 
       <CeremonyOverlay
         visible={firstPieceCeremony}
@@ -472,14 +620,16 @@ export default function PiecesScreen() {
         editPiece={editPiece}
         onEdit={handleEditPiece}
       />
-      <PieceJournalModal
-        piece={journalPiece}
-        visible={journalPiece !== null}
-        initialStage={journalOpenOptions.initialStage}
-        onClose={closeJournal}
-        onUpdateEntry={handleUpdateJournalEntry}
-        onUpdatePiece={handleUpdatePiece}
-      />
+      {journalPiece ? (
+        <PieceJournalModal
+          piece={journalPiece}
+          visible
+          initialStage={journalOpenOptions.initialStage}
+          onClose={closeJournal}
+          onUpdateEntry={handleUpdateJournalEntry}
+          onUpdatePiece={handleUpdatePiece}
+        />
+      ) : null}
       <CemeterySacrificeModal
         piece={cemeteryPiece}
         visible={cemeteryPiece !== null}

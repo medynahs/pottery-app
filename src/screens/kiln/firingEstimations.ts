@@ -165,9 +165,9 @@ export function buildFiringCostBreakdown({
 }
 
 export function formatReadyDate(input?: string) {
-  if (!input) return '—';
+  if (!input) return '-';
   const date = new Date(input);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return '-';
 
   return date.toLocaleDateString('en-US', {
     month: 'short',
@@ -216,7 +216,7 @@ export function getAutoFiringStatus(firing: Firing, kiln?: Kiln) {
   return 'ready';
 }
 
-/** Auto status from kiln schedule only — ignores manual statusOverride. */
+/** Auto status from kiln schedule only, ignores manual statusOverride. */
 export function getScheduledAutoStatus(firing: Firing, kiln?: Kiln) {
   return getAutoFiringStatus({ ...firing, statusOverride: undefined }, kiln);
 }

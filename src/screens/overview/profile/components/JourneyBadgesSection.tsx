@@ -1,10 +1,10 @@
+import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { useRouter } from 'expo-router';
 import { Award, Lock } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 import type { BadgeState } from '../constants/badgeRegistry';
-import { PROFILE_THEME } from '../profileTheme';
 import { ProfileSectionCard } from './ProfileSectionCard';
 import { ViewAllBadgesCard } from './ViewAllBadgesCard';
 
@@ -15,27 +15,17 @@ function EarnedBadgeCard({
   iconColor,
 }: Pick<BadgeState, 'name' | 'desc' | 'icon' | 'iconColor'>) {
   return (
-    <View
-      className="rounded-[20px] border p-3.5 items-center"
-      style={{
-        width: 108,
-        backgroundColor: PROFILE_THEME.cardBg,
-        borderColor: PROFILE_THEME.cardBorder,
-      }}
-    >
-      <View
-        className="w-12 h-12 rounded-2xl items-center justify-center mb-2.5"
-        style={{ backgroundColor: PROFILE_THEME.accentSoft }}
-      >
+    <Card className="rounded-2xl p-3.5 items-center" style={{ width: 108 }}>
+      <View className="w-12 h-12 rounded-2xl items-center justify-center mb-2.5 bg-muted">
         <Icon size={22} color={iconColor} />
       </View>
-      <Text className="text-[11px] font-bold text-center leading-tight" style={{ color: PROFILE_THEME.ink }}>
+      <Text className="text-[11px] font-bold text-center leading-tight text-foreground">
         {name}
       </Text>
-      <Text className="text-[9px] text-center mt-1 leading-3" style={{ color: PROFILE_THEME.inkMuted }}>
+      <Text className="text-[9px] text-center mt-1 leading-3 text-muted-foreground">
         {desc}
       </Text>
-    </View>
+    </Card>
   );
 }
 
@@ -49,32 +39,26 @@ function LockedBadgeRow({
   progress,
 }: Pick<BadgeState, 'name' | 'desc' | 'icon' | 'iconColor' | 'current' | 'target' | 'progress'>) {
   return (
-    <View
-      className="rounded-[18px] border px-3.5 py-3 flex-row items-center gap-3 mb-2.5"
-      style={{ backgroundColor: 'hsl(38 45% 97%)', borderColor: PROFILE_THEME.cardBorder }}
-    >
-      <View
-        className="w-11 h-11 rounded-xl items-center justify-center"
-        style={{ backgroundColor: PROFILE_THEME.accentSoft, opacity: 0.75 }}
-      >
+    <Card className="rounded-2xl px-3.5 py-3 flex-row items-center gap-3 mb-2.5">
+      <View className="w-11 h-11 rounded-xl items-center justify-center bg-muted opacity-75">
         <Icon size={18} color={iconColor} />
       </View>
       <View className="flex-1">
         <View className="flex-row items-center justify-between mb-0.5">
-          <Text className="text-xs font-bold" style={{ color: PROFILE_THEME.ink }}>{name}</Text>
-          <Text className="text-[10px] font-semibold" style={{ color: PROFILE_THEME.inkMuted }}>
+          <Text className="text-xs font-bold text-foreground">{name}</Text>
+          <Text className="text-[10px] font-semibold text-muted-foreground">
             {current}/{target}
           </Text>
         </View>
-        <Text className="text-[10px] mb-2 leading-4" style={{ color: PROFILE_THEME.inkMuted }}>{desc}</Text>
-        <View className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: PROFILE_THEME.accentSoft }}>
+        <Text className="text-[10px] mb-2 leading-4 text-muted-foreground">{desc}</Text>
+        <View className="h-1.5 rounded-full overflow-hidden bg-muted">
           <View
-            className="h-full rounded-full"
-            style={{ width: `${Math.round(progress * 100)}%`, backgroundColor: PROFILE_THEME.accent }}
+            className="h-full rounded-full bg-primary"
+            style={{ width: `${Math.round(progress * 100)}%` }}
           />
         </View>
       </View>
-    </View>
+    </Card>
   );
 }
 
@@ -96,8 +80,7 @@ export function JourneyBadgesSection({ badges }: { badges: BadgeState[] }) {
         <ProfileSectionCard
           title={`Badges earned · ${unlocked.length}`}
           hint="Milestones unlocked across your studio practice"
-          accent="badges"
-          icon={<Award size={18} color={PROFILE_THEME.accent} />}
+          icon={<Award size={18} color="hsl(39 57% 51%)" />}
         >
           <ScrollView
             horizontal
@@ -115,8 +98,7 @@ export function JourneyBadgesSection({ badges }: { badges: BadgeState[] }) {
         <ProfileSectionCard
           title="Closest to unlock"
           hint="Your nearest badge milestones"
-          accent="badges"
-          icon={<Lock size={18} color={PROFILE_THEME.inkSoft} />}
+          icon={<Lock size={18} color="hsl(24 20% 40%)" />}
         >
           {closest.map((badge) => (
             <LockedBadgeRow key={badge.id} {...badge} />

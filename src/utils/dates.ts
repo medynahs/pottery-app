@@ -6,7 +6,7 @@ export function todayIso(): string {
   return isoFromParts(now.getFullYear(), now.getMonth() + 1, now.getDate());
 }
 
-/** @deprecated Use `todayIso` — kept for compatibility with older call sites. */
+/** @deprecated Use `todayIso`, kept for compatibility with older call sites. */
 export function todayDateIso(): string {
   return todayIso();
 }
@@ -35,7 +35,7 @@ export function parseIsoDate(iso: string): Date | null {
 /** Display: 19 Jun 2026 */
 export function formatDate(iso: string, options?: Intl.DateTimeFormatOptions): string {
   const date = parseIsoDate(iso) ?? new Date(iso);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleDateString(APP_DATE_LOCALE, {
     day: 'numeric',
     month: 'short',
@@ -77,6 +77,6 @@ export function parseDisplayDateToIso(display: string): string | null {
 /** Short label for cards: 19 Jun */
 export function formatDateShort(iso: string): string {
   const date = parseIsoDate(iso) ?? new Date(iso);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleDateString(APP_DATE_LOCALE, { day: 'numeric', month: 'short' });
 }

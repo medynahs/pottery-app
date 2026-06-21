@@ -919,7 +919,7 @@ export function FiringDetailContent({
 
                 <Text className="text-sm font-semibold text-foreground">
 
-                  {cost != null ? formatMoney(currencySymbol, cost) : '—'}
+                  {cost != null ? formatMoney(currencySymbol, cost) : '-'}
 
                 </Text>
 

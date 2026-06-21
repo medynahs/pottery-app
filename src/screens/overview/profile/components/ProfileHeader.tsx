@@ -40,7 +40,7 @@ export function ProfileHeader({
       ]);
       setFriendCount((friends ?? []).length);
       setStudioCount((owned ?? []).length + (member ?? []).length);
-    } catch { /* silent — stats are non-critical */ }
+    } catch { /* silent, stats are non-critical */ }
   }, [sessionToken]);
 
   useEffect(() => { loadStats(); }, [loadStats]);
@@ -80,7 +80,7 @@ export function ProfileHeader({
             <Svg width={96} height={96} style={{ position: 'absolute', top: 0, left: 0 }}>
               {/* Track */}
               <Circle cx={48} cy={48} r={44} stroke="hsl(34 30% 85%)" strokeWidth={4} fill="none" />
-              {/* Progress — starts at top (rotate -90°) */}
+              {/* Progress, starts at top (rotate -90°) */}
               <Circle
                 cx={48} cy={48} r={44}
                 stroke="hsl(38 80% 50%)"
@@ -103,7 +103,7 @@ export function ProfileHeader({
                 serif
               />
             </View>
-            {/* Title badge — sits on the bottom of the ring */}
+            {/* Title badge, sits on the bottom of the ring */}
             <TouchableOpacity
               activeOpacity={0.75}
               onPress={() => setXpTooltip(v => !v)}
@@ -157,7 +157,7 @@ export function ProfileHeader({
           <Text className="text-2xl font-serif font-bold text-foreground">{user.name}</Text>
         </View>
 
-        {/* XP tooltip — shown on title badge tap */}
+        {/* XP tooltip, shown on title badge tap */}
         {xpTooltip ? (
           <View
             className="bg-card border border-border rounded-2xl px-4 py-3 mb-3"
@@ -176,7 +176,7 @@ export function ProfileHeader({
             <Text className="text-xs text-muted-foreground mt-1.5">
               {nextTitle
                 ? <>{badgesUntilNext} badge{badgesUntilNext !== 1 ? 's' : ''} until <Text className="font-semibold text-foreground">{nextTitle}</Text></>
-                : <Text className="font-semibold text-foreground">All badges earned — Studio Legend! 🏺</Text>
+                : <Text className="font-semibold text-foreground">All badges earned. Studio Legend! 🏺</Text>
               }
             </Text>
           </View>
@@ -196,7 +196,7 @@ export function ProfileHeader({
             onPress={() => router.push('/friends')}
           >
             <Text className="text-base font-bold text-foreground">
-              {friendCount === null ? '—' : friendCount}
+              {friendCount === null ? '-' : friendCount}
             </Text>
             <Text className="text-xs text-muted-foreground mt-0.5">Clay Friends</Text>
           </TouchableOpacity>
@@ -209,7 +209,7 @@ export function ProfileHeader({
             onPress={() => router.push('/studios')}
           >
             <Text className="text-base font-bold text-foreground">
-              {studioCount === null ? '—' : studioCount}
+              {studioCount === null ? '-' : studioCount}
             </Text>
             <Text className="text-xs text-muted-foreground mt-0.5">Studios</Text>
           </TouchableOpacity>

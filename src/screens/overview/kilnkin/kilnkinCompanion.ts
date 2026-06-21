@@ -72,20 +72,4 @@ export const AVAILABLE_KILNKIN_COMPANIONS: KilnkinCompanion[] = [
 // Default free companion: Earth (most universally approachable)
 export const DEFAULT_KILNKIN_COMPANION = AVAILABLE_KILNKIN_COMPANIONS[1];
 
-function getPrefix(personality: KilnkinPersonality) {
-  switch (personality) {
-    case 'fire':
-      return 'Heads up. Move now:';
-    case 'air':
-      return 'No rush. Just so you know:';
-    case 'water':
-      return 'Bloop. Tiny update:';
-    case 'earth':
-    default:
-      return 'Steady reminder:';
-  }
-}
-
-export function getKilnkinVoiceLine(companion: KilnkinCompanion, message: string) {
-  return `${getPrefix(companion.personality)} ${message}`;
-}
+export { getKilnkinVoiceLine } from './kilnkinVoice';

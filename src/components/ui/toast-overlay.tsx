@@ -1,5 +1,5 @@
 /**
- * ToastOverlay — global in-app feedback banner.
+ * ToastOverlay, global in-app feedback banner.
  *
  * Reads from the Zustand store and auto-dismisses after 3 seconds.
  * Mount exactly once near the root (inside providers, outside any navigator).

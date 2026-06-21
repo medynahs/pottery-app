@@ -6,7 +6,7 @@ export const DISCOVER_INSPIRATIONS: DiscoverInspiration[] = [
     id: 'inspo-honey-rose-quartz',
     title: 'Honey Flux over Rose Quartz',
     description:
-      'Warm amber break over a soft pink base. Works on stoneware and buff clays — the flux pulls color to edges.',
+      'Warm amber break over a soft pink base. Works on stoneware and buff clays, the flux pulls color to edges.',
     applicationNotes:
       'Brush Amaco Rose Quartz ×2 on the body. When dry, brush Honey Flux ×1 on rim and raised texture only. Fire cone 5–6.',
     cone: 'cone-6',
@@ -58,7 +58,7 @@ export const DISCOVER_INSPIRATIONS: DiscoverInspiration[] = [
     id: 'inspo-celadon-liner',
     title: 'Pale celadon over white stoneware',
     description:
-      'Translucent green with clear inside. Best on light clay — thin application keeps the celadon airy.',
+      'Translucent green with clear inside. Best on light clay, thin application keeps the celadon airy.',
     applicationNotes:
       'Clear liner inside. Single thin dip celadon outside. Sponge any drips at the foot before firing.',
     cone: 'cone-6',

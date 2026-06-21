@@ -28,9 +28,9 @@ export function trimOrEmpty(value?: string | null) {
 
 /** Spec-style date: "June 15, 2026" */
 export function formatFiringLogDate(input?: string) {
-  if (!input) return '—';
+  if (!input) return '-';
   const date = new Date(input.includes('T') ? input : `${input}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',

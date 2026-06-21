@@ -341,7 +341,7 @@ export function StartFiringModalContent({
               <View className="flex-row justify-between">
                 <Text className="text-sm text-muted-foreground">Kiln</Text>
                 <Text className="text-sm text-foreground font-medium">
-                  {selectedKiln?.name ?? '—'}
+                  {selectedKiln?.name ?? '-'}
                   {selectedKiln?.location ? ` · ${selectedKiln.location}` : ''}
                 </Text>
               </View>
@@ -419,7 +419,7 @@ export function StartFiringModalContent({
                   </View>
                   <Text className="text-sm font-semibold text-foreground">
                     {costEstimate.costPerPiece === null
-                      ? '—'
+                      ? '-'
                       : `${currencySymbol}${costEstimate.costPerPiece.toFixed(2)}`}
                   </Text>
                 </View>
@@ -435,7 +435,7 @@ export function StartFiringModalContent({
                 </Text>
                 <Text className="text-sm text-foreground font-medium">
                   {costEstimate.totalCost === null
-                    ? '—'
+                    ? '-'
                     : `${currencySymbol}${costEstimate.totalCost.toFixed(2)}`}
                 </Text>
               </View>
@@ -443,7 +443,7 @@ export function StartFiringModalContent({
                 <Text className="text-base font-bold text-foreground">Total</Text>
                 <Text className="text-base font-bold text-foreground">
                   {costEstimate.totalCost === null
-                    ? '—'
+                    ? '-'
                     : `${currencySymbol}${costEstimate.totalCost.toFixed(2)}`}
                 </Text>
               </View>

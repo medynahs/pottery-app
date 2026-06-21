@@ -12,7 +12,7 @@ export type GlazeStatusOrbTheme = {
   glow: string;
   /** Specular highlight */
   shine: string;
-  /** Tiny accent dot — like a bubble in the bucket */
+  /** Tiny accent dot, like a bubble in the bucket */
   speck: string;
 };
 

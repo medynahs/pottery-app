@@ -180,7 +180,7 @@ export const RoleStep: React.FC<RoleStepProps> = ({ draft, updateDraft, USER_TYP
         Pick the closest fit. This tunes your first tabs, checklist, and pricing defaults.
       </Text>
 
-      {/* Kiln question first — visible without scrolling past all role cards */}
+      {/* Kiln question first, visible without scrolling past all role cards */}
       <LinearGradient
         colors={kilnUnset ? ['#fff4e8', '#ffe8cf'] : ['#fff8ed', '#fff1df']}
         start={{ x: 0, y: 0 }}

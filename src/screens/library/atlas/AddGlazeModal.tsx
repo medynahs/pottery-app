@@ -84,7 +84,7 @@ export function AddGlazeModal({
           </Text>
           <Text className="text-sm text-muted-foreground mt-1">
             {isNewVersion
-              ? 'Recipe and notes carry over — tweak the mix and save as the next batch.'
+              ? 'Recipe and notes carry over, tweak the mix and save as the next batch.'
               : isEdit
                 ? 'Update this batch’s recipe, firing notes, and collections.'
                 : 'Name your batch and build the recipe row by row.'}

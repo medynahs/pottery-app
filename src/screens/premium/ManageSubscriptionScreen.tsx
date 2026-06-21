@@ -158,7 +158,7 @@ export default function ManageSubscriptionScreen() {
           <View className="flex-row items-center gap-2 mt-4 pt-4 border-t border-amber-200/60">
             <Sparkles size={14} color={GOLD} />
             <Text className="text-xs text-muted-foreground flex-1 leading-5">
-              Thank you for supporting Pottery Nook — your subscription helps us build new tools for potters.
+              Thank you for supporting Pottery Nook, your subscription helps us build new tools for potters.
             </Text>
           </View>
         </View>
@@ -197,7 +197,7 @@ export default function ManageSubscriptionScreen() {
 
         <Text className="mx-6 mt-6 mb-10 text-xs text-muted-foreground leading-5">
           To change your plan or cancel, use the subscription settings in {storeLabel ?? 'your app store'}.
-          Cancellations take effect at the end of the current billing period — you keep access until then.
+          Cancellations take effect at the end of the current billing period, you keep access until then.
         </Text>
       </ScrollView>
     </View>

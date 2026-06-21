@@ -88,7 +88,7 @@ export function SubmitPieceSheet({
             >
               Your entry for{' '}
               <Text style={{ fontWeight: '700', color: '#3a2a1a' }}>{contextName}</Text>
-              {' '}is in. The community will vote once submissions close — good luck! 🤞
+              {' '}is in. The community will vote once submissions close. Good luck! 🤞
             </Text>
             <View style={{ width: '100%', marginTop: 32 }}>
               <SheetButton label="Done" onPress={handleDone} variant="confirm" />
@@ -121,7 +121,7 @@ export function SubmitPieceSheet({
                 Submit your piece
               </Text>
               <Text style={{ fontSize: 13, color: '#8a7058', lineHeight: 20, marginTop: 6 }}>
-                {contextName} — add a photo and a short note on your process.
+                {contextName}, add a photo and a short note on your process.
               </Text>
             </ModalSheetHeader>
 

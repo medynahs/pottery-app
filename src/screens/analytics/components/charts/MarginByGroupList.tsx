@@ -46,7 +46,7 @@ export function MarginByGroupList({ rows, money, maxRows = 6 }: MarginByGroupLis
                     {row.label}
                   </Text>
                   <Text className="text-[11px] font-bold" style={{ color: barColor }}>
-                    {row.marginPct != null ? `${Math.round(row.marginPct)}% margin` : '—'}
+                    {row.marginPct != null ? `${Math.round(row.marginPct)}% margin` : '-'}
                   </Text>
                 </View>
                 <Text className="text-[10px] mt-0.5" style={{ color: ANALYTICS_THEME.inkMuted }}>

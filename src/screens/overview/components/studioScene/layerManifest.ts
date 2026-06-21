@@ -68,7 +68,7 @@ const LAYER_TEMPLATES: StudioLayerTemplate[] = [
     fileName: 'apron-and-tote-tote-bag.png',
     zIndex: 60,
     animated: true,
-    // Rough polygon — replace with real Procreate coordinates after export.
+    // Rough polygon, replace with real Procreate coordinates after export.
     // Points are "x,y" in 0-100 percentage space (x = % of scene width, y = % of scene height).
     // Traces: left handle → gap → right handle → bag body, clockwise.
     hitPolygon: {

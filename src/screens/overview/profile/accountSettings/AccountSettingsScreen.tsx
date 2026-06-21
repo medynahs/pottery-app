@@ -1,4 +1,5 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { NotificationDebugPanel } from '@/src/components/dev/NotificationDebugPanel';
 import { KilnkinCompanionPickerSheet } from '@/src/components/KilnkinCompanionPickerSheet';
 import { SectionLabel } from '@/src/components/SectionLabel';
 import { SettingsGroup } from '@/src/components/SettingsGroup';
@@ -8,15 +9,12 @@ import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
 import { ME_QUERY_KEY } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { AVAILABLE_KILNKIN_COMPANIONS, type KilnkinCompanion } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
 import { PremiumFeature } from '@/src/utils/premiumGate';
 import { deleteAccount } from '@/src/services/api';
 import { oryLogout } from '@/src/services/auth';
-import type { NotificationEventKind } from '@/src/services/notificationMessages';
-import { ensureNotificationPermission, scheduleKilnkinNotification } from '@/src/services/notifications';
+import { ensureNotificationPermission } from '@/src/services/notifications';
 import { useAppStore } from '@/src/store';
 import { useQueryClient } from '@tanstack/react-query';
-import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import {
   Bell,
@@ -33,7 +31,7 @@ import {
   Trophy,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { View } from 'react-native';
 
 export default function AccountSettingsScreen() {
   const router = useRouter();
@@ -54,7 +52,6 @@ export default function AccountSettingsScreen() {
   const [sheet, setSheet] = useState<Sheet>(null);
   const [companionPickerOpen, setCompanionPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
 
   async function doSignOut() {
     setBusy(true);
@@ -85,7 +82,7 @@ export default function AccountSettingsScreen() {
     try {
       await oryLogout(sessionToken);
     } catch {
-      // The identity may already be gone server-side — local cleanup is enough.
+      // The identity may already be gone server-side, local cleanup is enough.
     }
     clearSession();
     queryClient.removeQueries({ queryKey: ME_QUERY_KEY });
@@ -106,67 +103,6 @@ export default function AccountSettingsScreen() {
     }
 
     setNotificationPref(key, nextValue);
-  };
-
-  const sendTonePreview = async (companion: KilnkinCompanion) => {
-    setPreviewLoadingId(companion.id);
-    try {
-      const scheduled = await scheduleKilnkinNotification({
-        companion,
-        kind: 'achievement',
-        payload: { achievementName: 'Tone Preview' },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: 1,
-          repeats: false,
-        },
-      });
-
-      if (!scheduled) {
-        showToast('Notification permission is required for preview', 'error');
-        return;
-      }
-
-      showToast(`Preview queued for ${companion.name}`, 'success');
-    } catch {
-      showToast('Could not schedule preview notification', 'error');
-    } finally {
-      setPreviewLoadingId(null);
-    }
-  };
-
-  const sendEventDebug = async (kind: NotificationEventKind) => {
-    setPreviewLoadingId(kind);
-    try {
-      const payloadByKind: Partial<Record<NotificationEventKind, Record<string, string | number>>> = {
-        'firing-scheduled': { firingName: 'Tonight Cone 6' },
-        'stage-overage': { pieceName: 'River Mug', stageName: 'drying', days: 9 },
-        'daily-mission': { missionCount: 2 },
-        'challenge-deadline': { challengeTitle: 'Spring Mug Sprint', hoursLeft: 36 },
-      };
-
-      const scheduled = await scheduleKilnkinNotification({
-        companion: kilnkinCompanion,
-        kind,
-        payload: payloadByKind[kind],
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: 1,
-          repeats: false,
-        },
-      });
-
-      if (!scheduled) {
-        showToast('Notification permission is required for debug send', 'error');
-        return;
-      }
-
-      showToast(`Debug queued: ${kind}`, 'success');
-    } catch {
-      showToast('Could not schedule debug notification', 'error');
-    } finally {
-      setPreviewLoadingId(null);
-    }
   };
 
   return (
@@ -194,7 +130,7 @@ export default function AccountSettingsScreen() {
         onCancel={() => setSheet(null)}
       />
 
-      {/* Delete step 2 — final */}
+      {/* Delete step 2, final */}
       <ConfirmSheet
         visible={sheet === 'delete2'}
         title="This is permanent"
@@ -271,55 +207,7 @@ export default function AccountSettingsScreen() {
           </Text>
         </View>
 
-        {__DEV__ ? (
-          <View className="mx-6 mb-4 rounded-2xl border border-border bg-card px-4 py-4">
-            <Text className="text-sm font-semibold text-foreground">Notification Debug (Dev)</Text>
-            <Text className="text-xs text-muted-foreground mt-1 mb-3">
-              Send 1-second local notifications for voice and event testing.
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
-              {AVAILABLE_KILNKIN_COMPANIONS.map((companion) => {
-                const isLoading = previewLoadingId === companion.id;
-                return (
-                  <TouchableOpacity
-                    key={companion.id}
-                    onPress={() => void sendTonePreview(companion)}
-                    disabled={isLoading}
-                    activeOpacity={0.8}
-                    className="px-3 py-2 rounded-xl border border-border bg-background"
-                  >
-                    <Text className="text-xs font-semibold text-foreground">
-                      {isLoading ? `Sending ${companion.name}...` : `${companion.name} Preview`}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            <View className="flex-row flex-wrap gap-2 mt-3">
-              {([
-                { kind: 'firing-scheduled', label: 'Firing Today' },
-                { kind: 'stage-overage', label: 'Stage Overage' },
-                { kind: 'daily-mission', label: 'Daily Mission' },
-                { kind: 'challenge-deadline', label: 'Challenge Deadline' },
-              ] as const).map((item) => {
-                const isLoading = previewLoadingId === item.kind;
-                return (
-                  <TouchableOpacity
-                    key={item.kind}
-                    onPress={() => void sendEventDebug(item.kind)}
-                    disabled={isLoading}
-                    activeOpacity={0.8}
-                    className="px-3 py-2 rounded-xl border border-border bg-background"
-                  >
-                    <Text className="text-xs font-semibold text-foreground">
-                      {isLoading ? `Sending ${item.label}...` : item.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        ) : null}
+        <NotificationDebugPanel />
 
         <SettingsGroup>
           {isAuthenticated ? (

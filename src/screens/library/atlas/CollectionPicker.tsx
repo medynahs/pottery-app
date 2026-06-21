@@ -16,7 +16,7 @@ export function CollectionPicker({
   selected: string[];
   onChange: (next: string[]) => void;
   onCreateCollection: (name: string) => void;
-  /** When true, omit title and intro — use with FormField. */
+  /** When true, omit title and intro, use with FormField. */
   hideHeader?: boolean;
   hideFooterTip?: boolean;
 }) {

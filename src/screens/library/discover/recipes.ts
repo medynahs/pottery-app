@@ -137,7 +137,7 @@ export const DISCOVER_RECIPES: DiscoverRecipe[] = [
     coneLabel: 'Cone 10',
     colorHex: '#C45C5C',
     previewUri: PREVIEW.red,
-    description: 'Reduction iron red. Needs thick application — thin areas go amber.',
+    description: 'Reduction iron red. Needs thick application. Thin areas go amber.',
     ingredients: [
       { material: 'Custer Feldspar', percentage: 40 },
       { material: 'Silica', percentage: 30 },

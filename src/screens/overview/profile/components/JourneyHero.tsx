@@ -1,10 +1,9 @@
+import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { ProgressRing } from '@/src/screens/analytics/components/charts/ProgressRing';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Sparkles, Zap } from 'lucide-react-native';
 import React from 'react';
 import { View } from 'react-native';
-import { PROFILE_THEME } from '../profileTheme';
 
 type JourneyHeroProps = {
   title: string;
@@ -32,64 +31,36 @@ export function JourneyHero({
   const levelProgress = totalBadges > 0 ? (earnedCount / totalBadges) * 100 : 0;
 
   return (
-    <LinearGradient
-      colors={[...PROFILE_THEME.heroGradient]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{
-        marginHorizontal: 16,
-        marginBottom: 16,
-        borderRadius: 24,
-        padding: 20,
-        shadowColor: PROFILE_THEME.shadow,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.22,
-        shadowRadius: 14,
-        elevation: 6,
-      }}
-    >
+    <Card className="mx-6 mb-4 rounded-2xl p-5">
       <View className="flex-row items-start justify-between mb-4">
         <View className="flex-1 pr-3">
-          <Text
-            style={{
-              fontSize: 10,
-              fontWeight: '700',
-              letterSpacing: 1.2,
-              color: PROFILE_THEME.heroLabel,
-              textTransform: 'uppercase',
-            }}
-          >
+          <Text className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             Potter rank
           </Text>
           <View className="flex-row items-center gap-2 mt-1">
-            <Zap size={18} color={PROFILE_THEME.gold} />
-            <Text className="font-serif text-[26px] leading-8" style={{ color: PROFILE_THEME.heroText }}>
-              {title}
-            </Text>
+            <Zap size={18} color="hsl(39 57% 51%)" />
+            <Text className="font-serif text-[26px] leading-8 text-foreground">{title}</Text>
           </View>
-          <Text className="text-[12px] mt-1 leading-5" style={{ color: PROFILE_THEME.heroMuted }}>
+          <Text className="text-xs mt-1 leading-5 text-muted-foreground">
             {totalPieces === 0
               ? 'Log your first piece to begin earning badges.'
               : nextTitle
                 ? `${badgesUntilNext} badge${badgesUntilNext === 1 ? '' : 's'} until ${nextTitle}`
-                : 'All ranks unlocked — studio legend status.'}
+                : 'All ranks unlocked, studio legend status.'}
           </Text>
         </View>
-        <View
-          className="px-3 py-2 rounded-2xl flex-row items-center gap-1.5"
-          style={{ backgroundColor: PROFILE_THEME.heroBadge, borderWidth: 1, borderColor: PROFILE_THEME.heroChipBorder }}
-        >
-          <Sparkles size={12} color={PROFILE_THEME.gold} />
-          <Text className="text-xs font-bold" style={{ color: PROFILE_THEME.heroText }}>
+        <View className="px-3 py-2 rounded-2xl flex-row items-center gap-1.5 bg-muted border border-border">
+          <Sparkles size={12} color="hsl(39 57% 51%)" />
+          <Text className="text-xs font-bold text-foreground">
             {earnedCount}/{totalBadges}
           </Text>
         </View>
       </View>
 
-      <View className="h-2 rounded-full overflow-hidden mb-5" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>
+      <View className="h-2 rounded-full overflow-hidden mb-5 bg-muted">
         <View
-          className="h-full rounded-full"
-          style={{ width: `${levelProgress}%`, backgroundColor: PROFILE_THEME.gold }}
+          className="h-full rounded-full bg-primary"
+          style={{ width: `${levelProgress}%` }}
         />
       </View>
 
@@ -100,7 +71,7 @@ export function JourneyHero({
           stroke={7}
           label="Survival"
           sublabel="pieces kept"
-          tone="cream"
+          tone="ink"
         />
         <ProgressRing
           value={totalPieces > 0 ? finishRate : null}
@@ -108,7 +79,7 @@ export function JourneyHero({
           stroke={7}
           label="Finished"
           sublabel="completion"
-          tone="cream"
+          tone="ink"
         />
         <ProgressRing
           value={totalBadges > 0 ? badgeProgress : null}
@@ -116,9 +87,9 @@ export function JourneyHero({
           stroke={7}
           label="Badges"
           sublabel="earned"
-          tone="cream"
+          tone="ink"
         />
       </View>
-    </LinearGradient>
+    </Card>
   );
 }

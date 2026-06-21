@@ -51,7 +51,7 @@ export function RhythmSetupHero({ onStart }: RhythmSetupHeroProps) {
             Shape your studio week
           </Text>
           <Text className="text-[13px] leading-5 mt-2" style={{ color: RHYTHM_BROWN.heroMuted }}>
-            Pick which days you throw, trim, and glaze. The app turns that into a simple daily checklist — nothing fancy required.
+            Pick which days you throw, trim, and glaze. The app turns that into a simple daily checklist, nothing fancy required.
           </Text>
 
           <View className="mt-4 gap-2">

@@ -39,7 +39,7 @@ function sumPercent(rows: GlazeIngredient[]): number {
 }
 
 function formatGrams(batchG: number, pct: number): string {
-  if (!batchG || !pct) return '—';
+  if (!batchG || !pct) return '-';
   const grams = (batchG * pct) / 100;
   if (grams >= 100) return `${Math.round(grams)}g`;
   if (grams >= 10) return `${grams.toFixed(1)}g`;
@@ -199,7 +199,7 @@ export function GlazeRecipeBuilder({
                 className="native:h-9 h-9 text-sm text-center"
               />
             </View>
-            <Text className="text-xs text-muted-foreground">g — shows weights per row</Text>
+            <Text className="text-xs text-muted-foreground">g, shows weights per row</Text>
           </View>
         ) : null}
 
@@ -225,7 +225,7 @@ export function GlazeRecipeBuilder({
       {ingredients.length === 0 ? (
         <View className="px-4 py-4">
           <Text className="text-sm text-muted-foreground leading-5">
-            Add each material and its percentage. Colorants can be marked as additions — they sit on top of your base 100%.
+            Add each material and its percentage. Colorants can be marked as additions, they sit on top of your base 100%.
           </Text>
         </View>
       ) : (

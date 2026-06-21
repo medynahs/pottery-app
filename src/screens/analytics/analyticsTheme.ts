@@ -1,4 +1,4 @@
-/** Warm pottery palette — aligned with Overview and Studio Rhythm screens */
+/** Warm pottery palette, aligned with Overview and Studio Rhythm screens */
 export const ANALYTICS_THEME = {
   pageBg: 'hsl(35 62% 93%)',
   headerBg: 'hsl(35 62% 93%)',

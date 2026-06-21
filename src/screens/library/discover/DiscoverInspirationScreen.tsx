@@ -74,7 +74,7 @@ export default function DiscoverInspirationScreen({ inspirationId }: { inspirati
           </View>
 
           <Text className="text-xs text-muted-foreground mt-5 leading-5">
-            Reference only — log your own test tile or add glazes to My Atlas when you try this stack.
+            Reference only. Log your own test tile or add glazes to My Atlas when you try this stack.
           </Text>
         </View>
       </ScrollView>

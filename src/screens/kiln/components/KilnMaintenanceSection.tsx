@@ -56,7 +56,7 @@ export function KilnMaintenanceSection({ kiln, onAddLog, onRemoveLog }: KilnMain
         <Text className="text-sm font-semibold text-foreground">Maintenance Log</Text>
       </View>
       <Text className="text-[11px] text-muted-foreground leading-4 mb-4">
-        Kiln wash, element checks, thermocouple swaps — the work nobody posts about.
+        Kiln wash, element checks, thermocouple swaps, the work nobody posts about.
       </Text>
 
       {logs.length > 0 ? (

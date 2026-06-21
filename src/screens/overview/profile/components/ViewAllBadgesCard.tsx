@@ -1,10 +1,9 @@
+import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import type { BadgeState } from '../constants/badgeRegistry';
-import { JOURNEY_ACCENTS, PROFILE_THEME } from '../profileTheme';
 import { CollectionRing } from './trophyShelf/CollectionRing';
 
 function BadgeIconStack({ badges }: { badges: BadgeState[] }) {
@@ -35,12 +34,9 @@ function BadgeIconStack({ badges }: { badges: BadgeState[] }) {
             }}
           >
             <View
-              className="w-9 h-9 rounded-full items-center justify-center border-2"
-              style={{
-                backgroundColor: earned ? '#FFF7EC' : 'rgba(255, 247, 236, 0.72)',
-                borderColor: earned ? JOURNEY_ACCENTS.badges.border : 'rgba(255, 247, 236, 0.55)',
-                opacity: earned ? 1 : 0.88,
-              }}
+              className={`w-9 h-9 rounded-full items-center justify-center border-2 ${
+                earned ? 'bg-primary/10 border-primary/30' : 'bg-muted border-border opacity-90'
+              }`}
             >
               <Icon size={15} color={badge.iconColor} />
             </View>
@@ -48,14 +44,8 @@ function BadgeIconStack({ badges }: { badges: BadgeState[] }) {
         );
       })}
       {badges.length > preview.length ? (
-        <View
-          className="w-9 h-9 rounded-full items-center justify-center border-2 -ml-2"
-          style={{
-            backgroundColor: 'rgba(58, 40, 16, 0.12)',
-            borderColor: 'rgba(255, 247, 236, 0.35)',
-          }}
-        >
-          <Text className="text-[10px] font-bold" style={{ color: JOURNEY_ACCENTS.badges.color }}>
+        <View className="w-9 h-9 rounded-full items-center justify-center border-2 -ml-2 bg-muted border-border">
+          <Text className="text-[10px] font-bold text-muted-foreground">
             +{badges.length - preview.length}
           </Text>
         </View>
@@ -80,62 +70,27 @@ export function ViewAllBadgesCard({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Open badge collection, ${earnedCount} of ${badges.length} earned`}
-      className="mb-4 overflow-hidden rounded-[24px]"
-      style={{
-        shadowColor: PROFILE_THEME.shadow,
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.16,
-        shadowRadius: 12,
-        elevation: 4,
-      }}
+      className="mb-4"
     >
-      <LinearGradient
-        colors={['#F7E4B8', '#EAC477', '#C98352']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          borderRadius: 24,
-          borderWidth: 1,
-          borderColor: 'rgba(255, 247, 236, 0.55)',
-          padding: 16,
-        }}
-      >
-        <View
-          className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full items-center justify-center"
-          style={{
-            backgroundColor: 'rgba(58, 40, 16, 0.1)',
-            borderWidth: 1,
-            borderColor: 'rgba(255, 247, 236, 0.45)',
-          }}
-        >
-          <ChevronRight size={16} color={JOURNEY_ACCENTS.badges.color} />
+      <Card className="rounded-2xl p-4 border-primary/20 bg-primary/5">
+        <View className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full items-center justify-center bg-card border border-border">
+          <ChevronRight size={16} color="hsl(39 57% 51%)" />
         </View>
 
         <View className="flex-row items-center justify-between gap-3 pr-8">
           <View className="flex-1 min-w-0">
             <View className="flex-row items-center gap-1.5 mb-1">
-              <Sparkles size={13} color={JOURNEY_ACCENTS.badges.color} />
-              <Text
-                style={{
-                  fontSize: 10,
-                  fontWeight: '700',
-                  letterSpacing: 1.1,
-                  color: JOURNEY_ACCENTS.badges.color,
-                  textTransform: 'uppercase',
-                }}
-              >
+              <Sparkles size={13} color="hsl(39 57% 51%)" />
+              <Text className="text-[10px] font-bold uppercase tracking-wider text-primary">
                 Badge collection
               </Text>
             </View>
 
-            <Text
-              className="font-serif text-[20px] leading-7"
-              style={{ color: PROFILE_THEME.ink }}
-            >
+            <Text className="font-serif text-[20px] leading-7 text-foreground">
               Open your trophy shelf
             </Text>
 
-            <Text className="text-[11px] mt-1 leading-4 pr-2" style={{ color: 'hsl(24 40% 32%)' }}>
+            <Text className="text-[11px] mt-1 leading-4 pr-2 text-muted-foreground">
               {earnedCount > 0
                 ? `${earnedCount} earned${remaining > 0 ? ` · ${remaining} still waiting` : ' · full set complete'}`
                 : `${badges.length} milestones ready to chase`}
@@ -144,9 +99,9 @@ export function ViewAllBadgesCard({
             <BadgeIconStack badges={badges} />
           </View>
 
-          <CollectionRing earned={earnedCount} total={badges.length} />
+          <CollectionRing earned={earnedCount} total={badges.length} tone="light" />
         </View>
-      </LinearGradient>
+      </Card>
     </TouchableOpacity>
   );
 }

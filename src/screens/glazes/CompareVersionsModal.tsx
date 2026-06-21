@@ -191,10 +191,10 @@ export function CompareVersionsModal({
               </Text>
               <View className="flex-row gap-3">
                 <Text className="flex-1 text-sm text-foreground">
-                  A: {leftGlaze.batchSize?.trim() || '—'}
+                  A: {leftGlaze.batchSize?.trim() || '-'}
                 </Text>
                 <Text className="flex-1 text-sm text-foreground">
-                  B: {rightGlaze.batchSize?.trim() || '—'}
+                  B: {rightGlaze.batchSize?.trim() || '-'}
                 </Text>
               </View>
             </View>
@@ -241,10 +241,10 @@ export function CompareVersionsModal({
                     {row.material}
                   </Text>
                   <Text className="w-12 text-sm text-foreground text-right">
-                    {row.leftPct ? `${row.leftPct}%` : '—'}
+                    {row.leftPct ? `${row.leftPct}%` : '-'}
                   </Text>
                   <Text className="w-12 text-sm text-foreground text-right">
-                    {row.rightPct ? `${row.rightPct}%` : '—'}
+                    {row.rightPct ? `${row.rightPct}%` : '-'}
                   </Text>
                 </View>
               ))

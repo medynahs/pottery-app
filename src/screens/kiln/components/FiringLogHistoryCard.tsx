@@ -73,7 +73,7 @@ export function FiringLogHistoryCard({
             </View>
 
             <Text className="text-xs text-muted-foreground mt-1">
-              {firing.peakTempC != null ? `${firing.peakTempC}°C` : '—'}
+              {firing.peakTempC != null ? `${firing.peakTempC}°C` : '-'}
               {holdLabel ? ` · ${holdLabel}` : ''}
               {firing.estimatedTotalCost != null
                 ? ` · ${formatMoney(currencySymbol, firing.estimatedTotalCost)}`
@@ -151,7 +151,7 @@ export function FiringLogHistoryCard({
             </View>
           ) : firing.pieceIds.length > 0 ? (
             <Text className="text-xs text-muted-foreground mt-3">
-              {firing.pieceIds.length} piece{firing.pieceIds.length !== 1 ? 's' : ''} linked — open
+              {firing.pieceIds.length} piece{firing.pieceIds.length !== 1 ? 's' : ''} linked, open
               details for more.
             </Text>
           ) : null}

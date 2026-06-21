@@ -1,4 +1,4 @@
-// Community API — /users/me/feed, /users/me/posts
+// Community API, /users/me/feed, /users/me/posts
 // All endpoints require an X-Session-Token header from Ory Kratos.
 
 import { API_BASE_URL as API_BASE } from './index';
@@ -27,7 +27,7 @@ export interface BackendFeedPost {
 
 export interface FeedPage {
   items: BackendFeedPost[];
-  posts: BackendFeedPost[]; // legacy alias — some endpoints may use either
+  posts: BackendFeedPost[]; // legacy alias, some endpoints may use either
   next_cursor: string | null;
 }
 
@@ -123,7 +123,7 @@ export async function apiAddReaction(
   const res = await authedFetch(sessionToken, `${API_BASE}/posts/${postId}/reactions`, {
     method: 'POST',
   });
-  // 409 means already reacted — treat as success
+  // 409 means already reacted, treat as success
   if (!res.ok && res.status !== 409) {
     throw new Error(`POST /posts/${postId}/reactions → ${res.status}`);
   }
@@ -140,7 +140,7 @@ export async function apiRemoveReaction(
   const res = await authedFetch(sessionToken, `${API_BASE}/posts/${postId}/reactions`, {
     method: 'DELETE',
   });
-  // 404 means reaction didn't exist — treat as success
+  // 404 means reaction didn't exist, treat as success
   if (!res.ok && res.status !== 404) {
     throw new Error(`DELETE /posts/${postId}/reactions → ${res.status}`);
   }

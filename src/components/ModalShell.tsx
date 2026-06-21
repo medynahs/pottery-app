@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 
-/** Shared bottom-sheet defaults — use across form modals for consistency. */
+/** Shared bottom-sheet defaults, use across form modals for consistency. */
 export const MODAL_BACKDROP_COLOR = 'rgba(22,14,10,0.52)';
 export const MODAL_SHEET_RADIUS = 32;
 export const MODAL_SHEET_HEIGHT_RATIO = 0.92;

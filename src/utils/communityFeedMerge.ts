@@ -1,6 +1,6 @@
 import type { BackendFeedPost } from '@/src/services/community';
 
-/** Merge own posts with friends feed — own posts first, deduped by id. */
+/** Merge own posts with friends feed, own posts first, deduped by id. */
 export function mergeCommunityFeedPosts(
   myPosts: BackendFeedPost[],
   friendsPosts: BackendFeedPost[],

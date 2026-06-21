@@ -1,4 +1,4 @@
-// Pieces API — /users/me/pieces
+// Pieces API, /users/me/pieces
 // All endpoints require an X-Session-Token header from Ory Kratos.
 
 import { API_BASE_URL as API_BASE } from './index';
@@ -28,7 +28,7 @@ export interface BackendPiece {
   is_deleted?: boolean;
 }
 
-/** Snapshot sent to POST /users/me/pieces/sync — identity is client_ref only. */
+/** Snapshot sent to POST /users/me/pieces/sync, identity is client_ref only. */
 export interface PieceSyncSnapshot {
   client_ref: string;
   name: string;
@@ -130,7 +130,7 @@ async function authedFetch(
 
 // ─── Piece CRUD ───────────────────────────────────────────────────────────────
 
-/** GET /users/me/pieces — list all pieces for the authenticated user. */
+/** GET /users/me/pieces, list all pieces for the authenticated user. */
 export async function apiListPieces(sessionToken: string): Promise<BackendPiece[]> {
   const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces`);
   if (!res.ok) throw new Error(`listPieces failed (${res.status})`);
@@ -138,7 +138,7 @@ export async function apiListPieces(sessionToken: string): Promise<BackendPiece[
 }
 
 /**
- * POST /users/me/pieces/sync — push local snapshots; server returns the
+ * POST /users/me/pieces/sync, push local snapshots; server returns the
  * authoritative alive list plus a client_ref → backend id map.
  */
 export async function apiSyncPieces(
@@ -154,7 +154,7 @@ export async function apiSyncPieces(
   return res.json() as Promise<SyncPiecesResponse>;
 }
 
-/** DELETE /users/me/pieces/{piece_id} — permanently remove a piece. */
+/** DELETE /users/me/pieces/{piece_id}, permanently remove a piece. */
 export async function apiDeletePiece(
   sessionToken: string,
   pieceId: string,
@@ -165,7 +165,7 @@ export async function apiDeletePiece(
   if (!res.ok) throw new Error(`deletePiece failed (${res.status})`);
 }
 
-/** POST /users/me/pieces — create a new piece.  */
+/** POST /users/me/pieces, create a new piece.  */
 export async function apiCreatePiece(
   sessionToken: string,
   payload: CreatePiecePayload,
@@ -179,7 +179,7 @@ export async function apiCreatePiece(
   return res.json() as Promise<BackendPiece>;
 }
 
-/** PUT /users/me/pieces/{piece_id} — update name, description or status. */
+/** PUT /users/me/pieces/{piece_id}, update name, description or status. */
 export async function apiUpdatePiece(
   sessionToken: string,
   pieceId: string,
@@ -196,7 +196,7 @@ export async function apiUpdatePiece(
 
 // ─── Piece assets ─────────────────────────────────────────────────────────────
 
-/** GET /users/me/pieces/{piece_id}/assets — list all assets for a piece. */
+/** GET /users/me/pieces/{piece_id}/assets, list all assets for a piece. */
 export async function apiListPieceAssets(
   sessionToken: string,
   pieceId: string,
@@ -210,7 +210,7 @@ export async function apiListPieceAssets(
 }
 
 /**
- * POST /users/me/pieces/{piece_id} — upload an image asset for a piece stage.
+ * POST /users/me/pieces/{piece_id}, upload an image asset for a piece stage.
  * The file must be a local URI (e.g. from expo-image-picker).
  */
 export async function apiUploadPieceAsset(
@@ -227,14 +227,14 @@ export async function apiUploadPieceAsset(
 
   const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces/${pieceId}/assets`, {
     method: 'POST',
-    // Do NOT set Content-Type — let fetch inject the multipart boundary.
+    // Do NOT set Content-Type, let fetch inject the multipart boundary.
     body: form as unknown as BodyInit_,
   });
   if (!res.ok) throw new Error(`uploadPieceAsset failed (${res.status})`);
   return res.json() as Promise<BackendPieceAsset>;
 }
 
-/** DELETE /users/me/pieces/{piece_id}/assets/{asset_id} — permanently remove an asset. */
+/** DELETE /users/me/pieces/{piece_id}/assets/{asset_id}, permanently remove an asset. */
 export async function apiDeletePieceAsset(
   sessionToken: string,
   pieceId: string,
@@ -249,7 +249,7 @@ export async function apiDeletePieceAsset(
 }
 
 /**
- * PUT /users/me/pieces/{piece_id}/assets/{asset_id} — update status,
+ * PUT /users/me/pieces/{piece_id}/assets/{asset_id}, update status,
  * description, and/or replace the image for an asset.
  */
 export async function apiUpdatePieceAsset(
@@ -259,7 +259,7 @@ export async function apiUpdatePieceAsset(
   payload: UpdateAssetPayload,
 ): Promise<BackendPieceAsset> {
   if (payload.file) {
-    // File replacement — must use multipart FormData
+    // File replacement, must use multipart FormData
     const form = new FormData();
     form.append('file', {
       uri: payload.file.uri,
@@ -278,7 +278,7 @@ export async function apiUpdatePieceAsset(
     return res.json() as Promise<BackendPieceAsset>;
   }
 
-  // Metadata-only update — JSON body
+  // Metadata-only update, JSON body
   const jsonPayload: { status?: ApiPieceStatus; description?: string } = {};
   if (payload.status) jsonPayload.status = payload.status;
   if (payload.description !== undefined) jsonPayload.description = payload.description;

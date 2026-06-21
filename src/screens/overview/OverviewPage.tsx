@@ -22,6 +22,7 @@ export function OverviewPage() {
     insets,
     PaywallGate,
     user,
+    isPremium,
     kilnkinCompanion,
     feedbackOpen,
     setFeedbackOpen,
@@ -31,7 +32,6 @@ export function OverviewPage() {
     todayLabel,
     isSetupMode,
     todayRhythm,
-    tomorrowRhythm,
     setupQuests,
     initialSetupQuestCount,
     heroReveal,
@@ -43,6 +43,7 @@ export function OverviewPage() {
     oneThingCard,
     queuePreview,
     pieces,
+    finishedThisMonth,
     missionsSummary,
     stageChips,
     kilnkinNudge,
@@ -82,6 +83,8 @@ export function OverviewPage() {
     showFiringQueueWidget,
   } = useOverviewPage();
 
+  const openStudioRhythm = () => navigate('/profile/studio-rhythm');
+
   return (
     <StudioTabScreen>
       <CeremonyOverlay
@@ -103,6 +106,8 @@ export function OverviewPage() {
         user={user}
         onAnalyticsPress={onAnalyticsPress}
         onProfilePress={onProfilePress}
+        onRhythmPress={openStudioRhythm}
+        isPremium={isPremium}
       />
 
       <ScrollView
@@ -155,6 +160,8 @@ export function OverviewPage() {
             onStageChipPress={navigate}
             onKilnkinPress={onKilnkinPress}
             onPat={handlePat}
+            finishedThisMonth={finishedThisMonth}
+            onAnalyticsPress={onAnalyticsPress}
           />
         ) : null}
 
@@ -183,7 +190,7 @@ export function OverviewPage() {
             onShowAllTasks={() => setShowAllMissionTasks(true)}
             onShowFewerTasks={() => setShowAllMissionTasks(false)}
             onMissionPress={navigate}
-            onSetupRhythmPress={() => navigate('/profile/studio-rhythm')}
+            onRhythmPress={openStudioRhythm}
           />
         ) : null}
 
@@ -200,18 +207,6 @@ export function OverviewPage() {
             onNavigate={navigate}
             onOpenQueue={() => navigate(kilnQueueRoute)}
           />
-        ) : null}
-
-        {!isSetupMode && (tomorrowRhythm.stages.length > 0 || tomorrowRhythm.events.length > 0) ? (
-          <View className="mb-4 rounded-2xl border border-border bg-card px-4 py-3">
-            <Text className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tomorrow</Text>
-            <Text className="text-sm text-foreground mt-1">
-              {tomorrowRhythm.stages.length > 0
-                ? `Studio days: ${tomorrowRhythm.stages.join(', ')}`
-                : 'No fixed studio days'}
-              {tomorrowRhythm.events.length > 0 ? ` · ${tomorrowRhythm.events.length} event(s)` : ''}
-            </Text>
-          </View>
         ) : null}
 
         {!isSetupMode ? (

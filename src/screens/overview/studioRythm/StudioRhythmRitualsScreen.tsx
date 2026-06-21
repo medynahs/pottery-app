@@ -25,7 +25,7 @@ export default function StudioRhythmRitualsScreen() {
     <View className="flex-1 bg-background">
       <RhythmScreenHeader
         title="Studio rituals"
-        subtitle="Optional — weekly habits like cleanup or glaze mixing"
+        subtitle="Optional: weekly habits like cleanup or glaze mixing"
       />
 
       <ScrollView
@@ -36,7 +36,7 @@ export default function StudioRhythmRitualsScreen() {
         <View className="px-6 mb-4">
           <RhythmTipCard
             title="What are rituals?"
-            body="Small repeating tasks you want to remember. Toggle on the ones that fit — you can always add custom rituals later."
+            body="Small repeating tasks you want to remember. Toggle on the ones that fit, you can always add custom rituals later."
           />
         </View>
         <View className="flex-row items-center justify-between px-6 mb-2">

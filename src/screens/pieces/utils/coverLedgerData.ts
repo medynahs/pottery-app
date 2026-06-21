@@ -6,7 +6,7 @@ import { formatDate, formatDuration } from './journal';
 export type LedgerRow = { label: string; value: string };
 
 function money(currencySymbol: string, value?: number | null) {
-  if (value == null) return '—';
+  if (value == null) return '-';
   return `${currencySymbol}${value.toFixed(2)}`;
 }
 
@@ -14,27 +14,27 @@ export function buildRegistryRows(piece: Piece, totalMs: number, currencySymbol:
   const stage = STAGE_LABEL[piece.stage] ?? piece.stage;
   return [
     { label: 'Registry no.', value: `#${String(piece.id).padStart(4, '0')}` },
-    { label: 'Started', value: piece.createdAt ? formatDate(piece.createdAt) : '—' },
+    { label: 'Started', value: piece.createdAt ? formatDate(piece.createdAt) : '-' },
     { label: 'Current stage', value: stage },
     { label: 'Time invested', value: formatDuration(totalMs) },
     { label: 'Timeline entries', value: String(piece.timeline.length) },
     { label: 'Batch', value: piece.batchSize && piece.batchSize > 1 ? `×${piece.batchSize}` : 'Single piece' },
-    { label: 'Disposition', value: piece.status || '—' },
-    { label: 'Studio location', value: piece.location || '—' },
+    { label: 'Disposition', value: piece.status || '-' },
+    { label: 'Studio location', value: piece.location || '-' },
   ];
 }
 
 export function buildSpecimenRows(piece: Piece): LedgerRow[] {
   return [
-    { label: 'Clay body', value: piece.clay || '—' },
-    { label: 'Form', value: piece.form || '—' },
-    { label: 'Forming method', value: piece.formingMethod || '—' },
-    { label: 'Dimensions', value: piece.dimensions || '—' },
-    { label: 'Weight', value: piece.weight || '—' },
-    { label: 'Bisque cone', value: piece.bisqueTemp || '—' },
-    { label: 'Glaze cone', value: piece.glazeTemp || '—' },
-    { label: 'Firing type', value: piece.firingType || '—' },
-    { label: 'Decorations', value: piece.decorations || '—' },
+    { label: 'Clay body', value: piece.clay || '-' },
+    { label: 'Form', value: piece.form || '-' },
+    { label: 'Forming method', value: piece.formingMethod || '-' },
+    { label: 'Dimensions', value: piece.dimensions || '-' },
+    { label: 'Weight', value: piece.weight || '-' },
+    { label: 'Bisque cone', value: piece.bisqueTemp || '-' },
+    { label: 'Glaze cone', value: piece.glazeTemp || '-' },
+    { label: 'Firing type', value: piece.firingType || '-' },
+    { label: 'Decorations', value: piece.decorations || '-' },
   ];
 }
 
@@ -64,6 +64,6 @@ export function buildJourneyStages(piece: Piece): { stage: string; label: string
   return piece.timeline.map((entry) => ({
     stage: entry.stage,
     label: STAGE_LABEL[entry.stage] ?? entry.stage,
-    date: entry.timestamp ? formatDate(entry.timestamp) : '—',
+    date: entry.timestamp ? formatDate(entry.timestamp) : '-',
   }));
 }

@@ -81,7 +81,7 @@ export function StageAdvanceCelebrationModal({
       false
     );
 
-    // finished stage uses CeremonyOverlay (self-dismissing) — no timer needed here
+    // finished stage uses CeremonyOverlay (self-dismissing), no timer needed here
     if (transition.toStage === FINISHED_STAGE_ID) return;
 
     const autoCloseMs = FIRING_STAGE_IDS.has(transition.toStage) ? 2200 : 1500;

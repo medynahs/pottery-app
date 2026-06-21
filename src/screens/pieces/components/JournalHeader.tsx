@@ -1,5 +1,5 @@
 import { Text } from '@/src/components/ui/text';
-import { BookOpen, List, Share2, X } from 'lucide-react-native';
+import { BookOpen, Images, List, X } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
@@ -10,17 +10,19 @@ export function JournalHeader({
   subtitle,
   isCompact,
   onClose,
-  onShareToCommunity,
   onOpenContents,
+  onOpenGallery,
   showContents,
+  showGallery,
 }: {
   piece: Piece;
   subtitle?: string;
   isCompact: boolean;
   onClose: () => void;
-  onShareToCommunity?: () => void;
   onOpenContents?: () => void;
+  onOpenGallery?: () => void;
   showContents?: boolean;
+  showGallery?: boolean;
 }) {
   return (
     <View
@@ -76,6 +78,23 @@ export function JournalHeader({
         </View>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        {showGallery && onOpenGallery ? (
+          <TouchableOpacity
+            onPress={onOpenGallery}
+            activeOpacity={0.8}
+            accessibilityLabel="Open photo gallery"
+            style={{
+              width: isCompact ? 32 : 36,
+              height: isCompact ? 32 : 36,
+              borderRadius: 999,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: JournalTheme.headerIconBg,
+            }}
+          >
+            <Images size={isCompact ? 15 : 16} color={JournalTheme.headerText} />
+          </TouchableOpacity>
+        ) : null}
         {showContents && onOpenContents ? (
           <TouchableOpacity
             onPress={onOpenContents}
@@ -91,23 +110,6 @@ export function JournalHeader({
             }}
           >
             <List size={isCompact ? 15 : 16} color={JournalTheme.headerText} />
-          </TouchableOpacity>
-        ) : null}
-        {onShareToCommunity ? (
-          <TouchableOpacity
-            onPress={onShareToCommunity}
-            activeOpacity={0.8}
-            accessibilityLabel="Share journal to community"
-            style={{
-              width: isCompact ? 32 : 36,
-              height: isCompact ? 32 : 36,
-              borderRadius: 999,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: JournalTheme.headerIconBg,
-            }}
-          >
-            <Share2 size={isCompact ? 15 : 16} color={JournalTheme.headerText} />
           </TouchableOpacity>
         ) : null}
         <TouchableOpacity

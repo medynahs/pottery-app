@@ -1,5 +1,5 @@
 /**
- * CeremonyOverlay — reusable full-screen celebration moment.
+ * CeremonyOverlay, reusable full-screen celebration moment.
  *
  * Shows a glowing aura + orbiting sparkles + central medallion + staggered text.
  * Identical visual language to the onboarding "Enter Studio" ceremony.

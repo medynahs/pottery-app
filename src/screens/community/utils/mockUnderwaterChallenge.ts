@@ -1,7 +1,7 @@
 import type { ChallengeDisplay } from '@/src/screens/community/utils/challengeDisplay';
 import { ACTIVE_FESTIVAL } from '@/src/screens/community/data';
 
-/** Stable id — never sent to the real API. */
+/** Stable id, never sent to the real API. */
 export const MOCK_UNDERWATER_CHALLENGE_ID = 'mock-underwater-forms';
 
 export const UNDERWATER_HERO_IMAGE = require('../../../../assets/images/under.jpg');

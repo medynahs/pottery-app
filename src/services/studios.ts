@@ -1,4 +1,4 @@
-// Studios API — /users/me/studios
+// Studios API, /users/me/studios
 // All endpoints require Authorization: Bearer <token> (Ory session token).
 
 import { API_BASE_URL as API_BASE } from './index';

@@ -31,7 +31,7 @@ export type Stage =
 /** Firing result when a piece was glazed with a linked studio glaze batch. */
 export type GlazeOutcome = 'success' | 'crawling' | 'underfired' | 'crack';
 
-// Condition or disposition — separate from physical stage
+// Condition or disposition, separate from physical stage
 export type PieceStatus =
   | 'cracked'
   | 'warped'
@@ -47,7 +47,7 @@ export type Piece = {
   id: number;
   /** UUID assigned by the backend after the piece is first synced. */
   backendId?: string;
-  /** Tombstone — hidden from UI until the delete is confirmed by sync. */
+  /** Tombstone, hidden from UI until the delete is confirmed by sync. */
   deleted?: boolean;
   /** Local edits not yet pushed via POST /users/me/pieces/sync. */
   syncDirty?: boolean;
@@ -113,13 +113,15 @@ export type Piece = {
   batchId?: string;
   batchSize?: number;
   updatedAt?: string;
-  /** Studio queue status — set when a studio member submits a piece for firing. */
+  /** Studio queue status, set when a studio member submits a piece for firing. */
   studioQueueStatus?: 'submitted' | 'in-firing' | 'ready-for-pickup' | 'picked-up';
   studioQueueSubmittedAt?: string;
   /** Linked glaze atlas batch (`GlazeLibraryItem.id`). */
   glazeId?: string;
   /** How this glaze performed on the piece after firing. */
   glazeOutcome?: GlazeOutcome;
+  /** When false, hide this piece from the profile work grid. */
+  showOnProfile?: boolean;
 };
 
 export type PieceForm = {

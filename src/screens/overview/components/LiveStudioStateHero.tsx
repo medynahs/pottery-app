@@ -5,6 +5,7 @@ import type { PetMood } from '@/src/screens/overview/utils/petMood';
 import { PET_MOOD_META } from '@/src/screens/overview/utils/petMood';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Href } from 'expo-router';
+import { TrendingUp } from 'lucide-react-native';
 import React from 'react';
 import { Animated, Image, TouchableOpacity, View } from 'react-native';
 
@@ -36,6 +37,8 @@ type LiveStudioStateHeroProps = {
   onStageChipPress: (route: Href) => void;
   onKilnkinPress: () => void;
   onPat: () => void;
+  finishedThisMonth: number;
+  onAnalyticsPress: () => void;
 };
 
 export function LiveStudioStateHero({
@@ -54,6 +57,8 @@ export function LiveStudioStateHero({
   onStageChipPress,
   onKilnkinPress,
   onPat,
+  finishedThisMonth,
+  onAnalyticsPress,
 }: LiveStudioStateHeroProps) {
   const moodMeta = PET_MOOD_META[petMood];
 
@@ -113,6 +118,26 @@ export function LiveStudioStateHero({
               style={{ backgroundColor: '#F2C25E' }}
             >
               <Text className="text-[11px] font-semibold" style={{ color: 'hsl(24 55% 22%)' }}>Open live status</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {pieceCount > 0 ? (
+            <TouchableOpacity
+              onPress={onAnalyticsPress}
+              activeOpacity={0.82}
+              accessibilityRole="button"
+              accessibilityLabel={`Studio Stats, ${finishedThisMonth} finished this month`}
+              className="flex-row items-center gap-1.5 rounded-full px-2.5 py-1 mt-2.5 self-start"
+              style={{
+                backgroundColor: 'rgba(255, 247, 236, 0.16)',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 244, 224, 0.28)',
+              }}
+            >
+              <TrendingUp size={12} color="#F2C25E" strokeWidth={2.5} />
+              <Text style={{ fontSize: 11, fontWeight: '600', color: HERO_CREAM }}>
+                {finishedThisMonth} finished this month
+              </Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -188,7 +213,7 @@ export function LiveStudioStateHero({
                 delayLongPress={400}
                 activeOpacity={0.85}
                 accessibilityRole="button"
-                accessibilityLabel={`${kilnkinName} — ${moodMeta.label}. Tap to visit.`}
+                accessibilityLabel={`${kilnkinName}, ${moodMeta.label}. Tap to visit.`}
                 style={{
                   width: 50,
                   height: 50,

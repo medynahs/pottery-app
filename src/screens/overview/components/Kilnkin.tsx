@@ -1,4 +1,5 @@
-import { getKilnkinVoiceLine, type KilnkinCompanion } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
+import type { KilnkinCompanion } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
+import { getKilnkinStudioHint } from '@/src/screens/overview/kilnkin/kilnkinVoice';
 import type { StudioSignals } from '@/src/screens/overview/utils/getStudioSignals';
 import { useAppStore } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
@@ -19,15 +20,15 @@ function pickHint(companion: KilnkinCompanion, pieces: Piece[], signals: StudioS
   const options: string[] = [];
 
   if (dryingCandidates > 0) {
-    options.push(getKilnkinVoiceLine(companion, 'a couple pieces might be ready for trimming.'));
+    options.push(getKilnkinStudioHint(companion, 'trimming-ready'));
   }
 
   if (signals.scrapOverflow) {
-    options.push(getKilnkinVoiceLine(companion, 'the reclaim scraps are starting to gather.'));
+    options.push(getKilnkinStudioHint(companion, 'reclaim-overflow'));
   }
 
   if (signals.kilnReady) {
-    options.push(getKilnkinVoiceLine(companion, 'the kiln feels close to ready.'));
+    options.push(getKilnkinStudioHint(companion, 'kiln-ready'));
   }
 
   if (options.length === 0) {

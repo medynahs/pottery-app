@@ -254,7 +254,7 @@ export const KilnkinStep: React.FC<KilnkinStepProps> = ({ draft, updateDraft }) 
         })}
       </Animated.View>
 
-      {/* Roster — character select tiles */}
+      {/* Roster, character select tiles */}
       <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', color: 'hsl(28 30% 50%)', marginBottom: 8, paddingHorizontal: 4 }}>
         The roster
       </Text>

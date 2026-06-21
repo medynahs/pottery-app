@@ -1,5 +1,5 @@
 /**
- * useEntitlements — RevenueCat SDK hook (T56)
+ * useEntitlements, RevenueCat SDK hook (T56)
  *
  * Initialises the RC SDK once on first call, identifies the user when
  * `backendUserId` becomes available, and exposes purchase / restore helpers.
@@ -52,18 +52,18 @@ export async function getSubscriptionDetails(): Promise<SubscriptionDetails | nu
   }
 }
 
-/** Idempotent — safe to call multiple times; configures RC once per process. */
+/** Idempotent, safe to call multiple times; configures RC once per process. */
 export function configureRevenueCat(): void {
   if (rcConfigured) return;
-  // react-native-purchases requires a native development build — skip in Expo Go / web
+  // react-native-purchases requires a native development build, skip in Expo Go / web
   if (Platform.OS === 'web') return;
   const key = Platform.OS === 'ios' ? IOS_KEY : ANDROID_KEY;
-  if (!key) return; // keys not yet set (dev) — skip silently
+  if (!key) return; // keys not yet set (dev), skip silently
   try {
     Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.ERROR);
     Purchases.configure({ apiKey: key });
 
-    // Keep isPremium in sync whenever RC notifies us of a customer info change —
+    // Keep isPremium in sync whenever RC notifies us of a customer info change -
     // this covers purchases from the native paywall, restores, expirations, etc.
     Purchases.addCustomerInfoUpdateListener((info) => {
       useAppStore.getState().setIsPremium(
@@ -73,7 +73,7 @@ export function configureRevenueCat(): void {
 
     rcConfigured = true;
   } catch {
-    // Native module not available (e.g. Expo Go) — silently skip
+    // Native module not available (e.g. Expo Go), silently skip
   }
 }
 
@@ -104,7 +104,7 @@ export function useEntitlements() {
         identifiedRef.current = backendUserId;
         setIsPremium(!!customerInfo.entitlements.active[ENTITLEMENT_ID]);
       } catch {
-        // RC identification failure is non-fatal — entitlements stay unchanged
+        // RC identification failure is non-fatal, entitlements stay unchanged
       }
     })();
   }, [backendUserId, setIsPremium]);
@@ -118,7 +118,7 @@ export function useEntitlements() {
         const offerings = await Purchases.getOfferings();
         if (offerings.current) setOffering(offerings.current);
       } catch {
-        // Suppress — offering stays null; UI shows price strings as fallback
+        // Suppress, offering stays null; UI shows price strings as fallback
       }
     })();
   }, []);
@@ -199,7 +199,7 @@ export async function presentPaywall(): Promise<boolean> {
 }
 
 /**
- * Open subscription management — RevenueCat Customer Center when available,
+ * Open subscription management, RevenueCat Customer Center when available,
  * otherwise the platform subscription settings page.
  */
 export async function openSubscriptionManagement(): Promise<boolean> {
