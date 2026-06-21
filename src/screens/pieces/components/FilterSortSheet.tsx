@@ -1,10 +1,16 @@
+import {
+  ModalCard,
+  ModalShell,
+  ModalSheetHeader,
+  useModalSheetHeight,
+} from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useAppStore } from '@/src/store/appStore';
-import { Check, SlidersHorizontal, X } from 'lucide-react-native';
+import { Check, SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
-import { Modal, Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
 import { FIRING_TYPES, PIECE_STATUSES } from '../utils/constants';
 
@@ -68,6 +74,7 @@ export function FilterSortSheet({
 }: FilterSortSheetProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
+  const sheetHeight = useModalSheetHeight(0.88);
 
   const storeFormOptions = useAppStore(s => s.pieceFormOptions);
   const storeFormingMethods = useAppStore(s => s.formingMethods);
@@ -96,145 +103,124 @@ export function FilterSortSheet({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }}>
-        <Pressable
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          onPress={onClose}
-        />
-        <View className="bg-background rounded-t-3xl" style={{ maxHeight: '88%' }}>
-          {/* Handle */}
-          <View className="w-9 h-1 bg-muted rounded-full self-center mt-4 mb-3" />
-
-          {/* Header */}
-          <View className="flex-row items-center justify-between px-6 pb-4 border-b border-border">
-            <View className="flex-row items-center gap-2">
-              <SlidersHorizontal size={16} color={colors.foreground} />
-              <Text className="text-lg font-serif font-bold text-foreground">Filter & Sort</Text>
-            </View>
-            <View className="flex-row items-center gap-3">
-              {hasAnyActive && (
-                <TouchableOpacity onPress={clearAll} activeOpacity={0.7}>
-                  <Text className="text-xs font-body-medium text-primary">Clear all</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity onPress={onClose} className="p-1">
-                <X size={18} color={colors.mutedForeground} />
-              </TouchableOpacity>
-            </View>
+    <ModalShell visible={visible} onClose={onClose}>
+      <ModalCard height={sheetHeight} maxHeight={sheetHeight}>
+        <ModalSheetHeader>
+          <View className="flex-row items-center gap-2">
+            <SlidersHorizontal size={16} color={colors.foreground} />
+            <Text className="text-lg font-serif font-bold text-foreground">Filter & Sort</Text>
           </View>
+          {hasAnyActive ? (
+            <TouchableOpacity onPress={clearAll} activeOpacity={0.7} className="self-start mt-2">
+              <Text className="text-xs font-body-medium text-primary">Clear all</Text>
+            </TouchableOpacity>
+          ) : null}
+        </ModalSheetHeader>
 
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 48 }}
-          >
-            {/* Sort */}
-            <Section label="Sort by">
-              <PillRow>
-                {SORT_OPTIONS.map(opt => (
-                  <Pill
-                    key={opt.key}
-                    label={opt.label}
-                    active={sortKey === opt.key}
-                    onPress={() => onSortChange(opt.key)}
-                    colors={colors}
-                  />
-                ))}
-              </PillRow>
-            </Section>
-
-            {/* Clay body */}
-            {clayOptions.length > 0 && (
-              <Section label="Clay body">
-                <PillRow>
-                  {clayOptions.map(clay => (
-                    <Pill
-                      key={clay}
-                      label={clay}
-                      active={filters.clays.includes(clay)}
-                      onPress={() => toggleMulti('clays', clay)}
-                      colors={colors}
-                    />
-                  ))}
-                </PillRow>
-              </Section>
-            )}
-
-            {/* Form */}
-            <Section label="Form">
-              <PillRow>
-                {formOptions.map(f => (
-                  <Pill
-                    key={f}
-                    label={f}
-                    active={filters.forms.includes(f)}
-                    onPress={() => toggleMulti('forms', f)}
-                    colors={colors}
-                  />
-                ))}
-              </PillRow>
-            </Section>
-
-            {/* Forming method */}
-            <Section label="Forming method">
-              <PillRow>
-                {methodOptions.map(m => (
-                  <Pill
-                    key={m}
-                    label={m}
-                    active={filters.formingMethods.includes(m)}
-                    onPress={() => toggleMulti('formingMethods', m)}
-                    colors={colors}
-                  />
-                ))}
-              </PillRow>
-            </Section>
-
-            {/* Listing */}
-            <Section label="Listing">
-              <PillRow>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 48 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Section label="Sort by">
+            <PillRow>
+              {SORT_OPTIONS.map(opt => (
                 <Pill
-                  label="For sale"
-                  active={filters.forSaleOnly}
-                  onPress={() => onFiltersChange({ ...filters, forSaleOnly: !filters.forSaleOnly })}
+                  key={opt.key}
+                  label={opt.label}
+                  active={sortKey === opt.key}
+                  onPress={() => onSortChange(opt.key)}
                   colors={colors}
                 />
-              </PillRow>
-            </Section>
+              ))}
+            </PillRow>
+          </Section>
 
-            {/* Status */}
-            <Section label="Status">
+          {clayOptions.length > 0 && (
+            <Section label="Clay body">
               <PillRow>
-                {PIECE_STATUSES.map(s => (
+                {clayOptions.map(clay => (
                   <Pill
-                    key={s}
-                    label={s}
-                    active={filters.statuses.includes(s)}
-                    onPress={() => toggleMulti('statuses', s)}
+                    key={clay}
+                    label={clay}
+                    active={filters.clays.includes(clay)}
+                    onPress={() => toggleMulti('clays', clay)}
                     colors={colors}
                   />
                 ))}
               </PillRow>
             </Section>
+          )}
 
-            {/* Firing type */}
-            <Section label="Firing type">
-              <PillRow>
-                {FIRING_TYPES.map(t => (
-                  <Pill
-                    key={t}
-                    label={t}
-                    active={filters.firingTypes.includes(t)}
-                    onPress={() => toggleMulti('firingTypes', t)}
-                    colors={colors}
-                  />
-                ))}
-              </PillRow>
-            </Section>
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+          <Section label="Form">
+            <PillRow>
+              {formOptions.map(f => (
+                <Pill
+                  key={f}
+                  label={f}
+                  active={filters.forms.includes(f)}
+                  onPress={() => toggleMulti('forms', f)}
+                  colors={colors}
+                />
+              ))}
+            </PillRow>
+          </Section>
+
+          <Section label="Forming method">
+            <PillRow>
+              {methodOptions.map(m => (
+                <Pill
+                  key={m}
+                  label={m}
+                  active={filters.formingMethods.includes(m)}
+                  onPress={() => toggleMulti('formingMethods', m)}
+                  colors={colors}
+                />
+              ))}
+            </PillRow>
+          </Section>
+
+          <Section label="Listing">
+            <PillRow>
+              <Pill
+                label="For sale"
+                active={filters.forSaleOnly}
+                onPress={() => onFiltersChange({ ...filters, forSaleOnly: !filters.forSaleOnly })}
+                colors={colors}
+              />
+            </PillRow>
+          </Section>
+
+          <Section label="Status">
+            <PillRow>
+              {PIECE_STATUSES.map(s => (
+                <Pill
+                  key={s}
+                  label={s}
+                  active={filters.statuses.includes(s)}
+                  onPress={() => toggleMulti('statuses', s)}
+                  colors={colors}
+                />
+              ))}
+            </PillRow>
+          </Section>
+
+          <Section label="Firing type">
+            <PillRow>
+              {FIRING_TYPES.map(t => (
+                <Pill
+                  key={t}
+                  label={t}
+                  active={filters.firingTypes.includes(t)}
+                  onPress={() => toggleMulti('firingTypes', t)}
+                  colors={colors}
+                />
+              ))}
+            </PillRow>
+          </Section>
+        </ScrollView>
+      </ModalCard>
+    </ModalShell>
   );
 }
 

@@ -2,12 +2,13 @@ import { Badge } from '@/src/components/ui/badge';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { PiecePlaceholderArt } from '@/src/components/PiecePlaceholderArt';
-import { ArrowRight, BookOpen, Heart, Layers, MoreHorizontal } from 'lucide-react-native';
+import { BookOpen, Heart, Layers, MoreHorizontal } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
 import { parseNumericInput } from '../../../types/pricing';
 import { isConditionStatus } from '../utils/constants';
+import { AdvanceStageButton } from './AdvanceStageButton';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -23,6 +24,7 @@ interface PieceCardProps {
   onSendToCemetery?: () => void;
   onJournal?: () => void;
   onMore?: () => void;
+  onLongPressMore?: () => void;
 }
 
 export function PieceCard({
@@ -35,6 +37,7 @@ export function PieceCard({
   onSendToCemetery,
   onJournal,
   onMore,
+  onLongPressMore,
 }: PieceCardProps) {
   const activeSaleMode = piece.salePriceMode ?? 'retail';
   const activePrice = activeSaleMode === 'wholesale'
@@ -42,7 +45,13 @@ export function PieceCard({
     : piece.retailPriceTarget ?? parseNumericInput(piece.price) ?? piece.suggestedPrice;
 
   return (
-    <TouchableOpacity className="flex-1" activeOpacity={0.85} onPress={onPress}>
+    <TouchableOpacity
+      className="flex-1"
+      activeOpacity={0.85}
+      onPress={onPress}
+      onLongPress={onLongPressMore}
+      delayLongPress={400}
+    >
       <Card className="overflow-hidden flex-1">
         <TouchableOpacity
           activeOpacity={onJournal ? 0.85 : 1}
@@ -58,7 +67,7 @@ export function PieceCard({
                 resizeMode="cover"
               />
             ) : (
-              <PiecePlaceholderArt seed={piece.id} />
+              <PiecePlaceholderArt seed={String(piece.id)} />
             )}
             <View className="absolute top-3 right-3">
               <Badge variant="outline" className="bg-card/90 border-0 rounded-full px-2.5 py-1">
@@ -127,7 +136,7 @@ export function PieceCard({
           <View className="flex-row items-center justify-between mt-2">
             {piece.stage === 'cemetery' ? (
               <View className="flex-row items-center gap-1">
-                <Heart size={10} color="#8B6A2A" fill="#8B6A2A" />
+                <Heart size={10} color="hsl(39 57% 51%)" fill="hsl(39 57% 51%)" />
                 <Text className="text-[10px] font-bold text-primary uppercase tracking-tight">
                   Remembered
                 </Text>
@@ -143,16 +152,7 @@ export function PieceCard({
           </View>
           {onAdvance && nextStageLabel && (
             <View className="mt-2 flex-row gap-2">
-              <TouchableOpacity
-                onPress={onAdvance}
-                activeOpacity={0.7}
-                className="flex-1 flex-row items-center justify-center gap-1 py-2 rounded-xl bg-primary/10"
-              >
-                <Text className="text-[11px] font-body-medium text-primary">
-                  {nextStageLabel}
-                </Text>
-                <ArrowRight size={10} color="hsl(39 57% 51%)" />
-              </TouchableOpacity>
+              <AdvanceStageButton stageLabel={nextStageLabel} onPress={onAdvance} />
               {onSendToCemetery && (
                 <TouchableOpacity
                   onPress={onSendToCemetery}

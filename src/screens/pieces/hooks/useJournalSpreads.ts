@@ -27,7 +27,7 @@ export function useJournalSpreads(piece: Piece | null, drafts: EntryDraft[], sta
         durationLabel: formatDuration(durationMs),
         dateLabel: formatDate(entry.timestamp),
         accent: PAGE_ACCENTS[(index + 1) % PAGE_ACCENTS.length],
-        tabLabel: `${index + 1}`,
+        tabLabel: stageLabel,
       };
     });
 

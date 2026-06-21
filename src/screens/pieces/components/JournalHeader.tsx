@@ -1,4 +1,5 @@
 import { Text } from '@/src/components/ui/text';
+import { useTextScale } from '@/src/hooks/useTextScale';
 import { BookOpen, Share2, X } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
@@ -17,6 +18,8 @@ export function JournalHeader({
   onClose: () => void;
   onShareToCommunity?: () => void;
 }) {
+  const { scaled } = useTextScale();
+
   return (
     <View
       style={{
@@ -44,7 +47,7 @@ export function JournalHeader({
         <View style={{ flex: 1 }}>
           <Text
             style={{
-              fontSize: 10,
+              fontSize: scaled(10),
               fontWeight: '700',
               letterSpacing: 1.5,
               textTransform: 'uppercase',
@@ -55,7 +58,7 @@ export function JournalHeader({
           </Text>
           {subtitle ? (
             <Text
-              style={{ fontSize: isCompact ? 11 : 12, marginTop: 1, color: JournalTheme.headerText }}
+              style={{ fontSize: scaled(isCompact ? 11 : 12), marginTop: 1, color: JournalTheme.headerText }}
               numberOfLines={1}
             >
               {subtitle}

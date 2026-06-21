@@ -1,14 +1,15 @@
 // src/screens/PiecesScreen.tsx
-import { ConfirmSheet, PickSheet } from '@/src/components/AppSheets';
+import { ConfirmSheet, PickSheet, type PickSheetOption } from '@/src/components/AppSheets';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { EmptyState } from '@/src/components/EmptyState';
+import { StudioOrnamentBackdrop } from '@/src/components/StudioOrnamentBackdrop';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
 import { useAppStore } from '@/src/store';
 import { countPiecePhotos } from '@/src/utils/premiumGate';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronUp, Layers, Plus, Search, SlidersHorizontal } from 'lucide-react-native';
+import { BookOpen, ChevronUp, Copy, Edit3, Layers, Plus, Search, Share2, SlidersHorizontal, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
@@ -17,7 +18,6 @@ import type { Piece } from '../../types/pieces';
 import { BatchCard } from './components/BatchCard';
 import { CemeteryBanner } from './components/CemeteryBanner';
 import { FilterSortSheet } from './components/FilterSortSheet';
-import { PieceActionSheet } from './components/PieceActionSheet';
 import { PieceCard } from './components/PieceCard';
 import { usePiecesScreen } from './hooks/usePiecesScreen';
 import { AddPieceModal } from './modals/AddPieceModal';
@@ -25,6 +25,7 @@ import { CemeterySacrificeModal } from './modals/CemeterySacrificeModal';
 import { PieceJournalModal } from './modals/PieceJournalModal';
 import { StageAdvanceCelebrationModal, type StageAdvanceCelebration } from './modals/StageAdvanceCelebrationModal';
 import { StageAdvanceFlowModal } from './modals/StageAdvanceFlowModal';
+import { STAGE_LABEL } from './utils/constants';
 
 const itemLayout = LinearTransition
   .duration(420)
@@ -44,6 +45,7 @@ export default function PiecesScreen() {
   }>({});
   const [stageTransition, setStageTransition] = React.useState<StageAdvanceCelebration | null>(null);
   const [firstPieceCeremony, setFirstPieceCeremony] = React.useState(false);
+  const [batchActionPieces, setBatchActionPieces] = React.useState<Piece[] | null>(null);
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
   const glazes = useAppStore((s) => s.glazes);
   const markCeremonyAsSeen = useAppStore((s) => s.markCeremonyAsSeen);
@@ -93,6 +95,8 @@ export default function PiecesScreen() {
     skipAdvanceRequest,
     handleSendToCemetery,
     handleConfirmSendToCemetery,
+    handleSharePiece,
+    sessionToken,
   } = usePiecesScreen();
 
   const advanceLinkedGlazeNames = React.useMemo(() => {
@@ -173,8 +177,87 @@ export default function PiecesScreen() {
     router.replace('/(tabs)/pieces');
   }, [params.stage, setActiveStage, router]);
 
+  const pieceActionOptions = React.useMemo((): PickSheetOption[] => {
+    if (!actionSheetPiece) return [];
+    const piece = actionSheetPiece;
+    const options: PickSheetOption[] = [
+      { label: 'Open journal', icon: BookOpen, onPress: () => openJournal(piece) },
+      { label: 'Edit details', icon: Edit3, onPress: () => setEditPiece(piece) },
+      { label: 'Duplicate piece', icon: Copy, onPress: () => handleDuplicate(piece) },
+    ];
+
+    if (piece.batchId) {
+      options.push({
+        label: 'Duplicate entire batch',
+        icon: Layers,
+        onPress: () => handleDuplicateBatch(piece.batchId!),
+      });
+    }
+
+    if (sessionToken) {
+      options.push({
+        label: 'Share to community',
+        icon: Share2,
+        onPress: () => handleSharePiece(piece),
+      });
+    }
+
+    options.push({
+      label: 'Delete piece',
+      icon: Trash2,
+      iconColor: 'hsl(0 55% 45%)',
+      destructive: true,
+      onPress: () => handleDelete(piece.id),
+    });
+
+    return options;
+  }, [
+    actionSheetPiece,
+    openJournal,
+    setEditPiece,
+    handleDuplicate,
+    handleDuplicateBatch,
+    sessionToken,
+    handleSharePiece,
+    handleDelete,
+  ]);
+
+  const batchActionOptions = React.useMemo((): PickSheetOption[] => {
+    if (!batchActionPieces?.length) return [];
+    const rep = batchActionPieces[0];
+    const nextStageId = getNextStageId(rep.stage);
+    const nextStageLabel = nextStageId ? (stageLookup[nextStageId]?.label ?? nextStageId) : undefined;
+    const batchId = rep.batchId ?? String(rep.id);
+    const options: PickSheetOption[] = [];
+
+    if (nextStageLabel) {
+      options.push({
+        label: `Advance all to ${nextStageLabel}`,
+        icon: Layers,
+        onPress: () => handleAdvanceBatch(batchActionPieces),
+      });
+    }
+
+    if (rep.batchId) {
+      options.push({
+        label: 'Duplicate entire batch',
+        icon: Copy,
+        onPress: () => handleDuplicateBatch(rep.batchId!),
+      });
+    }
+
+    options.push({
+      label: 'Expand batch',
+      icon: Layers,
+      onPress: () => toggleExpand(batchId),
+    });
+
+    return options;
+  }, [batchActionPieces, getNextStageId, stageLookup, handleAdvanceBatch, handleDuplicateBatch, toggleExpand]);
+
   return (
     <View className="flex-1 bg-background">
+      <StudioOrnamentBackdrop opacity={0.34} />
       <ConfirmSheet
         visible={pendingDeletePieceId != null}
         title="Delete Piece?"
@@ -217,7 +300,7 @@ export default function PiecesScreen() {
           >
             <SlidersHorizontal
               size={16}
-              color={activeFilterCount > 0 ? '#8B6A2A' : 'hsl(24 20% 40%)'}
+              color={activeFilterCount > 0 ? 'hsl(39 57% 51%)' : 'hsl(24 20% 40%)'}
             />
             {activeFilterCount > 0 && (
               <View className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary items-center justify-center">
@@ -286,7 +369,7 @@ export default function PiecesScreen() {
                         {item.name} · {item.count}
                       </Text>
                       <Text className="text-[10px] font-body-medium text-primary">Collapse</Text>
-                      <ChevronUp size={11} color="#8B6A2A" />
+                      <ChevronUp size={11} color="hsl(39 57% 51%)" />
                     </TouchableOpacity>
                   </Animated.View>
                 );
@@ -311,6 +394,7 @@ export default function PiecesScreen() {
                       stageLabel={stageLabel}
                       nextStageLabel={nextStageLabel}
                       onExpand={() => toggleExpand(item.batchId)}
+                      onMore={() => setBatchActionPieces(item.pieces)}
                     />
                   </Animated.View>
                 );
@@ -337,6 +421,7 @@ export default function PiecesScreen() {
                     onSendToCemetery={item.piece.stage !== 'cemetery' ? () => handleSendToCemetery(item.piece.id) : undefined}
                     onJournal={() => openJournal(item.piece)}
                     onMore={() => setActionSheetPiece(item.piece)}
+                    onLongPressMore={() => setActionSheetPiece(item.piece)}
                   />
                 </Animated.View>
               );
@@ -402,15 +487,33 @@ export default function PiecesScreen() {
         onClose={() => setCemeteryPiece(null)}
         onConfirm={handleConfirmSendToCemetery}
       />
-      <PieceActionSheet
-        piece={actionSheetPiece}
+      <PickSheet
         visible={actionSheetPiece !== null}
-        onClose={() => setActionSheetPiece(null)}
-        onJournal={() => actionSheetPiece && openJournal(actionSheetPiece)}
-        onEdit={() => { setEditPiece(actionSheetPiece ?? undefined); setActionSheetPiece(null); }}
-        onDuplicate={() => actionSheetPiece && handleDuplicate(actionSheetPiece)}
-        onDuplicateBatch={actionSheetPiece?.batchId ? () => handleDuplicateBatch(actionSheetPiece!.batchId!) : undefined}
-        onDelete={() => actionSheetPiece && handleDelete(actionSheetPiece.id)}
+        title={actionSheetPiece?.name ?? 'Piece actions'}
+        body={
+          actionSheetPiece
+            ? `${STAGE_LABEL[actionSheetPiece.stage] ?? actionSheetPiece.stage} · ${actionSheetPiece.clay}`
+            : undefined
+        }
+        layout="list"
+        options={pieceActionOptions}
+        onCancel={() => setActionSheetPiece(null)}
+      />
+      <PickSheet
+        visible={batchActionPieces !== null}
+        title={
+          batchActionPieces?.[0]
+            ? batchActionPieces[0].name.replace(/\s+\d+$/, '')
+            : 'Batch actions'
+        }
+        body={
+          batchActionPieces
+            ? `Set of ${batchActionPieces.length} · ${batchActionPieces[0]?.clay ?? ''}`
+            : undefined
+        }
+        layout="list"
+        options={batchActionOptions}
+        onCancel={() => setBatchActionPieces(null)}
       />
       <FilterSortSheet
         visible={filtersOpen}

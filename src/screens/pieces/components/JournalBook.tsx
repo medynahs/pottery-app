@@ -44,6 +44,7 @@ export function JournalBook({
       ref={pageScrollRef}
       horizontal
       pagingEnabled
+      directionalLockEnabled
       showsHorizontalScrollIndicator={false}
       bounces={false}
       scrollEventThrottle={16}
@@ -72,7 +73,6 @@ export function JournalBook({
               piece={piece}
               index={spread.index}
               stageLabel={spread.stageLabel}
-              isLast={spread.isLast}
               accent={spread.accent}
               durationLabel={spread.durationLabel}
               dateLabel={spread.dateLabel}

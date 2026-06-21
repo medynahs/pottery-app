@@ -3,6 +3,7 @@ import { TimelineEntry, type Piece } from '@/src/types/pieces';
 import React from 'react';
 import { Image, ScrollView, View } from 'react-native';
 import { Text } from '@/src/components/ui/text';
+import { useTextScale } from '@/src/hooks/useTextScale';
 import { getEntryCaptureTiles } from '../utils/entryCaptureMeta';
 import { BOOK_ART } from '../utils/constants';
 import { JournalTheme } from '../utils/journalTheme';
@@ -17,7 +18,6 @@ export function EntrySpread({
     piece,
     index,
     stageLabel,
-    isLast,
     accent,
     durationLabel,
     dateLabel,
@@ -32,7 +32,6 @@ export function EntrySpread({
     piece: Piece;
     index: number;
     stageLabel: string;
-    isLast: boolean;
     accent: string;
     durationLabel: string;
     dateLabel: string;
@@ -44,12 +43,13 @@ export function EntrySpread({
 }) {
     const captureTiles = getEntryCaptureTiles(entry, piece);
     const [notesOpen, setNotesOpen] = React.useState(false);
+    const { scaled } = useTextScale();
 
     return (
         <>
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ padding: compact ? 10 : 14, paddingBottom: compact ? 72 : 22 }}
+                contentContainerStyle={{ padding: compact ? 10 : 14, paddingBottom: compact ? 56 : 22 }}
                 keyboardShouldPersistTaps="handled"
                 nestedScrollEnabled
             >
@@ -72,6 +72,31 @@ export function EntrySpread({
                     rightLabel={`${piece.name} · ${dateLabel}`}
                 />
 
+                {!canAddMorePhotos ? (
+                    <View
+                        style={{
+                            marginTop: 12,
+                            paddingHorizontal: 12,
+                            paddingVertical: 8,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: JournalTheme.tileBorder,
+                            backgroundColor: 'rgba(215, 180, 141, 0.14)',
+                        }}
+                    >
+                        <Text
+                            style={{
+                                fontSize: scaled(10),
+                                lineHeight: scaled(14),
+                                color: JournalTheme.coverSpecLabel,
+                                textAlign: 'center',
+                            }}
+                        >
+                            Upgrade to Premium to add stage photographs beyond your cover image.
+                        </Text>
+                    </View>
+                ) : null}
+
                 <View style={{ flexDirection: compact ? 'column' : 'row', gap: 14, width: '100%', marginTop: 14 }}>
                     <View style={{ flex: compact ? undefined : 1, gap: 12, width: compact ? '100%' : undefined }}>
                         <LedgerSection title="Stage record" subtitle={`Entry ${index + 1} of ${totalEntries}`} compact={compact}>
@@ -86,30 +111,28 @@ export function EntrySpread({
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: compact ? 'center' : 'flex-start' }}>
                                 <PolaroidPhotoPicker
                                     photo={draft.photos?.[0]}
-                                    onPress={() => onPickPhoto(0)}
+                                    onPress={canAddMorePhotos || draft.photos?.[0] ? () => onPickPhoto(0) : undefined}
                                     accent={accent}
                                     width={200}
                                     height={compact ? 180 : 240}
                                     borderRadius={12}
                                     rotation="5deg"
-                                    placeholder={!canAddMorePhotos && !draft.photos?.[0] ? 'Upgrade to add photos' : undefined}
                                     style={{ alignSelf: 'flex-end', marginRight: compact ? -4 : -32 }}
                                 />
                                 <PolaroidPhotoPicker
                                     photo={draft.photos?.[1]}
-                                    onPress={() => onPickPhoto(1)}
+                                    onPress={canAddMorePhotos || draft.photos?.[1] ? () => onPickPhoto(1) : undefined}
                                     accent={accent}
                                     width={100}
                                     height={100}
                                     borderRadius={12}
                                     rotation="-10deg"
-                                    placeholder={!canAddMorePhotos && !draft.photos?.[1] ? 'Premium' : undefined}
                                     style={{ alignSelf: 'flex-end', marginRight: compact ? -4 : -32 }}
                                 />
                             </View>
                             <Text
                                 style={{
-                                    fontSize: 9,
+                                    fontSize: scaled(9),
                                     letterSpacing: 1.4,
                                     textTransform: 'uppercase',
                                     color: JournalTheme.coverSpecLabel,

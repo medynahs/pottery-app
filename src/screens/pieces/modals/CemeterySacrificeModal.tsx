@@ -1,5 +1,5 @@
+import { ModalCard, ModalShell, useModalSheetHeight } from '@/src/components/AppSheets';
 import { Button } from '@/src/components/ui/button';
-import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Flame, ScrollText, Sparkles, X } from 'lucide-react-native';
@@ -8,9 +8,6 @@ import {
   Animated,
   Easing,
   Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -63,6 +60,7 @@ export function CemeterySacrificeModal({
   onClose,
   onConfirm,
 }: CemeterySacrificeModalProps) {
+  const sheetHeight = useModalSheetHeight(0.92);
   const [epitaph, setEpitaph] = React.useState('');
   const [causeOfDeath, setCauseOfDeath] = React.useState('');
   const [isAnimating, setIsAnimating] = React.useState(false);
@@ -178,15 +176,78 @@ export function CemeterySacrificeModal({
   const suggestedCause = piece.status ? `Perhaps: ${piece.status}` : 'Tell the pottery gods what happened.';
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(22, 14, 10, 0.58)' }}>
-        <Pressable
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          onPress={handleClose}
-        />
-
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View className="bg-background rounded-t-3xl overflow-hidden" style={{ maxHeight: '92%' }}>
+    <ModalShell
+      visible={visible}
+      onClose={handleClose}
+      overlay={
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: overlayOpacity,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(16, 10, 7, 0.74)',
+          }}
+        >
+          <Animated.View
+            style={{
+              transform: [{ scale: sigilScale }],
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Animated.View
+              style={{
+                position: 'absolute',
+                width: 220,
+                height: 220,
+                borderRadius: 999,
+                backgroundColor: 'rgba(211, 146, 83, 0.26)',
+                opacity: sigilGlow,
+                transform: [{ scale: sigilGlow.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.2] }) }],
+              }}
+            />
+            <Animated.View
+              style={{
+                position: 'absolute',
+                transform: [{ rotate: spin }],
+              }}
+            >
+              <Sparkles size={140} color="rgba(255, 214, 163, 0.75)" />
+            </Animated.View>
+            <Animated.View style={{ transform: [{ translateY: offeringLift }] }}>
+              <View
+                style={{
+                  width: 156,
+                  height: 156,
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(68, 40, 24, 0.95)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 219, 174, 0.28)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text className="text-6xl">🪦</Text>
+              </View>
+            </Animated.View>
+          </Animated.View>
+          <Text className="font-serif text-3xl text-white mt-10 mb-2">
+            The offering has been accepted.
+          </Text>
+          <Text className="text-sm text-white/75 text-center px-10 leading-6">
+            The pottery gods nod solemnly and add {piece.name} to the sacred cemetery ledger.
+          </Text>
+        </Animated.View>
+      }
+    >
+      <ModalCard height={sheetHeight} maxHeight={sheetHeight}>
+        <View className="bg-background rounded-t-3xl overflow-hidden flex-1">
             <LinearGradient
               colors={['#513325', '#8A5331', '#D1975F']}
               start={{ x: 0, y: 0 }}
@@ -246,7 +307,7 @@ export function CemeterySacrificeModal({
               <View className="rounded-3xl border border-border bg-card px-4 py-4 mb-5">
                 <View className="flex-row items-start gap-3">
                   <View className="w-10 h-10 rounded-2xl bg-primary/10 items-center justify-center mt-0.5">
-                    <Sparkles size={18} color="#8B6A2A" />
+                    <Sparkles size={18} color="hsl(39 57% 51%)" />
                   </View>
                   <View className="flex-1">
                     <Text className="text-base font-semibold text-foreground mb-1">
@@ -321,74 +382,8 @@ export function CemeterySacrificeModal({
                 <Text>Yes, offer it up</Text>
               </Button>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-
-        <Animated.View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            opacity: overlayOpacity,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(16, 10, 7, 0.74)',
-          }}
-        >
-          <Animated.View
-            style={{
-              transform: [{ scale: sigilScale }],
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Animated.View
-              style={{
-                position: 'absolute',
-                width: 220,
-                height: 220,
-                borderRadius: 999,
-                backgroundColor: 'rgba(211, 146, 83, 0.26)',
-                opacity: sigilGlow,
-                transform: [{ scale: sigilGlow.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.2] }) }],
-              }}
-            />
-            <Animated.View
-              style={{
-                position: 'absolute',
-                transform: [{ rotate: spin }],
-              }}
-            >
-              <Sparkles size={140} color="rgba(255, 214, 163, 0.75)" />
-            </Animated.View>
-            <Animated.View style={{ transform: [{ translateY: offeringLift }] }}>
-              <View
-                style={{
-                  width: 156,
-                  height: 156,
-                  borderRadius: 999,
-                  backgroundColor: 'rgba(68, 40, 24, 0.95)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(255, 219, 174, 0.28)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text className="text-6xl">🪦</Text>
-              </View>
-            </Animated.View>
-          </Animated.View>
-          <Text className="font-serif text-3xl text-white mt-10 mb-2">
-            The offering has been accepted.
-          </Text>
-          <Text className="text-sm text-white/75 text-center px-10 leading-6">
-            The pottery gods nod solemnly and add {piece.name} to the sacred cemetery ledger.
-          </Text>
-        </Animated.View>
-      </View>
-    </Modal>
+        </View>
+      </ModalCard>
+    </ModalShell>
   );
 }

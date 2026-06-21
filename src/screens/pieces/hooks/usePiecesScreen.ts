@@ -1,5 +1,7 @@
+import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { useVisiblePieces, useAppStore } from '@/src/store';
+import { buildPieceSharePreset } from '../utils/sharePieceToCommunity';
 import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
@@ -29,8 +31,10 @@ export function usePiecesScreen() {
   const advancePiecesToStage = useAppStore((s) => s.advancePiecesToStage);
   const showToast = useAppStore((s) => s.showToast);
   const sendToCemetery = useAppStore((s) => s.sendToCemetery);
+  const sessionToken = useAppStore((s) => s.sessionToken);
   const defaultBisqueTemp = useAppStore((s) => s.defaultBisqueTemp);
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
+  const shareToCommunity = useCommunityComposer();
 
   // ── Backend sync ────────────────────────────────────────────────────────────
   const { isSyncing, refetchPieces } = usePiecesSyncStatus();
@@ -418,6 +422,11 @@ export function usePiecesScreen() {
     setCemeteryPiece((current) => (current?.id === pieceId ? null : current));
   }, [sendToCemetery]);
 
+  const handleSharePiece = React.useCallback((piece: Piece) => {
+    if (!sessionToken) return;
+    shareToCommunity(buildPieceSharePreset(piece));
+  }, [sessionToken, shareToCommunity]);
+
   return {
     pieces,
     filteredPieces,
@@ -463,5 +472,7 @@ export function usePiecesScreen() {
     skipAdvanceRequest,
     handleSendToCemetery,
     handleConfirmSendToCemetery,
+    handleSharePiece,
+    sessionToken,
   };
 }

@@ -1,4 +1,5 @@
 import { Text } from '@/src/components/ui/text';
+import { useTextScale } from '@/src/hooks/useTextScale';
 import React from 'react';
 import { View } from 'react-native';
 import { JournalTheme } from '../utils/journalTheme';
@@ -19,6 +20,8 @@ export function LedgerSection({
   children: React.ReactNode;
   compact?: boolean;
 }) {
+  const { scaled } = useTextScale();
+
   return (
     <View
       style={{
@@ -40,7 +43,7 @@ export function LedgerSection({
       >
         <Text
           style={{
-            fontSize: 9,
+            fontSize: scaled(9),
             fontWeight: '700',
             letterSpacing: 1.8,
             textTransform: 'uppercase',
@@ -50,7 +53,7 @@ export function LedgerSection({
           {title}
         </Text>
         {subtitle ? (
-          <Text style={{ fontSize: 10, color: JournalTheme.coverSpecLabel, marginTop: 3 }}>{subtitle}</Text>
+          <Text style={{ fontSize: scaled(10), color: JournalTheme.coverSpecLabel, marginTop: 3 }}>{subtitle}</Text>
         ) : null}
       </View>
       <View style={{ padding: compact ? 10 : 12, gap: compact ? 6 : 8 }}>{children}</View>
@@ -59,11 +62,13 @@ export function LedgerSection({
 }
 
 export function LedgerRowLine({ label, value, compact }: LedgerRowProps & { compact?: boolean }) {
+  const { scaled } = useTextScale();
+
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6 }}>
       <Text
         style={{
-          fontSize: compact ? 10 : 11,
+          fontSize: scaled(compact ? 10 : 11),
           color: JournalTheme.coverSpecLabel,
           flexShrink: 0,
         }}
@@ -83,7 +88,7 @@ export function LedgerRowLine({ label, value, compact }: LedgerRowProps & { comp
       />
       <Text
         style={{
-          fontSize: compact ? 11 : 12,
+          fontSize: scaled(compact ? 11 : 12),
           color: JournalTheme.bodyInk,
           fontWeight: '600',
           flexShrink: 1,

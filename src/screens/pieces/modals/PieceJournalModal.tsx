@@ -3,7 +3,7 @@ import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
-import { resolvePieceJournalPhoto } from '@/src/screens/community/utils/createPostCompose';
+import { buildPieceSharePreset } from '../utils/sharePieceToCommunity';
 import { useAppStore } from '@/src/store/appStore';
 import { canAddPiecePhoto, checkPremium, countPiecePhotos, PremiumFeature } from '@/src/utils/premiumGate';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -132,22 +132,17 @@ export function PieceJournalModal({
   });
 
   const activeSpread = spreads[activePage] ?? spreads[0];
-  const activeSubtitle = activeSpread?.kind === 'cover'
-    ? activeSpread.subtitle
-    : activeSpread?.kind === 'entry'
-      ? `${activeSpread.stageLabel} · ${activeSpread.dateLabel}`
-      : piece
-        ? `${piece.clay} · ${formatDuration(totalMs)} in the making`
-        : '';
+  const activeSubtitle = piece
+    ? activeSpread?.kind === 'cover'
+      ? `${piece.name} · ${piece.clay} · ${formatDuration(totalMs)} in the making`
+      : activeSpread?.kind === 'entry'
+        ? `${piece.name} · ${activeSpread.stageLabel} · ${activeSpread.dateLabel}`
+        : `${piece.name} · ${piece.clay} · ${formatDuration(totalMs)} in the making`
+    : '';
 
   const handleShareJournal = React.useCallback(() => {
     if (!piece || !sessionToken) return;
-    shareToCommunity({
-      kind: 'piece_journal',
-      pieceId: piece.id,
-      photoUri: resolvePieceJournalPhoto(piece),
-      includeChallengeTag: true,
-    });
+    shareToCommunity(buildPieceSharePreset(piece));
   }, [piece, sessionToken, shareToCommunity]);
 
   // Update notes using hook and call onUpdateEntry
