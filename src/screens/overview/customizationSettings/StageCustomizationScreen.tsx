@@ -1,4 +1,5 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { CustomizationSettingsShell } from '@/src/components/settings/CustomizationSettingsShell';
 import { Text } from '@/src/components/ui/text';
 import { CEMETERY_ID, type StageConfig, useStageConfig } from '@/src/hooks/useStageConfig';
 import { PICKABLE_ICONS, resolveStageIcon } from '@/src/screens/pieces/utils/stageIconUtils';
@@ -15,7 +16,6 @@ import {
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  ScrollView,
   Switch,
   TextInput,
   TouchableOpacity,
@@ -239,7 +239,7 @@ function AddStageRow({ onAdd }: { onAdd: (label: string) => void }) {
       <TouchableOpacity
         onPress={() => setActive(true)}
         activeOpacity={0.7}
-        className="flex-row items-center gap-3 mx-5 mt-3 px-4 py-3.5 bg-card rounded-2xl border border-dashed border-border"
+        className="flex-row items-center gap-3 mt-3 px-4 py-3.5 bg-card rounded-2xl border border-dashed border-border"
       >
         <View className="w-9 h-9 rounded-xl items-center justify-center bg-primary/10">
           <Plus size={17} color="hsl(39 57% 51%)" />
@@ -250,7 +250,7 @@ function AddStageRow({ onAdd }: { onAdd: (label: string) => void }) {
   }
 
   return (
-    <View className="flex-row items-center gap-3 mx-5 mt-3 px-4 py-3 bg-card rounded-2xl border border-primary">
+    <View className="flex-row items-center gap-3 mt-3 px-4 py-3 bg-card rounded-2xl border border-primary">
       <View className="w-9 h-9 rounded-xl items-center justify-center bg-primary/10">
         <Plus size={17} color="hsl(39 57% 51%)" />
       </View>
@@ -285,9 +285,9 @@ export default function StageCustomizationScreen() {
   const { stages, enabledStages, toggleStage, renameStage, addStage, removeStage, changeStageIcon, moveUp, moveDown, resetToDefaults } =
     useStageConfig();
 
-  React.useEffect(() => {
+  function markStagesReviewed() {
     markSetupProgress('stagesReviewed');
-  }, [markSetupProgress]);
+  }
 
   const movableStages = stages.filter(s => s.id !== CEMETERY_ID);
   const cemetery = stages.find(s => s.id === CEMETERY_ID);
@@ -298,8 +298,20 @@ export default function StageCustomizationScreen() {
     setResetConfirmOpen(true);
   }
 
+  function handleSave() {
+    markStagesReviewed();
+    router.back();
+  }
+
   return (
-    <View className="flex-1 bg-background">
+    <CustomizationSettingsShell
+      eyebrow="Piece workflow"
+      title="Customize your stages"
+      subtitle="Choose which stages appear when tracking a piece, reorder them to match your workflow, rename or remove any stage, and add your own custom ones."
+      headerNote={`${enabledStages.length} of ${stages.length} stages active`}
+      onBack={() => router.back()}
+      onSave={handleSave}
+    >
       <ConfirmSheet
         visible={resetConfirmOpen}
         title="Restore Defaults?"
@@ -309,32 +321,8 @@ export default function StageCustomizationScreen() {
         onConfirm={() => { resetToDefaults(); setResetConfirmOpen(false); }}
         onCancel={() => setResetConfirmOpen(false)}
       />
-      {/* Header */}
-      <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="w-10 h-10 items-center justify-center rounded-full bg-muted/60 mr-3"
-        >
-          <ChevronDown size={20} color="hsl(24 30% 40%)" style={{ transform: [{ rotate: '90deg' }] }} />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-lg font-bold text-foreground">Stage Customization</Text>
-          <Text className="text-xs text-muted-foreground mt-0.5">
-            {enabledStages.length} of {stages.length} stages active
-          </Text>
-        </View>
-      </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Description */}
-        <Text className="text-sm text-muted-foreground px-5 pt-4 pb-2 leading-5">
-          Choose which stages appear when tracking a piece, reorder them to match your workflow,
-          rename or remove any stage, and add your own custom ones. Tap the icon of a custom stage
-          to change it.
-        </Text>
-
-        {/* Stage list */}
-        <View className="mx-5 mt-3 bg-card rounded-2xl border border-border overflow-hidden">
+      <View className="mt-1 bg-card rounded-2xl border border-border overflow-hidden">
           {movableStages.map((stage, idx) => (
             <React.Fragment key={stage.id}>
               <StageRow
@@ -346,9 +334,9 @@ export default function StageCustomizationScreen() {
                 onToggle={() => toggleStage(stage.id)}
                 onMoveUp={() => moveUp(stage.id)}
                 onMoveDown={() => moveDown(stage.id)}
-                onRename={label => renameStage(stage.id, label)}
+                onRename={(label) => renameStage(stage.id, label)}
                 onRemove={() => removeStage(stage.id)}
-                onChangeIcon={iconKey => changeStageIcon(stage.id, iconKey)}
+                onChangeIcon={(iconKey) => changeStageIcon(stage.id, iconKey)}
               />
               {idx < movableStages.length - 1 && (
                 <View className="h-px bg-border ml-16" />
@@ -384,18 +372,16 @@ export default function StageCustomizationScreen() {
         </View>
 
         {/* Add custom stage */}
-        <AddStageRow onAdd={addStage} />
+        <AddStageRow onAdd={(label) => addStage(label)} />
 
-        {/* Restore defaults */}
         <TouchableOpacity
           onPress={handleReset}
           activeOpacity={0.7}
-          className="flex-row items-center justify-center gap-2 mx-5 mt-4 mb-10 py-3.5 rounded-2xl border border-border bg-card"
+          className="flex-row items-center justify-center gap-2 mt-4 mb-2 py-3.5 rounded-2xl border border-border bg-card"
         >
           <RotateCcw size={15} color="hsl(0 55% 50%)" />
           <Text className="text-sm font-medium text-destructive">Restore Defaults</Text>
         </TouchableOpacity>
-      </ScrollView>
-    </View>
+    </CustomizationSettingsShell>
   );
 }

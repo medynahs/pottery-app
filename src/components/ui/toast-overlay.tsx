@@ -7,7 +7,8 @@
 import { useAppStore } from '@/src/store';
 import { MotiView } from 'moti';
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/src/components/ui/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const AUTO_DISMISS_MS = 3000;

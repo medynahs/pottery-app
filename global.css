@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+  --text-scale: 1;
   --background: 34 35% 92%;
   --foreground: 24 25% 15%;
   --card: 34 40% 96%;

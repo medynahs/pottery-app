@@ -37,7 +37,7 @@ export function OverviewPageHeader({
   onProfilePress,
 }: OverviewPageHeaderProps) {
   return (
-    <View style={{ backgroundColor: 'hsl(35 62% 93%)', paddingTop }} className="px-5 pb-1">
+    <View style={{ backgroundColor: 'transparent', paddingTop }} className="px-5 pb-1">
       <View className="flex-row items-start justify-between mb-3">
         <View className="flex-1 pr-4">
           <Text className="text-xs font-medium" style={{ color: 'hsl(32 45% 52%)' }}>{greeting}</Text>

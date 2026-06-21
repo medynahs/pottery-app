@@ -12,6 +12,12 @@ import { buildQueuePreview } from '@/src/screens/overview/utils/buildQueuePrevie
 import { ACTIVE_FIRING_STATES, buildOneThingCard } from '@/src/screens/overview/utils/oneThingCard';
 import { getPetMood, PAT_REACTIONS } from '@/src/screens/overview/utils/petMood';
 import { useAppStore, useVisiblePieces } from '@/src/store';
+import { useNormalizedEnabledModules } from '@/src/store/appStore';
+import { resolveKilnDestination } from '@/src/screens/overview/utils/kilnNavigation';
+import {
+  buildFiringQueueSnapshot,
+  shouldShowFiringQueueWidget,
+} from '@/src/screens/overview/utils/firingQueueUtils';
 import { PremiumFeature } from '@/src/utils/premiumGate';
 import { useRouter, type Href } from 'expo-router';
 import React from 'react';
@@ -40,6 +46,9 @@ export function useOverviewPage() {
   const glazes = useAppStore((state) => state.glazes);
   const glazeTests = useAppStore((state) => state.glazeTests);
   const pieces = useVisiblePieces();
+  const enabledModules = useNormalizedEnabledModules();
+  const hasKilnTab = enabledModules.includes('kiln');
+  const hasCommunityTab = enabledModules.includes('community');
   const firings = useAppStore((state) => state.firings);
   const rhythm = useAppStore((state) => state.studioRhythm);
   const rhythmConfigured = isStudioRhythmConfigured(rhythm);
@@ -66,7 +75,33 @@ export function useOverviewPage() {
     }),
     [kilns.length, rhythmConfigured, pieces.length, onboardingProfile.hasOwnKiln, onboardingProfile.userType, setupProgress, pricingOnboardingCompleted, glazes]
   );
-  const isSetupMode = setupQuests.length > 0;
+  const initialSetupQuestCount = useAppStore((state) => state.initialSetupQuestCount);
+  const setInitialSetupQuestCount = useAppStore((state) => state.setInitialSetupQuestCount);
+  const prevQuestCountRef = React.useRef(setupQuests.length);
+
+  React.useEffect(() => {
+    if (setupQuests.length > 0 && initialSetupQuestCount === null) {
+      setInitialSetupQuestCount(setupQuests.length);
+    } else if (
+      initialSetupQuestCount !== null &&
+      setupQuests.length > prevQuestCountRef.current
+    ) {
+      const added = setupQuests.length - prevQuestCountRef.current;
+      setInitialSetupQuestCount(initialSetupQuestCount + added);
+    }
+    prevQuestCountRef.current = setupQuests.length;
+  }, [setupQuests.length, initialSetupQuestCount, setInitialSetupQuestCount]);
+
+  const tomorrowRhythm = React.useMemo(() => {
+    if (!rhythmConfigured) return { stages: [], events: [] };
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dow = (tomorrow.getDay() + 6) % 7;
+    const tomorrowKey = getDateKey(tomorrow);
+    const stages = rhythm.stageDays.filter((sd) => sd.days.includes(dow)).map((sd) => sd.stage);
+    const events = rhythm.events.filter((e) => e.date.slice(0, 10) === tomorrowKey);
+    return { stages, events };
+  }, [rhythm, rhythmConfigured]);
 
   const missionsSummary = React.useMemo(() => {
     if (!rhythmConfigured) {
@@ -91,6 +126,8 @@ export function useOverviewPage() {
     const events = rhythm.events.filter((e) => e.date.slice(0, 10) === todayKey);
     return { stages, events, isEmpty: stages.length === 0 && events.length === 0 };
   }, [rhythm, rhythmConfigured]);
+
+  const isSetupMode = setupQuests.length > 0;
 
   const stagePositions = React.useMemo(() => mapPiecesToStudioPositions(pieces), [pieces]);
   const studioSignals = React.useMemo(() => getStudioSignals({ pieces, firings }), [pieces, firings]);
@@ -225,14 +262,46 @@ export function useOverviewPage() {
   }, [heroReveal, focusReveal, secondaryReveal, journalReveal, testWallReveal]);
 
   const oneThingCard = React.useMemo(
-    () => buildOneThingCard(activeFiring, studioSignals, stagePositions),
-    [activeFiring, studioSignals, stagePositions]
+    () => buildOneThingCard(activeFiring, studioSignals, stagePositions, hasKilnTab),
+    [activeFiring, studioSignals, stagePositions, hasKilnTab]
   );
 
   const queuePreview = React.useMemo(
-    () => buildQueuePreview(firings, kilns),
-    [firings, kilns]
+    () => buildQueuePreview(firings, kilns, hasKilnTab),
+    [firings, kilns, hasKilnTab]
   );
+
+
+  const kilnQueueRoute = resolveKilnDestination(hasKilnTab);
+
+  const firingQueueSnapshot = React.useMemo(
+    () => buildFiringQueueSnapshot(pieces, stagePositions.glazeRack.length),
+    [pieces, stagePositions.glazeRack.length],
+  );
+
+  const activeFiringSummary = React.useMemo(() => {
+    if (!activeFiring) return null;
+    const ready = activeFiring.expectedReadyAt;
+    const hoursLeft = ready
+      ? Math.max(0, Math.round((new Date(ready).getTime() - Date.now()) / (1000 * 60 * 60)))
+      : null;
+    const stateLabels: Record<string, string> = {
+      loading: 'Loading the kiln',
+      firing: 'Firing in progress',
+      cooling: 'Cooling down',
+      unloading: 'Ready to unload',
+    };
+    return {
+      label: stateLabels[activeFiring.state] ?? activeFiring.state,
+      subtitle: activeFiring.name + (hoursLeft != null ? ` · ~${hoursLeft}h until ready` : ''),
+    };
+  }, [activeFiring]);
+
+  const showFiringQueueWidget = shouldShowFiringQueueWidget({
+    snapshot: firingQueueSnapshot,
+    activeFiring: activeFiringSummary,
+    queuePreview,
+  });
 
   const activityFeed = React.useMemo(() => buildActivityFeed(pieces), [pieces]);
 
@@ -267,10 +336,10 @@ export function useOverviewPage() {
 
   const stageChips = [
     { label: 'In Progress', piecesInSlot: stagePositions.workTable, route: '/(tabs)/pieces?stage=idea,forming,leather-hard,trimming', emoji: '🪆', urgent: false },
-    { label: 'Drying', piecesInSlot: stagePositions.dryingShelf, route: '/(tabs)/pieces?stage=drying,bone-dry', emoji: '💨', urgent: studioSignals.dryingTooLong },
-    { label: 'Glaze Ready', piecesInSlot: stagePositions.kilnArea, route: '/(tabs)/pieces?stage=glazing,glaze-fired', emoji: '🔥', urgent: studioSignals.kilnReady },
-    { label: 'Glazing', piecesInSlot: stagePositions.glazeRack, route: '/(tabs)/pieces?stage=bisque', emoji: '🎨', urgent: false },
-    { label: 'Finished', piecesInSlot: stagePositions.finishedCabinet, route: '/(tabs)/pieces?stage=finished', emoji: '✨', urgent: false },
+    { label: 'Drying', piecesInSlot: stagePositions.dryingShelf, route: '/(tabs)/pieces?stage=drying', emoji: '💨', urgent: studioSignals.dryingTooLong },
+    { label: 'Kiln queue', piecesInSlot: stagePositions.kilnArea, route: '/(tabs)/pieces?stage=bone-dry,glazing', emoji: '🔥', urgent: studioSignals.kilnReady },
+    { label: 'Ready to glaze', piecesInSlot: stagePositions.glazeRack, route: '/(tabs)/pieces?stage=bisque', emoji: '🎨', urgent: false },
+    { label: 'Finished', piecesInSlot: stagePositions.finishedCabinet, route: '/(tabs)/pieces?stage=glaze-fired,finished', emoji: '✨', urgent: false },
   ].map((chip) => ({
     ...chip,
     count: chip.piecesInSlot.length,
@@ -299,7 +368,9 @@ export function useOverviewPage() {
     todayLabel,
     isSetupMode,
     todayRhythm,
+    tomorrowRhythm,
     setupQuests,
+    initialSetupQuestCount,
     heroReveal,
     focusReveal,
     journalReveal,
@@ -343,5 +414,12 @@ export function useOverviewPage() {
     },
     onProfilePress: () => navigate('/(tabs)/profile'),
     onKilnkinPress: () => navigate('/kilnkin'),
+    onChallengePress: () => navigate('/(tabs)/community?tab=challenges'),
+    hasKilnTab,
+    hasCommunityTab,
+    kilnQueueRoute,
+    firingQueueSnapshot,
+    activeFiringSummary,
+    showFiringQueueWidget,
   };
 }

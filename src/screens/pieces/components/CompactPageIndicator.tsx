@@ -1,4 +1,5 @@
-import { Text, View } from "react-native";
+import { Text } from "@/src/components/ui/text";
+import { View } from "react-native";
 import { JournalTheme } from '../utils/journalTheme';
 
 export function CompactPageIndicator({

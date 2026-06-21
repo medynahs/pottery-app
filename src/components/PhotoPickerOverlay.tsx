@@ -1,5 +1,6 @@
 import { PickSheet } from '@/src/components/AppSheets';
 import { usePhotoPickerState } from '@/src/components/PhotoPickerProvider';
+import { Camera, ImageIcon, Trash2 } from 'lucide-react-native';
 import React from 'react';
 
 /** Custom photo source sheet — rendered inside an open modal so it stacks correctly. */
@@ -17,12 +18,33 @@ export function PhotoPickerOverlay() {
     <PickSheet
       embedded
       visible={sheetOpen}
-      title="Photo"
+      layout="list"
+      title="Add photo"
+      body="Take a new photo or choose one from your library."
       options={[
-        { label: '📷  Take Photo', onPress: launchCamera },
-        { label: '🖼  Choose from Library', onPress: launchLibrary },
+        {
+          label: 'Take photo',
+          icon: Camera,
+          iconColor: 'hsl(213 55% 42%)',
+          iconBg: 'hsl(213 50% 92%)',
+          onPress: launchCamera,
+        },
+        {
+          label: 'Choose from library',
+          icon: ImageIcon,
+          iconColor: 'hsl(24 30% 40%)',
+          iconBg: 'hsl(35 46% 88%)',
+          onPress: launchLibrary,
+        },
         ...(showDelete
-          ? [{ label: '🗑  Remove Photo', onPress: handleDelete, destructive: true as const }]
+          ? [{
+              label: 'Remove photo',
+              icon: Trash2,
+              iconColor: 'hsl(0 55% 45%)',
+              iconBg: 'hsl(0 60% 94%)',
+              destructive: true as const,
+              onPress: handleDelete,
+            }]
           : []),
       ]}
       onCancel={closeSheet}

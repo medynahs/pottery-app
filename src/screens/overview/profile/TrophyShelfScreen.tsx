@@ -95,7 +95,7 @@ export default function TrophyShelfScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
       >
         <LinearGradient
-          colors={['#F7E4B8', '#EAC477', '#C98352']}
+          colors={['#F5E8C8', '#E8D4A8']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{

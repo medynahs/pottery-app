@@ -1,7 +1,8 @@
 import { EntryDraft } from '@/src/types/journal';
 import { TimelineEntry, type Piece } from '@/src/types/pieces';
 import React from 'react';
-import { Image, ScrollView, Text, View } from 'react-native';
+import { Image, ScrollView, View } from 'react-native';
+import { Text } from '@/src/components/ui/text';
 import { getEntryCaptureTiles } from '../utils/entryCaptureMeta';
 import { BOOK_ART } from '../utils/constants';
 import { JournalTheme } from '../utils/journalTheme';

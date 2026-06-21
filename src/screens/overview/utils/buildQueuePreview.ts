@@ -3,6 +3,7 @@ import { getCalculatedTimeline } from '@/src/screens/kiln/firingEstimations';
 import type { Firing, Kiln } from '@/src/types/kiln';
 import type { Href } from 'expo-router';
 import { ACTIVE_FIRING_STATES } from '@/src/screens/overview/utils/oneThingCard';
+import { resolveKilnDestination } from '@/src/screens/overview/utils/kilnNavigation';
 
 const WEEKDAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -28,6 +29,7 @@ function formatQueueDayLabel(date: Date, now: Date): string {
 export function buildQueuePreview(
   firings: Firing[],
   kilns: Kiln[],
+  hasKilnTab = true,
   now: Date = new Date(),
 ): QueuePreview | null {
   if (firings.some((firing) => ACTIVE_FIRING_STATES.has(firing.state))) {
@@ -61,6 +63,6 @@ export function buildQueuePreview(
 
   return {
     label: `${next.pieceCount} ${pieceWord} queued for ${dayLabel} ${typeLabel}`,
-    route: '/(tabs)/kiln',
+    route: resolveKilnDestination(hasKilnTab),
   };
 }

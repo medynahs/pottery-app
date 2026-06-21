@@ -1,5 +1,6 @@
 import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
 import { AVAILABLE_KILNKIN_COMPANIONS } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
+import { apiRequestToJoinStudio } from '@/src/services/studios';
 import { useAppStore, type AppModule } from '@/src/store/appStore';
 import { OnboardingDraft, StepKey } from '@/src/types/user';
 import { useRouter } from 'expo-router';
@@ -20,6 +21,8 @@ export function useOnboardingState() {
   const setEnabledModules = useAppStore((state) => state.setEnabledModules);
   const setUser = useAppStore((state) => state.setUser);
   const setKilnkinCompanion = useAppStore((state) => state.setKilnkinCompanion);
+  const setInitialSetupQuestCount = useAppStore((state) => state.setInitialSetupQuestCount);
+  const setTextScale = useAppStore((state) => state.setTextScale);
 
   // State
   const [stepIndex, setStepIndex] = React.useState(0);
@@ -49,6 +52,7 @@ export function useOnboardingState() {
       ? onboardingProfile.activeModules
       : USER_TYPE_CONFIG[onboardingProfile.userType].defaultModules,
     studioCode: onboardingProfile.studioCode ?? '',
+    textScale: onboardingProfile.textScale ?? 'default',
   }));
 
   const userTypeConfig = USER_TYPE_CONFIG[draft.userType];
@@ -86,19 +90,36 @@ export function useOnboardingState() {
     const selectedCompanion = AVAILABLE_KILNKIN_COMPANIONS.find((companion) => companion.id === draft.kilnkinId)
       ?? AVAILABLE_KILNKIN_COMPANIONS[0];
 
-    const configuredModules: AppModule[] = draft.activeModules.length
+    let configuredModules: AppModule[] = draft.activeModules.length
       ? Array.from(new Set<AppModule>(['overview', ...draft.activeModules]))
       : userTypeConfig.defaultModules;
+
+    if (draft.hasOwnKiln === false) {
+      configuredModules = configuredModules.filter((m) => m !== 'kiln');
+    }
 
     setPracticeMode(userTypeConfig.practiceMode);
     setRole(userTypeConfig.role);
     setEnabledModules(configuredModules);
     setKilnkinCompanion(selectedCompanion);
+    if (draft.textScale) setTextScale(draft.textScale);
+    setInitialSetupQuestCount(9);
 
     const userPatch: Parameters<typeof setUser>[0] = {};
     if (draft.studioName.trim()) userPatch.studioName = draft.studioName.trim();
     if (draft.studioCode.trim()) userPatch.linkedStudioCode = draft.studioCode.trim();
     if (Object.keys(userPatch).length > 0) setUser(userPatch);
+
+    const sessionToken = useAppStore.getState().sessionToken;
+    if (
+      sessionToken &&
+      draft.userType === 'studio-potter' &&
+      draft.studioCode.trim()
+    ) {
+      apiRequestToJoinStudio(sessionToken, draft.studioCode.trim()).catch(() => {
+        // Join is optional; user can retry from Community → Studios
+      });
+    }
 
     // Show the ceremony before completing onboarding.
     // completeGeneralOnboarding sets generalOnboardingCompleted = true, which
@@ -112,7 +133,7 @@ export function useOnboardingState() {
       completeGeneralOnboarding({
         userType: draft.userType,
         pricingUserType: draft.pricingUserType,
-        hasOwnKiln: null,
+        hasOwnKiln: draft.hasOwnKiln,
         studioName: draft.studioName.trim() || undefined,
         kilnCount: undefined,
         kilnName: undefined,
@@ -129,21 +150,27 @@ export function useOnboardingState() {
         activeModules: configuredModules,
         kilnkinId: selectedCompanion.id,
         studioCode: draft.studioCode.trim() || undefined,
+        textScale: draft.textScale ?? 'default',
       });
       router.replace('/overview' as never);
     }, 2400);
   }, [
     isSubmitting, draft, userTypeConfig, setPracticeMode, setRole, setEnabledModules,
-    setKilnkinCompanion, setUser, completeGeneralOnboarding, router
+    setKilnkinCompanion, setUser, completeGeneralOnboarding, router, setTextScale, setInitialSetupQuestCount
   ]);
 
   const handleContinue = React.useCallback(() => {
+    if (currentStep === 'role' && draft.hasOwnKiln === null) {
+      return;
+    }
     if (currentStep === 'kilnkin') {
       handleFinish();
       return;
     }
     setStepIndex((current) => Math.min(current + 1, steps.length - 1));
-  }, [currentStep, handleFinish, steps.length]);
+  }, [currentStep, draft.hasOwnKiln, handleFinish, steps.length]);
+
+  const canContinue = currentStep !== 'role' || draft.hasOwnKiln !== null;
 
   return {
     insets,
@@ -157,6 +184,7 @@ export function useOnboardingState() {
     handleBack,
     handleFinish,
     handleContinue,
+    canContinue,
     steps,
     currentStep,
     progress,

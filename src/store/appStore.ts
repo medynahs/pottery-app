@@ -23,14 +23,14 @@ import {
     type KilnkinCompanion,
 } from '../screens/overview/kilnkin/kilnkinCompanion';
 import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
-import type { DryingTimers, Ritual, StageDay, StudioEvent, StudioRhythm, StudioRhythmConfig, StudioRhythmEvent, StudioRhythmGoal } from '../screens/overview/studioRythm/studioRhythm';
-import { DEFAULT_STUDIO_RHYTHM, getDateKey } from '../screens/overview/studioRythm/studioRhythm';
+import type { TextScale } from '../constants/typography';
+import { DEFAULT_STUDIO_RHYTHM, getDateKey, normalizeStudioRhythm, normalizeStudioRhythmStageDays } from '../screens/overview/studioRythm/studioRhythm';
 import type { CommunityPostComposerPreset } from '../screens/community/types/composerPreset';
 import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
 import { fetchUsers, type BackendUser } from '../services';
 import type { Firing, FiringState, Kiln, KilnChecklist, KilnType, LogFiringPayload, FiringStatusOverride } from '../types/kiln';
-import type { GlazeOutcome, Piece } from '../types/pieces';
+import type { GlazeOutcome, Piece, TimelineEntry } from '../types/pieces';
 import {
     applyPricingUserTypePreset,
     buildDefaultPricingSettings,
@@ -100,6 +100,7 @@ export interface OnboardingProfile {
   activeModules: AppModule[];
   kilnkinId?: string;
   studioCode?: string;
+  textScale?: TextScale;
 }
 
 export interface StageConfig {
@@ -149,6 +150,7 @@ export type SetupProgress = {
   bisqueConeReviewed: boolean;
   glazeConeReviewed: boolean;
   modulesReviewed: boolean;
+  textSizeReviewed: boolean;
 };
 
 export const DEFAULT_SETUP_PROGRESS: SetupProgress = {
@@ -157,6 +159,7 @@ export const DEFAULT_SETUP_PROGRESS: SetupProgress = {
   bisqueConeReviewed: false,
   glazeConeReviewed: false,
   modulesReviewed: false,
+  textSizeReviewed: false,
 };
 
 export const DEFAULT_PIECE_FORM_OPTIONS: PieceFormOption[] = [
@@ -265,6 +268,7 @@ const DEFAULT_ONBOARDING_PROFILE: OnboardingProfile = {
   quickTourRequested: false,
   activeModules: ['overview', 'pieces', 'kiln', 'glaze-atlas', 'community'],
   kilnkinId: DEFAULT_KILNKIN_COMPANION.id,
+  textScale: 'default',
 };
 
 const KNOWN_APP_MODULES: AppModule[] = ['overview', 'pieces', 'kiln', 'glaze-atlas', 'community'];
@@ -345,6 +349,14 @@ interface AppState {
   setEnabledModules: (modules: string[]) => void;
   toggleModule: (module: string) => void;
   isModuleEnabled: (module: string) => boolean;
+  textScale: TextScale;
+  setTextScale: (scale: TextScale) => void;
+  /** Total setup quests when onboarding completed — for progress bar denominator */
+  initialSetupQuestCount: number | null;
+  setInitialSetupQuestCount: (count: number) => void;
+  /** Analytics tab ids hidden by user preference */
+  analyticsHiddenTabs: string[];
+  setAnalyticsTabHidden: (tabId: string, hidden: boolean) => void;
   /** ISO timestamp of when the studio was first set up (onboarding completed). */
   studioCreatedAt: string | null;
   /** One-time ceremony keys that have already been shown (never repeat). */
@@ -425,6 +437,7 @@ interface AppState {
   removeStudioRitual: (id: string) => void;
   setSprintLength: (weeks: number) => void;
   setSprintGoalPieces: (count: number) => void;
+  confirmStudioRhythm: () => void;
 
   // ── Pieces ────────────────────────────────────────────────────
   pieces: Piece[];
@@ -448,6 +461,13 @@ interface AppState {
   ) => void;
   advancePiece: (pieceId: number) => void;
   advancePieceIds: (ids: number[]) => void;
+  advancePiecesToStage: (options: {
+    pieceIds: number[];
+    fromStage: string;
+    toStage: string;
+    entryPatch?: Partial<Pick<TimelineEntry, 'notes' | 'photos' | 'bisqueTemp' | 'glazeTemp' | 'status'>>;
+    metadataPatch?: Partial<Pick<Piece, 'bisqueTemp' | 'glazeTemp' | 'status' | 'glazeOutcome' | 'soldPrice'>>;
+  }) => number;
   advanceBatch: (batchId: string, fromStage: string) => void;
   sendToCemetery: (pieceId: number, memorial?: { epitaph?: string; causeOfDeath?: string }) => void;
 
@@ -597,6 +617,23 @@ export const useAppStore = create<AppState>()(
   role: 'owner',
   enabledModules: ['overview', 'pieces', 'kiln', 'glaze-atlas', 'community'],
   seenCeremonies: [],
+  textScale: 'default' as TextScale,
+  initialSetupQuestCount: null,
+
+  setAnalyticsTabHidden: (tabId, hidden) =>
+    set((state) => ({
+      analyticsHiddenTabs: hidden
+        ? [...new Set([...state.analyticsHiddenTabs, tabId])]
+        : state.analyticsHiddenTabs.filter((id) => id !== tabId),
+    })),
+  analyticsHiddenTabs: [] as string[],
+
+  setTextScale: (scale) =>
+    set((state) => ({
+      textScale: scale,
+      onboardingProfile: { ...state.onboardingProfile, textScale: scale },
+    })),
+  setInitialSetupQuestCount: (count) => set({ initialSetupQuestCount: count }),
 
   setOnboardingProfile: (patch) =>
     set((state) => {
@@ -626,6 +663,7 @@ export const useAppStore = create<AppState>()(
             ? currentProfile.activeModules
             : normalizeModuleList(profile.activeModules),
       },
+      textScale: profile?.textScale ?? currentProfile.textScale ?? state.textScale,
     };
     }),
   reopenGeneralOnboarding: () => set({ generalOnboardingCompleted: false }),
@@ -838,25 +876,24 @@ export const useAppStore = create<AppState>()(
       studioRhythm: {
         ...state.studioRhythm,
         type,
-        sprintStartDate:
-          type === 'sprint'
-            ? (state.studioRhythm.sprintStartDate ?? getDateKey())
-            : state.studioRhythm.sprintStartDate,
       },
     })),
   setStudioRhythmStageDays: (stageDays) =>
-    set((state) => ({ studioRhythm: { ...state.studioRhythm, stageDays } })),
+    set((state) => ({ studioRhythm: { ...state.studioRhythm, stageDays: normalizeStudioRhythmStageDays(stageDays) } })),
   toggleStageDayDay: (stage, day) =>
-    set((state) => ({
-      studioRhythm: {
-        ...state.studioRhythm,
-        stageDays: state.studioRhythm.stageDays.map((sd) =>
-          sd.stage !== stage
-            ? sd
-            : { ...sd, days: sd.days.includes(day) ? sd.days.filter((d) => d !== day) : [...sd.days, day] }
-        ),
-      },
-    })),
+    set((state) => {
+      const stageDays = normalizeStudioRhythmStageDays(state.studioRhythm.stageDays);
+      return {
+        studioRhythm: {
+          ...state.studioRhythm,
+          stageDays: stageDays.map((sd) =>
+            sd.stage !== stage
+              ? sd
+              : { ...sd, days: sd.days.includes(day) ? sd.days.filter((d) => d !== day) : [...sd.days, day] }
+          ),
+        },
+      };
+    }),
   setStudioRhythmDryingTimers: (patch) =>
     set((state) => ({
       studioRhythm: {
@@ -917,6 +954,17 @@ export const useAppStore = create<AppState>()(
     set((state) => ({ studioRhythm: { ...state.studioRhythm, sprintLengthWeeks: weeks } })),
   setSprintGoalPieces: (count) =>
     set((state) => ({ studioRhythm: { ...state.studioRhythm, sprintGoalPieces: count } })),
+  confirmStudioRhythm: () =>
+    set((state) => ({
+      studioRhythm: {
+        ...state.studioRhythm,
+        configuredAt: new Date().toISOString(),
+        sprintStartDate:
+          state.studioRhythm.type === 'sprint'
+            ? (state.studioRhythm.sprintStartDate ?? getDateKey())
+            : state.studioRhythm.sprintStartDate,
+      },
+    })),
 
   // ── Tasks ─────────────────────────────────────────────────────
   tasks: [],
@@ -1028,6 +1076,34 @@ export const useAppStore = create<AppState>()(
       }),
     }));
   },
+  advancePiecesToStage: ({ pieceIds, fromStage, toStage, entryPatch, metadataPatch }) => {
+    const idSet = new Set(pieceIds);
+    const timestamp = new Date().toISOString();
+    let advancedCount = 0;
+
+    set((state) => ({
+      pieces: state.pieces.map((p) => {
+        if (!idSet.has(p.id) || p.stage !== fromStage) return p;
+
+        advancedCount += 1;
+        const nextTimelineEntry: TimelineEntry = {
+          stage: toStage,
+          timestamp,
+          ...(entryPatch ?? {}),
+        };
+
+        return {
+          ...p,
+          ...(metadataPatch ?? {}),
+          stage: toStage,
+          syncDirty: true,
+          timeline: [...p.timeline, nextTimelineEntry],
+        };
+      }),
+    }));
+
+    return advancedCount;
+  },
   advanceBatch: (batchId, fromStage) => {
     const timestamp = new Date().toISOString();
     set((state) => ({
@@ -1090,6 +1166,8 @@ export const useAppStore = create<AppState>()(
   },
   removeStage: (id) => {
     if (id === CEMETERY_ID) return;
+    const protectedStages = new Set(['bone-dry', 'glazing', 'bisque', 'glaze-fired', 'finished']);
+    if (protectedStages.has(id)) return;
     set((state) => ({ stageConfig: state.stageConfig.filter((s) => s.id !== id) }));
   },
   changeStageIcon: (id, iconKey) =>
@@ -1771,6 +1849,7 @@ export const useAppStore = create<AppState>()(
             ...DEFAULT_SETUP_PROGRESS,
             ...(state.setupProgress ?? {}),
           },
+          studioRhythm: normalizeStudioRhythm(state.studioRhythm ?? currentState.studioRhythm),
         };
       },
       storage: zustandStorage,
@@ -1778,6 +1857,9 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         generalOnboardingCompleted: state.generalOnboardingCompleted,
         onboardingProfile: state.onboardingProfile,
+        textScale: state.textScale,
+        initialSetupQuestCount: state.initialSetupQuestCount,
+        analyticsHiddenTabs: state.analyticsHiddenTabs,
         practiceMode: state.practiceMode,
         role: state.role,
         enabledModules: state.enabledModules,

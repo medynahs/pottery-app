@@ -8,10 +8,9 @@ import type { DisplayItem, Piece } from '../../../types/pieces';
 import { ActiveFilters, EMPTY_FILTERS, SortKey, countActiveFilters } from '../components/FilterSortSheet';
 import type { StageAdvanceCelebration } from '../modals/StageAdvanceCelebrationModal';
 import type { StageAdvanceCapture, StageAdvanceRequest } from '../modals/StageAdvanceFlowModal';
-import type { GlazeOutcome } from '@/src/types/pieces';
 import { isGlazeOutcome } from '@/src/screens/glazes/glazePieceLink';
 import { isPieceForSale } from '../utils/pieceListing';
-import { FINISHED_STAGE_ID, getAdvanceOrder, getConfiguredNextStage } from '../utils/stageFlow';
+import { FINISHED_STAGE_ID, getAdvanceOrder, getConfiguredNextStage, isExpectedStageAdvance } from '../utils/stageFlow';
 import { STAGE_ICONS, resolveStageIcon } from '../utils/stageIconUtils';
 import { schedulePiecesSync, usePiecesSyncStatus } from './usePiecesSync';
 
@@ -27,8 +26,8 @@ export function usePiecesScreen() {
   const duplicatePiece = useAppStore((s) => s.duplicatePiece);
   const duplicateBatch = useAppStore((s) => s.duplicateBatch);
   const updateJournalEntry = useAppStore((s) => s.updateJournalEntry);
-  const advancePiece = useAppStore((s) => s.advancePiece);
-  const advancePieceIds = useAppStore((s) => s.advancePieceIds);
+  const advancePiecesToStage = useAppStore((s) => s.advancePiecesToStage);
+  const showToast = useAppStore((s) => s.showToast);
   const sendToCemetery = useAppStore((s) => s.sendToCemetery);
   const defaultBisqueTemp = useAppStore((s) => s.defaultBisqueTemp);
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
@@ -334,11 +333,10 @@ export function usePiecesScreen() {
   ) => {
     if (!advanceRequest) return;
 
-    const targetPieces = advanceRequest.pieceIds
-      .map((id) => pieces.find((piece) => piece.id === id))
-      .filter((piece): piece is Piece => !!piece);
+    const { fromStage, toStage, pieceIds } = advanceRequest;
 
-    if (targetPieces.length === 0) {
+    if (!isExpectedStageAdvance(fromStage, toStage, stages)) {
+      showToast('This stage transition is no longer available. Refresh and try again.', 'error');
       setAdvanceRequest(null);
       return;
     }
@@ -347,58 +345,59 @@ export function usePiecesScreen() {
     const entryPatch = {
       notes: notes || undefined,
       photos: capture.photo ? [capture.photo] : undefined,
-      bisqueTemp: advanceRequest.toStage === 'bisque' && capture.bisqueTemp ? capture.bisqueTemp : undefined,
-      glazeTemp: advanceRequest.toStage === 'glaze-fired' && capture.glazeTemp ? capture.glazeTemp : undefined,
-      status: advanceRequest.toStage === FINISHED_STAGE_ID && capture.status ? capture.status : undefined,
+      bisqueTemp: toStage === 'bisque' && capture.bisqueTemp ? capture.bisqueTemp : undefined,
+      glazeTemp: toStage === 'glaze-fired' && capture.glazeTemp ? capture.glazeTemp : undefined,
+      status: toStage === FINISHED_STAGE_ID && capture.status ? capture.status : undefined,
     };
     const hasEntryPatch = Object.values(entryPatch).some((value) => value != null && value !== '');
 
-    const bisqueTemp = advanceRequest.toStage === 'bisque' ? capture.bisqueTemp : undefined;
-    const glazeTemp = advanceRequest.toStage === 'glaze-fired' ? capture.glazeTemp : undefined;
-    const status = advanceRequest.toStage === FINISHED_STAGE_ID ? capture.status : undefined;
-    const glazeOutcome: GlazeOutcome | undefined =
-      (advanceRequest.toStage === 'glaze-fired' || advanceRequest.toStage === FINISHED_STAGE_ID)
+    const metadataPatch: Partial<Pick<Piece, 'bisqueTemp' | 'glazeTemp' | 'status' | 'glazeOutcome' | 'soldPrice'>> = {};
+    if (toStage === 'bisque' && capture.bisqueTemp) metadataPatch.bisqueTemp = capture.bisqueTemp;
+    if (toStage === 'glaze-fired' && capture.glazeTemp) metadataPatch.glazeTemp = capture.glazeTemp;
+    if (toStage === FINISHED_STAGE_ID && capture.status) metadataPatch.status = capture.status;
+    if (
+      (toStage === 'glaze-fired' || toStage === FINISHED_STAGE_ID)
       && capture.glazeOutcome
       && isGlazeOutcome(capture.glazeOutcome)
-        ? capture.glazeOutcome
-        : undefined;
+    ) {
+      metadataPatch.glazeOutcome = capture.glazeOutcome;
+    }
+    if (
+      toStage === FINISHED_STAGE_ID
+      && capture.status?.toLowerCase() === 'sold'
+      && capture.soldPrice != null
+      && !Number.isNaN(capture.soldPrice)
+    ) {
+      metadataPatch.soldPrice = capture.soldPrice;
+    }
+    const hasMetadataPatch = Object.keys(metadataPatch).length > 0;
 
-    targetPieces.forEach((piece) => {
-      if (!bisqueTemp && !glazeTemp && !status && !glazeOutcome) return;
-
-      updatePiece({
-        ...piece,
-        bisqueTemp: bisqueTemp || piece.bisqueTemp,
-        glazeTemp: glazeTemp || piece.glazeTemp,
-        status: status || piece.status,
-        glazeOutcome: glazeOutcome || piece.glazeOutcome,
-      });
+    const advancedCount = advancePiecesToStage({
+      pieceIds,
+      fromStage,
+      toStage,
+      entryPatch: hasEntryPatch ? entryPatch : undefined,
+      metadataPatch: hasMetadataPatch ? metadataPatch : undefined,
     });
 
-    if (targetPieces.length === 1) {
-      advancePiece(targetPieces[0].id);
-    } else {
-      advancePieceIds(targetPieces.map((piece) => piece.id));
-    }
-
-    if (hasEntryPatch) {
-      targetPieces.forEach((piece) => {
-        updateJournalEntry(piece.id, piece.timeline.length, entryPatch);
-      });
+    if (advancedCount === 0) {
+      showToast('Could not advance — the piece may have already moved stages.', 'error');
+      setAdvanceRequest(null);
+      return;
     }
 
     schedulePiecesSync();
 
     onAdvanced?.({
-      fromStage: advanceRequest.fromStage,
-      toStage: advanceRequest.toStage,
+      fromStage,
+      toStage,
       pieceName: advanceRequest.pieceName,
-      count: advanceRequest.count,
+      count: advancedCount,
       isBatch: advanceRequest.isBatch,
     });
 
     setAdvanceRequest(null);
-  }, [advanceRequest, pieces, updatePiece, advancePiece, advancePieceIds, updateJournalEntry]);
+  }, [advanceRequest, stages, advancePiecesToStage, showToast]);
 
   const skipAdvanceRequest = React.useCallback((onAdvanced?: (transition: StageAdvanceCelebration) => void) => {
     commitAdvanceRequest({}, onAdvanced);

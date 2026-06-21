@@ -1,31 +1,242 @@
 import { Text } from '@/src/components/ui/text';
 import { SETUP_QUEST_META } from '@/src/screens/overview/constants/setupQuestMeta';
-import type { SetupQuest } from '@/src/screens/overview/setupQuests/generateSetupQuests';
+import type { SetupQuest, SetupQuestKey } from '@/src/screens/overview/setupQuests/setupQuestCatalog';
+import { getSetupQuestByKey } from '@/src/screens/overview/setupQuests/setupQuestCatalog';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Href } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
-import React from 'react';
-import { Animated, Image, TouchableOpacity, View } from 'react-native';
+import { Check, ChevronRight } from 'lucide-react-native';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Animated, Easing, Image, TouchableOpacity, View } from 'react-native';
 
 type SetupModeSectionProps = {
   heroReveal: Animated.Value;
   userName: string;
   setupQuests: SetupQuest[];
+  initialSetupQuestCount: number | null;
   kilnkinName: string;
   onQuestPress: (route: Href) => void;
   onKilnkinPress: () => void;
   onPat: () => void;
 };
 
+type RowItem =
+  | { kind: 'pending'; quest: SetupQuest; isFirst: boolean }
+  | { kind: 'completing'; quest: SetupQuest };
+
+function SetupQuestRow({
+  item,
+  showTopBorder,
+  onPress,
+  onDismissed,
+}: {
+  item: RowItem;
+  showTopBorder: boolean;
+  onPress?: () => void;
+  onDismissed: (key: SetupQuestKey) => void;
+}) {
+  const { quest } = item;
+  const completing = item.kind === 'completing';
+  const isFirst = item.kind === 'pending' && item.isFirst;
+  const meta = SETUP_QUEST_META[quest.key];
+  const Icon = meta.Icon;
+
+  const opacity = useRef(new Animated.Value(completing ? 1 : 1)).current;
+  const slideY = useRef(new Animated.Value(completing ? 0 : 0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!completing) return;
+
+    const animation = Animated.sequence([
+      Animated.delay(520),
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 320,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideY, {
+          toValue: -10,
+          duration: 320,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 0.96,
+          duration: 320,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]);
+
+    animation.start(({ finished }) => {
+      if (finished) onDismissed(quest.key);
+    });
+
+    return () => animation.stop();
+  }, [completing, onDismissed, opacity, quest.key, scale, slideY]);
+
+  const content = (
+    <Animated.View
+      style={{
+        opacity,
+        transform: [{ translateY: slideY }, { scale }],
+      }}
+      className="flex-row items-center gap-3 px-4 py-3.5"
+    >
+      <View
+        className="w-6 h-6 rounded-md items-center justify-center border-2"
+        style={{
+          borderColor: completing ? 'hsl(130 45% 38%)' : isFirst ? 'hsl(39 57% 51%)' : 'hsl(34 28% 78%)',
+          backgroundColor: completing ? 'hsl(130 45% 38%)' : isFirst ? 'hsl(39 57% 51%)' : 'transparent',
+        }}
+      >
+        {completing ? (
+          <Check size={13} color="#fff" strokeWidth={3} />
+        ) : isFirst ? (
+          <View className="w-2 h-2 rounded-full bg-white" />
+        ) : null}
+      </View>
+
+      <View
+        className="w-10 h-10 rounded-2xl items-center justify-center"
+        style={{
+          backgroundColor: completing ? 'hsl(130 35% 92%)' : meta.iconBg,
+          borderWidth: 1,
+          borderColor: 'rgba(60, 40, 20, 0.10)',
+          opacity: completing ? 0.65 : 1,
+        }}
+      >
+        <Icon size={18} color={completing ? 'hsl(130 40% 36%)' : meta.iconColor} />
+      </View>
+
+      <View className="flex-1">
+        <View className="flex-row items-center gap-2 flex-wrap">
+          <Text
+            className={`text-sm font-semibold ${completing ? 'text-muted-foreground' : 'text-foreground'}`}
+            style={completing ? { textDecorationLine: 'line-through' } : undefined}
+          >
+            {quest.title}
+          </Text>
+          {!completing && isFirst ? (
+            <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: 'hsl(39 57% 51%)' }}>
+              <Text className="text-[9px] font-bold text-white uppercase">Next</Text>
+            </View>
+          ) : null}
+          {completing ? (
+            <Text className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'hsl(130 40% 36%)' }}>
+              Done
+            </Text>
+          ) : null}
+        </View>
+        <Text
+          className="text-[11px] mt-0.5 leading-4"
+          style={{
+            color: completing ? 'hsl(32 20% 62%)' : undefined,
+            textDecorationLine: completing ? 'line-through' : 'none',
+          }}
+          numberOfLines={2}
+        >
+          {quest.text}
+        </Text>
+      </View>
+
+      {!completing ? (
+        <View className="w-7 h-7 rounded-full items-center justify-center" style={{ backgroundColor: 'hsl(34 38% 92%)' }}>
+          <ChevronRight size={15} color="hsl(24 45% 38%)" />
+        </View>
+      ) : null}
+    </Animated.View>
+  );
+
+  if (completing) {
+    return (
+      <View
+        style={{
+          borderTopWidth: showTopBorder ? 1 : 0,
+          borderTopColor: 'hsl(34 28% 91%)',
+          backgroundColor: 'hsl(130 35% 96%)',
+        }}
+      >
+        {content}
+      </View>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={{
+        borderTopWidth: showTopBorder ? 1 : 0,
+        borderTopColor: 'hsl(34 28% 91%)',
+        backgroundColor: isFirst ? 'hsl(44 70% 96%)' : 'transparent',
+        borderLeftWidth: isFirst ? 3 : 0,
+        borderLeftColor: isFirst ? 'hsl(39 57% 51%)' : 'transparent',
+      }}
+      accessibilityRole="button"
+    >
+      {content}
+    </TouchableOpacity>
+  );
+}
+
 export function SetupModeSection({
   heroReveal,
   userName,
   setupQuests,
+  initialSetupQuestCount,
   kilnkinName,
   onQuestPress,
   onKilnkinPress,
   onPat,
 }: SetupModeSectionProps) {
+  const prevPendingKeysRef = useRef<SetupQuestKey[]>([]);
+  const [completingKeys, setCompletingKeys] = useState<SetupQuestKey[]>([]);
+
+  useLayoutEffect(() => {
+    const currentKeys = setupQuests.map((q) => q.key);
+    const prevKeys = prevPendingKeysRef.current;
+
+    if (prevKeys.length > 0) {
+      const justCompleted = prevKeys.filter((key) => !currentKeys.includes(key));
+      if (justCompleted.length > 0) {
+        setCompletingKeys((prev) => {
+          const next = [...prev];
+          for (const key of justCompleted) {
+            if (!next.includes(key)) next.push(key);
+          }
+          return next;
+        });
+      }
+    }
+
+    prevPendingKeysRef.current = currentKeys;
+  }, [setupQuests]);
+
+  const handleDismissed = (key: SetupQuestKey) => {
+    setCompletingKeys((prev) => prev.filter((k) => k !== key));
+  };
+
+  const completingQuests = completingKeys.map(getSetupQuestByKey);
+  const pendingRows: RowItem[] = setupQuests.map((quest, idx) => ({
+    kind: 'pending',
+    quest,
+    isFirst: idx === 0,
+  }));
+  const completingRows: RowItem[] = completingQuests.map((quest) => ({
+    kind: 'completing',
+    quest,
+  }));
+  const displayRows = [...completingRows, ...pendingRows];
+
+  const total = initialSetupQuestCount ?? setupQuests.length + completingKeys.length;
+  const completed = Math.max(0, total - setupQuests.length);
+  const progressPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const remainingCount = setupQuests.length;
+
   return (
     <Animated.View
       style={{
@@ -61,7 +272,7 @@ export function SetupModeSection({
             {userName ? `Welcome, ${userName.split(' ')[0]}` : 'Welcome to your studio'}
           </Text>
           <Text className="text-[13px] leading-5 mt-2" style={{ color: 'rgba(255, 244, 224, 0.80)' }}>
-            A few quick steps to shape the app around how you actually work.
+            Finish the checklist below to unlock your full studio view.
           </Text>
           <View className="flex-row items-center gap-2.5 mt-4">
             <View className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(0, 0, 0, 0.20)' }}>
@@ -69,12 +280,12 @@ export function SetupModeSection({
                 className="h-full rounded-full"
                 style={{
                   backgroundColor: '#F2C25E',
-                  width: `${Math.max(8, Math.round((1 - setupQuests.length / 10) * 100))}%`,
+                  width: `${Math.max(8, progressPct)}%`,
                 }}
               />
             </View>
             <Text className="text-[11px] font-bold" style={{ color: '#FFEFD0' }}>
-              {setupQuests.length} left
+              {completed}/{total}
             </Text>
           </View>
         </View>
@@ -90,42 +301,33 @@ export function SetupModeSection({
               Setup checklist
             </Text>
             <Text style={{ fontSize: 11, color: 'hsl(32 28% 44%)', marginTop: 3 }}>
-              Tap a step when you&apos;re ready — no rush.
+              Tap a row, then save your preferences to check it off.
             </Text>
           </View>
           <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: 'hsl(24 50% 30%)' }}>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFF3DF' }}>{setupQuests.length}</Text>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFF3DF' }}>{remainingCount}</Text>
           </View>
         </View>
 
-        {setupQuests.map((quest, idx) => {
-          const meta = SETUP_QUEST_META[quest.key];
-          const Icon = meta.Icon;
-          return (
-            <TouchableOpacity
-              key={quest.key}
-              onPress={() => onQuestPress(quest.route as Href)}
-              activeOpacity={0.7}
-              className="flex-row items-center gap-3 px-4 py-3.5"
-              style={{ borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: 'hsl(34 28% 91%)' }}
-              accessibilityRole="button"
-            >
-              <View
-                className="w-10 h-10 rounded-2xl items-center justify-center"
-                style={{ backgroundColor: meta.iconBg, borderWidth: 1, borderColor: 'rgba(60, 40, 20, 0.10)' }}
-              >
-                <Icon size={18} color={meta.iconColor} />
-              </View>
-              <View className="flex-1">
-                <Text className="text-sm font-semibold text-foreground">{quest.title}</Text>
-                <Text className="text-[11px] text-muted-foreground mt-0.5 leading-4" numberOfLines={2}>{quest.text}</Text>
-              </View>
-              <View className="w-7 h-7 rounded-full items-center justify-center" style={{ backgroundColor: 'hsl(34 38% 92%)' }}>
-                <ChevronRight size={15} color="hsl(24 45% 38%)" />
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+        {displayRows.length === 0 ? (
+          <View className="px-4 py-8 items-center">
+            <View className="w-10 h-10 rounded-full items-center justify-center mb-2" style={{ backgroundColor: 'hsl(130 35% 90%)' }}>
+              <Check size={20} color="hsl(130 40% 36%)" strokeWidth={3} />
+            </View>
+            <Text className="text-sm font-semibold text-foreground">All set!</Text>
+            <Text className="text-xs text-muted-foreground mt-1 text-center">Your studio view is ready.</Text>
+          </View>
+        ) : (
+          displayRows.map((item, index) => (
+            <SetupQuestRow
+              key={`${item.kind}-${item.quest.key}`}
+              item={item}
+              showTopBorder={index > 0}
+              onPress={item.kind === 'pending' ? () => onQuestPress(item.quest.route as Href) : undefined}
+              onDismissed={handleDismissed}
+            />
+          ))
+        )}
       </View>
 
       <View className="rounded-[24px] px-4 py-3.5 mb-2" style={{ backgroundColor: 'hsl(40 50% 99%)', borderWidth: 1, borderColor: 'hsl(34 34% 86%)' }}>
@@ -153,7 +355,7 @@ export function SetupModeSection({
           <View className="flex-1">
             <Text className="text-[10px] uppercase" style={{ letterSpacing: 0.8, color: 'hsl(32 35% 46%)' }}>Kilnkin note</Text>
             <Text className="text-[12px] mt-1 leading-5 text-foreground">
-              Hi — I&apos;m {kilnkinName}. I&apos;ll be right here while you get settled in.
+              Hi, I&apos;m {kilnkinName}. I&apos;ll be right here while you get settled in.
             </Text>
             <TouchableOpacity
               onPress={onKilnkinPress}

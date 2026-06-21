@@ -108,6 +108,8 @@ export type Piece = {
   wholesalePrice?: number;
   retailPriceTarget?: number;
   wholesalePriceTarget?: number;
+  /** Actual sale price when status is sold */
+  soldPrice?: number;
   batchId?: string;
   batchSize?: number;
   updatedAt?: string;

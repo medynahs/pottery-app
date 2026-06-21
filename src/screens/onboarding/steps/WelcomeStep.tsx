@@ -33,21 +33,21 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = () => {
     }, [contentOpacity, contentY]);
 
     return (
-        <View style={{ paddingHorizontal: 20, paddingTop: 14 }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 6 }}>
             <AnimatedLogoHero>
-                <Text style={{ fontFamily: 'Fraunces_700Bold', fontSize: 27, lineHeight: 32, color: '#2f1c12', textAlign: 'center' }}>
+                <Text className="text-center text-[26px] leading-8" style={{ fontFamily: 'Fraunces_700Bold', color: '#2f1c12' }}>
                     Welcome to your studio
                 </Text>
-                <Text style={{ fontSize: 13.5, lineHeight: 20, color: '#5d3b25', textAlign: 'center', marginTop: 8, paddingHorizontal: 6 }}>
+                <Text className="text-sm text-center mt-2 px-1.5" style={{ color: '#5d3b25', lineHeight: 20 }}>
                     A calm, playful home for everything you make, from wet clay to the finished shelf.
                 </Text>
             </AnimatedLogoHero>
 
-            <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentY }], marginTop: 16 }}>
-                <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', color: 'hsl(28 38% 34%)', marginBottom: 10, paddingHorizontal: 2 }}>
+            <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentY }], marginTop: 12 }}>
+                <Text className="text-[10px] font-bold uppercase tracking-widest mb-2 px-0.5" style={{ color: 'hsl(28 38% 34%)' }}>
                     Everything in one studio
                 </Text>
-                <View style={{ gap: 10 }}>
+                <View style={{ gap: 8 }}>
                     {[0, 2, 4].map((rowStart) => (
                         <View key={rowStart} style={{ flexDirection: 'row', gap: 10 }}>
                             {CAPABILITIES.slice(rowStart, rowStart + 2).map((capability) => {
@@ -61,16 +61,16 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = () => {
                                             backgroundColor: 'rgba(255, 252, 246, 0.94)',
                                             borderWidth: 1,
                                             borderColor: 'rgba(95, 61, 37, 0.1)',
-                                            padding: 13,
+                                            padding: 11,
                                         }}
                                     >
                                         <View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: GOLD_TINT, alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
                                             <CIcon size={18} color={GOLD} />
                                         </View>
-                                        <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 14, color: 'hsl(24 30% 14%)', lineHeight: 18 }}>
+                                        <Text className="text-sm font-semibold" style={{ fontFamily: 'Fraunces_600SemiBold', color: 'hsl(24 30% 14%)', lineHeight: 18 }}>
                                             {capability.label}
                                         </Text>
-                                        <Text style={{ fontSize: 11.5, color: 'hsl(24 14% 44%)', marginTop: 3, lineHeight: 16 }}>
+                                        <Text className="text-xs mt-1 leading-4" style={{ color: 'hsl(24 14% 44%)' }}>
                                             {capability.desc}
                                         </Text>
                                     </View>

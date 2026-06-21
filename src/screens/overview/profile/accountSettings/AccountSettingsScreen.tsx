@@ -3,6 +3,7 @@ import { KilnkinCompanionPickerSheet } from '@/src/components/KilnkinCompanionPi
 import { SectionLabel } from '@/src/components/SectionLabel';
 import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { SettingsRow } from '@/src/components/SettingsRow';
+import { SettingsHubShell } from '@/src/components/settings/SettingsHubShell';
 import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
 import { ME_QUERY_KEY } from '@/src/hooks/useCurrentUser';
@@ -19,7 +20,6 @@ import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import {
   Bell,
-  ChevronDown,
   Clock,
   Crown,
   Flame,
@@ -30,10 +30,10 @@ import {
   PawPrint,
   Shield,
   Skull,
-  Trophy
+  Trophy,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 
 export default function AccountSettingsScreen() {
   const router = useRouter();
@@ -205,20 +205,11 @@ export default function AccountSettingsScreen() {
         onConfirm={doDeleteAccount}
         onCancel={() => setSheet(null)}
       />
-      <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="w-10 h-10 items-center justify-center rounded-full bg-muted/60 mr-3"
-        >
-          <ChevronDown size={20} color="hsl(24 30% 40%)" style={{ transform: [{ rotate: '90deg' }] }} />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-lg font-bold text-foreground">Account Settings</Text>
-          <Text className="text-xs text-muted-foreground mt-0.5">Profile security and account controls</Text>
-        </View>
-      </View>
-
-      <ScrollView className="flex-1 mt-6" showsVerticalScrollIndicator={false}>
+      <SettingsHubShell
+        title="Account Settings"
+        subtitle="Profile security and account controls"
+        onClose={() => router.back()}
+      >
         <SectionLabel title="Subscription" />
         <SettingsGroup>
           <SettingsRow
@@ -349,7 +340,7 @@ export default function AccountSettingsScreen() {
         <View className="px-6 mb-6">
           <Text className="text-xs text-muted-foreground text-center">Pottery Nook v1.0.0</Text>
         </View>
-      </ScrollView>
+      </SettingsHubShell>
 
       <KilnkinCompanionPickerSheet
         visible={companionPickerOpen}

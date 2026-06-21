@@ -440,7 +440,7 @@ export function computeStudioStats({
 
   // ── Revenue (sold pieces in period) ────────────────────────────────
   const soldRevenue = soldPieces.reduce(
-    (sum, p) => sum + (num(p.retailPriceTarget) || num(p.suggestedPrice)),
+    (sum, p) => sum + (num(p.soldPrice) || num(p.retailPriceTarget) || num(p.suggestedPrice)),
     0,
   );
   const soldCost = soldPieces.reduce((sum, p) => sum + num(p.totalCost), 0);

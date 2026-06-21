@@ -1,4 +1,5 @@
-import { Text, View } from "react-native";
+import { Text } from "@/src/components/ui/text";
+import { View } from "react-native";
 
 export function PaperLabel({ label, accent }: { label: string; accent: string }) {
   return (

@@ -88,6 +88,12 @@ export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const { requestAccess, PaywallGate } = usePremiumGate();
   const isPremium = useAppStore((s) => s.isPremium);
+  const analyticsHiddenTabs = useAppStore((s) => s.analyticsHiddenTabs);
+  const setAnalyticsTabHidden = useAppStore((s) => s.setAnalyticsTabHidden);
+  const visibleAnalyticsTabs = React.useMemo(
+    () => ANALYTICS_TABS.filter((tab) => !analyticsHiddenTabs.includes(tab.id)),
+    [analyticsHiddenTabs],
+  );
 
   React.useEffect(() => {
     if (!checkPremium(PremiumFeature.Analytics)) {
@@ -107,6 +113,12 @@ export default function AnalyticsScreen() {
 
   const [periodId, setPeriodId] = React.useState<AnalyticsPeriodId>('this-month');
   const [tab, setTab] = React.useState<AnalyticsTabId>('overview');
+
+  React.useEffect(() => {
+    if (!visibleAnalyticsTabs.some((t) => t.id === tab)) {
+      setTab(visibleAnalyticsTabs[0]?.id ?? 'overview');
+    }
+  }, [visibleAnalyticsTabs, tab]);
   const [trendMetric, setTrendMetric] = React.useState<'cost' | 'fired'>('cost');
   const [economicsFilter, setEconomicsFilter] = React.useState<EconomicsFilter>('all');
   const [marginGroupView, setMarginGroupView] = React.useState<MarginGroupView>('form');
@@ -162,7 +174,8 @@ export default function AnalyticsScreen() {
 
   const money = React.useCallback(
     (v: number | null | undefined, opts?: { dash?: boolean }) => {
-      if (v == null || (opts?.dash && v === 0)) return '—';
+      if (v == null) return '—';
+      if (v === 0 && opts?.dash) return `${currencySymbol}0`;
       return `${currencySymbol}${Math.round(v).toLocaleString()}`;
     },
     [currencySymbol],
@@ -274,7 +287,27 @@ export default function AnalyticsScreen() {
           stats={dashboard.stats}
         />
 
-        <AnalyticsTabBar tabs={ANALYTICS_TABS} activeTab={tab} onChange={setTab} />
+        <View className="px-4 pb-2">
+          <Text className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Show tabs</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {ANALYTICS_TABS.map((analyticsTab) => {
+              const hidden = analyticsHiddenTabs.includes(analyticsTab.id);
+              return (
+                <TouchableOpacity
+                  key={analyticsTab.id}
+                  onPress={() => setAnalyticsTabHidden(analyticsTab.id, !hidden)}
+                  className={`rounded-full px-3 py-1.5 border ${hidden ? 'border-border bg-muted/40' : 'border-primary bg-primary/10'}`}
+                >
+                  <Text className={`text-xs font-medium ${hidden ? 'text-muted-foreground' : 'text-primary'}`}>
+                    {analyticsTab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <AnalyticsTabBar tabs={visibleAnalyticsTabs.length > 0 ? visibleAnalyticsTabs : ANALYTICS_TABS} activeTab={tab} onChange={setTab} />
 
         <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
         {tab === 'overview' ? (

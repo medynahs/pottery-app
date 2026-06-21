@@ -1,9 +1,9 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { CustomizationSettingsShell } from '@/src/components/settings/CustomizationSettingsShell';
 import { Text } from '@/src/components/ui/text';
 import { DEFAULT_PIECE_FORM_OPTIONS, type PieceFormOption, useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import {
-    ChevronDown,
     Pencil,
     Plus,
     RotateCcw,
@@ -11,7 +11,6 @@ import {
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-    ScrollView,
     TextInput,
     TouchableOpacity,
     View,
@@ -123,7 +122,7 @@ function AddFormOptionRow({ onAdd }: { onAdd: (name: string) => void }) {
       <TouchableOpacity
         onPress={() => setOpen(true)}
         activeOpacity={0.7}
-        className="flex-row items-center justify-center gap-2 mx-5 mt-3 py-3.5 rounded-2xl border border-dashed border-border bg-card"
+        className="flex-row items-center justify-center gap-2 mt-3 py-3.5 rounded-2xl border border-dashed border-border bg-card"
       >
         <Plus size={15} color="hsl(24 30% 50%)" />
         <Text className="text-sm font-medium text-muted-foreground">Add Form</Text>
@@ -132,7 +131,7 @@ function AddFormOptionRow({ onAdd }: { onAdd: (name: string) => void }) {
   }
 
   return (
-    <View className="mx-5 mt-3 bg-card rounded-2xl border border-border px-4 py-3 flex-row items-center gap-3">
+    <View className="mt-3 bg-card rounded-2xl border border-border px-4 py-3 flex-row items-center gap-3">
       <View className="w-9 h-9 rounded-xl items-center justify-center bg-stone-100">
         <Text className="text-base">🫙</Text>
       </View>
@@ -171,7 +170,14 @@ export default function PieceFormsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background">
+    <CustomizationSettingsShell
+      eyebrow="Piece details"
+      title="Piece forms"
+      subtitle="Manage the form types available when adding a piece. Add your own or remove ones you don't use."
+      headerNote={`${pieceFormOptions.length} forms`}
+      onBack={() => router.back()}
+      onSave={() => router.back()}
+    >
       <ConfirmSheet
         visible={resetConfirmOpen}
         title="Restore Defaults?"
@@ -181,28 +187,8 @@ export default function PieceFormsScreen() {
         onConfirm={() => { useAppStore.setState({ pieceFormOptions: DEFAULT_PIECE_FORM_OPTIONS }); setResetConfirmOpen(false); }}
         onCancel={() => setResetConfirmOpen(false)}
       />
-      <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="w-10 h-10 items-center justify-center rounded-full bg-muted/60 mr-3"
-        >
-          <ChevronDown size={20} color="hsl(24 30% 40%)" style={{ transform: [{ rotate: '90deg' }] }} />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-lg font-bold text-foreground">Piece Forms</Text>
-          <Text className="text-xs text-muted-foreground mt-0.5">
-            {pieceFormOptions.length} forms
-          </Text>
-        </View>
-      </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Text className="text-sm text-muted-foreground px-5 pt-4 pb-2 leading-5">
-          Manage the form types available when adding a piece. Add your own or remove ones
-          you don't use.
-        </Text>
-
-        <View className="mx-5 mt-3 bg-card rounded-2xl border border-border overflow-hidden">
+      <View className="mt-1 bg-card rounded-2xl border border-border overflow-hidden">
           {pieceFormOptions.map((opt, idx) => (
             <FormOptionRow
               key={opt.id}
@@ -226,12 +212,11 @@ export default function PieceFormsScreen() {
         <TouchableOpacity
           onPress={handleReset}
           activeOpacity={0.7}
-          className="flex-row items-center justify-center gap-2 mx-5 mt-4 mb-10 py-3.5 rounded-2xl border border-border bg-card"
+          className="flex-row items-center justify-center gap-2 mt-4 mb-2 py-3.5 rounded-2xl border border-border bg-card"
         >
           <RotateCcw size={15} color="hsl(0 55% 50%)" />
           <Text className="text-sm font-medium text-destructive">Restore Defaults</Text>
         </TouchableOpacity>
-      </ScrollView>
-    </View>
+    </CustomizationSettingsShell>
   );
 }

@@ -2,7 +2,8 @@ import { Badge } from '@/src/components/ui/badge';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { Piece } from '@/src/types/pieces';
-import { ArrowRight, Layers, PackageCheck } from 'lucide-react-native';
+import { PiecePlaceholderArt } from '@/src/components/PiecePlaceholderArt';
+import { ArrowRight, Layers } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 
@@ -52,9 +53,7 @@ export function BatchCard({ pieces, stageLabel, nextStageLabel, onAdvanceAll, on
                   resizeMode="cover"
                 />
               ) : (
-                <View className="w-full h-full items-center justify-center bg-muted/60">
-                  <PackageCheck size={32} color="hsl(24 20% 60%)" />
-                </View>
+                <PiecePlaceholderArt seed={rep.id} />
               )}
 
               <View className="absolute top-3 right-3">

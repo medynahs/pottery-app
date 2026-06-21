@@ -1,11 +1,14 @@
+import { StudioOrnamentBackdrop } from '@/src/components/StudioOrnamentBackdrop';
 import {
-  SplashBackgroundOrnaments,
+  CanvasCropImage,
   SplashLettering,
   SPLASH_LETTERING_SIZE,
 } from '@/src/components/SplashPotteryRing';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
+
+export { CanvasCropImage, SplashLettering, SPLASH_LETTERING_SIZE };
 
 type AnimatedSplashScreenProps = {
   onFinish: () => void;
@@ -152,7 +155,7 @@ export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
       pointerEvents="none"
       style={[styles.container, { opacity: containerOpacity }]}
     >
-      <SplashBackgroundOrnaments />
+      <StudioOrnamentBackdrop animated opacity={0.88} />
 
       <View style={styles.centerStage}>
         <Animated.View
@@ -196,6 +199,11 @@ export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
   );
 }
 
+/** @deprecated Use StudioOrnamentBackdrop */
+export function SplashBackgroundOrnaments() {
+  return <StudioOrnamentBackdrop animated opacity={0.88} />;
+}
+
 const styles = StyleSheet.create({
   centerStage: {
     alignItems: 'center',
@@ -206,7 +214,6 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    backgroundColor: '#FBF0E0',
     justifyContent: 'center',
     zIndex: 999,
   },

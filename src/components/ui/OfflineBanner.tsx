@@ -1,7 +1,8 @@
 import { useNetworkConnection } from '@/src/hooks/useNetworkConnection';
 import { useAppStore } from '@/src/store/appStore';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text } from 'react-native';
+import { Animated, StyleSheet } from 'react-native';
+import { Text } from '@/src/components/ui/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BANNER_HEIGHT = 36;

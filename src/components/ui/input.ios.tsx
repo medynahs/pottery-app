@@ -1,5 +1,8 @@
+import { scaleFont } from "@/src/constants/typography";
+import { useTextScaleContext } from "@/src/hooks/useTextScale";
+import { extractFontSizeFromClassName } from "@/src/utils/textScaleStyle";
 import * as React from "react";
-import { TextInput, type TextInputProps } from "react-native";
+import { TextInput, type TextInputProps, StyleSheet } from "react-native";
 import { cn } from "./utils/cn";
 
 interface InputProps extends TextInputProps {}
@@ -7,7 +10,19 @@ interface InputProps extends TextInputProps {}
 const Input = React.forwardRef<
   React.ElementRef<typeof TextInput>,
   InputProps
->(({ className, placeholderClassName, ...props }, ref) => {
+>(({ className, placeholderClassName, style, ...props }, ref) => {
+  const textScale = useTextScaleContext();
+  const flat = StyleSheet.flatten(style);
+  const baseFromClass = extractFontSizeFromClassName(
+    cn(
+      "native:h-14 h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-base text-foreground placeholder:text-muted-foreground",
+      className,
+    ),
+  );
+  const baseSize = typeof flat?.fontSize === 'number' ? flat.fontSize : baseFromClass ?? 16;
+  const scaledFontSize = scaleFont(baseSize, textScale);
+  const { fontSize: _fs, ...restStyle } = flat ?? {};
+
   return (
     <TextInput
       ref={ref}
@@ -21,6 +36,7 @@ const Input = React.forwardRef<
       placeholderClassName={cn("text-muted-foreground", placeholderClassName)}
       placeholderTextColor="#9ca3af"
       selectionColor="#3b82f6"
+      style={[restStyle, { fontSize: scaledFontSize }]}
       {...props}
     />
   );

@@ -17,7 +17,8 @@
  */
 import { Sparkles } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Text } from '@/src/components/ui/text';
 
 interface CeremonyOverlayProps {
   visible: boolean;

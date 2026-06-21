@@ -1,9 +1,9 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { CustomizationSettingsShell } from '@/src/components/settings/CustomizationSettingsShell';
 import { Text } from '@/src/components/ui/text';
 import { DEFAULT_CLAY_BODIES, useAppStore, type ClayBody } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import {
-  ChevronDown,
   Pencil,
   Plus,
   RotateCcw,
@@ -12,7 +12,6 @@ import {
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  ScrollView,
   TextInput,
   TouchableOpacity,
   View,
@@ -51,7 +50,7 @@ function ClayBodyRow({
   }
 
   return (
-    <View className={!isLast ? 'border-b border-border' : ''}>
+    <View className={!isLast ? 'border-b border-border' : ''} style={isDefault ? { backgroundColor: 'rgba(242, 194, 94, 0.18)', borderRadius: 12, marginHorizontal: 4 } : undefined}>
       <ConfirmSheet
         visible={confirmOpen}
         title="Remove Clay Body?"
@@ -152,7 +151,7 @@ function AddClayBodyRow({ onAdd }: { onAdd: (name: string) => void }) {
       <TouchableOpacity
         onPress={() => setOpen(true)}
         activeOpacity={0.7}
-        className="flex-row items-center justify-center gap-2 mx-5 mt-3 py-3.5 rounded-2xl border border-dashed border-border bg-card"
+        className="flex-row items-center justify-center gap-2 mt-3 py-3.5 rounded-2xl border border-dashed border-border bg-card"
       >
         <Plus size={15} color="hsl(24 30% 50%)" />
         <Text className="text-sm font-medium text-muted-foreground">Add Clay Body</Text>
@@ -161,7 +160,7 @@ function AddClayBodyRow({ onAdd }: { onAdd: (name: string) => void }) {
   }
 
   return (
-    <View className="mx-5 mt-3 bg-card rounded-2xl border border-border px-4 py-3 flex-row items-center gap-3">
+    <View className="mt-3 bg-card rounded-2xl border border-border px-4 py-3 flex-row items-center gap-3">
       <View className="w-9 h-9 rounded-xl items-center justify-center bg-stone-100">
         <Text className="text-base">🏺</Text>
       </View>
@@ -193,10 +192,6 @@ function AddClayBodyRow({ onAdd }: { onAdd: (name: string) => void }) {
 
 export default function ClayBodiesScreen() {
   const markSetupProgress = useAppStore((s) => s.markSetupProgress);
-
-  React.useEffect(() => {
-    markSetupProgress('clayBodiesReviewed');
-  }, [markSetupProgress]);
   const router = useRouter();
   const clayBodies = useAppStore((s) => s.clayBodies);
   const defaultClayBodyId = useAppStore((s) => s.defaultClayBodyId);
@@ -211,8 +206,24 @@ export default function ClayBodiesScreen() {
     setResetConfirmOpen(true);
   }
 
+  function handleSave() {
+    markSetupProgress('clayBodiesReviewed');
+    router.back();
+  }
+
+  function handleAdd(name: string) {
+    addClayBody(name);
+  }
+
   return (
-    <View className="flex-1 bg-background">
+    <CustomizationSettingsShell
+      eyebrow="Studio materials"
+      title="Set your clay bodies"
+      subtitle="Manage the clay bodies you work with. Your list appears as quick-pick options when adding a piece. Star one to make it the default selection."
+      headerNote={`${clayBodies.length} saved · tap ★ to set default`}
+      onBack={() => router.back()}
+      onSave={handleSave}
+    >
       <ConfirmSheet
         visible={resetConfirmOpen}
         title="Restore Defaults?"
@@ -222,30 +233,8 @@ export default function ClayBodiesScreen() {
         onConfirm={() => { useAppStore.setState({ clayBodies: DEFAULT_CLAY_BODIES, defaultClayBodyId: 'stoneware' }); setResetConfirmOpen(false); }}
         onCancel={() => setResetConfirmOpen(false)}
       />
-      <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="w-10 h-10 items-center justify-center rounded-full bg-muted/60 mr-3"
-        >
-          <ChevronDown size={20} color="hsl(24 30% 40%)" style={{ transform: [{ rotate: '90deg' }] }} />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-lg font-bold text-foreground">Clay Bodies</Text>
-          <Text className="text-xs text-muted-foreground mt-0.5">
-            {clayBodies.length} saved · tap ★ to set default
-          </Text>
-        </View>
-      </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Description */}
-        <Text className="text-sm text-muted-foreground px-5 pt-4 pb-2 leading-5">
-          Manage the clay bodies you work with. Your list will appear as quick-pick options
-          when adding a new piece. Star one to make it the default selection.
-        </Text>
-
-        {/* Clay bodies list */}
-        <View className="mx-5 mt-3 bg-card rounded-2xl border border-border overflow-hidden">
+      <View className="mt-1 bg-card rounded-2xl border border-border overflow-hidden">
           {clayBodies.map((clay, idx) => (
             <ClayBodyRow
               key={clay.id}
@@ -254,9 +243,7 @@ export default function ClayBodiesScreen() {
               isLast={idx === clayBodies.length - 1}
               onRename={(name) => renameClayBody(clay.id, name)}
               onRemove={() => removeClayBody(clay.id)}
-              onSetDefault={() =>
-                setDefaultClayBody(defaultClayBodyId === clay.id ? null : clay.id)
-              }
+              onSetDefault={() => setDefaultClayBody(defaultClayBodyId === clay.id ? null : clay.id)}
             />
           ))}
           {clayBodies.length === 0 && (
@@ -269,18 +256,17 @@ export default function ClayBodiesScreen() {
         </View>
 
         {/* Add new */}
-        <AddClayBodyRow onAdd={addClayBody} />
+        <AddClayBodyRow onAdd={handleAdd} />
 
         {/* Restore defaults */}
         <TouchableOpacity
           onPress={handleReset}
           activeOpacity={0.7}
-          className="flex-row items-center justify-center gap-2 mx-5 mt-4 mb-10 py-3.5 rounded-2xl border border-border bg-card"
+          className="flex-row items-center justify-center gap-2 mt-4 mb-2 py-3.5 rounded-2xl border border-border bg-card"
         >
           <RotateCcw size={15} color="hsl(0 55% 50%)" />
           <Text className="text-sm font-medium text-destructive">Restore Defaults</Text>
         </TouchableOpacity>
-      </ScrollView>
-    </View>
+    </CustomizationSettingsShell>
   );
 }

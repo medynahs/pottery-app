@@ -16,6 +16,7 @@ export enum PremiumFeature {
   KilnAnalytics    = 'kiln-analytics',
   Export           = 'export',
   UnlimitedMissions = 'unlimited-missions',
+  StudioRhythmAdvanced = 'studio-rhythm-advanced',
   YearlyWrap        = 'yearly-wrap',
   Backup            = 'backup',
 }
@@ -33,6 +34,7 @@ export const PREMIUM_FEATURE_DESCRIPTIONS: Record<PremiumFeature, string> = {
   [PremiumFeature.KilnAnalytics]: 'See detailed kiln utilisation and firing analytics.',
   [PremiumFeature.Export]: 'Export your studio data anytime.',
   [PremiumFeature.UnlimitedMissions]: 'Complete unlimited studio missions every week.',
+  [PremiumFeature.StudioRhythmAdvanced]: 'Unlock sprint mode, recurring events, and calendar overlays.',
   [PremiumFeature.YearlyWrap]: 'See your year in clay with a personalised wrap.',
   [PremiumFeature.Backup]: 'Back up and restore your full studio archive.',
 };

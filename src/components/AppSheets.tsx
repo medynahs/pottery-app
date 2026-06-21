@@ -265,6 +265,9 @@ export interface PickSheetOption {
   label: string;
   destructive?: boolean;
   onPress: () => void;
+  icon?: React.ComponentType<{ size: number; color: string }>;
+  iconColor?: string;
+  iconBg?: string;
 }
 
 export interface PickSheetProps {
@@ -275,6 +278,8 @@ export interface PickSheetProps {
   onCancel: () => void;
   /** Render inside an existing modal instead of opening a new RN Modal. */
   embedded?: boolean;
+  /** List rows with icons (settings-style) vs stacked action buttons. */
+  layout?: 'buttons' | 'list';
 }
 
 function PickSheetContent({
@@ -282,7 +287,8 @@ function PickSheetContent({
   body,
   options,
   onCancel,
-}: Pick<PickSheetProps, 'title' | 'body' | 'options' | 'onCancel'>) {
+  layout = 'buttons',
+}: Pick<PickSheetProps, 'title' | 'body' | 'options' | 'onCancel' | 'layout'>) {
   return (
     <>
       <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
@@ -290,26 +296,76 @@ function PickSheetContent({
         {body ? <Text className="text-sm text-muted-foreground mt-2 leading-5">{body}</Text> : null}
       </View>
       <View style={{ paddingHorizontal: 24, paddingTop: 20, gap: 10 }}>
-        {options.map((opt) => (
-          <SheetButton
-            key={opt.label}
-            label={opt.label}
-            onPress={() => {
-              opt.onPress();
-              onCancel();
+        {layout === 'list' ? (
+          <View
+            style={{
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: '#E8D9BE',
+              backgroundColor: '#FFFBF2',
+              overflow: 'hidden',
             }}
-            variant={opt.destructive ? 'destructive' : 'confirm'}
-          />
-        ))}
+          >
+            {options.map((opt, index) => {
+              const Icon = opt.icon;
+              const isLast = index === options.length - 1;
+              return (
+                <TouchableOpacity
+                  key={opt.label}
+                  onPress={() => {
+                    opt.onPress();
+                    onCancel();
+                  }}
+                  activeOpacity={0.72}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    borderBottomWidth: isLast ? 0 : 1,
+                    borderBottomColor: '#E8D9BE',
+                  }}
+                >
+                  {Icon ? (
+                    <View
+                      className="w-9 h-9 rounded-xl items-center justify-center"
+                      style={{ backgroundColor: opt.iconBg ?? 'hsl(35 46% 92%)' }}
+                    >
+                      <Icon size={17} color={opt.iconColor ?? 'hsl(24 30% 40%)'} />
+                    </View>
+                  ) : null}
+                  <Text
+                    className={`flex-1 text-sm font-medium ${opt.destructive ? 'text-destructive' : 'text-foreground'}`}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : (
+          options.map((opt) => (
+            <SheetButton
+              key={opt.label}
+              label={opt.label}
+              onPress={() => {
+                opt.onPress();
+                onCancel();
+              }}
+              variant={opt.destructive ? 'destructive' : 'confirm'}
+            />
+          ))
+        )}
         <SheetButton label="Cancel" onPress={onCancel} variant="cancel" />
       </View>
     </>
   );
 }
 
-export function PickSheet({ visible, title, body, options, onCancel, embedded }: PickSheetProps) {
+export function PickSheet({ visible, title, body, options, onCancel, embedded, layout = 'buttons' }: PickSheetProps) {
   const content = (
-    <PickSheetContent title={title} body={body} options={options} onCancel={onCancel} />
+    <PickSheetContent title={title} body={body} options={options} onCancel={onCancel} layout={layout} />
   );
 
   if (embedded) {

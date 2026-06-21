@@ -1,14 +1,16 @@
-import { CUSTOMIZABLE_MODULE_OPTIONS } from '@/src/config/appModules';
 import { SectionLabel } from '@/src/components/SectionLabel';
 import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { SettingsRow } from '@/src/components/SettingsRow';
+import { SettingsHubShell } from '@/src/components/settings/SettingsHubShell';
 import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
+import { CUSTOMIZABLE_MODULE_OPTIONS } from '@/src/config/appModules';
+import { TEXT_SCALE_LABELS } from '@/src/constants/typography';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
+import { useTextScale } from '@/src/hooks/useTextScale';
+import { STAGE_LABEL } from '@/src/screens/pieces/utils/constants';
 import { useAppStore, useNormalizedEnabledModules } from '@/src/store/appStore';
 import { PRICING_USER_TYPE_LABELS } from '@/src/types/pricing';
-import { useRouter } from 'expo-router';
-import { STAGE_LABEL } from '@/src/screens/pieces/utils/constants';
 import {
   Box,
   Calculator,
@@ -17,49 +19,51 @@ import {
   Hammer,
   Layers,
   Lightbulb,
+  Type as TypeIcon,
   Zap
 } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import React from 'react';
-import { Modal, Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Modal, Pressable, TouchableOpacity, View } from 'react-native';
 
 export default function AppCustomizationScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { enabledStages } = useStageConfig();
-  const markSetupProgress = useAppStore((s) => s.markSetupProgress);
   const defaultNewPieceStage = useAppStore((s) => s.defaultNewPieceStage);
   const setDefaultNewPieceStage = useAppStore((s) => s.setDefaultNewPieceStage);
   const clayBodies = useAppStore((s) => s.clayBodies);
   const [stagePickerOpen, setStagePickerOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    markSetupProgress('modulesReviewed');
-  }, [markSetupProgress]);
   const formingMethods = useAppStore((s) => s.formingMethods);
   const pieceFormOptions = useAppStore((s) => s.pieceFormOptions);
   const defaultBisqueTemp = useAppStore((s) => s.defaultBisqueTemp);
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
   const pricingSettings = useAppStore((s) => s.pricingSettings);
   const pricingOnboardingCompleted = useAppStore((s) => s.pricingOnboardingCompleted);
+  const { textScale } = useTextScale();
   const enabledModules = useNormalizedEnabledModules();
   const toggleModule = useAppStore((s) => s.toggleModule);
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      <View className="flex-row items-center justify-between px-6 pt-4 pb-2">
-        <View>
-          <Text className="text-xl font-bold text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
-            App Customization
-          </Text>
-          <Text className="text-sm text-muted-foreground mt-0.5">Studio setup, defaults, and app behavior</Text>
-        </View>
-        <TouchableOpacity onPress={() => router.back()} className="bg-muted px-4 py-2 rounded-full">
-          <Text className="text-sm font-medium text-foreground">Done</Text>
-        </TouchableOpacity>
-      </View>
+    <View className="flex-1 bg-background">
+      <SettingsHubShell
+        title="App Customization"
+        subtitle="Studio setup, defaults, and app behavior"
+        onClose={() => router.back()}
+      >
+        <SectionLabel title="Display" />
+        <SettingsGroup>
+          <SettingsRow
+            icon={TypeIcon}
+            iconColor="hsl(24 30% 40%)"
+            iconBg="bg-stone-100"
+            label="Text Size"
+            value={TEXT_SCALE_LABELS[textScale]}
+            onPress={() => router.push('/text-size')}
+            isLast
+          />
+        </SettingsGroup>
 
-      <ScrollView className="flex-1 mt-6" showsVerticalScrollIndicator={false}>
         <SectionLabel title="Studio" />
         <SettingsGroup>
           <SettingsRow
@@ -97,7 +101,7 @@ export default function AppCustomizationScreen() {
         </SettingsGroup>
 
         <View className="mb-10" />
-      </ScrollView>
+      </SettingsHubShell>
 
       <Modal visible={stagePickerOpen} transparent animationType="fade" onRequestClose={() => setStagePickerOpen(false)}>
         <Pressable className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.35)' }} onPress={() => setStagePickerOpen(false)}>

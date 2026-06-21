@@ -86,6 +86,7 @@ export default function GeneralOnboardingScreen() {
     updateDraft,
     handleBack,
     handleContinue,
+    canContinue,
     steps,
     currentStep,
     stepIndex,
@@ -185,7 +186,7 @@ export default function GeneralOnboardingScreen() {
       />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
 
-        <View style={{ paddingHorizontal: 22, paddingTop: 14, paddingBottom: 8 }}>
+        <View style={{ paddingHorizontal: 22, paddingTop: 10, paddingBottom: 4 }}>
           <View
             style={{
               alignSelf: 'center',
@@ -214,7 +215,7 @@ export default function GeneralOnboardingScreen() {
         <ScrollView
           ref={scrollRef}
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: 140 }}
+          contentContainerStyle={{ paddingBottom: 8 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -231,7 +232,7 @@ export default function GeneralOnboardingScreen() {
         </ScrollView>
 
         {/* Bottom navigation */}
-        <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: insets.bottom + 14 }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: insets.bottom + 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             {stepIndex > 0 && (
               <Pressable
@@ -257,22 +258,23 @@ export default function GeneralOnboardingScreen() {
             <Animated.View style={{ flex: 1, transform: [{ scale: btnScale }] }}>
               <Pressable
                 onPress={handleContinue}
-                onPressIn={handlePressIn}
-                onPressOut={handlePressOut}
-                disabled={isSubmitting}
+                onPressIn={canContinue ? handlePressIn : undefined}
+                onPressOut={canContinue ? handlePressOut : undefined}
+                disabled={isSubmitting || !canContinue}
                 style={{
                   height: 52,
                   borderRadius: 18,
                   overflow: 'hidden',
                   shadowColor: '#3f2412',
                   shadowOffset: { width: 0, height: 10 },
-                  shadowOpacity: isSubmitting ? 0 : 0.2,
+                  shadowOpacity: isSubmitting || !canContinue ? 0 : 0.2,
                   shadowRadius: 14,
-                  elevation: isSubmitting ? 0 : 4,
+                  elevation: isSubmitting || !canContinue ? 0 : 4,
+                  opacity: canContinue ? 1 : 0.45,
                 }}
               >
                 <LinearGradient
-                  colors={isSubmitting ? ['#c9b9a3', '#b9aa95'] : ['#3f2415', '#6f4226']}
+                  colors={isSubmitting || !canContinue ? ['#c9b9a3', '#b9aa95'] : ['#3f2415', '#6f4226']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}

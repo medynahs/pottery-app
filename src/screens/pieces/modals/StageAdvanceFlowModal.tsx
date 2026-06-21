@@ -32,6 +32,7 @@ export type StageAdvanceCapture = {
   glazeTemp?: string;
   status?: string;
   glazeOutcome?: string;
+  soldPrice?: number;
 };
 
 type StageVisual = {
@@ -90,6 +91,7 @@ export function StageAdvanceFlowModal({
   const [bisqueTemp, setBisqueTemp] = React.useState('');
   const [glazeTemp, setGlazeTemp] = React.useState('');
   const [status, setStatus] = React.useState('');
+  const [soldPriceDraft, setSoldPriceDraft] = React.useState('');
   const [glazeOutcome, setGlazeOutcome] = React.useState('');
 
   React.useEffect(() => {
@@ -99,6 +101,7 @@ export function StageAdvanceFlowModal({
       setBisqueTemp('');
       setGlazeTemp('');
       setStatus('');
+      setSoldPriceDraft('');
       setGlazeOutcome('');
       return;
     }
@@ -130,9 +133,13 @@ export function StageAdvanceFlowModal({
         request?.toStage === 'glaze-fired' || request?.toStage === FINISHED_STAGE_ID
           ? (glazeOutcome || undefined)
           : undefined,
+      soldPrice:
+        request?.toStage === FINISHED_STAGE_ID && status.toLowerCase() === 'sold' && soldPriceDraft.trim()
+          ? Number(soldPriceDraft)
+          : undefined,
     };
     onConfirm(capture);
-  }, [notes, photo, bisqueTemp, glazeTemp, status, glazeOutcome, request, onConfirm]);
+  }, [notes, photo, bisqueTemp, glazeTemp, status, soldPriceDraft, glazeOutcome, request, onConfirm]);
 
   if (!request) return null;
 
@@ -264,6 +271,17 @@ export function StageAdvanceFlowModal({
                 <View className="mt-5">
                   <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Disposition</Text>
                   <OptionPills options={PIECE_DISPOSITION_STATUSES} value={status} onChange={setStatus} />
+                  {status.toLowerCase() === 'sold' ? (
+                    <View className="mt-3">
+                      <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sale price</Text>
+                      <Input
+                        value={soldPriceDraft}
+                        onChangeText={setSoldPriceDraft}
+                        placeholder="Amount you sold it for"
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+                  ) : null}
                 </View>
               )}
             </ScrollView>

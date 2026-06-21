@@ -1,6 +1,9 @@
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
+import { STUDIO_BACKDROP_COLOR, StudioOrnamentBackdrop } from '@/src/components/StudioOrnamentBackdrop';
 import { Text } from '@/src/components/ui/text';
+import { ChallengeBanner } from '@/src/screens/overview/components/ChallengeBanner';
 import { FeedbackModal } from '@/src/screens/overview/components/FeedbackModal';
+import { FiringQueueWidget } from '@/src/screens/overview/components/FiringQueueWidget';
 import { GlazeTestWallWidget } from '@/src/screens/overview/components/GlazeTestWallWidget';
 import { LiveStudioStateHero } from '@/src/screens/overview/components/LiveStudioStateHero';
 import { OverviewPageHeader } from '@/src/screens/overview/components/OverviewPageHeader';
@@ -8,11 +11,13 @@ import { SetupModeSection } from '@/src/screens/overview/components/SetupModeSec
 import { StudioJournalWidget } from '@/src/screens/overview/components/StudioJournalWidget';
 import { TodaysMissionsWidget } from '@/src/screens/overview/components/TodaysMissionsWidget';
 import { useOverviewPage } from '@/src/screens/overview/hooks/useOverviewPage';
+import { resetLocalDataForTesting } from '@/src/store/clearLocalData';
 import { MessageSquarePlus } from 'lucide-react-native';
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 
 export function OverviewPage() {
+  const [resettingLocalData, setResettingLocalData] = useState(false);
   const {
     insets,
     PaywallGate,
@@ -26,7 +31,9 @@ export function OverviewPage() {
     todayLabel,
     isSetupMode,
     todayRhythm,
+    tomorrowRhythm,
     setupQuests,
+    initialSetupQuestCount,
     heroReveal,
     focusReveal,
     journalReveal,
@@ -66,10 +73,20 @@ export function OverviewPage() {
     onAnalyticsPress,
     onProfilePress,
     onKilnkinPress,
+    onChallengePress,
+    hasKilnTab,
+    hasCommunityTab,
+    kilnQueueRoute,
+    firingQueueSnapshot,
+    activeFiringSummary,
+    showFiringQueueWidget,
   } = useOverviewPage();
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1" style={{ backgroundColor: STUDIO_BACKDROP_COLOR }}>
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
+        <StudioOrnamentBackdrop opacity={0.34} />
+      </View>
       <CeremonyOverlay
         visible={overlayCeremony !== null}
         emoji={overlayCeremony?.emoji ?? '🏺'}
@@ -93,13 +110,30 @@ export function OverviewPage() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 110, backgroundColor: 'hsl(35 62% 93%)' }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 110 }}
       >
+        {__DEV__ ? (
+          <TouchableOpacity
+            onPress={() => {
+              setResettingLocalData(true);
+              void resetLocalDataForTesting();
+            }}
+            disabled={resettingLocalData}
+            activeOpacity={0.8}
+            className="mb-4 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3"
+          >
+            <Text className="text-xs font-semibold text-destructive">
+              {resettingLocalData ? 'Resetting local data…' : 'Reset all local data (new user)'}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
         {isSetupMode ? (
           <SetupModeSection
             heroReveal={heroReveal}
             userName={user.name}
             setupQuests={setupQuests}
+            initialSetupQuestCount={initialSetupQuestCount}
             kilnkinName={kilnkinCompanion.name}
             onQuestPress={navigate}
             onKilnkinPress={onKilnkinPress}
@@ -154,6 +188,33 @@ export function OverviewPage() {
             onMissionPress={navigate}
             onSetupRhythmPress={() => navigate('/profile/studio-rhythm')}
           />
+        ) : null}
+
+        {!isSetupMode && hasCommunityTab ? (
+          <ChallengeBanner onPress={onChallengePress} />
+        ) : null}
+
+        {!isSetupMode && showFiringQueueWidget ? (
+          <FiringQueueWidget
+            hasKilnTab={hasKilnTab}
+            snapshot={firingQueueSnapshot}
+            activeFiring={activeFiringSummary}
+            queuePreview={queuePreview}
+            onNavigate={navigate}
+            onOpenQueue={() => navigate(kilnQueueRoute)}
+          />
+        ) : null}
+
+        {!isSetupMode && (tomorrowRhythm.stages.length > 0 || tomorrowRhythm.events.length > 0) ? (
+          <View className="mb-4 rounded-2xl border border-border bg-card px-4 py-3">
+            <Text className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tomorrow</Text>
+            <Text className="text-sm text-foreground mt-1">
+              {tomorrowRhythm.stages.length > 0
+                ? `Studio days: ${tomorrowRhythm.stages.join(', ')}`
+                : 'No fixed studio days'}
+              {tomorrowRhythm.events.length > 0 ? ` · ${tomorrowRhythm.events.length} event(s)` : ''}
+            </Text>
+          </View>
         ) : null}
 
         {!isSetupMode ? (

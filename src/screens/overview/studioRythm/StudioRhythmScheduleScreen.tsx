@@ -12,6 +12,8 @@ import { RhythmSectionLabel } from './components/RhythmSectionLabel';
 import { RhythmTipCard } from './components/RhythmTipCard';
 import { WeekGridCard } from './components/WeekGridCard';
 import { RHYTHM_BROWN } from './rhythmTheme';
+import { usePremiumGate } from '@/src/hooks/usePremiumGate';
+import { PremiumFeature } from '@/src/utils/premiumGate';
 import type { RhythmType, StageKey } from './studioRhythm';
 import { STAGE_CONFIG, SUGGESTED_WEEKLY_STAGE_DAYS } from './studioRhythm';
 import { STAGE_RHYTHM_ICONS } from './studioRhythmIcons';
@@ -34,6 +36,8 @@ export default function StudioRhythmScheduleScreen() {
   const toggleDay = useAppStore((s) => s.toggleStageDayDay);
   const setSprintLength = useAppStore((s) => s.setSprintLength);
   const setSprintGoalPieces = useAppStore((s) => s.setSprintGoalPieces);
+  const confirmStudioRhythm = useAppStore((s) => s.confirmStudioRhythm);
+  const { requestAccess, PaywallGate } = usePremiumGate();
 
   const [sprintDraft, setSprintDraft] = useState(studioRhythm.sprintLengthWeeks ?? 2);
   const [goalDraft, setGoalDraft] = useState(studioRhythm.sprintGoalPieces ?? 0);
@@ -53,11 +57,19 @@ export default function StudioRhythmScheduleScreen() {
       setSprintLength(sprintDraft);
       setSprintGoalPieces(goalDraft);
     }
+    confirmStudioRhythm();
     router.back();
   }
 
+  const canSave =
+    studioRhythm.type === 'freeform'
+    || studioRhythm.stageDays.some((sd) => sd.days.length > 0)
+    || studioRhythm.events.length > 0
+    || studioRhythm.rituals.some((r) => r.enabled);
+
   return (
     <View className="flex-1 bg-background">
+      {PaywallGate}
       <RhythmScreenHeader
         title="Weekly schedule"
         subtitle="Step 1 of 1 — pick your rhythm, then tap your studio days"
@@ -80,7 +92,12 @@ export default function StudioRhythmScheduleScreen() {
             return (
               <TouchableOpacity
                 key={rt.key}
-                onPress={() => setType(rt.key)}
+                onPress={() => {
+                  if (rt.key === 'sprint' || rt.key === 'freeform') {
+                    if (!requestAccess(PremiumFeature.StudioRhythmAdvanced)) return;
+                  }
+                  setType(rt.key);
+                }}
                 activeOpacity={0.85}
                 className="rounded-2xl border px-4 py-3.5"
                 style={{
@@ -267,8 +284,10 @@ export default function StudioRhythmScheduleScreen() {
         className="absolute bottom-0 left-0 right-0 px-6 py-4 border-t"
         style={{ paddingBottom: insets.bottom + 16, backgroundColor: RHYTHM_BROWN.surface, borderTopColor: RHYTHM_BROWN.surfaceBorder }}
       >
-        <Button className="rounded-xl h-11" onPress={handleSave}>
-          <Text className="text-sm font-semibold text-primary-foreground">Save schedule</Text>
+        <Button className="rounded-xl h-11" onPress={handleSave} disabled={!canSave}>
+          <Text className="text-sm font-semibold text-primary-foreground">
+            {canSave ? 'Save schedule' : 'Pick at least one day'}
+          </Text>
         </Button>
       </View>
     </View>

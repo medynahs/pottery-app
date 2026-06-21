@@ -52,7 +52,7 @@ export function getStudioSignals(data: StudioSignalData): StudioSignals {
     return status === 'cracked' || status === 'warped';
   }).length;
 
-  const readyStages = new Set(['bone-dry', 'glaze-fired']);
+  const readyStages = new Set(['bone-dry', 'glazing']);
   const readyPieces = pieces.filter((piece) => readyStages.has(piece.stage.trim().toLowerCase())).length;
 
   const nearReadyFiring = firings.some((firing) => firing.state === 'cooling' || firing.state === 'unloading');

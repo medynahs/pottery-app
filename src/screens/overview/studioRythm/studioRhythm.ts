@@ -102,6 +102,8 @@ export interface StudioRhythm {
   sprintStartDate?: string;
   /** Target number of pieces to create during the sprint */
   sprintGoalPieces?: number;
+  /** ISO timestamp set when user explicitly saves their rhythm schedule */
+  configuredAt?: string;
 }
 
 export const EVENT_CATEGORIES: EventCategory[] = [
@@ -134,16 +136,38 @@ export const SUGGESTED_WEEKLY_STAGE_DAYS: StageDay[] = [
   { stage: 'throw',  days: [0, 2] },
   { stage: 'trim',   days: [2, 4] },
   { stage: 'glaze',  days: [4]    },
-  { stage: 'bisque', days: []     },
+  { stage: 'bisque', days: [5]    },
 ];
 
 export const DEFAULT_STUDIO_RHYTHM: StudioRhythm = {
   type: 'weekly',
-  stageDays: [],
+  stageDays: [
+    { stage: 'throw', days: [] },
+    { stage: 'trim', days: [] },
+    { stage: 'glaze', days: [] },
+    { stage: 'bisque', days: [] },
+  ],
   dryingTimers: { leatherHardDays: 2, boneDryDays: 5, glazeDryingHours: 8, postBisqueCoolingHours: 12 },
   rituals: DEFAULT_RITUALS,
   events: [],
 };
+
+const STAGE_ORDER: StageKey[] = ['throw', 'trim', 'glaze', 'bisque'];
+
+export function normalizeStudioRhythmStageDays(stageDays: StageDay[]): StageDay[] {
+  const byStage = new Map(stageDays.map((sd) => [sd.stage, sd.days]));
+  return STAGE_ORDER.map((stage) => ({
+    stage,
+    days: byStage.get(stage) ?? [],
+  }));
+}
+
+export function normalizeStudioRhythm(rhythm: StudioRhythm): StudioRhythm {
+  return {
+    ...rhythm,
+    stageDays: normalizeStudioRhythmStageDays(rhythm.stageDays ?? []),
+  };
+}
 
 const LEGACY_AUTO_SEEDED_STAGE_DAYS: StageDay[] = [
   { stage: 'throw',  days: [0, 2] },
@@ -163,7 +187,12 @@ function stageDaysMatch(a: StageDay[], b: StageDay[]): boolean {
 }
 
 export function isStudioRhythmConfigured(rhythm: StudioRhythm): boolean {
-  if (rhythm.type === 'freeform') return true;
+  if (rhythm.configuredAt) return true;
+
+  if (rhythm.type === 'freeform') {
+    return rhythm.events.length > 0 || rhythm.rituals.some((r) => r.enabled);
+  }
+
   const hasAssignedDays = rhythm.stageDays.some((sd) => sd.days.length > 0);
   if (!hasAssignedDays) return false;
 

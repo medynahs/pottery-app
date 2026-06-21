@@ -4,8 +4,8 @@
  *
  * Pull: GET /users/me/pieces on sign-in, merged into the store by client_ref /
  * backendId.
- * Push: POST /users/me/pieces/sync with local snapshots (debounced). Replaces
- * per-op create/update/delete replay.
+ * Push: PUT /users/me/pieces/{id} for backend-linked edits (including stage),
+ * POST /users/me/pieces/sync for new local-only pieces (debounced).
  */
 
 import { setPiecesIfChanged, useAppStore } from '@/src/store';
@@ -15,9 +15,11 @@ import { useCallback, useEffect, useRef } from 'react';
 import {
   API_TO_LOCAL_STAGE,
   LOCAL_STAGE_TO_API,
+  apiDeletePiece,
   apiDeletePieceAsset,
   apiListPieces,
   apiSyncPieces,
+  apiUpdatePiece,
   apiUpdatePieceAsset,
   apiUploadPieceAsset,
   type ApiPieceStatus,
@@ -47,15 +49,51 @@ let lastMergedAt = 0;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function localStageToApiStatus(stage: string): ApiPieceStatus {
+  return LOCAL_STAGE_TO_API[stage] ?? 'idea';
+}
+
+function apiStatusMatchesLocalStage(localStage: string, apiStatus: ApiPieceStatus | string): boolean {
+  return localStageToApiStatus(localStage) === apiStatus;
+}
+
 function pieceToSnapshot(piece: Piece): PieceSyncSnapshot {
   const snapshot: PieceSyncSnapshot = {
     client_ref: String(piece.id),
     name: piece.name,
-    status: LOCAL_STAGE_TO_API[piece.stage] ?? 'idea',
+    status: localStageToApiStatus(piece.stage),
   };
   if (piece.description) snapshot.description = piece.description;
   if (piece.deleted) snapshot.deleted = true;
   return snapshot;
+}
+
+function preferPieceOnDuplicate(a: Piece, b: Piece): Piece {
+  if (a.syncDirty && !b.syncDirty) return a;
+  if (b.syncDirty && !a.syncDirty) return b;
+  if (a.timeline.length !== b.timeline.length) {
+    return a.timeline.length > b.timeline.length ? a : b;
+  }
+  return a;
+}
+
+function dedupePiecesByBackendId(pieces: Piece[]): Piece[] {
+  const withoutBackend: Piece[] = [];
+  const byBackendId = new Map<string, Piece>();
+
+  for (const piece of pieces) {
+    if (!piece.backendId) {
+      withoutBackend.push(piece);
+      continue;
+    }
+    const existing = byBackendId.get(piece.backendId);
+    byBackendId.set(
+      piece.backendId,
+      existing ? preferPieceOnDuplicate(existing, piece) : piece,
+    );
+  }
+
+  return [...withoutBackend, ...byBackendId.values()];
 }
 
 /** Pieces that need to be included in the next push sync. */
@@ -81,14 +119,6 @@ function backendToLocalPatch(bp: BackendPiece, existing?: Piece): Piece {
     timeline: [{ stage, timestamp: bp.created_at }],
     clay: '',
   };
-
-  if (existing?.syncDirty) {
-    return {
-      ...existing,
-      backendId: bp.id,
-      updatedAt: bp.updated_at,
-    };
-  }
 
   return {
     ...base,
@@ -116,6 +146,17 @@ function mergeBackendPiecesIntoLocal(
     const existing =
       (bp.client_ref ? byClientRef.get(bp.client_ref) : undefined) ??
       byBackendId.get(bp.id);
+
+    // Never clobber unpushed local edits — server pull must not revert stage advances.
+    if (existing?.syncDirty) {
+      updatedByBackendId.set(bp.id, {
+        ...existing,
+        backendId: bp.id,
+        updatedAt: bp.updated_at,
+      });
+      continue;
+    }
+
     const merged = backendToLocalPatch(bp, existing);
     if (existing) {
       updatedByBackendId.set(bp.id, merged);
@@ -128,7 +169,7 @@ function mergeBackendPiecesIntoLocal(
     p.backendId ? (updatedByBackendId.get(p.backendId) ?? p) : p,
   );
 
-  return [...newPieces, ...retained];
+  return dedupePiecesByBackendId([...newPieces, ...retained]);
 }
 
 function applySyncResponse(localPieces: Piece[], response: SyncPiecesResponse): Piece[] {
@@ -138,13 +179,82 @@ function applySyncResponse(localPieces: Piece[], response: SyncPiecesResponse): 
     (p) => !(p.deleted && client_ref_map[String(p.id)]),
   );
 
+  // Attach backend IDs but keep syncDirty until the server confirms the local stage.
   working = working.map((p) => {
     const backendId = client_ref_map[String(p.id)];
     if (!backendId) return p;
-    return { ...p, backendId, syncDirty: false };
+    return { ...p, backendId };
   });
 
-  return mergeBackendPiecesIntoLocal(backendPieces, working);
+  const merged = mergeBackendPiecesIntoLocal(backendPieces, working);
+  const backendById = new Map(backendPieces.map((bp) => [bp.id, bp]));
+
+  return merged.map((piece) => {
+    if (!piece.syncDirty || !piece.backendId) return piece;
+
+    const backendPiece = backendById.get(piece.backendId);
+    if (!backendPiece) return piece;
+
+    if (apiStatusMatchesLocalStage(piece.stage, backendPiece.status)) {
+      return {
+        ...piece,
+        syncDirty: false,
+        updatedAt: backendPiece.updated_at,
+      };
+    }
+
+    // Server response still reflects an older stage — keep local advance and retry sync.
+    return piece;
+  });
+}
+
+function applyBackendAckToLocalPiece(localId: number, backendPiece: BackendPiece): void {
+  setPiecesIfChanged(
+    useAppStore.getState().pieces.map((piece) => {
+      if (piece.id !== localId) return piece;
+
+      if (apiStatusMatchesLocalStage(piece.stage, backendPiece.status)) {
+        return {
+          ...piece,
+          backendId: backendPiece.id,
+          syncDirty: false,
+          updatedAt: backendPiece.updated_at,
+        };
+      }
+
+      return {
+        ...piece,
+        backendId: backendPiece.id,
+        updatedAt: backendPiece.updated_at,
+      };
+    }),
+  );
+}
+
+async function pushDirtyBackendPiece(
+  sessionToken: string,
+  piece: Piece,
+): Promise<'updated' | 'deleted' | 'failed'> {
+  if (!piece.backendId) return 'failed';
+
+  try {
+    if (piece.deleted) {
+      await apiDeletePiece(sessionToken, piece.backendId);
+      setPiecesIfChanged(useAppStore.getState().pieces.filter((p) => p.id !== piece.id));
+      return 'deleted';
+    }
+
+    const backendPiece = await apiUpdatePiece(sessionToken, piece.backendId, {
+      name: piece.name,
+      status: localStageToApiStatus(piece.stage),
+      description: piece.description,
+    });
+    applyBackendAckToLocalPiece(piece.id, backendPiece);
+    return 'updated';
+  } catch (err) {
+    if (__DEV__) console.warn(`[pieces:sync] PUT failed for ${piece.backendId}:`, err);
+    return 'failed';
+  }
 }
 
 function mergePiecesIntoStore(backendPieces: BackendPiece[], localPieces: Piece[]) {
@@ -167,16 +277,30 @@ export async function flushPiecesSync(): Promise<boolean> {
   setIsSyncing(true);
 
   try {
-    const snapshots = toSync.slice(0, MAX_SYNC_BATCH).map(pieceToSnapshot);
-    if (__DEV__) console.log(`[pieces:sync] pushing ${snapshots.length} snapshot(s)`);
+    const backendLinked = toSync.filter((piece) => piece.backendId);
+    const needsBulkSync = toSync.filter((piece) => !piece.backendId);
 
-    const response = await apiSyncPieces(sessionToken, { pieces: snapshots });
-    setPiecesIfChanged(applySyncResponse(useAppStore.getState().pieces, response));
+    for (const piece of backendLinked) {
+      const result = await pushDirtyBackendPiece(sessionToken, piece);
+      if (result === 'failed') {
+        useAppStore.getState().showToast('Could not sync piece changes', 'error');
+        return false;
+      }
+    }
+
+    if (needsBulkSync.length > 0) {
+      const snapshots = needsBulkSync.slice(0, MAX_SYNC_BATCH).map(pieceToSnapshot);
+      if (__DEV__) console.log(`[pieces:sync] bulk pushing ${snapshots.length} snapshot(s)`);
+
+      const response = await apiSyncPieces(sessionToken, { pieces: snapshots });
+      setPiecesIfChanged(applySyncResponse(useAppStore.getState().pieces, response));
+    }
+
     setLastSyncedAt(new Date().toISOString());
 
     if (__DEV__) {
       console.log(
-        `[pieces:sync] ok — ${response.pieces.length} alive, ${Object.keys(response.client_ref_map).length} mapped`,
+        `[pieces:sync] ok — ${backendLinked.length} PUT, ${needsBulkSync.length} bulk`,
       );
     }
     return true;

@@ -49,6 +49,7 @@ export type OnboardingDraft = {
     language: string;
     notificationsEnabled: boolean;
     quickTourRequested: boolean;
+    textScale?: import('../constants/typography').TextScale;
     activeModules: AppModule[];
     studioCode: string;
 };

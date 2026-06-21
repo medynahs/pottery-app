@@ -27,3 +27,12 @@ export function getAdvanceOrder(stages: StageLike[]): string[] {
     .filter((stage) => stage.enabled && stage.id !== CEMETERY_STAGE_ID)
     .map((stage) => stage.id);
 }
+
+/** True when `toStage` is the next enabled stage after `fromStage` in the configured pipeline. */
+export function isExpectedStageAdvance(
+  fromStage: string,
+  toStage: string,
+  stages: StageLike[],
+): boolean {
+  return getConfiguredNextStage(fromStage, stages) === toStage;
+}

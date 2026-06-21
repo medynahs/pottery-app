@@ -1,9 +1,9 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { CustomizationSettingsShell } from '@/src/components/settings/CustomizationSettingsShell';
 import { Text } from '@/src/components/ui/text';
 import { DEFAULT_FORMING_METHODS, type FormingMethod, useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import {
-    ChevronDown,
     Pencil,
     Plus,
     RotateCcw,
@@ -11,7 +11,6 @@ import {
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-    ScrollView,
     TextInput,
     TouchableOpacity,
     View,
@@ -127,7 +126,7 @@ function AddFormingMethodRow({ onAdd }: { onAdd: (name: string) => void }) {
       <TouchableOpacity
         onPress={() => setOpen(true)}
         activeOpacity={0.7}
-        className="flex-row items-center justify-center gap-2 mx-5 mt-3 py-3.5 rounded-2xl border border-dashed border-border bg-card"
+        className="flex-row items-center justify-center gap-2 mt-3 py-3.5 rounded-2xl border border-dashed border-border bg-card"
       >
         <Plus size={15} color="hsl(24 30% 50%)" />
         <Text className="text-sm font-medium text-muted-foreground">Add Forming Method</Text>
@@ -136,7 +135,7 @@ function AddFormingMethodRow({ onAdd }: { onAdd: (name: string) => void }) {
   }
 
   return (
-    <View className="mx-5 mt-3 bg-card rounded-2xl border border-border px-4 py-3 flex-row items-center gap-3">
+    <View className="mt-3 bg-card rounded-2xl border border-border px-4 py-3 flex-row items-center gap-3">
       <View className="w-9 h-9 rounded-xl items-center justify-center bg-stone-100">
         <Text className="text-base">🤲</Text>
       </View>
@@ -180,7 +179,14 @@ export default function FormingMethodsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background">
+    <CustomizationSettingsShell
+      eyebrow="Piece details"
+      title="Forming methods"
+      subtitle="Manage the forming methods available when adding a piece. Add your own or remove ones you don't use."
+      headerNote={`${formingMethods.length} methods`}
+      onBack={() => router.back()}
+      onSave={() => router.back()}
+    >
       <ConfirmSheet
         visible={resetConfirmOpen}
         title="Restore Defaults?"
@@ -190,31 +196,8 @@ export default function FormingMethodsScreen() {
         onConfirm={() => { useAppStore.setState({ formingMethods: DEFAULT_FORMING_METHODS }); setResetConfirmOpen(false); }}
         onCancel={() => setResetConfirmOpen(false)}
       />
-      {/* Header */}
-      <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="w-10 h-10 items-center justify-center rounded-full bg-muted/60 mr-3"
-        >
-          <ChevronDown size={20} color="hsl(24 30% 40%)" style={{ transform: [{ rotate: '90deg' }] }} />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-lg font-bold text-foreground">Forming Methods</Text>
-          <Text className="text-xs text-muted-foreground mt-0.5">
-            {formingMethods.length} methods
-          </Text>
-        </View>
-      </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Description */}
-        <Text className="text-sm text-muted-foreground px-5 pt-4 pb-2 leading-5">
-          Manage the forming methods available when adding a piece. Add your own or remove ones
-          you don't use.
-        </Text>
-
-        {/* List */}
-        <View className="mx-5 mt-3 bg-card rounded-2xl border border-border overflow-hidden">
+      <View className="mt-1 bg-card rounded-2xl border border-border overflow-hidden">
           {formingMethods.map((method, idx) => (
             <FormingMethodRow
               key={method.id}
@@ -240,12 +223,11 @@ export default function FormingMethodsScreen() {
         <TouchableOpacity
           onPress={handleReset}
           activeOpacity={0.7}
-          className="flex-row items-center justify-center gap-2 mx-5 mt-4 mb-10 py-3.5 rounded-2xl border border-border bg-card"
+          className="flex-row items-center justify-center gap-2 mt-4 mb-2 py-3.5 rounded-2xl border border-border bg-card"
         >
           <RotateCcw size={15} color="hsl(0 55% 50%)" />
           <Text className="text-sm font-medium text-destructive">Restore Defaults</Text>
         </TouchableOpacity>
-      </ScrollView>
-    </View>
+    </CustomizationSettingsShell>
   );
 }

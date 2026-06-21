@@ -1,7 +1,8 @@
 import { Badge } from '@/src/components/ui/badge';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
-import { ArrowRight, BookOpen, Heart, Layers, MoreHorizontal, PackageCheck } from 'lucide-react-native';
+import { PiecePlaceholderArt } from '@/src/components/PiecePlaceholderArt';
+import { ArrowRight, BookOpen, Heart, Layers, MoreHorizontal } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
@@ -57,9 +58,7 @@ export function PieceCard({
                 resizeMode="cover"
               />
             ) : (
-              <View className="w-full h-full items-center justify-center bg-muted/60">
-                <PackageCheck size={32} color="hsl(24 20% 60%)" />
-              </View>
+              <PiecePlaceholderArt seed={piece.id} />
             )}
             <View className="absolute top-3 right-3">
               <Badge variant="outline" className="bg-card/90 border-0 rounded-full px-2.5 py-1">

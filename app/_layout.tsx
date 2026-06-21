@@ -6,11 +6,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import '../global.css';
 
+import { TextScaleRoot } from '@/src/components/TextScaleRoot';
 import { AnimatedSplashScreen } from '@/src/components/AnimatedSplashScreen';
 import { ErrorBoundary } from '@/src/components/error-boundary';
 import { PhotoPickerProvider } from '@/src/components/PhotoPickerProvider';
@@ -23,6 +24,7 @@ import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { useGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { usePiecesSync } from '@/src/screens/pieces/hooks/usePiecesSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
+import { resetLocalDataForTesting } from '@/src/store/clearLocalData';
 import { useAppStore } from '@/src/store/appStore';
 import {
     DMSans_400Regular,
@@ -42,6 +44,35 @@ WebBrowser.maybeCompleteAuthSession();
 void SplashScreen.preventAutoHideAsync().catch(() => {
   // Ignore cases where no native splash screen is currently registered.
 });
+
+/** Dev-only: wipe local storage when opened with ?reset=1 (web) for new-user testing. */
+function useDevLocalDataReset() {
+  useEffect(() => {
+    if (!__DEV__) return;
+
+    let shouldReset = false;
+    if (Platform.OS === 'web') {
+      const win = globalThis as typeof globalThis & {
+        location?: { search: string; pathname: string; hash: string };
+        history?: { replaceState: (data: unknown, unused: string, url?: string | URL | null) => void };
+      };
+      if (win.location) {
+        const params = new URLSearchParams(win.location.search);
+        if (params.get('reset') === '1') {
+          shouldReset = true;
+          params.delete('reset');
+          const query = params.toString();
+          const nextUrl = `${win.location.pathname}${query ? `?${query}` : ''}${win.location.hash}`;
+          win.history?.replaceState({}, '', nextUrl);
+        }
+      }
+    }
+
+    if (shouldReset) {
+      void resetLocalDataForTesting();
+    }
+  }, []);
+}
 
 /** Waits for the Zustand persist store to finish hydrating from AsyncStorage. */
 function useStoreHydration() {
@@ -125,6 +156,7 @@ function AppShell() {
         <Stack.Screen name="forming-methods" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="piece-forms" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="bisque-cone" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="text-size" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="glaze-cone" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="glaze-library" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="glaze/[id]" options={{ headerShown: false, presentation: 'card' }} />
@@ -163,6 +195,7 @@ function AppShell() {
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  useDevLocalDataReset();
   const [nativeSplashHidden, setNativeSplashHidden] = useState(false);
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
   const [loaded] = useFonts({
@@ -202,7 +235,9 @@ export default function RootLayout() {
               <StageConfigProvider>
                 <PhotoPickerProvider>
                   <View style={{ flex: 1, backgroundColor: '#FBF0E0' }}>
-                    <AppShell />
+                    <TextScaleRoot style={{ flex: 1 }}>
+                      <AppShell />
+                    </TextScaleRoot>
                     {nativeSplashHidden && showAnimatedSplash ? (
                       <AnimatedSplashScreen onFinish={handleAnimatedSplashFinish} />
                     ) : null}

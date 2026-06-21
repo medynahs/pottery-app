@@ -1,99 +1,78 @@
+import { CustomizationSettingsShell } from '@/src/components/settings/CustomizationSettingsShell';
 import { Text } from '@/src/components/ui/text';
 import { BISQUE_TEMPS, CONE_TEMPS_CELSIUS } from '@/src/screens/pieces/utils/constants';
 import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import { Check, Flame } from 'lucide-react-native';
-import React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { TouchableOpacity, View } from 'react-native';
 
 export default function BisqueConeScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const defaultBisqueTemp = useAppStore((s) => s.defaultBisqueTemp);
   const setDefaultBisqueTemp = useAppStore((s) => s.setDefaultBisqueTemp);
   const markSetupProgress = useAppStore((s) => s.markSetupProgress);
-
-  React.useEffect(() => {
-    markSetupProgress('bisqueConeReviewed');
-  }, [markSetupProgress]);
+  const [draft, setDraft] = useState<string | null>(defaultBisqueTemp);
 
   function handleSelect(cone: string) {
+    setDraft((prev) => (prev === cone ? null : cone));
+  }
+
+  function handleSave() {
+    setDefaultBisqueTemp(draft);
     markSetupProgress('bisqueConeReviewed');
-    setDefaultBisqueTemp(defaultBisqueTemp === cone ? null : cone);
+    router.back();
   }
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-6 pt-4 pb-2">
-        <View>
-          <Text className="text-xl font-bold text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
-            Bisque Cone
-          </Text>
-          <Text className="text-sm text-muted-foreground mt-0.5">
-            Select your default bisque firing temperature
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="bg-muted px-4 py-2 rounded-full"
-        >
-          <Text className="text-sm font-medium text-foreground">Done</Text>
-        </TouchableOpacity>
+    <CustomizationSettingsShell
+      eyebrow="Firing defaults"
+      title="Choose your bisque cone"
+      subtitle="This cone will be pre-selected when you add a new piece. You can still override it per piece."
+      onBack={() => router.back()}
+      onSave={handleSave}
+    >
+      <View className="bg-primary/10 border border-primary/20 rounded-2xl px-4 py-3 mb-4 flex-row items-start gap-3">
+        <Flame size={16} color="hsl(39 57% 51%)" className="mt-0.5" />
+        <Text className="text-xs text-primary flex-1 leading-relaxed">
+          Bisque firings are usually lower than glaze firings. Pick the cone you use most often at your studio or kiln.
+        </Text>
       </View>
 
-      <ScrollView
-        className="flex-1 px-6 mt-4"
-        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-      >
-        {/* Info note */}
-        <View className="bg-primary/10 border border-primary/20 rounded-2xl px-4 py-3 mb-4 flex-row items-start gap-3">
-          <Flame size={16} color="hsl(39 57% 51%)" className="mt-0.5" />
-          <Text className="text-xs text-primary flex-1 leading-relaxed">
-            This cone will be pre-selected when you add a new piece. You can still override it per piece.
-          </Text>
-        </View>
-
-        {/* Cone list */}
-        <View className="bg-card rounded-2xl border border-border overflow-hidden">
-          {BISQUE_TEMPS.map((cone, index) => {
-            const selected = defaultBisqueTemp === cone;
-            const isLast = index === BISQUE_TEMPS.length - 1;
-            return (
-              <TouchableOpacity
-                key={cone}
-                onPress={() => handleSelect(cone)}
-                activeOpacity={0.7}
-                className={`flex-row items-center px-4 py-3.5 ${!isLast ? 'border-b border-border' : ''}`}
-              >
-                <View className="w-9 h-9 rounded-xl items-center justify-center bg-primary/10 mr-3">
-                  <Flame size={16} color="hsl(39 57% 51%)" />
+      <View className="bg-card rounded-2xl border border-border overflow-hidden">
+        {BISQUE_TEMPS.map((cone, index) => {
+          const selected = draft === cone;
+          const isLast = index === BISQUE_TEMPS.length - 1;
+          return (
+            <TouchableOpacity
+              key={cone}
+              onPress={() => handleSelect(cone)}
+              activeOpacity={0.7}
+              className={`flex-row items-center px-4 py-3.5 ${!isLast ? 'border-b border-border' : ''}`}
+              style={selected ? { backgroundColor: 'rgba(242, 194, 94, 0.22)' } : undefined}
+            >
+              <View className="w-9 h-9 rounded-xl items-center justify-center bg-primary/10 mr-3">
+                <Flame size={16} color="hsl(39 57% 51%)" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm font-medium text-foreground">{cone}</Text>
+                <Text className="text-xs text-muted-foreground">{CONE_TEMPS_CELSIUS[cone]}°C</Text>
+              </View>
+              {selected ? (
+                <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
+                  <Check size={14} color="#fff" strokeWidth={3} />
                 </View>
-                <View className="flex-1">
-                  <Text className="text-sm font-medium text-foreground">{cone}</Text>
-                  <Text className="text-xs text-muted-foreground">{CONE_TEMPS_CELSIUS[cone]}°C</Text>
-                </View>
-                {selected && (
-                  <View className="w-6 h-6 rounded-full bg-primary/100 items-center justify-center">
-                    <Check size={14} color="#fff" strokeWidth={3} />
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+              ) : null}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-        {/* Clear default button */}
-        {defaultBisqueTemp && (
-          <TouchableOpacity
-            onPress={() => setDefaultBisqueTemp(null)}
-            className="mt-3 items-center py-3"
-          >
-            <Text className="text-sm text-muted-foreground">Clear default</Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
-    </View>
+      {draft ? (
+        <TouchableOpacity onPress={() => setDraft(null)} className="mt-3 items-center py-3">
+          <Text className="text-sm text-muted-foreground">Clear selection</Text>
+        </TouchableOpacity>
+      ) : null}
+    </CustomizationSettingsShell>
   );
 }

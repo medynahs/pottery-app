@@ -9,10 +9,10 @@ export type StudioPiecePositions = {
 };
 
 const IN_PROGRESS_STAGES = new Set(['in-progress', 'idea', 'forming', 'leather-hard', 'trimming']);
-const DRYING_STAGES = new Set(['drying', 'bone-dry']);
-const BISQUE_STAGES = new Set(['bisque']);
-const GLAZED_STAGES = new Set(['glazed', 'glazing', 'glaze-fired']);
-const FINISHED_STAGES = new Set(['finished']);
+const DRYING_STAGES = new Set(['drying']);
+const KILN_QUEUE_STAGES = new Set(['bone-dry', 'glazing']);
+const GLAZE_PREP_STAGES = new Set(['bisque']);
+const FINISHED_STAGES = new Set(['glaze-fired', 'finished']);
 
 function normalizeStage(stage: string) {
   return stage.trim().toLowerCase();
@@ -40,13 +40,13 @@ export function mapPiecesToStudioPositions(pieces: Piece[]): StudioPiecePosition
       continue;
     }
 
-    if (BISQUE_STAGES.has(stage)) {
-      positions.glazeRack.push(piece);
+    if (KILN_QUEUE_STAGES.has(stage)) {
+      positions.kilnArea.push(piece);
       continue;
     }
 
-    if (GLAZED_STAGES.has(stage)) {
-      positions.kilnArea.push(piece);
+    if (GLAZE_PREP_STAGES.has(stage)) {
+      positions.glazeRack.push(piece);
       continue;
     }
 

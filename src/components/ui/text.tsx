@@ -1,6 +1,8 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
-import { Text as RNText, type TextProps as RNTextProps } from "react-native";
+import { StyleSheet, Text as RNText, type TextProps as RNTextProps } from "react-native";
+import { useTextScaleContext } from "@/src/hooks/useTextScale";
+import { getScaledTextStyle } from "@/src/utils/textScaleStyle";
 import { cn } from "./utils/cn";
 import { TextClassContext } from "./utils/text-context";
 
@@ -30,13 +32,24 @@ const textVariants = cva("text-base text-foreground font-body", {
 interface TextProps extends RNTextProps, VariantProps<typeof textVariants> {}
 
 const Text = React.forwardRef<React.ElementRef<typeof RNText>, TextProps>(
-  ({ className, variant, ...props }, ref) => {
+  ({ className, variant, style, ...props }, ref) => {
     const textClass = React.useContext(TextClassContext);
-    
+    const textScale = useTextScaleContext();
+    const mergedClassName = cn(textVariants({ variant }), textClass, className);
+    const flat = StyleSheet.flatten(style);
+    const scaledStyle = getScaledTextStyle(textScale, {
+      style: flat,
+      className: mergedClassName,
+      variant,
+    });
+    const { fontSize: _fs, lineHeight: _lh, ...restStyle } = flat ?? {};
+
     return (
       <RNText
-        className={cn(textVariants({ variant }), textClass, className)}
+        className={mergedClassName}
+        style={[scaledStyle, restStyle]}
         ref={ref}
+        maxFontSizeMultiplier={1}
         {...props}
       />
     );

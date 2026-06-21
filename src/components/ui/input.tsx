@@ -1,5 +1,8 @@
+import { scaleFont } from "@/src/constants/typography";
+import { useTextScaleContext } from "@/src/hooks/useTextScale";
+import { extractFontSizeFromClassName } from "@/src/utils/textScaleStyle";
 import * as React from "react";
-import { TextInput, type TextInputProps, Platform } from "react-native";
+import { TextInput, type TextInputProps, Platform, StyleSheet } from "react-native";
 import { cn } from "./utils/cn";
 
 interface InputProps extends TextInputProps {}
@@ -8,6 +11,18 @@ const Input = React.forwardRef<
   React.ElementRef<typeof TextInput>,
   InputProps
 >(({ className, placeholderClassName, style, ...props }, ref) => {
+  const textScale = useTextScaleContext();
+  const flat = StyleSheet.flatten(style);
+  const baseFromClass = extractFontSizeFromClassName(
+    cn(
+      "native:h-12 h-10 w-full rounded-md border-2 border-input bg-background px-3 text-base text-foreground placeholder:text-muted-foreground",
+      className,
+    ),
+  );
+  const baseSize = typeof flat?.fontSize === 'number' ? flat.fontSize : baseFromClass ?? 16;
+  const scaledFontSize = scaleFont(baseSize, textScale);
+  const { fontSize: _fs, ...restStyle } = flat ?? {};
+
   // Android-specific styles
   const androidStyles = Platform.OS === 'android' ? {
     paddingVertical: 8,
@@ -29,7 +44,7 @@ const Input = React.forwardRef<
       placeholderTextColor="#9ca3af"
       selectionColor="#6366f1"
       underlineColorAndroid="transparent"
-      style={[androidStyles, style]}
+      style={[androidStyles, restStyle, { fontSize: scaledFontSize }]}
       {...props}
     />
   );

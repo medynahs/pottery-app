@@ -385,7 +385,7 @@ export function CreatePostSheet({
             New post
           </Text>
           <Text className="text-sm text-muted-foreground mt-1.5 leading-5">
-            {activeKindMeta.hint}
+            Start with a photo, add a caption, then tag a piece or challenge if you want.
           </Text>
         </ModalSheetHeader>
 

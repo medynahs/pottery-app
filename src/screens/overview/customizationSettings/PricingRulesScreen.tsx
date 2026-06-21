@@ -1,4 +1,5 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { CustomizationSettingsShell } from '@/src/components/settings/CustomizationSettingsShell';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store/appStore';
@@ -17,8 +18,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Calculator, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TouchableOpacity, View } from 'react-native';
 
 type TierDraft = {
   minVolumeCm3: string;
@@ -208,7 +208,6 @@ function CompactField({
 
 export default function PricingRulesScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const pricingSettingsState = useAppStore((state) => state.pricingSettings);
   const pricingSettings = React.useMemo(() => normalizePricingSettings(pricingSettingsState), [pricingSettingsState]);
   const setPricingSettings = useAppStore((state) => state.setPricingSettings);
@@ -273,7 +272,7 @@ export default function PricingRulesScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <>
       <ConfirmSheet
         visible={resetConfirmOpen}
         title="Reset Pricing Rules?"
@@ -283,22 +282,15 @@ export default function PricingRulesScreen() {
         onConfirm={() => { setDraft(toDraft(buildDefaultPricingSettings())); setResetConfirmOpen(false); }}
         onCancel={() => setResetConfirmOpen(false)}
       />
-      <View className="flex-row items-center justify-between px-6 pt-4 pb-2">
-        <View className="pr-4 flex-1">
-          <Text className="text-xl font-bold text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
-            Pricing Rules
-          </Text>
-          <Text className="text-sm text-muted-foreground mt-0.5">
-            Build prices from firing, hours, clay, glaze, overhead, fees, and tax.
-          </Text>
-        </View>
-        <TouchableOpacity onPress={handleSave} className="bg-muted px-4 py-2 rounded-full">
-          <Text className="text-sm font-medium text-foreground">Save</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView className="flex-1 px-6 mt-4" contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
-        <View className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-4 flex-row items-start gap-3">
+      <CustomizationSettingsShell
+        eyebrow="Studio pricing"
+        title="Pricing rules"
+        subtitle="Build prices from firing, hours, clay, glaze, overhead, fees, and tax."
+        onBack={() => router.back()}
+        onSave={handleSave}
+        saveLabel="Save preferences"
+      >
+        <View className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-4 flex-row items-start gap-3 -mt-2">
           <Calculator size={16} color="hsl(38 80% 50%)" className="mt-0.5" />
           <Text className="text-xs text-amber-700 flex-1 leading-relaxed">
             Price from real costs, not gut feel. Clay can estimate from weight and your clay bag cost. Glaze scales from piece size unless you override it on a piece.
@@ -683,12 +675,12 @@ export default function PricingRulesScreen() {
         <TouchableOpacity
           onPress={handleResetDraft}
           activeOpacity={0.7}
-          className="flex-row items-center justify-center gap-2 mt-2 py-3.5 rounded-2xl border border-border bg-card"
+          className="flex-row items-center justify-center gap-2 mt-2 mb-2 py-3.5 rounded-2xl border border-border bg-card"
         >
           <RotateCcw size={15} color="hsl(0 55% 50%)" />
           <Text className="text-sm font-medium text-destructive">Reset Pricing Defaults</Text>
         </TouchableOpacity>
-      </ScrollView>
-    </View>
+      </CustomizationSettingsShell>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import type { StudioPiecePositions } from '@/src/screens/overview/utils/mapPiecesToStudioPositions';
 import type { Firing } from '@/src/types/kiln';
 import type { Href } from 'expo-router';
+import { resolveKilnDestination } from '@/src/screens/overview/utils/kilnNavigation';
 
 export const ACTIVE_FIRING_STATES = new Set(['loading', 'firing', 'cooling', 'unloading']);
 
@@ -38,7 +39,9 @@ export function buildOneThingCard(
   activeFiring: Firing | null,
   studioSignals: StudioSignals,
   stagePositions: StudioPiecePositions,
+  hasKilnTab = true,
 ): PulseCard | null {
+  const kilnRoute = resolveKilnDestination(hasKilnTab);
   if (activeFiring) {
     const ready = activeFiring.expectedReadyAt;
     const hoursLeft = ready ? Math.max(0, Math.round((new Date(ready).getTime() - Date.now()) / (1000 * 60 * 60))) : null;
@@ -46,7 +49,7 @@ export function buildOneThingCard(
       emoji: FIRING_STATE_EMOJI[activeFiring.state] ?? '🏺',
       title: FIRING_STATE_LABEL[activeFiring.state] ?? activeFiring.state,
       subtitle: activeFiring.name + (hoursLeft != null ? ` · ~${hoursLeft}h until ready` : ''),
-      route: '/(tabs)/kiln',
+      route: kilnRoute,
       accentBg: 'hsl(16 70% 94%)',
       accentBorder: 'hsl(16 60% 78%)',
       accentText: 'hsl(16 65% 38%)',
@@ -57,8 +60,8 @@ export function buildOneThingCard(
     return {
       emoji: '🔥',
       title: `${n} piece${n !== 1 ? 's' : ''} ready for the kiln`,
-      subtitle: 'Bone dry and waiting — load when you can',
-      route: '/(tabs)/kiln',
+      subtitle: hasKilnTab ? 'Bone dry and waiting — load when you can' : 'Bone dry and glazing — ready for your studio kiln',
+      route: kilnRoute,
       accentBg: 'hsl(24 70% 94%)',
       accentBorder: 'hsl(24 60% 78%)',
       accentText: 'hsl(24 65% 38%)',

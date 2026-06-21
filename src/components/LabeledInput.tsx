@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { TextInput, TouchableOpacity, View, type TextInputProps } from 'react-native';
+import { useTextScale } from '@/src/hooks/useTextScale';
 
 interface LabeledInputProps extends Omit<TextInputProps, 'style'> {
   label: string;
@@ -19,6 +20,8 @@ interface LabeledInputProps extends Omit<TextInputProps, 'style'> {
  */
 export function LabeledInput({ label, icon: Icon, secure = false, ...inputProps }: LabeledInputProps) {
   const [showSecret, setShowSecret] = useState(false);
+  const { scaled } = useTextScale();
+  const inputFontSize = scaled(14);
 
   return (
     <View>
@@ -30,7 +33,7 @@ export function LabeledInput({ label, icon: Icon, secure = false, ...inputProps 
         <TextInput
           placeholderTextColor="hsl(24 10% 65%)"
           secureTextEntry={secure && !showSecret}
-          style={{ flex: 1, fontSize: 14, color: 'hsl(24 30% 20%)' }}
+          style={{ flex: 1, fontSize: inputFontSize, color: 'hsl(24 30% 20%)' }}
           {...inputProps}
         />
         {secure ? (

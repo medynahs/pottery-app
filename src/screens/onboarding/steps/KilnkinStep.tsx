@@ -3,7 +3,8 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Check, Droplets, Flame, Leaf, Moon, Sparkle, Sparkles, Wind } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, View } from 'react-native';
+import { Text } from '@/src/components/ui/text';
 import type { DimensionValue } from 'react-native';
 import type { KilnkinPersonality } from '../../overview/kilnkin/kilnkinCompanion';
 import { AVAILABLE_KILNKIN_COMPANIONS } from '../../overview/kilnkin/kilnkinCompanion';
@@ -140,9 +141,9 @@ export const KilnkinStep: React.FC<KilnkinStepProps> = ({ draft, updateDraft }) 
   ];
 
   return (
-    <View style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 8 }}>
+    <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 0 }}>
       {/* Header */}
-      <View style={{ paddingHorizontal: 4, paddingBottom: 14 }}>
+      <View style={{ paddingHorizontal: 4, paddingBottom: 8 }}>
         <View style={{ alignSelf: 'flex-start', borderRadius: 999, backgroundColor: 'rgba(125, 76, 39, 0.1)', paddingHorizontal: 11, paddingVertical: 6, marginBottom: 10 }}>
           <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', color: 'hsl(28 38% 34%)' }}>
             Choose your companion

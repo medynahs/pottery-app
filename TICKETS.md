@@ -49,6 +49,7 @@
 - Keep all 5 onboarding archetypes — collect segmentation data now for V2 prioritisation
 - Renamed: `studio-owner-technician` → "I run a ceramics studio" · `business-owner` → "I make and sell pottery"
 - V1 behavioural differences only: kiln tab default view, pricing screen labels, analytics card order
+- **Studio member linking (needs product study):** BE has studios, members, invites, and join requests (`POST /users/me/studios/{id}/join-requests`) but no public studio search or friendly invite codes — join flow today requires the studio UUID (same as Community → Studios). Onboarding offers optional studio ID for shared-studio potters when signed in; many studios won't use Pottery Nook yet. **TODO:** study member ↔ studio relationships (owner vs member permissions, kiln queue sharing, piece visibility, onboarding invite codes vs UUID) before building deeper studio linking in onboarding or setup checklist.
 
 ### Monetization
 - **Freemium** · €4.99/month · €34.99/year
