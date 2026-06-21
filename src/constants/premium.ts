@@ -1,6 +1,6 @@
 import type { PurchasesPackage } from 'react-native-purchases';
 
-/** V1 list prices (EUR), see TICKETS.md monetization section. */
+/** V1 list prices (EUR), see FRONTEND.md monetization section. */
 export const PREMIUM_MONTHLY_PRICE_EUR = '€4.99';
 export const PREMIUM_ANNUAL_PRICE_EUR = '€34.99';
 

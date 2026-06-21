@@ -7,12 +7,12 @@ import React from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
 import { LayoutAnimation, Platform, UIManager } from 'react-native';
 import type { DisplayItem, Piece } from '../../../types/pieces';
-import { ActiveFilters, EMPTY_FILTERS, SortKey, countActiveFilters } from '../components/FilterSortSheet';
+import { ActiveFilters, EMPTY_FILTERS, SortKey, countActiveFilters } from '../utils/pieceFilterUtils';
 import type { StageAdvanceCelebration } from '../modals/StageAdvanceCelebrationModal';
 import type { StageAdvanceCapture, StageAdvanceRequest } from '../modals/StageAdvanceFlowModal';
 import { isGlazeOutcome } from '@/src/screens/glazes/glazePieceLink';
-import { isPieceForSale } from '../utils/pieceListing';
 import { pieceMatchesSearch } from '../utils/pieceSearch';
+import { pieceMatchesFilters } from '../utils/pieceFilterUtils';
 import { FINISHED_STAGE_ID, CEMETERY_STAGE_ID, getAdvanceOrder, getConfiguredNextStage, isExpectedStageAdvance } from '../utils/stageFlow';
 import { STAGE_ICONS, resolveStageIcon } from '../utils/stageIconUtils';
 import { schedulePiecesSync, usePiecesSyncStatus } from './usePiecesSync';
@@ -118,13 +118,7 @@ export function usePiecesScreen() {
           ? p.stage !== CEMETERY_STAGE_ID
           : p.stage === activeStage) &&
       pieceMatchesSearch(p, search) &&
-      (filters.clays.length === 0 || filters.clays.includes(p.clay)) &&
-      (filters.forms.length === 0 || (!!p.form && filters.forms.includes(p.form))) &&
-      (filters.formingMethods.length === 0 || (!!p.formingMethod && filters.formingMethods.includes(p.formingMethod))) &&
-      (filters.glazes.length === 0 || (!!p.glazeId && filters.glazes.includes(p.glazeId))) &&
-      (filters.statuses.length === 0 || (!!p.status && filters.statuses.includes(p.status))) &&
-      (filters.firingTypes.length === 0 || (!!p.firingType && filters.firingTypes.includes(p.firingType))) &&
-      (!filters.forSaleOnly || isPieceForSale(p))
+      pieceMatchesFilters(p, filters)
     );
     switch (sortKey) {
       case 'oldest':
@@ -193,7 +187,6 @@ export function usePiecesScreen() {
     updatePiece(updated);
     setJournalPiece((current) => (current?.id === updated.id ? updated : current));
     setActionSheetPiece((current) => (current?.id === updated.id ? updated : current));
-    setEditPiece((current) => (current?.id === updated.id ? updated : current));
     schedulePiecesSync();
   }, [updatePiece]);
 

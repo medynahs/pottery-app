@@ -91,9 +91,15 @@ export function useAddPieceForm(
 
   const [form, setForm] = React.useState<PieceForm>(initialPiece ? pieceToForm(initialPiece) : buildEmptyForm());
 
+  const editingPieceId = initialPiece?.id;
+
   React.useEffect(() => {
-    setForm(initialPiece ? pieceToForm(initialPiece) : buildEmptyForm());
-  }, [buildEmptyForm, initialPiece]);
+    if (initialPiece) {
+      setForm(pieceToForm(initialPiece));
+      return;
+    }
+    setForm(buildEmptyForm());
+  }, [buildEmptyForm, editingPieceId]);
 
   const set = <K extends keyof PieceForm>(key: K, value: PieceForm[K]) =>
     setForm((previous) => ({ ...previous, [key]: value }));

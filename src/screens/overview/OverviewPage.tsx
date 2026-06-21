@@ -1,5 +1,9 @@
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { StudioTabScreen } from '@/src/components/StudioTabScreen';
+import {
+  TAB_FLOATING_ACTION_BOTTOM,
+  TAB_SCROLL_BOTTOM_PADDING,
+} from '@/src/constants/tabScreenLayout';
 import { Text } from '@/src/components/ui/text';
 import { ChallengeBanner } from '@/src/screens/overview/components/ChallengeBanner';
 import { FeedbackModal } from '@/src/screens/overview/components/FeedbackModal';
@@ -111,8 +115,13 @@ export function OverviewPage() {
       />
 
       <ScrollView
+        className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 110 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 8,
+          paddingBottom: TAB_SCROLL_BOTTOM_PADDING,
+        }}
       >
         {__DEV__ ? (
           <TouchableOpacity
@@ -238,7 +247,7 @@ export function OverviewPage() {
         onPress={() => setFeedbackOpen(true)}
         activeOpacity={0.86}
         className="absolute right-4 rounded-2xl border border-border bg-card/95 px-3 py-2 flex-row items-center gap-2"
-        style={{ bottom: insets.bottom - 20 }}
+        style={{ bottom: TAB_FLOATING_ACTION_BOTTOM }}
         accessibilityRole="button"
         accessibilityLabel="Leave feedback"
       >

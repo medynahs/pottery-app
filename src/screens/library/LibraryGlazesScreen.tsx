@@ -1,13 +1,13 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
 import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
+import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
 import { normalizeCone } from '@/src/screens/library/discover/types';
 import { useAppStore, useVisiblePieces } from '@/src/store';
 import { Droplets, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { deriveCustomCollectionNames } from './atlas/collections';
 import { CreateCollectionModal } from './atlas/CollectionsGrid';
 import { GlazeFilterSheet } from './atlas/GlazeFilterSheet';
@@ -52,7 +52,6 @@ export default function LibraryGlazesScreen({
   onAddGlaze,
   initialCollectionKey,
 }: LibraryGlazesScreenProps) {
-  const insets = useSafeAreaInsets();
   const pieces = useVisiblePieces();
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const addGlazeCollection = useAppStore((s) => s.addGlazeCollection);
@@ -171,7 +170,7 @@ export default function LibraryGlazesScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+        contentContainerStyle={{ paddingBottom: TAB_SCROLL_BOTTOM_PADDING }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

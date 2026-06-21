@@ -4,6 +4,7 @@ import { StudioTabScreen } from '@/src/components/StudioTabScreen';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
+import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import { BrandColors } from '@/src/constants/theme';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
@@ -156,8 +157,12 @@ export default function KilnScreen() {
 
       <MainTabHeader title='Kiln' description={`${kilns.length} profile${kilns.length !== 1 ? 's' : ''} · ${activeFirings.length + scheduledFirings.length} open sessions`} actionText='New Firing' pressIcon={<FlameKindling size={16} color="white" />} onPress={() => setStartFiringOpen(true)} />
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="px-6 pt-4 pb-10">
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: TAB_SCROLL_BOTTOM_PADDING }}
+      >
+        <View className="px-6 pt-4">
           <View className="mb-6">
             <View className="flex-row bg-muted rounded-2xl p-1">
               {(['kilns', 'sessions', 'queue'] as const).map((tab) => {

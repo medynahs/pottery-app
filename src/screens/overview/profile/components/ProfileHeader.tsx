@@ -1,46 +1,95 @@
+import { PickSheet } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { apiListFriends } from '@/src/services/friends';
 import { apiListMemberStudios, apiListOwnedStudios } from '@/src/services/studios';
-import { useAppStore } from '@/src/store/appStore';
+import { useAppStore, useVisiblePieces } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Edit3, Palette, Settings, Share2, Zap } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { buildBadgeContext } from '../constants/badgeRegistry';
 import { useProfileLevel } from '../hooks/useProfileLevel';
+import { useShareProfile } from '../utils/shareProfile';
 import { EditProfileModal } from './EditProfileModal';
+import { JourneyHero } from './JourneyHero';
 
 export function ProfileHeader({
+  postCount,
   onBack,
   onOpenAccountSettings,
+  onOpenPosts,
+  onOpenJourney,
 }: {
+  postCount: number | null;
   onBack: () => void;
   onOpenAccountSettings: () => void;
+  onOpenPosts: () => void;
+  onOpenJourney: () => void;
 }) {
   const router = useRouter();
   const user = useAppStore((s) => s.user);
   const sessionToken = useAppStore((s) => s.sessionToken);
+  const pieces = useVisiblePieces();
+  const firings = useAppStore((s) => s.firings);
+  const glazes = useAppStore((s) => s.glazes);
   const pieceCount = useAppStore((s) => s.pieces.length);
-  void pieceCount; // kept in store but no longer shown in stat strip
+  void pieceCount;
   const { progress, title, nextTitle, earnedCount, totalBadges, badgesUntilNext } = useProfileLevel();
+  const {
+    shareMenuVisible,
+    shareMenuOptions,
+    openShareMenu,
+    closeShareMenu,
+  } = useShareProfile();
   const [editVisible, setEditVisible] = useState(false);
   const [xpTooltip, setXpTooltip] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(false);
   const [friendCount, setFriendCount] = useState<number | null>(null);
   const [studioCount, setStudioCount] = useState<number | null>(null);
 
+  const badgeCtx = useMemo(
+    () => buildBadgeContext(pieces, firings, glazes),
+    [pieces, firings, glazes],
+  );
+
+  const survivalRate = useMemo(() => {
+    if (badgeCtx.totalPieces === 0) return 0;
+    const survived = Math.max(0, badgeCtx.totalPieces - badgeCtx.failedPieces);
+    return Math.round((survived / badgeCtx.totalPieces) * 100);
+  }, [badgeCtx.failedPieces, badgeCtx.totalPieces]);
+
+  const finishRate = useMemo(() => {
+    if (badgeCtx.totalPieces === 0) return 0;
+    return Math.round((badgeCtx.finishedPieces / badgeCtx.totalPieces) * 100);
+  }, [badgeCtx.finishedPieces, badgeCtx.totalPieces]);
+
+  const badgeProgressPct = totalBadges > 0
+    ? Math.round((earnedCount / totalBadges) * 100)
+    : 0;
+
   const loadStats = useCallback(async () => {
     if (!sessionToken) return;
-    try {
-      const [friends, owned, member] = await Promise.all([
-        apiListFriends(sessionToken),
-        apiListOwnedStudios(sessionToken),
-        apiListMemberStudios(sessionToken),
-      ]);
-      setFriendCount((friends ?? []).length);
-      setStudioCount((owned ?? []).length + (member ?? []).length);
-    } catch { /* silent, stats are non-critical */ }
+
+    void apiListFriends(sessionToken)
+      .then((friends) => setFriendCount((friends ?? []).length))
+      .catch((err) => {
+        console.warn('[ProfileHeader] friends count failed:', err);
+        setFriendCount(0);
+      });
+
+    void Promise.all([
+      apiListOwnedStudios(sessionToken),
+      apiListMemberStudios(sessionToken),
+    ])
+      .then(([owned, member]) => {
+        setStudioCount((owned ?? []).length + (member ?? []).length);
+      })
+      .catch((err) => {
+        console.warn('[ProfileHeader] studios count failed:', err);
+        setStudioCount(0);
+      });
   }, [sessionToken]);
 
   useEffect(() => { loadStats(); }, [loadStats]);
@@ -145,8 +194,10 @@ export function ProfileHeader({
               <Settings size={15} color="hsl(24 20% 40%)" />
             </TouchableOpacity>
             <TouchableOpacity
+              onPress={openShareMenu}
               className="w-9 h-9 rounded-xl border border-border bg-card items-center justify-center"
               activeOpacity={0.75}
+              accessibilityLabel="Share profile"
             >
               <Share2 size={15} color="hsl(24 20% 40%)" />
             </TouchableOpacity>
@@ -157,28 +208,31 @@ export function ProfileHeader({
           <Text className="text-2xl font-serif font-bold text-foreground">{user.name}</Text>
         </View>
 
-        {/* XP tooltip, shown on title badge tap */}
+        {/* Rank card — tap badge on avatar to toggle */}
         {xpTooltip ? (
-          <View
-            className="bg-card border border-border rounded-2xl px-4 py-3 mb-3"
-            style={{ shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } }}
-          >
-            <View className="flex-row justify-between items-center mb-2">
-              <View className="flex-row items-center gap-1.5">
-                <Zap size={12} color="hsl(38 80% 50%)" />
-                <Text className="text-xs font-bold text-foreground">{title}</Text>
-              </View>
-              <Text className="text-xs text-muted-foreground">{earnedCount} / {totalBadges} badges</Text>
-            </View>
-            <View className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-              <View className="h-full rounded-full" style={{ width: `${progress * 100}%`, backgroundColor: 'hsl(38 80% 50%)' }} />
-            </View>
-            <Text className="text-xs text-muted-foreground mt-1.5">
-              {nextTitle
-                ? <>{badgesUntilNext} badge{badgesUntilNext !== 1 ? 's' : ''} until <Text className="font-semibold text-foreground">{nextTitle}</Text></>
-                : <Text className="font-semibold text-foreground">All badges earned. Studio Legend! 🏺</Text>
-              }
-            </Text>
+          <View className="mb-3">
+            <JourneyHero
+              embedded
+              title={title}
+              nextTitle={nextTitle}
+              badgesUntilNext={badgesUntilNext}
+              earnedCount={earnedCount}
+              totalBadges={totalBadges}
+              badgeProgress={badgeProgressPct}
+              survivalRate={survivalRate}
+              finishRate={finishRate}
+              totalPieces={badgeCtx.totalPieces}
+            />
+            <TouchableOpacity
+              onPress={() => {
+                setXpTooltip(false);
+                onOpenJourney();
+              }}
+              activeOpacity={0.8}
+              className="self-start"
+            >
+              <Text className="text-xs font-bold text-primary">See full journey →</Text>
+            </TouchableOpacity>
           </View>
         ) : null}
         {studioLine ? (
@@ -213,11 +267,32 @@ export function ProfileHeader({
             </Text>
             <Text className="text-xs text-muted-foreground mt-0.5">Studios</Text>
           </TouchableOpacity>
+
+          <View className="w-px h-8 bg-border" />
+
+          <TouchableOpacity
+            className="items-start"
+            activeOpacity={0.7}
+            onPress={onOpenPosts}
+          >
+            <Text className="text-base font-bold text-foreground">
+              {postCount === null ? '-' : postCount}
+            </Text>
+            <Text className="text-xs text-muted-foreground mt-0.5">Posts</Text>
+          </TouchableOpacity>
         </View>
 
       </View>
 
       <EditProfileModal visible={editVisible} onClose={() => setEditVisible(false)} />
+
+      <PickSheet
+        visible={shareMenuVisible}
+        title="Share profile"
+        options={shareMenuOptions}
+        onCancel={closeShareMenu}
+        layout="list"
+      />
 
       {/* Avatar full-screen preview */}
       {user.avatarImageUri ? (

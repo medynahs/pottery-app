@@ -1,6 +1,10 @@
 // src/screens/community/CommunityScreen.tsx
 import { UnauthenticatedGate } from '@/src/components/UnauthenticatedGate';
 import { StudioTabScreen } from '@/src/components/StudioTabScreen';
+import {
+  TAB_FLOATING_ACTION_BOTTOM,
+  TAB_SCROLL_BOTTOM_PADDING_WITH_FAB,
+} from '@/src/constants/tabScreenLayout';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
@@ -87,13 +91,14 @@ export default function CommunityScreen() {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: TAB_SCROLL_BOTTOM_PADDING_WITH_FAB }}
         refreshControl={
           activeFilter === 'For You'
             ? <RefreshControl refreshing={feedRefreshing} onRefresh={handleRefresh} />
             : undefined
         }
       >
-        <View className="px-4 gap-3 pb-6">
+        <View className="px-4 gap-3">
           {renderTab()}
         </View>
       </ScrollView>
@@ -104,7 +109,7 @@ export default function CommunityScreen() {
         activeOpacity={0.85}
         style={{
           position: 'absolute',
-          bottom: 24,
+          bottom: TAB_FLOATING_ACTION_BOTTOM,
           right: 20,
           width: 52,
           height: 52,

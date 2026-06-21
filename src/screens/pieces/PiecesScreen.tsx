@@ -3,13 +3,14 @@ import { ConfirmSheet, PickSheet, type PickSheetOption } from '@/src/components/
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { EmptyState } from '@/src/components/EmptyState';
 import { StudioTabScreen } from '@/src/components/StudioTabScreen';
+import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
 import { useAppStore } from '@/src/store';
 import { countPiecePhotos } from '@/src/utils/premiumGate';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { BookOpen, CheckSquare, ChevronUp, Copy, Edit3, Images, Layers, Plus, Search, Share2, SlidersHorizontal, Trash2 } from 'lucide-react-native';
+import { BookOpen, CheckSquare, ChevronUp, Copy, Edit3, Images, Layers, Plus, Search, Share2, SlidersHorizontal, Tag, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
@@ -25,6 +26,7 @@ import { AddPieceModal } from './modals/AddPieceModal';
 import { CemeterySacrificeModal } from './modals/CemeterySacrificeModal';
 import { PieceJournalModal } from './modals/PieceJournalModal';
 import { PiecePhotoGalleryModal } from './modals/PiecePhotoGalleryModal';
+import { PieceStatusSheet } from './modals/PieceStatusSheet';
 import { StageAdvanceCelebrationModal, type StageAdvanceCelebration } from './modals/StageAdvanceCelebrationModal';
 import { StageAdvanceFlowModal } from './modals/StageAdvanceFlowModal';
 import { STAGE_LABEL } from './utils/constants';
@@ -52,6 +54,7 @@ export default function PiecesScreen() {
   const [selectionMode, setSelectionMode] = React.useState(false);
   const [selectedPieceIds, setSelectedPieceIds] = React.useState<Set<number>>(() => new Set());
   const [galleryPiece, setGalleryPiece] = React.useState<Piece | null>(null);
+  const [statusSheetPiece, setStatusSheetPiece] = React.useState<Piece | null>(null);
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
   const glazes = useAppStore((s) => s.glazes);
   const piecesCompactCards = useAppStore((s) => s.piecesCompactCards);
@@ -289,6 +292,17 @@ export default function PiecesScreen() {
 
     options.push(
       { label: 'Edit details', icon: Edit3, onPress: () => setEditPiece(piece) },
+    );
+
+    if (piece.stage !== 'cemetery') {
+      options.push({
+        label: piece.status ? `Status: ${piece.status}` : 'Update status',
+        icon: Tag,
+        onPress: () => setStatusSheetPiece(piece),
+      });
+    }
+
+    options.push(
       { label: 'Duplicate piece', icon: Copy, onPress: () => handleDuplicate(piece) },
       {
         label: 'Select for batch advance',
@@ -432,7 +446,7 @@ export default function PiecesScreen() {
         ref={scrollRef}
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={selectionMode ? { paddingBottom: 52 } : undefined}
+        contentContainerStyle={{ paddingBottom: TAB_SCROLL_BOTTOM_PADDING }}
         refreshControl={
           <RefreshControl refreshing={isSyncing} onRefresh={refetchPieces} />
         }
@@ -461,7 +475,7 @@ export default function PiecesScreen() {
           })}
         </ScrollView>
 
-        <View className="px-6 pb-8">
+        <View className="px-6">
           {activeStage === 'cemetery' && (
             <CemeteryBanner count={pieces.filter(p => p.stage === 'cemetery').length} />
           )}
@@ -672,7 +686,16 @@ export default function PiecesScreen() {
         filters={filters}
         onFiltersChange={setFilters}
         allPieces={pieces}
+        resultCount={filteredPieces.length}
       />
+      {statusSheetPiece ? (
+        <PieceStatusSheet
+          key={statusSheetPiece.id}
+          piece={statusSheetPiece}
+          onClose={() => setStatusSheetPiece(null)}
+          onSave={handleUpdatePiece}
+        />
+      ) : null}
       <StageAdvanceCelebrationModal
         transition={stageTransition}
         stageLookup={stageLookup}

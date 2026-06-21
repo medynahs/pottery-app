@@ -120,8 +120,6 @@ export type Piece = {
   glazeId?: string;
   /** How this glaze performed on the piece after firing. */
   glazeOutcome?: GlazeOutcome;
-  /** When false, hide this piece from the profile work grid. */
-  showOnProfile?: boolean;
 };
 
 export type PieceForm = {

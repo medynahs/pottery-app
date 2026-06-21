@@ -1,10 +1,10 @@
 import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
+import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   buildDiscoverCatalog,
   itemMatchesFilters,
@@ -22,7 +22,6 @@ import {
 
 export default function GlazeDiscoverScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const glazes = useAppStore((s) => s.glazes);
 
   const catalog = React.useMemo(() => buildDiscoverCatalog(), []);
@@ -75,7 +74,7 @@ export default function GlazeDiscoverScreen() {
     <View className="flex-1">
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{ paddingBottom: TAB_SCROLL_BOTTOM_PADDING }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

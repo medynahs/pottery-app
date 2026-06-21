@@ -25,6 +25,7 @@ import {
   Lock,
   LogOut,
   Mail,
+  Map,
   PawPrint,
   Shield,
   Skull,
@@ -162,12 +163,20 @@ export default function AccountSettingsScreen() {
             iconBg="bg-primary/10"
             label="Your Kilnkin"
             value={`${kilnkinCompanion.name} · ${kilnkinCompanion.element}`}
-            isLast
             onPress={() => {
               if (requestAccess(PremiumFeature.CompanionSwap)) {
                 setCompanionPickerOpen(true);
               }
             }}
+          />
+          <SettingsRow
+            icon={Map}
+            iconColor="hsl(200 45% 42%)"
+            iconBg="bg-blue-50"
+            label="Your Journey"
+            value="Badges & milestones"
+            isLast
+            onPress={() => router.push('/profile/journey' as never)}
           />
         </SettingsGroup>
 

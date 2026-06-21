@@ -17,9 +17,11 @@ import {
   type PricingFiringMode,
 } from '../../../types/pricing';
 import {
+  PIECE_CONDITION_STATUSES,
   PIECE_DISPOSITION_STATUSES,
   GLAZE_OUTCOME_LABELS,
   GLAZE_OUTCOME_OPTIONS,
+  isConditionStatus,
 } from '../utils/constants';
 import { resolveStageIcon } from '../utils/stageIconUtils';
 import { FieldLabel } from './FieldLabel';
@@ -47,6 +49,7 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing, fillHe
   const [showCostDetails, setShowCostDetails] = React.useState(false);
   const isCemetery = form.stage === 'cemetery';
   const isFinished = form.stage === 'finished';
+  const showStatusFields = !isCemetery && (isFinished || isEditing);
   const showGlazeOutcome =
     Boolean(form.glazeId)
     && ['glazing', 'glaze-fired', 'finished'].includes(form.stage);
@@ -661,16 +664,32 @@ export function AddPieceForm({ form, set, onPickImage, colors, isEditing, fillHe
       )}
 
       {/* Status */}
-      {!isCemetery && isFinished && (
+      {showStatusFields ? (
+      <>
       <View className="mt-10">
-        <FieldLabel>Status</FieldLabel>
+        <FieldLabel>Listing & outcome</FieldLabel>
+        <Text className="text-xs text-muted-foreground mb-2.5 leading-[18px]">
+          Sold, available, gifted, and other dispositions.
+        </Text>
         <OptionPills
           options={PIECE_DISPOSITION_STATUSES}
-          value={form.status}
+          value={isConditionStatus(form.status) ? '' : form.status}
           onChange={v => set('status', v)}
         />
       </View>
-      )}
+      <View className="mt-5">
+        <FieldLabel>Condition issues</FieldLabel>
+        <Text className="text-xs text-muted-foreground mb-2.5 leading-[18px]">
+          Cracked or warped pieces.
+        </Text>
+        <OptionPills
+          options={PIECE_CONDITION_STATUSES}
+          value={isConditionStatus(form.status) ? form.status : ''}
+          onChange={v => set('status', v)}
+        />
+      </View>
+      </>
+      ) : null}
 
       {/* Price */}
       {!isCemetery && isFinished && (

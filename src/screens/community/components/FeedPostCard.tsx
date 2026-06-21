@@ -189,14 +189,20 @@ export function FeedPostCard({ post, sessionToken }: Props) {
       <Card className="p-4 overflow-visible">
       {/* Header */}
       <View className="flex-row items-center gap-3 mb-3">
-        <UserAvatar initial={initial} size={36} />
-        <View className="flex-1">
-          <Text className="text-xs font-bold text-foreground">{authorLabel}</Text>
-          <Text className="text-xs text-muted-foreground">
-            {timeAgo(post.created_at)}
-            {isOwnPost ? ' · your post' : ''}
-          </Text>
-        </View>
+        <TouchableOpacity
+          activeOpacity={0.82}
+          onPress={() => router.push(`/user/${post.user_id}` as never)}
+          className="flex-row items-center gap-3 flex-1"
+        >
+          <UserAvatar initial={initial} size={36} />
+          <View className="flex-1">
+            <Text className="text-xs font-bold text-foreground">{authorLabel}</Text>
+            <Text className="text-xs text-muted-foreground">
+              {timeAgo(post.created_at)}
+              {isOwnPost ? ' · your post' : ''}
+            </Text>
+          </View>
+        </TouchableOpacity>
         {canSendFriendRequest && (
           <TouchableOpacity
             onPress={handleSendFriendRequest}

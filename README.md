@@ -1,4 +1,16 @@
-# Welcome to your Expo app 👋
+# Pottery Life
+
+Expo / React Native app for studio pottery tracking — pieces, kiln, glazes, community, and profile.
+
+## Documentation
+
+| File | Purpose |
+|------|---------|
+| [**FRONTEND.md**](./FRONTEND.md) | V1 release tickets, product decisions, Kiln/Glaze/Challenge roadmaps |
+| [**BACKEND.md**](./BACKEND.md) | API overview, sync patterns, deployment status |
+| [**BACKEND-TASKS.md**](./BACKEND-TASKS.md) | Prioritized backend backlog (P0 → P2) |
+
+---
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 

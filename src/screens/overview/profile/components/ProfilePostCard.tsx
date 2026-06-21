@@ -158,42 +158,54 @@ export function ProfilePostCard({
   );
 }
 
-export function ProfilePostGridTile({ post }: { post: BackendFeedPost }) {
-  const { kindLabel, firstAsset, style } = usePostDisplay(post);
+export function ProfilePostGridTile({
+  post,
+  imageUri,
+  size,
+  onPress,
+}: {
+  post: BackendFeedPost;
+  imageUri: string;
+  size: number;
+  onPress?: () => void;
+}) {
+  const assetCount = post.assets?.length ?? 0;
 
-  return (
-    <Card
-      className="rounded-2xl overflow-hidden"
-      style={{ flex: 1, aspectRatio: 1 }}
-    >
-      {firstAsset ? (
-        <Image
-          source={{ uri: firstAsset.url }}
-          style={{ width: '100%', height: '100%' }}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-        />
-      ) : (
-        <View className="flex-1 items-center justify-center bg-muted">
-          <PostKindIcon style={style} size={20} />
+  const tile = (
+    <View style={{ width: size, height: size }}>
+      <Image
+        source={{ uri: imageUri }}
+        style={{ width: '100%', height: '100%' }}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+      />
+      {assetCount > 1 ? (
+        <View
+          className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded"
+          style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
+        >
+          <Text className="text-[9px] font-bold text-white">▦</Text>
         </View>
-      )}
-      <View
-        className="absolute top-2 left-2 px-2 py-0.5 rounded-full"
-        style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
-      >
-        <Text className="text-[9px] font-bold text-white">{kindLabel ?? 'Post'}</Text>
-      </View>
+      ) : null}
       {(post.reaction_count ?? 0) > 0 ? (
         <View
-          className="absolute bottom-2 right-2 flex-row items-center gap-1 px-2 py-0.5 rounded-full"
+          className="absolute bottom-1.5 left-1.5 flex-row items-center gap-1 px-1.5 py-0.5 rounded"
           style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
         >
           <Heart size={10} color="white" />
           <Text className="text-[9px] font-bold text-white">{post.reaction_count}</Text>
         </View>
       ) : null}
-    </Card>
+    </View>
+  );
+
+  if (!onPress) return tile;
+
+  return (
+    <TouchableOpacity activeOpacity={0.88} onPress={onPress} accessibilityLabel="View post in feed">
+      {tile}
+    </TouchableOpacity>
   );
 }
 

@@ -15,6 +15,8 @@ type JourneyHeroProps = {
   survivalRate: number;
   finishRate: number;
   totalPieces: number;
+  /** When true, drops outer horizontal margin (e.g. inside profile header). */
+  embedded?: boolean;
 };
 
 export function JourneyHero({
@@ -27,11 +29,12 @@ export function JourneyHero({
   survivalRate,
   finishRate,
   totalPieces,
+  embedded = false,
 }: JourneyHeroProps) {
   const levelProgress = totalBadges > 0 ? (earnedCount / totalBadges) * 100 : 0;
 
   return (
-    <Card className="mx-6 mb-4 rounded-2xl p-5">
+    <Card className={`rounded-2xl p-5 mb-4${embedded ? '' : ' mx-6'}`}>
       <View className="flex-row items-start justify-between mb-4">
         <View className="flex-1 pr-3">
           <Text className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">

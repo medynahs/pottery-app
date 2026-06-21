@@ -1,43 +1,44 @@
-﻿import { useCurrentUser } from '@/src/hooks/useCurrentUser';
+﻿import { Text } from '@/src/components/ui/text';
+import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Crown } from 'lucide-react-native';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
-import { Text } from '@/src/components/ui/text';
-import { ProfileTabBar } from './components/ProfileTabBar';
+import { ProfileGrid } from './components/ProfileGrid';
 import { ProfileHeader } from './components/ProfileHeader';
-import { JourneyTab } from './tabs/JourneyTab';
-import { PostsTab } from './tabs/PostsTab';
-import { WorkTab } from './tabs/WorkTab';
-import type { Tab } from './types';
+import { useProfilePosts } from './hooks/useProfilePosts';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>('work');
   const meQuery = useCurrentUser();
   const isPremium = useAppStore((s) => s.isPremium);
   const { PaywallGate } = usePremiumGate();
+  const { posts, loading, reload, isReloading } = useProfilePosts();
 
   const onRefresh = useCallback(async () => {
-    await meQuery.refetch();
-  }, [meQuery.refetch]);
+    await Promise.all([meQuery.refetch(), reload()]);
+  }, [meQuery.refetch, reload]);
+
+  const refreshing = meQuery.isFetching || isReloading;
 
   return (
     <ScrollView
       className="flex-1 bg-background"
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl refreshing={meQuery.isFetching} onRefresh={onRefresh} />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
       <ProfileHeader
+        postCount={loading ? null : posts.length}
         onBack={() => router.back()}
         onOpenAccountSettings={() => router.push('/account-settings')}
+        onOpenPosts={() => router.push('/profile/posts' as never)}
+        onOpenJourney={() => router.push('/profile/journey' as never)}
       />
 
-      {/* Premium upgrade banner, shown to free users only */}
       {!isPremium && (
         <TouchableOpacity
           onPress={() => router.push('/premium')}
@@ -66,10 +67,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       )}
 
-      <ProfileTabBar active={activeTab} onSelect={setActiveTab} />
-      {activeTab === 'work'    && <WorkTab />}
-      {activeTab === 'posts'   && <PostsTab />}
-      {activeTab === 'journey' && <JourneyTab />}
+      <ProfileGrid posts={posts} loading={loading} />
       {PaywallGate}
       <View className="h-8" />
     </ScrollView>
