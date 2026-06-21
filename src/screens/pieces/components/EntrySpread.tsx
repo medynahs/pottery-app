@@ -3,13 +3,12 @@ import { TimelineEntry, type Piece } from '@/src/types/pieces';
 import React from 'react';
 import { Image, ScrollView, View } from 'react-native';
 import { Text } from '@/src/components/ui/text';
-import { useTextScale } from '@/src/hooks/useTextScale';
 import { getEntryCaptureTiles } from '../utils/entryCaptureMeta';
 import { BOOK_ART } from '../utils/constants';
 import { JournalTheme } from '../utils/journalTheme';
-import { JournalNotePreview, JournalNotesSheet } from './JournalNotesSheet';
+import { JournalInlineNotes } from './JournalInlineNotes';
 import { JournalSpreadMasthead } from './JournalSpreadMasthead';
-import { LedgerRowLine, LedgerSection } from './LedgerBlocks';
+import { StageFactsLedger } from './LedgerBlocks';
 import { PolaroidPhotoPicker } from './PolaroidPhotoPicker';
 
 export function EntrySpread({
@@ -42,129 +41,131 @@ export function EntrySpread({
     canAddMorePhotos?: boolean;
 }) {
     const captureTiles = getEntryCaptureTiles(entry, piece);
-    const [notesOpen, setNotesOpen] = React.useState(false);
-    const { scaled } = useTextScale();
+    const hasPhotos = Boolean(draft.photos?.[0] || draft.photos?.[1]);
+    const hasNotes = draft.notes.trim().length > 0;
+
+    const stageFacts = [
+        { label: 'Recorded', value: dateLabel },
+        { label: 'In stage', value: durationLabel },
+        ...captureTiles.map((tile) => ({ label: tile.label, value: tile.value })),
+    ];
+
+    const emptyPrompt = !hasPhotos && !hasNotes
+        ? `What happened at ${stageLabel.toLowerCase()}?`
+        : undefined;
 
     return (
-        <>
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ padding: compact ? 10 : 14, paddingBottom: compact ? 56 : 22 }}
-                keyboardShouldPersistTaps="handled"
-                nestedScrollEnabled
-            >
-                <Image
-                    source={BOOK_ART.pageWatermark}
+        <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ padding: compact ? 10 : 14, paddingBottom: compact ? 24 : 22 }}
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+        >
+            <Image
+                source={BOOK_ART.pageWatermark}
+                style={{
+                    position: 'absolute',
+                    right: compact ? -20 : -10,
+                    top: 120,
+                    width: compact ? 140 : 180,
+                    height: compact ? 140 : 180,
+                    opacity: 0.045,
+                }}
+                resizeMode="contain"
+            />
+
+            <JournalSpreadMasthead
+                compact={compact}
+                leftLabel={stageLabel}
+                rightLabel={`Entry ${index + 1} of ${totalEntries} · ${dateLabel}`}
+            />
+
+            {!canAddMorePhotos ? (
+                <View
                     style={{
-                        position: 'absolute',
-                        right: compact ? -20 : -10,
-                        top: 120,
-                        width: compact ? 140 : 180,
-                        height: compact ? 140 : 180,
-                        opacity: 0.045,
+                        marginTop: 12,
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: JournalTheme.tileBorder,
+                        backgroundColor: 'rgba(215, 180, 141, 0.14)',
                     }}
-                    resizeMode="contain"
-                />
-
-                <JournalSpreadMasthead
-                    compact={compact}
-                    leftLabel={stageLabel}
-                    rightLabel={`${piece.name} · ${dateLabel}`}
-                />
-
-                {!canAddMorePhotos ? (
-                    <View
+                >
+                    <Text
                         style={{
-                            marginTop: 12,
-                            paddingHorizontal: 12,
-                            paddingVertical: 8,
-                            borderRadius: 12,
-                            borderWidth: 1,
-                            borderColor: JournalTheme.tileBorder,
-                            backgroundColor: 'rgba(215, 180, 141, 0.14)',
+                            fontSize: 10,
+                            lineHeight: 14,
+                            color: JournalTheme.coverSpecLabel,
+                            textAlign: 'center',
                         }}
                     >
-                        <Text
-                            style={{
-                                fontSize: scaled(10),
-                                lineHeight: scaled(14),
-                                color: JournalTheme.coverSpecLabel,
-                                textAlign: 'center',
-                            }}
-                        >
-                            Upgrade to Premium to add stage photographs beyond your cover image.
-                        </Text>
-                    </View>
-                ) : null}
-
-                <View style={{ flexDirection: compact ? 'column' : 'row', gap: 14, width: '100%', marginTop: 14 }}>
-                    <View style={{ flex: compact ? undefined : 1, gap: 12, width: compact ? '100%' : undefined }}>
-                        <LedgerSection title="Stage record" subtitle={`Entry ${index + 1} of ${totalEntries}`} compact={compact}>
-                            <LedgerRowLine label="Stage date" value={dateLabel} compact={compact} />
-                            <LedgerRowLine label="Time in stage" value={durationLabel} compact={compact} />
-                            {captureTiles.map((tile) => (
-                                <LedgerRowLine key={tile.label} label={tile.label} value={tile.value} compact={compact} />
-                            ))}
-                        </LedgerSection>
-
-                        <View style={{ alignItems: compact ? 'center' : 'flex-start', marginTop: 4 }}>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: compact ? 'center' : 'flex-start' }}>
-                                <PolaroidPhotoPicker
-                                    photo={draft.photos?.[0]}
-                                    onPress={canAddMorePhotos || draft.photos?.[0] ? () => onPickPhoto(0) : undefined}
-                                    accent={accent}
-                                    width={200}
-                                    height={compact ? 180 : 240}
-                                    borderRadius={12}
-                                    rotation="5deg"
-                                    style={{ alignSelf: 'flex-end', marginRight: compact ? -4 : -32 }}
-                                />
-                                <PolaroidPhotoPicker
-                                    photo={draft.photos?.[1]}
-                                    onPress={canAddMorePhotos || draft.photos?.[1] ? () => onPickPhoto(1) : undefined}
-                                    accent={accent}
-                                    width={100}
-                                    height={100}
-                                    borderRadius={12}
-                                    rotation="-10deg"
-                                    style={{ alignSelf: 'flex-end', marginRight: compact ? -4 : -32 }}
-                                />
-                            </View>
-                            <Text
-                                style={{
-                                    fontSize: scaled(9),
-                                    letterSpacing: 1.4,
-                                    textTransform: 'uppercase',
-                                    color: JournalTheme.coverSpecLabel,
-                                    marginTop: 10,
-                                    textAlign: compact ? 'center' : 'left',
-                                }}
-                            >
-                                Stage photographs
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={{ flex: compact ? undefined : 1, gap: 12, width: '100%' }}>
-                        <JournalNotePreview
-                            title="Field Notes"
-                            value={draft.notes}
-                            placeholder="Record trimming decisions, drying surprises, glaze tests, or what you want your future illustrated journal spread to show."
-                            onPress={() => setNotesOpen(true)}
-                            compact={compact}
-                        />
-                    </View>
+                        Upgrade to Premium to add stage photographs beyond your cover image.
+                    </Text>
                 </View>
-            </ScrollView>
+            ) : null}
 
-            <JournalNotesSheet
-                visible={notesOpen}
-                title="Field Notes"
+            <View style={{ alignItems: compact ? 'center' : 'flex-start', marginTop: 14, marginBottom: 16 }}>
+                <View
+                    style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        gap: 10,
+                        justifyContent: compact ? 'center' : 'flex-start',
+                    }}
+                >
+                    <PolaroidPhotoPicker
+                        photo={draft.photos?.[0]}
+                        onPress={canAddMorePhotos || draft.photos?.[0] ? () => onPickPhoto(0) : undefined}
+                        accent={accent}
+                        width={200}
+                        height={compact ? 180 : 240}
+                        borderRadius={12}
+                        rotation="5deg"
+                        style={{ alignSelf: 'flex-end', marginRight: compact ? -4 : -32 }}
+                    />
+                    <PolaroidPhotoPicker
+                        photo={draft.photos?.[1]}
+                        onPress={canAddMorePhotos || draft.photos?.[1] ? () => onPickPhoto(1) : undefined}
+                        accent={accent}
+                        width={100}
+                        height={100}
+                        borderRadius={12}
+                        rotation="-10deg"
+                        style={{ alignSelf: 'flex-end', marginRight: compact ? -4 : -32 }}
+                    />
+                </View>
+                <Text
+                    style={{
+                        fontSize: 9,
+                        letterSpacing: 1.4,
+                        textTransform: 'uppercase',
+                        color: JournalTheme.coverSpecLabel,
+                        marginTop: 10,
+                        textAlign: compact ? 'center' : 'left',
+                    }}
+                >
+                    Stage photographs
+                </Text>
+            </View>
+
+            <JournalInlineNotes
+                title="Field notes"
                 value={draft.notes}
-                placeholder="Record trimming decisions, drying surprises, glaze tests, or what you want your future illustrated journal spread to show."
+                placeholder="Record trimming decisions, drying surprises, glaze tests, or what you want your future self to remember."
                 onChangeText={onChangeNotes}
-                onClose={() => setNotesOpen(false)}
+                compact={compact}
+                emptyPrompt={emptyPrompt}
             />
-        </>
+
+            <View style={{ marginTop: 16 }}>
+                <StageFactsLedger
+                    facts={stageFacts}
+                    compact={compact}
+                    accent={accent}
+                    subtitle={`Entry ${index + 1} of ${totalEntries}`}
+                />
+            </View>
+        </ScrollView>
     );
 }

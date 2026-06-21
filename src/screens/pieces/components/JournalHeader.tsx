@@ -1,33 +1,35 @@
 import { Text } from '@/src/components/ui/text';
-import { useTextScale } from '@/src/hooks/useTextScale';
-import { BookOpen, Share2, X } from 'lucide-react-native';
+import { BookOpen, List, Share2, X } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
 import { JournalTheme } from '../utils/journalTheme';
 
 export function JournalHeader({
+  piece,
   subtitle,
   isCompact,
   onClose,
   onShareToCommunity,
+  onOpenContents,
+  showContents,
 }: {
   piece: Piece;
   subtitle?: string;
   isCompact: boolean;
   onClose: () => void;
   onShareToCommunity?: () => void;
+  onOpenContents?: () => void;
+  showContents?: boolean;
 }) {
-  const { scaled } = useTextScale();
-
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 4,
-        paddingBottom: 6,
+        paddingHorizontal: 2,
+        paddingBottom: isCompact ? 6 : 8,
         minHeight: isCompact ? 40 : 44,
       }}
     >
@@ -47,7 +49,7 @@ export function JournalHeader({
         <View style={{ flex: 1 }}>
           <Text
             style={{
-              fontSize: scaled(10),
+              fontSize: 10,
               fontWeight: '700',
               letterSpacing: 1.5,
               textTransform: 'uppercase',
@@ -58,15 +60,39 @@ export function JournalHeader({
           </Text>
           {subtitle ? (
             <Text
-              style={{ fontSize: scaled(isCompact ? 11 : 12), marginTop: 1, color: JournalTheme.headerText }}
+              style={{ fontSize: isCompact ? 11 : 12, marginTop: 1, color: JournalTheme.headerText }}
               numberOfLines={1}
             >
               {subtitle}
             </Text>
-          ) : null}
+          ) : (
+            <Text
+              style={{ fontSize: isCompact ? 11 : 12, marginTop: 1, color: JournalTheme.headerText }}
+              numberOfLines={1}
+            >
+              {piece.name}
+            </Text>
+          )}
         </View>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        {showContents && onOpenContents ? (
+          <TouchableOpacity
+            onPress={onOpenContents}
+            activeOpacity={0.8}
+            accessibilityLabel="Open table of contents"
+            style={{
+              width: isCompact ? 32 : 36,
+              height: isCompact ? 32 : 36,
+              borderRadius: 999,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: JournalTheme.headerIconBg,
+            }}
+          >
+            <List size={isCompact ? 15 : 16} color={JournalTheme.headerText} />
+          </TouchableOpacity>
+        ) : null}
         {onShareToCommunity ? (
           <TouchableOpacity
             onPress={onShareToCommunity}

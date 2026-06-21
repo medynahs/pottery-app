@@ -1,4 +1,5 @@
 import { Text } from '@/src/components/ui/text';
+import { useTextScale } from '@/src/hooks/useTextScale';
 import React from 'react';
 import {
   Animated,
@@ -34,6 +35,7 @@ export function JournalNotesSheet({
   onClose,
 }: JournalNotesSheetProps) {
   const insets = useSafeAreaInsets();
+  const { scaled } = useTextScale();
   const { height: windowHeight } = useWindowDimensions();
   const [mounted, setMounted] = React.useState(visible);
   const [draft, setDraft] = React.useState(value);
@@ -190,7 +192,7 @@ export function JournalNotesSheet({
                     {title}
                   </Text>
                   <Text style={{ fontSize: 11, color: JournalTheme.coverSpecLabel, marginTop: 3 }}>
-                    Write freely — saved when you tap Save
+                    Saves as you write
                   </Text>
                 </View>
                 <TouchableOpacity onPress={requestClose} hitSlop={12}>
@@ -219,8 +221,8 @@ export function JournalNotesSheet({
                     minHeight: 168,
                     maxHeight: 260,
                     fontFamily: 'DMSans_400Regular',
-                    fontSize: 15,
-                    lineHeight: 24,
+                    fontSize: scaled(15),
+                    lineHeight: scaled(24),
                     color: JournalTheme.bodyInk,
                     textAlignVertical: 'top',
                     padding: 0,

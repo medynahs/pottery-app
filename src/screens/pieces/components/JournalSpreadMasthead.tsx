@@ -1,5 +1,4 @@
 import { Text } from '@/src/components/ui/text';
-import { useTextScale } from '@/src/hooks/useTextScale';
 import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { JournalTheme } from '../utils/journalTheme';
@@ -11,8 +10,6 @@ type JournalSpreadMastheadProps = {
 };
 
 export function JournalSpreadMasthead({ leftLabel = 'Studio Field Journal', rightLabel, compact }: JournalSpreadMastheadProps) {
-  const { scaled } = useTextScale();
-
   return (
     <LinearGradient
       colors={[...JournalTheme.coverWash]}
@@ -29,7 +26,7 @@ export function JournalSpreadMasthead({ leftLabel = 'Studio Field Journal', righ
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <Text
           style={{
-            fontSize: scaled(9),
+            fontSize: 9,
             fontWeight: '700',
             letterSpacing: 2.4,
             textTransform: 'uppercase',
@@ -42,7 +39,7 @@ export function JournalSpreadMasthead({ leftLabel = 'Studio Field Journal', righ
         </Text>
         <Text
           style={{
-            fontSize: scaled(9),
+            fontSize: 9,
             fontWeight: '600',
             letterSpacing: 1.2,
             color: JournalTheme.coverSpecLabel,

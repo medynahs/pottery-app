@@ -19,7 +19,7 @@ export function useJournalDrafts(piece: Piece | null, visible: boolean) {
         photos: initPhotos(entry),
       })));
     }
-  }, [piece, visible]);
+  }, [piece?.id, visible]);
 
   const updateNotes = useCallback((index: number, notes: string) => {
     setDrafts(prev => {
