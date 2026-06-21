@@ -1,7 +1,9 @@
+import { KeyboardFormScrollView } from '@/src/components/ui/keyboard-form-scroll-view';
+import { useKeyboardBottomOffset } from '@/src/hooks/useKeyboardBottomOffset';
 import { EntryDraft } from '@/src/types/journal';
 import { TimelineEntry, type Piece } from '@/src/types/pieces';
 import React from 'react';
-import { Image, ScrollView, View } from 'react-native';
+import { Image, View } from 'react-native';
 import { Text } from '@/src/components/ui/text';
 import { getEntryCaptureTiles } from '../utils/entryCaptureMeta';
 import { BOOK_ART } from '../utils/constants';
@@ -40,6 +42,7 @@ export function EntrySpread({
     compact: boolean;
     canAddMorePhotos?: boolean;
 }) {
+    const keyboardBottomOffset = useKeyboardBottomOffset({ extra: 24 });
     const captureTiles = getEntryCaptureTiles(entry, piece);
     const hasPhotos = Boolean(draft.photos?.[0] || draft.photos?.[1]);
     const hasNotes = draft.notes.trim().length > 0;
@@ -55,11 +58,11 @@ export function EntrySpread({
         : undefined;
 
     return (
-        <ScrollView
+        <KeyboardFormScrollView
+            bottomOffset={keyboardBottomOffset}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ padding: compact ? 10 : 14, paddingBottom: compact ? 24 : 22 }}
+            contentContainerStyle={{ padding: compact ? 10 : 14, paddingBottom: compact ? 48 : 40 }}
             keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
         >
             <Image
                 source={BOOK_ART.pageWatermark}
@@ -166,6 +169,6 @@ export function EntrySpread({
                     subtitle={`Entry ${index + 1} of ${totalEntries}`}
                 />
             </View>
-        </ScrollView>
+        </KeyboardFormScrollView>
     );
 }

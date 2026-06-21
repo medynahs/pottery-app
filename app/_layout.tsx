@@ -8,6 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import 'react-native-reanimated';
 import '../global.css';
 
@@ -229,6 +230,7 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#C4A052' }} onLayout={onLayoutRootView}>
+        <KeyboardProvider>
         <QueryClientProvider client={queryClient}>
           <UIThemeProvider>
             <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#C4A052' } }}>
@@ -247,6 +249,7 @@ export default function RootLayout() {
             </ThemeProvider>
           </UIThemeProvider>
         </QueryClientProvider>
+        </KeyboardProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
   );

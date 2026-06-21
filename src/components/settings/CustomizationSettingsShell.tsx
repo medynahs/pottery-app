@@ -1,11 +1,11 @@
+import { KeyboardAvoidingView } from '@/src/components/ui/keyboard-avoiding-view';
+import { KeyboardFormScrollView, type KeyboardFormScrollViewProps } from '@/src/components/ui/keyboard-form-scroll-view';
 import { Text } from '@/src/components/ui/text';
 import { ChevronDown } from 'lucide-react-native';
 import React from 'react';
 import {
-  ScrollView,
   TouchableOpacity,
   View,
-  type ScrollViewProps,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,7 +20,7 @@ type CustomizationSettingsShellProps = {
   saveDisabled?: boolean;
   isSaving?: boolean;
   children: React.ReactNode;
-  scrollProps?: Omit<ScrollViewProps, 'children' | 'contentContainerStyle'>;
+  scrollProps?: Omit<KeyboardFormScrollViewProps, 'children' | 'contentContainerStyle'>;
 };
 
 export function CustomizationSettingsShell({
@@ -40,7 +40,7 @@ export function CustomizationSettingsShell({
   const disabled = saveDisabled || isSaving;
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center px-4 pb-2">
         <TouchableOpacity
           onPress={onBack}
@@ -52,10 +52,8 @@ export function CustomizationSettingsShell({
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        className="flex-1"
+      <KeyboardFormScrollView
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 16 }}
         {...scrollProps}
       >
@@ -73,7 +71,7 @@ export function CustomizationSettingsShell({
         </View>
 
         <View className="px-6">{children}</View>
-      </ScrollView>
+      </KeyboardFormScrollView>
 
       <View
         className="px-6 pt-3 border-t border-border bg-background"
@@ -91,6 +89,6 @@ export function CustomizationSettingsShell({
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

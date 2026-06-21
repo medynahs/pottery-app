@@ -46,7 +46,10 @@ export function JournalInlineNotes({
   const enterEditing = React.useCallback(() => {
     setEditing(true);
     onEditingChange?.(true);
-    requestAnimationFrame(() => inputRef.current?.focus());
+    // Wait for TextInput mount + layout so keyboard-aware scroll can target it.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => inputRef.current?.focus());
+    });
   }, [onEditingChange]);
 
   React.useEffect(() => {

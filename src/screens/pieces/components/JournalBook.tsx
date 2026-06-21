@@ -1,13 +1,12 @@
 import React from 'react';
-import {
-  Keyboard,
-  Platform,
-  ScrollView,
-  View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  type ScrollView as ScrollViewType,
-} from 'react-native';
+import { Keyboard, Platform, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import type { JournalSpread } from '../../../types/journal';
 import type { Piece } from '../../../types/pieces';
 import type { PricingSaleMode } from '../../../types/pricing';
@@ -53,10 +52,9 @@ export const JournalBook = React.forwardRef<JournalBookHandle, JournalBookProps>
   },
   ref,
 ) {
-  const scrollRef = React.useRef<ScrollViewType>(null);
   const [viewportWidth, setViewportWidth] = React.useState(0);
   const [keyboardOpen, setKeyboardOpen] = React.useState(false);
-  const currentPageRef = React.useRef(initialPage);
+
   React.useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -67,39 +65,6 @@ export const JournalBook = React.forwardRef<JournalBookHandle, JournalBookProps>
       hideSub.remove();
     };
   }, []);
-
-  React.useImperativeHandle(
-    ref,
-    () => ({
-      scrollToPage: (index: number, animated = true) => {
-        if (viewportWidth <= 0) return;
-        const clamped = Math.max(0, Math.min(index, spreads.length - 1));
-        currentPageRef.current = clamped;
-        scrollRef.current?.scrollTo({ x: clamped * viewportWidth, animated });
-      },
-    }),
-    [spreads.length, viewportWidth],
-  );
-
-  React.useEffect(() => {
-    currentPageRef.current = initialPage;
-  }, [initialPage, piece.id]);
-
-  React.useEffect(() => {
-    if (viewportWidth <= 0) return;
-    const page = Math.max(0, Math.min(currentPageRef.current, spreads.length - 1));
-    scrollRef.current?.scrollTo({ x: page * viewportWidth, animated: false });
-  }, [viewportWidth, piece.id, spreads.length]);
-
-  const handleMomentumEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (viewportWidth <= 0) return;
-    const nextPage = Math.max(
-      0,
-      Math.min(Math.round(event.nativeEvent.contentOffset.x / viewportWidth), spreads.length - 1),
-    );
-    currentPageRef.current = nextPage;
-    onPageChange(nextPage);
-  };
 
   return (
     <JournalEditProvider>
@@ -114,9 +79,10 @@ export const JournalBook = React.forwardRef<JournalBookHandle, JournalBookProps>
       >
         {viewportWidth > 0 ? (
           <JournalBookPager
-            scrollRef={scrollRef}
+            ref={ref}
             viewportWidth={viewportWidth}
             keyboardOpen={keyboardOpen}
+            initialPage={initialPage}
             spreads={spreads}
             piece={piece}
             totalMs={totalMs}
@@ -127,7 +93,7 @@ export const JournalBook = React.forwardRef<JournalBookHandle, JournalBookProps>
             pickCoverPhoto={pickCoverPhoto}
             handleUpdateNotes={handleUpdateNotes}
             handleUpdateDescription={handleUpdateDescription}
-            onMomentumEnd={handleMomentumEnd}
+            onPageChange={onPageChange}
             canAddMorePhotos={canAddMorePhotos}
           />
         ) : null}
@@ -136,96 +102,187 @@ export const JournalBook = React.forwardRef<JournalBookHandle, JournalBookProps>
   );
 });
 
-function JournalBookPager({
-  scrollRef,
-  viewportWidth,
-  keyboardOpen,
-  spreads,
-  piece,
-  totalMs,
-  isCompact,
-  currencySymbol,
-  handleChangeSaleMode,
-  pickPhoto,
-  pickCoverPhoto,
-  handleUpdateNotes,
-  handleUpdateDescription,
-  onMomentumEnd,
-  canAddMorePhotos,
-}: {
-  scrollRef: React.RefObject<ScrollViewType | null>;
-  viewportWidth: number;
-  keyboardOpen: boolean;
-  spreads: JournalSpread[];
-  piece: Piece;
-  totalMs: number;
-  isCompact: boolean;
-  currencySymbol: string;
-  handleChangeSaleMode: (mode: PricingSaleMode) => void;
-  pickPhoto: (entryIndex: number, photoIndex: number) => void;
-  pickCoverPhoto: () => void;
-  handleUpdateNotes: (index: number, notes: string) => void;
-  handleUpdateDescription: (description: string) => void;
-  onMomentumEnd: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
-  canAddMorePhotos: boolean;
-}) {
+const JournalBookPager = React.forwardRef<
+  JournalBookHandle,
+  {
+    viewportWidth: number;
+    keyboardOpen: boolean;
+    initialPage: number;
+    spreads: JournalSpread[];
+    piece: Piece;
+    totalMs: number;
+    isCompact: boolean;
+    currencySymbol: string;
+    handleChangeSaleMode: (mode: PricingSaleMode) => void;
+    pickPhoto: (entryIndex: number, photoIndex: number) => void;
+    pickCoverPhoto: () => void;
+    handleUpdateNotes: (index: number, notes: string) => void;
+    handleUpdateDescription: (description: string) => void;
+    onPageChange: (index: number) => void;
+    canAddMorePhotos: boolean;
+  }
+>(function JournalBookPager(
+  {
+    viewportWidth,
+    keyboardOpen,
+    initialPage,
+    spreads,
+    piece,
+    totalMs,
+    isCompact,
+    currencySymbol,
+    handleChangeSaleMode,
+    pickPhoto,
+    pickCoverPhoto,
+    handleUpdateNotes,
+    handleUpdateDescription,
+    onPageChange,
+    canAddMorePhotos,
+  },
+  ref,
+) {
   const editScope = React.useContext(JournalEditScope);
+  const currentPageRef = React.useRef(initialPage);
+  const translateX = useSharedValue(0);
+  const panStartX = useSharedValue(0);
+
+  const clampPage = React.useCallback(
+    (page: number) => Math.max(0, Math.min(page, spreads.length - 1)),
+    [spreads.length],
+  );
+
+  const snapToPage = React.useCallback(
+    (page: number, animated = true) => {
+      const clamped = clampPage(page);
+      currentPageRef.current = clamped;
+      translateX.value = animated
+        ? withTiming(-clamped * viewportWidth, { duration: 260 })
+        : -clamped * viewportWidth;
+    },
+    [clampPage, translateX, viewportWidth],
+  );
+
+  const commitPage = React.useCallback(
+    (page: number) => {
+      const clamped = clampPage(page);
+      currentPageRef.current = clamped;
+      onPageChange(clamped);
+    },
+    [clampPage, onPageChange],
+  );
+
+  const dismissEditing = React.useCallback(() => {
+    editScope?.requestDismiss();
+    Keyboard.dismiss();
+  }, [editScope]);
+
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      scrollToPage: (index: number, animated = true) => {
+        if (viewportWidth <= 0) return;
+        snapToPage(index, animated);
+      },
+    }),
+    [snapToPage, viewportWidth],
+  );
+
+  React.useEffect(() => {
+    currentPageRef.current = initialPage;
+  }, [initialPage, piece.id]);
+
+  React.useEffect(() => {
+    if (viewportWidth <= 0) return;
+    snapToPage(currentPageRef.current, false);
+  }, [viewportWidth, piece.id, spreads.length, snapToPage]);
+
+  const panGesture = React.useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(!keyboardOpen)
+        .activeOffsetX([-18, 18])
+        .failOffsetY([-12, 12])
+        .onBegin(() => {
+          panStartX.value = translateX.value;
+          runOnJS(dismissEditing)();
+        })
+        .onUpdate((event) => {
+          const minX = -(spreads.length - 1) * viewportWidth;
+          const nextX = panStartX.value + event.translationX;
+          translateX.value = Math.max(minX, Math.min(0, nextX));
+        })
+        .onEnd((event) => {
+          const projected = translateX.value + event.velocityX * 0.25;
+          const nextPage = Math.round(-projected / viewportWidth);
+          const clamped = Math.max(0, Math.min(nextPage, spreads.length - 1));
+          translateX.value = withTiming(-clamped * viewportWidth, { duration: 240 });
+          runOnJS(commitPage)(clamped);
+        }),
+    [
+      commitPage,
+      dismissEditing,
+      keyboardOpen,
+      panStartX,
+      spreads.length,
+      translateX,
+      viewportWidth,
+    ],
+  );
+
+  const pagerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
 
   return (
-    <ScrollView
-      ref={scrollRef}
-      horizontal
-      pagingEnabled
-      scrollEnabled={!keyboardOpen}
-      directionalLockEnabled
-      showsHorizontalScrollIndicator={false}
-      bounces={false}
-      overScrollMode="never"
-      decelerationRate="fast"
-      scrollEventThrottle={16}
-      onScrollBeginDrag={() => {
-        editScope?.requestDismiss();
-        Keyboard.dismiss();
-      }}
-      onMomentumScrollEnd={onMomentumEnd}
-      keyboardDismissMode="on-drag"
-      style={{ flex: 1 }}
-    >
-      {spreads.map((spread) => (
-        <View
-          key={spread.key}
-          style={{ width: viewportWidth, flexGrow: 1, flexShrink: 0, alignSelf: 'stretch' }}
+    <GestureDetector gesture={panGesture}>
+      <View style={{ flex: 1, overflow: 'hidden' }}>
+        <Animated.View
+          style={[
+            {
+              flexDirection: 'row',
+              width: viewportWidth * spreads.length,
+              flex: 1,
+            },
+            pagerStyle,
+          ]}
         >
-          {spread.kind === 'cover' ? (
-            <CoverSpread
-              piece={piece}
-              totalMs={totalMs}
-              accent={spread.accent}
-              compact={isCompact}
-              currencySymbol={currencySymbol}
-              onChangeSaleMode={handleChangeSaleMode}
-              onPickPhoto={pickCoverPhoto}
-              onUpdateDescription={handleUpdateDescription}
-            />
-          ) : (
-            <EntrySpread
-              entry={spread.entry}
-              draft={spread.draft}
-              piece={piece}
-              index={spread.index}
-              stageLabel={spread.stageLabel}
-              accent={spread.accent}
-              durationLabel={spread.durationLabel}
-              dateLabel={spread.dateLabel}
-              totalEntries={piece.timeline.length}
-              onPickPhoto={(photoIndex) => pickPhoto(spread.index, photoIndex)}
-              onChangeNotes={(value) => handleUpdateNotes(spread.index, value)}
-              compact={isCompact}
-              canAddMorePhotos={canAddMorePhotos}
-            />
-          )}
-        </View>
-      ))}
-    </ScrollView>
+          {spreads.map((spread) => (
+            <View
+              key={spread.key}
+              style={{ width: viewportWidth, flexGrow: 1, flexShrink: 0, alignSelf: 'stretch' }}
+            >
+              {spread.kind === 'cover' ? (
+                <CoverSpread
+                  piece={piece}
+                  totalMs={totalMs}
+                  accent={spread.accent}
+                  compact={isCompact}
+                  currencySymbol={currencySymbol}
+                  onChangeSaleMode={handleChangeSaleMode}
+                  onPickPhoto={pickCoverPhoto}
+                  onUpdateDescription={handleUpdateDescription}
+                />
+              ) : (
+                <EntrySpread
+                  entry={spread.entry}
+                  draft={spread.draft}
+                  piece={piece}
+                  index={spread.index}
+                  stageLabel={spread.stageLabel}
+                  accent={spread.accent}
+                  durationLabel={spread.durationLabel}
+                  dateLabel={spread.dateLabel}
+                  totalEntries={piece.timeline.length}
+                  onPickPhoto={(photoIndex) => pickPhoto(spread.index, photoIndex)}
+                  onChangeNotes={(value) => handleUpdateNotes(spread.index, value)}
+                  compact={isCompact}
+                  canAddMorePhotos={canAddMorePhotos}
+                />
+              )}
+            </View>
+          ))}
+        </Animated.View>
+      </View>
+    </GestureDetector>
   );
-}
+});

@@ -11,9 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { PackageCheck } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -243,38 +241,37 @@ export function PieceJournalModal({
             showContents={showContents}
           />
 
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, minHeight: 0 }}>
-            <JournalBookShell
-              isCompact={isCompact}
-              header={
-                <JournalStageRail
-                  spreads={spreads}
-                  activePage={activePage}
-                  onPress={goToPage}
-                  icons={icons}
-                  embedded
-                  placement="top"
-                />
-              }
-            >
-              <JournalBook
-                ref={bookRef}
+          <JournalBookShell
+            isCompact={isCompact}
+            style={{ flex: 1, minHeight: 0 }}
+            header={
+              <JournalStageRail
                 spreads={spreads}
-                piece={piece}
-                totalMs={totalMs}
-                isCompact={isCompact}
-                currencySymbol={currencySymbol}
-                initialPage={journalInitialPage}
-                handleChangeSaleMode={handleChangeSaleMode}
-                pickPhoto={pickPhoto}
-                pickCoverPhoto={pickCoverPhoto}
-                handleUpdateNotes={handleUpdateNotes}
-                handleUpdateDescription={handleUpdateDescription}
-                onPageChange={handlePageChange}
-                canAddMorePhotos={canAddMorePhotos}
+                activePage={activePage}
+                onPress={goToPage}
+                icons={icons}
+                embedded
+                placement="top"
               />
-            </JournalBookShell>
-          </KeyboardAvoidingView>
+            }
+          >
+            <JournalBook
+              ref={bookRef}
+              spreads={spreads}
+              piece={piece}
+              totalMs={totalMs}
+              isCompact={isCompact}
+              currencySymbol={currencySymbol}
+              initialPage={journalInitialPage}
+              handleChangeSaleMode={handleChangeSaleMode}
+              pickPhoto={pickPhoto}
+              pickCoverPhoto={pickCoverPhoto}
+              handleUpdateNotes={handleUpdateNotes}
+              handleUpdateDescription={handleUpdateDescription}
+              onPageChange={handlePageChange}
+              canAddMorePhotos={canAddMorePhotos}
+            />
+          </JournalBookShell>
         </View>
       </LinearGradient>
       {visible ? <PhotoPickerOverlay /> : null}

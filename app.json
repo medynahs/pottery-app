@@ -30,6 +30,7 @@
     },
     "android": {
       "package": "com.ariane.potterylife",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/PotteryNookLogo.png",
         "backgroundColor": "#FBF0E0"

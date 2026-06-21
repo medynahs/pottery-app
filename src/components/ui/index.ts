@@ -7,6 +7,7 @@ export * from "./dialog";
 export * from "./drawer";
 export * from "./flat-list";
 export * from "./input";
+export * from "./keyboard-form-scroll-view";
 export * from "./keyboard-avoiding-view";
 export * from "./label";
 export * from "./permission-requester";

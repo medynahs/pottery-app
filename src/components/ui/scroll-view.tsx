@@ -22,13 +22,18 @@ const ScrollView = React.forwardRef<
       bounces: true,
       showsVerticalScrollIndicator: false,
       overScrollMode: "always" as const,
+      automaticallyAdjustKeyboardInsets: true,
+      keyboardShouldPersistTaps: "handled" as const,
     },
     android: {
       bounces: false,
       showsVerticalScrollIndicator: true,
       overScrollMode: "auto" as const,
+      keyboardShouldPersistTaps: "handled" as const,
     },
-    default: {},
+    default: {
+      keyboardShouldPersistTaps: "handled" as const,
+    },
   });
 
   return (

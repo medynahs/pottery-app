@@ -1,12 +1,11 @@
 import { PhotoPickerOverlay } from '@/src/components/PhotoPickerOverlay';
+import { KeyboardAvoidingView } from '@/src/components/ui/keyboard-avoiding-view';
 import React from 'react';
 import {
   Animated,
   Easing,
-  KeyboardAvoidingView,
   Modal,
   PanResponder,
-  Platform,
   Pressable,
   StyleSheet,
   TouchableOpacity,
@@ -14,6 +13,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 
 /** Shared bottom-sheet defaults — use across form modals for consistency. */
@@ -52,6 +52,7 @@ export function ModalShell({
   overlay,
 }: ModalShellProps) {
   const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const backdropOpacity = React.useRef(new Animated.Value(0)).current;
   const slideY = React.useRef(new Animated.Value(height)).current;
   const dragY = React.useRef(new Animated.Value(0)).current;
@@ -164,7 +165,8 @@ export function ModalShell({
               accessibilityLabel="Close modal"
             />
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              behavior="padding"
+              keyboardVerticalOffset={insets.top}
               style={{ flex: 1, justifyContent: 'flex-end' }}
               pointerEvents="box-none"
             >

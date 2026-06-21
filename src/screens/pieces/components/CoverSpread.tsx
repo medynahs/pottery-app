@@ -1,7 +1,9 @@
+import { KeyboardFormScrollView } from '@/src/components/ui/keyboard-form-scroll-view';
+import { useKeyboardBottomOffset } from '@/src/hooks/useKeyboardBottomOffset';
 import { Text } from '@/src/components/ui/text';
 import { BrandColors } from '@/src/constants/theme';
 import React from 'react';
-import { Image, ScrollView, View } from 'react-native';
+import { Image, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
 import { type PricingSaleMode } from '../../../types/pricing';
 import { BOOK_ART } from '../utils/constants';
@@ -88,6 +90,7 @@ export function CoverSpread({
     descDebounceRef.current = setTimeout(() => onUpdateDescription(text), 500);
   }, [onUpdateDescription]);
 
+  const keyboardBottomOffset = useKeyboardBottomOffset({ extra: 24 });
   const registryRows = React.useMemo(() => buildRegistryRows(piece, totalMs, currencySymbol), [piece, totalMs, currencySymbol]);
   const specimenRows = React.useMemo(() => buildSpecimenRows(piece), [piece]);
   const economicsRows = React.useMemo(() => buildEconomicsRows(piece, currencySymbol), [piece, currencySymbol]);
@@ -103,11 +106,11 @@ export function CoverSpread({
   const currentStageLabel = piece.stage.replace(/-/g, ' ');
 
   return (
-    <ScrollView
+    <KeyboardFormScrollView
+      bottomOffset={keyboardBottomOffset}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ padding: compact ? 10 : 14, paddingBottom: compact ? 24 : 22 }}
+      contentContainerStyle={{ padding: compact ? 10 : 14, paddingBottom: compact ? 48 : 40 }}
       keyboardShouldPersistTaps="handled"
-      nestedScrollEnabled
     >
       <Image
         source={BOOK_ART.pageWatermark}
@@ -230,6 +233,6 @@ export function CoverSpread({
           Swipe or use the tabs above →
         </Text>
       </View>
-    </ScrollView>
+    </KeyboardFormScrollView>
   );
 }

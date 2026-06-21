@@ -1,36 +1,26 @@
-import * as React from "react";
-import { 
-  KeyboardAvoidingView as RNKeyboardAvoidingView,
-  type KeyboardAvoidingViewProps as RNKeyboardAvoidingViewProps,
-  Platform
-} from "react-native";
-import { cn } from "./utils/cn";
+import * as React from 'react';
+import {
+  KeyboardAvoidingView as ControllerKeyboardAvoidingView,
+  type KeyboardAvoidingViewProps as ControllerKeyboardAvoidingViewProps,
+} from 'react-native-keyboard-controller';
+import { cn } from './utils/cn';
 
-interface KeyboardAvoidingViewProps extends Omit<RNKeyboardAvoidingViewProps, "behavior"> {
-  behavior?: RNKeyboardAvoidingViewProps["behavior"];
-}
+interface KeyboardAvoidingViewProps extends ControllerKeyboardAvoidingViewProps {}
 
 const KeyboardAvoidingView = React.forwardRef<
-  React.ElementRef<typeof RNKeyboardAvoidingView>,
+  React.ElementRef<typeof ControllerKeyboardAvoidingView>,
   KeyboardAvoidingViewProps
->(({ className, behavior, ...props }, ref) => {
-  // Platform-specific behavior
-  const defaultBehavior = behavior || Platform.select({
-    ios: "padding",
-    android: "height",
-    default: "padding",
-  });
-
+>(({ className, behavior = 'padding', ...props }, ref) => {
   return (
-    <RNKeyboardAvoidingView
+    <ControllerKeyboardAvoidingView
       ref={ref}
-      behavior={defaultBehavior}
-      className={cn("flex-1", className)}
+      behavior={behavior}
+      className={cn('flex-1', className)}
       {...props}
     />
   );
 });
-KeyboardAvoidingView.displayName = "KeyboardAvoidingView";
+KeyboardAvoidingView.displayName = 'KeyboardAvoidingView';
 
 export { KeyboardAvoidingView };
 export type { KeyboardAvoidingViewProps };
