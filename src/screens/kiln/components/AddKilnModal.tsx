@@ -73,6 +73,7 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
         pricingModel: editKiln.pricingModel ?? 'per-kiln',
         pricingBaseRate: editKiln.pricingBaseRate != null ? String(editKiln.pricingBaseRate) : '',
         notes: editKiln.notes ?? '',
+        emergencyNotes: editKiln.emergencyNotes ?? '',
       });
     } else {
       setForm(EMPTY_ADD_KILN_FORM);
@@ -118,6 +119,8 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
       pricingModel: form.pricingModel,
       pricingBaseRate: parseFloat(form.pricingBaseRate ?? '') || undefined,
       notes: trimOrEmpty(form.notes),
+      emergencyNotes: trimOrEmpty(form.emergencyNotes),
+      maintenanceLogs: editKiln?.maintenanceLogs ?? [],
       createdAt: editKiln?.createdAt ?? new Date().toISOString(),
     };
 

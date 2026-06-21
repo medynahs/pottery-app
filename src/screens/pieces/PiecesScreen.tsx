@@ -2,7 +2,7 @@
 import { ConfirmSheet, PickSheet, type PickSheetOption } from '@/src/components/AppSheets';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { EmptyState } from '@/src/components/EmptyState';
-import { StudioOrnamentBackdrop } from '@/src/components/StudioOrnamentBackdrop';
+import { StudioTabScreen } from '@/src/components/StudioTabScreen';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
@@ -256,8 +256,7 @@ export default function PiecesScreen() {
   }, [batchActionPieces, getNextStageId, stageLookup, handleAdvanceBatch, handleDuplicateBatch, toggleExpand]);
 
   return (
-    <View className="flex-1 bg-background">
-      <StudioOrnamentBackdrop opacity={0.34} />
+    <StudioTabScreen>
       <ConfirmSheet
         visible={pendingDeletePieceId != null}
         title="Delete Piece?"
@@ -280,7 +279,7 @@ export default function PiecesScreen() {
       
       <MainTabHeader title='My Pieces' description={`${pieces.length} piece${pieces.length !== 1 ? 's' : ''} · ${filteredPieces.length} filtered`} pressIcon={<Plus size={16} color="white" />} onPress={() => setAddOpen(true)}  actionText='Add' />
 
-      <View className="px-6 pt-4 pb-2 bg-background ">
+      <View className="px-6 pt-4 pb-2">
         <View className="flex-row items-center gap-2">
           <View className="flex-1 relative justify-center">
             <View className="absolute left-4 z-10">
@@ -290,12 +289,12 @@ export default function PiecesScreen() {
               placeholder="Search pieces..."
               value={search}
               onChangeText={setSearch}
-              className="pl-11 rounded-2xl bg-card border-border"
+              className="pl-11 rounded-2xl bg-card/75 border-border"
             />
           </View>
           <TouchableOpacity
             onPress={() => setFiltersOpen(true)}
-            className={`w-11 h-11 rounded-2xl items-center justify-center border ${activeFilterCount > 0 ? 'bg-primary/10 border-primary/30' : 'bg-card border-border'
+            className={`w-11 h-11 rounded-2xl items-center justify-center border ${activeFilterCount > 0 ? 'bg-primary/10 border-primary/30' : 'bg-card/75 border-border'
               }`}
           >
             <SlidersHorizontal
@@ -550,7 +549,7 @@ export default function PiecesScreen() {
         onSkip={() => skipAdvanceRequest(setStageTransition)}
         onConfirm={(capture) => commitAdvanceRequest(capture, setStageTransition)}
       />
-    </View>
+    </StudioTabScreen>
   );
 }
 

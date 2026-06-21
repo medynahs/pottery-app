@@ -1,5 +1,6 @@
 ﻿// src/screens/KilnScreen.tsx
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { StudioTabScreen } from '@/src/components/StudioTabScreen';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
@@ -142,7 +143,7 @@ export default function KilnScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background">
+    <StudioTabScreen>
       <ConfirmSheet
         visible={!!pendingDeleteKiln}
         title="Delete Kiln?"
@@ -437,6 +438,6 @@ export default function KilnScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </StudioTabScreen>
   );
 }

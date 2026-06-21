@@ -25,6 +25,7 @@ export type AddKilnFormValues = {
   pricingModel: KilnPricingModel;
   pricingBaseRate: string;
   notes: string;
+  emergencyNotes: string;
 };
 
 export const EMPTY_ADD_KILN_FORM: AddKilnFormValues = {
@@ -43,6 +44,7 @@ export const EMPTY_ADD_KILN_FORM: AddKilnFormValues = {
   pricingModel: 'per-kiln',
   pricingBaseRate: '',
   notes: '',
+  emergencyNotes: '',
 };
 
 export type AddKilnHelpField = 'size' | 'queue' | 'cycle' | 'pickup' | 'cadence' | 'rate' | 'model';
@@ -295,6 +297,28 @@ export function AddKilnModalForm({
         }}
         options={KILN_PRICING_MODEL_OPTIONS}
         className="mb-4"
+      />
+
+      <FieldLabel label="Emergency & Safety Notes" openHelp={openHelp} onToggleHelp={onToggleHelp} />
+      <TextInput
+        multiline
+        numberOfLines={4}
+        placeholder="e.g. Main shutoff behind kiln · Fire dept: 112 · Vent hood must run 10 min after unload"
+        value={form.emergencyNotes}
+        onChangeText={set('emergencyNotes')}
+        style={{
+          borderWidth: 1,
+          borderColor: 'hsl(0 55% 88%)',
+          borderRadius: 12,
+          padding: 12,
+          color: palette.foreground,
+          backgroundColor: 'hsl(0 60% 98%)',
+          textAlignVertical: 'top',
+          minHeight: 90,
+          fontSize: 14,
+          marginBottom: 16,
+        }}
+        placeholderTextColor={palette.mutedForeground}
       />
 
       <FieldLabel label="Personality & Quirks" openHelp={openHelp} onToggleHelp={onToggleHelp} />

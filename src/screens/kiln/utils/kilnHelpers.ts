@@ -16,6 +16,8 @@ export function normalizeKiln(kiln: Kiln): Kiln {
     size: kiln.size ?? '',
     location: kiln.location ?? '',
     notes: kiln.notes ?? '',
+    emergencyNotes: kiln.emergencyNotes ?? '',
+    maintenanceLogs: kiln.maintenanceLogs ?? [],
     maxTempC: kiln.maxTempC ?? DEFAULT_KILN_MAX_TEMP_C,
   };
 }

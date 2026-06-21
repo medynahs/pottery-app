@@ -1,5 +1,6 @@
 // src/screens/community/CommunityScreen.tsx
 import { UnauthenticatedGate } from '@/src/components/UnauthenticatedGate';
+import { StudioTabScreen } from '@/src/components/StudioTabScreen';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
@@ -76,7 +77,7 @@ export default function CommunityScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background">
+    <StudioTabScreen>
       <MainTabHeader
         title="Community"
         description="Your pottery world, together"
@@ -134,7 +135,7 @@ export default function CommunityScreen() {
           handleRefresh();
         }}
       />
-    </View>
+    </StudioTabScreen>
   );
 }
 

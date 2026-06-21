@@ -19,7 +19,7 @@ import {
 } from '../constants';
 import { formatReadyDate } from '../firingEstimations';
 
-// ─── Exported types ──────────────────────────────────────────────────────────
+export type StartFiringModalStep = 'setup' | 'safety' | 'confirm';
 
 export type StartFiringFormValues = {
   name: string;
@@ -108,7 +108,7 @@ export function StartFiringModalContent({
   return (
     <>
       <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-        {step === 'setup' ? 'Step 1 of 2 · Setup' : 'Step 2 of 2 · Review & Confirm'}
+        {step === 'setup' ? 'Step 1 of 3 · Setup' : 'Step 3 of 3 · Review & Confirm'}
       </Text>
 
       {step === 'setup' ? (

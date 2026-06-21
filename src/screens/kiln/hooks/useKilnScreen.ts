@@ -16,15 +16,11 @@ export function useKilnScreen() {
   const kilns = useAppStore((s) => s.kilns);
   const firings = useAppStore((s) => s.firings);
   const pieces = useVisiblePieces();
-  const kilnChecklist = useAppStore((s) => s.kilnChecklist);
 
   const addKiln = useAppStore((s) => s.addKiln);
   const updateKiln = useAppStore((s) => s.updateKiln);
   const deleteKiln = useAppStore((s) => s.deleteKiln);
   const addFiring = useAppStore((s) => s.addFiring);
-  const toggleKilnChecklistItem = useAppStore((s) => s.toggleKilnChecklistItem);
-  const addKilnChecklistItem = useAppStore((s) => s.addKilnChecklistItem);
-  const removeKilnChecklistItem = useAppStore((s) => s.removeKilnChecklistItem);
 
   // Sync kilns from the backend on mount (no-op when signed out)
   useKilnsSync();
@@ -130,7 +126,6 @@ export function useKilnScreen() {
     // data
     kilns,
     firings,
-    kilnChecklist,
     activeFirings,
     scheduledFirings,
     completedFirings,
@@ -150,8 +145,5 @@ export function useKilnScreen() {
     handleDeleteKiln,
     addFiring,
     handleCreateFiring,
-    toggleKilnChecklistItem,
-    addKilnChecklistItem,
-    removeKilnChecklistItem,
   };
 }

@@ -124,7 +124,7 @@ export default function LibraryGlazesScreen({
   const showSummaryRow = activeFilterTags.length > 0;
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1">
       <ConfirmSheet
         visible={!!pendingDelete}
         title="Delete glaze?"

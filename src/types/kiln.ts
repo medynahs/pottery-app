@@ -30,6 +30,18 @@ export type Kiln = {
   maxTempC?: number;
   /** ISO timestamp of the most recent completed firing. */
   lastFiredAt?: string;
+  /** Quick-reference safety info: shutoff, contacts, vent procedure, etc. */
+  emergencyNotes?: string;
+  /** Element swaps, kiln wash, thermocouple, repairs — the unglamorous stuff. */
+  maintenanceLogs?: KilnMaintenanceLog[];
+  createdAt: string;
+};
+
+export type KilnMaintenanceLog = {
+  id: string;
+  /** Calendar date (YYYY-MM-DD). */
+  date: string;
+  note: string;
   createdAt: string;
 };
 

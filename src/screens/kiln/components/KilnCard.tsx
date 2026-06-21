@@ -3,7 +3,7 @@ import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { Clock, FlameKindling } from 'lucide-react-native';
+import { Clock, FlameKindling, ShieldAlert } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import type { Kiln } from '../../../types/kiln';
@@ -61,6 +61,18 @@ export function KilnCard({
             {lastFiredLabel}
           </Text>
         </TouchableOpacity>
+
+        {kiln.emergencyNotes?.trim() ? (
+          <View
+            className="mt-3 rounded-xl px-3 py-2.5 flex-row items-start gap-2"
+            style={{ backgroundColor: 'hsl(0 60% 98%)', borderWidth: 1, borderColor: 'hsl(0 55% 88%)' }}
+          >
+            <ShieldAlert size={14} color="hsl(0 55% 45%)" style={{ marginTop: 1 }} />
+            <Text className="flex-1 text-xs leading-4" style={{ color: 'hsl(0 45% 32%)' }} numberOfLines={3}>
+              {kiln.emergencyNotes.trim()}
+            </Text>
+          </View>
+        ) : null}
 
         {kiln.notes ? (
           <Text className="text-xs text-muted-foreground italic mt-2" numberOfLines={2}>

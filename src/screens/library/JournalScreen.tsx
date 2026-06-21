@@ -1,4 +1,5 @@
 import GlazeDiscoverScreen from '@/src/screens/library/GlazeDiscoverScreen';
+import { StudioTabScreen } from '@/src/components/StudioTabScreen';
 import LibraryGlazesScreen from '@/src/screens/library/LibraryGlazesScreen';
 import { AddGlazeModal } from '@/src/screens/library/atlas/AddGlazeModal';
 import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
@@ -95,7 +96,7 @@ export default function JournalScreen() {
       : 'Recipes and layering ideas to try in your studio';
 
   return (
-    <View className="flex-1 bg-background">
+    <StudioTabScreen>
       <MainTabHeader
         title="Glaze Atlas"
         description={atlasDescription}
@@ -155,6 +156,6 @@ export default function JournalScreen() {
       />
 
       {atlas.PaywallGate}
-    </View>
+    </StudioTabScreen>
   );
 }

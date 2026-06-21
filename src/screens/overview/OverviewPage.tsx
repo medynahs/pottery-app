@@ -1,5 +1,5 @@
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
-import { STUDIO_BACKDROP_COLOR, StudioOrnamentBackdrop } from '@/src/components/StudioOrnamentBackdrop';
+import { StudioTabScreen } from '@/src/components/StudioTabScreen';
 import { Text } from '@/src/components/ui/text';
 import { ChallengeBanner } from '@/src/screens/overview/components/ChallengeBanner';
 import { FeedbackModal } from '@/src/screens/overview/components/FeedbackModal';
@@ -83,10 +83,7 @@ export function OverviewPage() {
   } = useOverviewPage();
 
   return (
-    <View className="flex-1" style={{ backgroundColor: STUDIO_BACKDROP_COLOR }}>
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
-        <StudioOrnamentBackdrop opacity={0.34} />
-      </View>
+    <StudioTabScreen>
       <CeremonyOverlay
         visible={overlayCeremony !== null}
         emoji={overlayCeremony?.emoji ?? '🏺'}
@@ -256,6 +253,6 @@ export function OverviewPage() {
 
       <FeedbackModal visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       {PaywallGate}
-    </View>
+    </StudioTabScreen>
   );
 }

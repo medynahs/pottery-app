@@ -13,6 +13,10 @@ import type { Firing } from '../../types/kiln';
 import { ActiveFiringCard } from './components/ActiveFiringCard';
 import { FiringDetailModal } from './components/FiringDetailModal';
 import { FiringLogHistoryCard } from './components/FiringLogHistoryCard';
+import {
+  KilnEmergencyNotesCard,
+  KilnMaintenanceSection,
+} from './components/KilnMaintenanceSection';
 import { LogFiringModal } from './components/LogFiringModal';
 import { LogFiringButton } from './components/LogFiringButton';
 import { ScheduledFiringRow } from './components/FiringRows';
@@ -251,6 +255,8 @@ export default function KilnHistoryScreen() {
   const kilns = useAppStore((s) => s.kilns);
   const firings = useAppStore((s) => s.firings);
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
+  const addKilnMaintenanceLog = useAppStore((s) => s.addKilnMaintenanceLog);
+  const removeKilnMaintenanceLog = useAppStore((s) => s.removeKilnMaintenanceLog);
 
   const kiln = React.useMemo(
     () =>
@@ -320,6 +326,18 @@ export default function KilnHistoryScreen() {
             source={{ uri: kiln.imageUri }}
             style={{ width: '100%', height: 160, borderRadius: 16, marginBottom: 16 }}
             resizeMode="cover"
+          />
+        ) : null}
+
+        {kiln?.emergencyNotes?.trim() ? (
+          <KilnEmergencyNotesCard notes={kiln.emergencyNotes} />
+        ) : null}
+
+        {kiln ? (
+          <KilnMaintenanceSection
+            kiln={kiln}
+            onAddLog={(payload) => addKilnMaintenanceLog(kiln.id, payload)}
+            onRemoveLog={(logId) => removeKilnMaintenanceLog(kiln.id, logId)}
           />
         ) : null}
 

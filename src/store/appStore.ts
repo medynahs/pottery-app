@@ -578,6 +578,9 @@ interface AppState {
   toggleKilnChecklistItem: (id: string) => void;
   addKilnChecklistItem: (text: string) => void;
   removeKilnChecklistItem: (id: string) => void;
+  resetKilnChecklist: () => void;
+  addKilnMaintenanceLog: (kilnId: string, payload: { date: string; note: string }) => void;
+  removeKilnMaintenanceLog: (kilnId: string, logId: string) => void;
 
   // ── Offline / Sync ────────────────────────────────────────────
   /** Operations queued while offline, waiting to sync to the server. */
@@ -1709,6 +1712,39 @@ export const useAppStore = create<AppState>()(
   removeKilnChecklistItem: (id) =>
     set((state) => ({
       kilnChecklist: state.kilnChecklist.filter((item) => item.id !== id),
+    })),
+  resetKilnChecklist: () =>
+    set((state) => ({
+      kilnChecklist: state.kilnChecklist.map((item) => ({ ...item, checked: false })),
+    })),
+  addKilnMaintenanceLog: (kilnId, payload) =>
+    set((state) => ({
+      kilns: state.kilns.map((kiln) => {
+        if (kiln.id !== kilnId) return kiln;
+        const note = payload.note.trim();
+        if (!note) return kiln;
+        const entry = {
+          id: `maint-${Date.now()}`,
+          date: payload.date,
+          note,
+          createdAt: new Date().toISOString(),
+        };
+        return normalizeKiln({
+          ...kiln,
+          maintenanceLogs: [entry, ...(kiln.maintenanceLogs ?? [])],
+        });
+      }),
+    })),
+  removeKilnMaintenanceLog: (kilnId, logId) =>
+    set((state) => ({
+      kilns: state.kilns.map((kiln) =>
+        kiln.id !== kilnId
+          ? kiln
+          : normalizeKiln({
+              ...kiln,
+              maintenanceLogs: (kiln.maintenanceLogs ?? []).filter((log) => log.id !== logId),
+            })
+      ),
     })),
 
   // ── Offline / Sync ────────────────────────────────────────────

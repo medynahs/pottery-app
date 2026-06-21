@@ -1,5 +1,6 @@
 import { MainTabHeader } from '@/src/components/MainTabHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { StudioTabScreen } from '@/src/components/StudioTabScreen';
 import { Text } from '@/src/components/ui/text';
 import { BrandColors } from '@/src/constants/theme';
 import { useRouter } from 'expo-router';
@@ -29,7 +30,7 @@ export function UnauthenticatedGate({
 }: UnauthenticatedGateProps) {
   const router = useRouter();
   return (
-    <View className="flex-1 bg-background">
+    <StudioTabScreen>
       <MainTabHeader title={tabTitle} description={tabDescription} />
       <View className="flex-1 items-center justify-center px-8 gap-6">
         <View className="w-20 h-20 rounded-full bg-primary/10 items-center justify-center">
@@ -53,6 +54,6 @@ export function UnauthenticatedGate({
           ))}
         </View>
       </View>
-    </View>
+    </StudioTabScreen>
   );
 }

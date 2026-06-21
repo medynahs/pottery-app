@@ -12,7 +12,7 @@ type Props = {
 
 export function FilterBar({ activeFilter, onFilterChange }: Props) {
   return (
-    <View className="pt-4 pb-4 bg-background">
+    <View className="pt-4 pb-4">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
