@@ -2,7 +2,9 @@ import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
 import { AVAILABLE_KILNKIN_COMPANIONS } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
 import { apiRequestToJoinStudio } from '@/src/services/studios';
 import { useAppStore, type AppModule } from '@/src/store/appStore';
+import { applyPricingUserTypePreset } from '@/src/types/pricing';
 import { OnboardingDraft, StepKey } from '@/src/types/user';
+import { pricingUserTypeForArchetype } from '@/src/utils/roleBasedUx';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +25,7 @@ export function useOnboardingState() {
   const setKilnkinCompanion = useAppStore((state) => state.setKilnkinCompanion);
   const setInitialSetupQuestCount = useAppStore((state) => state.setInitialSetupQuestCount);
   const setTextScale = useAppStore((state) => state.setTextScale);
+  const setPricingSettings = useAppStore((state) => state.setPricingSettings);
 
   // State
   const [stepIndex, setStepIndex] = React.useState(0);
@@ -101,6 +104,10 @@ export function useOnboardingState() {
     setPracticeMode(userTypeConfig.practiceMode);
     setRole(userTypeConfig.role);
     setEnabledModules(configuredModules);
+    setPricingSettings(applyPricingUserTypePreset(
+      useAppStore.getState().pricingSettings,
+      pricingUserTypeForArchetype(draft.userType),
+    ));
     setKilnkinCompanion(selectedCompanion);
     if (draft.textScale) setTextScale(draft.textScale);
     setInitialSetupQuestCount(9);
@@ -156,7 +163,7 @@ export function useOnboardingState() {
     }, 2400);
   }, [
     isSubmitting, draft, userTypeConfig, setPracticeMode, setRole, setEnabledModules,
-    setKilnkinCompanion, setUser, completeGeneralOnboarding, router, setTextScale, setInitialSetupQuestCount
+    setKilnkinCompanion, setUser, completeGeneralOnboarding, router, setTextScale, setInitialSetupQuestCount, setPricingSettings
   ]);
 
   const handleContinue = React.useCallback(() => {

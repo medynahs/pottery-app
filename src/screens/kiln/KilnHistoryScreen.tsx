@@ -5,7 +5,7 @@ import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useAppStore } from '@/src/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Clock3, FlameKindling, Package, Receipt, TrendingUp } from 'lucide-react-native';
+import { Clock3, FlameKindling, Package, Receipt, TrendingUp } from 'lucide-react-native';
 import React from 'react';
 import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,8 +15,8 @@ import { FiringDetailModal } from './components/FiringDetailModal';
 import { FiringLogHistoryCard } from './components/FiringLogHistoryCard';
 import {
   KilnEmergencyNotesCard,
-  KilnMaintenanceSection,
 } from './components/KilnMaintenanceSection';
+import { KilnSubScreenHeader } from './components/KilnSubScreenHeader';
 import { LogFiringModal } from './components/LogFiringModal';
 import { LogFiringButton } from './components/LogFiringButton';
 import { ScheduledFiringRow } from './components/FiringRows';
@@ -255,8 +255,6 @@ export default function KilnHistoryScreen() {
   const kilns = useAppStore((s) => s.kilns);
   const firings = useAppStore((s) => s.firings);
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
-  const addKilnMaintenanceLog = useAppStore((s) => s.addKilnMaintenanceLog);
-  const removeKilnMaintenanceLog = useAppStore((s) => s.removeKilnMaintenanceLog);
 
   const kiln = React.useMemo(
     () =>
@@ -295,26 +293,15 @@ export default function KilnHistoryScreen() {
   );
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      {/* Header */}
-      <View className="flex-row items-center gap-3 px-5 py-4 border-b border-border">
-        <TouchableOpacity onPress={() => router.back()} className="p-1 -ml-1">
-          <ArrowLeft size={20} color={colors.mutedForeground} />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-lg font-serif font-bold text-foreground" numberOfLines={1}>
-            {kiln ? `${kiln.name} · Firing History` : 'Kiln History'}
-          </Text>
-          {kiln ? (
-            <Text className="text-[11px] text-muted-foreground">
-              {KILN_TYPE_LABELS[kiln.type]} · {getKilnMaxTempLabel(kiln)}
-            </Text>
-          ) : null}
-        </View>
-        {kiln ? (
-          <LogFiringButton variant="primary" onPress={() => setLogFiringOpen(true)} />
-        ) : null}
-      </View>
+    <View className="flex-1 bg-background">
+      <KilnSubScreenHeader
+        title={kiln ? `${kiln.name} · Firing History` : 'Kiln History'}
+        subtitle={kiln ? `${KILN_TYPE_LABELS[kiln.type]} · ${getKilnMaxTempLabel(kiln)}` : undefined}
+        onBack={() => router.back()}
+        headerRight={
+          kiln ? <LogFiringButton variant="primary" onPress={() => setLogFiringOpen(true)} /> : null
+        }
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -331,14 +318,6 @@ export default function KilnHistoryScreen() {
 
         {kiln?.emergencyNotes?.trim() ? (
           <KilnEmergencyNotesCard notes={kiln.emergencyNotes} />
-        ) : null}
-
-        {kiln ? (
-          <KilnMaintenanceSection
-            kiln={kiln}
-            onAddLog={(payload) => addKilnMaintenanceLog(kiln.id, payload)}
-            onRemoveLog={(logId) => removeKilnMaintenanceLog(kiln.id, logId)}
-          />
         ) : null}
 
         {/* Stats row */}

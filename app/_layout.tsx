@@ -179,6 +179,7 @@ function AppShell() {
         <Stack.Screen name="kilnkin" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="analytics" options={{ headerShown: false }} />
         <Stack.Screen name="kiln-history" options={{ headerShown: false }} />
+        <Stack.Screen name="kiln" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="register" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="forgot-password" options={{ headerShown: false, presentation: 'modal' }} />

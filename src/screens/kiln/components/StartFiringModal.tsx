@@ -18,8 +18,12 @@ import {
     View
 } from 'react-native';
 import type { Firing } from '../../../types/kiln';
-import { FIRING_SOURCE_STAGE, KILN_TYPE_LABELS } from '../constants';
+import { KILN_TYPE_LABELS } from '../constants';
 import { estimateFiringCost, estimateReadyDateIso } from '../firingEstimations';
+import {
+  getReadyQueueEmptyMessage,
+  getReadyQueuePieces,
+} from '../utils/kilnQueue';
 import { KilnEmergencyNotesCard } from './KilnMaintenanceSection';
 import { isKilnChecklistComplete, PreFiringChecklist } from './PreFiringChecklist';
 import type { StartFiringFormValues, StartFiringModalStep } from './StartFiringModalContent';
@@ -60,9 +64,14 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
     [kilns]
   );
 
-  const assignablePieces = React.useMemo(
-    () => pieces.filter((p) => p.stage !== 'cemetery'),
-    [pieces]
+  const readyQueuePieces = React.useMemo(
+    () => getReadyQueuePieces({ pieces, firingType: form.type, firings, sort: 'longest' }),
+    [pieces, form.type, firings],
+  );
+
+  const readyQueueEmptyMessage = React.useMemo(
+    () => getReadyQueueEmptyMessage(form.type),
+    [form.type],
   );
 
   React.useEffect(() => {
@@ -75,7 +84,15 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
     });
     setSelectedPieceIds(new Set());
     setStep('setup');
-  }, [visible, defaultKilnId, kilns]);
+  }, [visible, defaultKilnId, kilns, resetKilnChecklist]);
+
+  React.useEffect(() => {
+    setSelectedPieceIds((prev) => {
+      const allowed = new Set(readyQueuePieces.map((piece) => piece.id));
+      const next = new Set([...prev].filter((id) => allowed.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [form.type, readyQueuePieces]);
 
   const togglePiece = (id: number) => {
     setSelectedPieceIds((prev) => {
@@ -92,8 +109,8 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
   );
 
   const selectedPieces = React.useMemo(
-    () => assignablePieces.filter((piece) => selectedPieceIds.has(piece.id)),
-    [assignablePieces, selectedPieceIds]
+    () => readyQueuePieces.filter((piece) => selectedPieceIds.has(piece.id)),
+    [readyQueuePieces, selectedPieceIds]
   );
 
   const handleStart = React.useCallback(() => {
@@ -140,23 +157,9 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
   const setupComplete = form.name.trim().length > 0 && selectedPieceIds.size > 0 && hasKilnSelection;
   const checklistComplete = isKilnChecklistComplete(kilnChecklist);
 
-  const readyStage = FIRING_SOURCE_STAGE[form.type] ?? FIRING_SOURCE_STAGE.bisque;
-  const assignedPieceIds = React.useMemo(() => {
-    const next = new Set<number>();
-    firings
-      .filter((firing) => firing.state !== 'completed')
-      .forEach((firing) => firing.pieceIds.forEach((pieceId) => next.add(pieceId)));
-    return next;
-  }, [firings]);
-
   const readyAssignablePieceIds = React.useMemo(
-    () =>
-      new Set(
-        assignablePieces
-          .filter((p) => p.stage === readyStage && !assignedPieceIds.has(p.id))
-          .map((p) => p.id)
-      ),
-    [assignablePieces, readyStage, assignedPieceIds]
+    () => new Set(readyQueuePieces.map((piece) => piece.id)),
+    [readyQueuePieces],
   );
 
   const allReadySelected =
@@ -174,26 +177,6 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
       return next;
     });
   };
-
-  const sortedAssignablePieces = React.useMemo(() => {
-    return [...assignablePieces].sort((a, b) => {
-      const aAssigned = assignedPieceIds.has(a.id);
-      const bAssigned = assignedPieceIds.has(b.id);
-
-      if (aAssigned !== bAssigned) {
-        return aAssigned ? 1 : -1;
-      }
-
-      const aReady = a.stage === readyStage;
-      const bReady = b.stage === readyStage;
-
-      if (aReady !== bReady) {
-        return aReady ? -1 : 1;
-      }
-
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    });
-  }, [assignablePieces, assignedPieceIds, readyStage]);
 
   const expectedReadyAt = React.useMemo(
     () =>
@@ -215,7 +198,7 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
     <ModalShell visible={visible} onClose={onClose}>
       <ModalCard radius={MODAL_SHEET_RADIUS} height={sheetHeight} maxHeight={sheetHeight} withHandle={false}>
             <ModalSheetHeader>
-              <Text className="text-2xl font-serif font-bold text-foreground">Start Firing</Text>
+              <Text className="text-2xl font-serif font-bold text-foreground">Schedule a Firing</Text>
             </ModalSheetHeader>
 
             <ScrollView
@@ -254,12 +237,11 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
                   kilnOptions={kilnOptions}
                   kilns={kilns}
                   selectedKiln={selectedKiln}
-                  sortedAssignablePieces={sortedAssignablePieces}
-                  assignedPieceIds={assignedPieceIds}
-                  readyStage={readyStage}
+                  sortedAssignablePieces={readyQueuePieces}
                   readyAssignablePieceIds={readyAssignablePieceIds}
                   allReadySelected={allReadySelected}
                   handleSelectAllReady={handleSelectAllReady}
+                  readyQueueEmptyMessage={readyQueueEmptyMessage}
                   selectedPieces={selectedPieces}
                   costEstimate={costEstimate}
                   expectedReadyAt={expectedReadyAt}

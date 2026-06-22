@@ -1,5 +1,6 @@
 import type { GlazeLibraryItem } from '../screens/glazes/types';
 import type { Piece } from '../types/pieces';
+import type { OnboardingUserType } from '../types/user';
 import { useAppStore } from '../store/appStore';
 
 /**
@@ -38,6 +39,54 @@ export const PREMIUM_FEATURE_DESCRIPTIONS: Record<PremiumFeature, string> = {
   [PremiumFeature.YearlyWrap]: 'See your year in clay with a personalised wrap.',
   [PremiumFeature.Backup]: 'Back up and restore your full studio archive.',
 };
+
+const PREMIUM_HEADLINES: Record<OnboardingUserType, string> = {
+  'home-potter': 'Unlimited photos, glaze depth, and firing analytics for your home studio.',
+  'studio-potter': 'Full glaze library and export — your personal toolkit at the shared studio.',
+  'studio-owner-technician': 'Kiln analytics, export, and deeper ops insight for your studio.',
+  'business-owner': 'Margin analytics, full pricing presets, and production insights.',
+  'not-sure': 'Unlock the full Pottery Nook toolkit for your practice.',
+};
+
+const PREMIUM_FEATURE_BY_ARCHETYPE: Partial<
+  Record<OnboardingUserType, Partial<Record<PremiumFeature, string>>>
+> = {
+  'home-potter': {
+    [PremiumFeature.Analytics]: 'See firing costs, materials, and trends for your home kiln.',
+    [PremiumFeature.UnlimitedPhotos]: 'Document every stage of your home practice.',
+    [PremiumFeature.FullGlazeAtlas]: 'Build your complete home glaze library without limits.',
+  },
+  'studio-potter': {
+    [PremiumFeature.FullGlazeAtlas]: 'Save every glaze test and recipe you use at the studio.',
+    [PremiumFeature.UnlimitedPhotos]: 'Portfolio-ready photos for every piece you make.',
+    [PremiumFeature.Export]: 'Export your work history anytime.',
+  },
+  'studio-owner-technician': {
+    [PremiumFeature.KilnAnalytics]: 'Detailed kiln utilisation and firing load analytics.',
+    [PremiumFeature.Analytics]: 'Track fees collected and studio firing performance.',
+    [PremiumFeature.Export]: 'Export firing logs and studio records.',
+  },
+  'business-owner': {
+    [PremiumFeature.Analytics]: 'Margin, sold revenue, and production analytics.',
+    [PremiumFeature.FullPricing]: 'Full pricing presets for markets and commissions.',
+    [PremiumFeature.Export]: 'Export records for taxes and wholesale.',
+  },
+};
+
+export function getPremiumUpgradeHeadline(userType: OnboardingUserType = 'not-sure'): string {
+  return PREMIUM_HEADLINES[userType] ?? PREMIUM_HEADLINES['not-sure'];
+}
+
+export function getPremiumFeatureDescription(
+  feature: PremiumFeature,
+  userType?: OnboardingUserType,
+): string {
+  const resolvedType = userType ?? useAppStore.getState().onboardingProfile.userType;
+  return (
+    PREMIUM_FEATURE_BY_ARCHETYPE[resolvedType]?.[feature]
+    ?? PREMIUM_FEATURE_DESCRIPTIONS[feature]
+  );
+}
 
 /**
  * Synchronous gate check. Reads from the Zustand store snapshot, safe to

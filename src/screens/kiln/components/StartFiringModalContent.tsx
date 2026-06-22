@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import type { FiringType, Kiln } from '../../../types/kiln';
-import type { Piece, Stage } from '../../../types/pieces';
+import type { Piece } from '../../../types/pieces';
 import {
   CONE_OPTIONS,
   CORE_FIRING_TYPE_OPTIONS
@@ -67,11 +67,10 @@ export interface StartFiringModalContentProps {
   kilns: Kiln[];
   selectedKiln: Kiln | undefined;
   sortedAssignablePieces: Piece[];
-  assignedPieceIds: Set<number>;
-  readyStage: Stage | undefined;
   readyAssignablePieceIds: Set<number>;
   allReadySelected: boolean;
   handleSelectAllReady: () => void;
+  readyQueueEmptyMessage: string;
   selectedPieces: Piece[];
   costEstimate: { totalCost: number | null; costPerPiece: number | null };
   expectedReadyAt: string | null;
@@ -91,11 +90,10 @@ export function StartFiringModalContent({
   kilns,
   selectedKiln,
   sortedAssignablePieces,
-  assignedPieceIds,
-  readyStage,
   readyAssignablePieceIds,
   allReadySelected,
   handleSelectAllReady,
+  readyQueueEmptyMessage,
   selectedPieces,
   costEstimate,
   expectedReadyAt,
@@ -153,7 +151,7 @@ export function StartFiringModalContent({
           {/* Pieces */}
           <View className="flex-row items-center justify-between mb-1">
             <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Assign Pieces ({selectedPieceIds.size})
+              Ready to fire ({selectedPieceIds.size})
             </Text>
             {readyAssignablePieceIds.size > 0 ? (
               <TouchableOpacity onPress={handleSelectAllReady}>
@@ -162,19 +160,19 @@ export function StartFiringModalContent({
                   style={{ color: palette.primary }}
                 >
                   {allReadySelected
-                    ? 'Clear ready'
-                    : `Select all ready (${readyAssignablePieceIds.size})`}
+                    ? 'Clear all'
+                    : `Select all (${readyAssignablePieceIds.size})`}
                 </Text>
               </TouchableOpacity>
-            ) : (
-              <Text className="text-[11px] text-muted-foreground">None ready yet</Text>
-            )}
+            ) : null}
           </View>
 
           <View className="border border-border rounded-2xl overflow-hidden mb-4">
             {sortedAssignablePieces.length === 0 ? (
               <View className="p-4">
-                <Text className="text-sm text-muted-foreground">No pieces available.</Text>
+                <Text className="text-sm text-muted-foreground leading-5">
+                  {readyQueueEmptyMessage}
+                </Text>
               </View>
             ) : (
               <ScrollView
@@ -185,20 +183,14 @@ export function StartFiringModalContent({
               >
                 {sortedAssignablePieces.map((p, idx) => {
                   const selected = selectedPieceIds.has(p.id);
-                  const isAlreadyAssigned = assignedPieceIds.has(p.id);
-                  const isDisabled = isAlreadyAssigned && !selected;
-                  const isReadyForThisFiring = p.stage === readyStage;
 
                   return (
                     <TouchableOpacity
                       key={p.id}
-                      disabled={isDisabled}
-                      onPress={() => !isDisabled && togglePiece(p.id)}
+                      onPress={() => togglePiece(p.id)}
                       className={`flex-row items-center gap-3 px-4 py-3 ${
                         idx < sortedAssignablePieces.length - 1 ? 'border-b border-border' : ''
-                      } ${selected ? 'bg-primary/5' : isReadyForThisFiring ? 'bg-emerald-50/40' : ''} ${
-                        isDisabled ? 'opacity-45' : ''
-                      }`}
+                      } ${selected ? 'bg-primary/5' : ''}`}
                     >
                       <View
                         className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
@@ -222,14 +214,7 @@ export function StartFiringModalContent({
                       )}
                       <View className="flex-1">
                         <Text className="text-sm font-medium text-foreground">{p.name}</Text>
-                        <Text className="text-xs text-muted-foreground">
-                          {p.stage} · {p.clay}
-                        </Text>
-                        {isAlreadyAssigned ? (
-                          <Text className="text-[10px] text-muted-foreground mt-0.5">
-                            Already assigned to another open firing
-                          </Text>
-                        ) : null}
+                        <Text className="text-xs text-muted-foreground">{p.clay}</Text>
                       </View>
                     </TouchableOpacity>
                   );

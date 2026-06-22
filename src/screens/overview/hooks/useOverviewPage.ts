@@ -1,5 +1,6 @@
 import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
+import { useStudioLinkStatus } from '@/src/hooks/useStudioLinkStatus';
 import { generateSetupQuests } from '@/src/screens/overview/setupQuests/generateSetupQuests';
 import { generateStudioRhythmSuggestions } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import { getDateKey, isStudioRhythmConfigured } from '@/src/screens/overview/studioRythm/studioRhythm';
@@ -9,7 +10,8 @@ import { getKilnkinNudge } from '@/src/screens/overview/utils/kilnkinNudge';
 import { mapPiecesToStudioPositions } from '@/src/screens/overview/utils/mapPiecesToStudioPositions';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
 import { buildQueuePreview } from '@/src/screens/overview/utils/buildQueuePreview';
-import { ACTIVE_FIRING_STATES, buildOneThingCard } from '@/src/screens/overview/utils/oneThingCard';
+import { ACTIVE_FIRING_STATES } from '@/src/screens/overview/utils/oneThingCard';
+import { buildPersonaOneThingCard } from '@/src/screens/overview/utils/personaPulseCard';
 import { getPetMood, PAT_REACTIONS } from '@/src/screens/overview/utils/petMood';
 import { useAppStore, useVisiblePieces } from '@/src/store';
 import { useNormalizedEnabledModules } from '@/src/store/appStore';
@@ -43,6 +45,8 @@ export function useOverviewPage() {
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
   const kilns = useAppStore((state) => state.kilns);
   const onboardingProfile = useAppStore((state) => state.onboardingProfile);
+  const { hasLinkedStudio, loading: studioLinkLoading } = useStudioLinkStatus();
+  const userType = onboardingProfile.userType;
   const setupProgress = useAppStore((state) => state.setupProgress);
   const pricingOnboardingCompleted = useAppStore((state) => state.pricingOnboardingCompleted);
   const glazes = useAppStore((state) => state.glazes);
@@ -139,6 +143,17 @@ export function useOverviewPage() {
       glazes,
       periodId: 'this-month',
     }).summary.piecesFinished,
+    [pieces, firings, glazeTests, glazes],
+  );
+
+  const soldThisMonth = React.useMemo(
+    () => computeStudioStats({
+      pieces,
+      firings,
+      glazeTests,
+      glazes,
+      periodId: 'this-month',
+    }).summary.soldCount,
     [pieces, firings, glazeTests, glazes],
   );
 
@@ -275,9 +290,20 @@ export function useOverviewPage() {
   }, [heroReveal, focusReveal, secondaryReveal, journalReveal, testWallReveal]);
 
   const oneThingCard = React.useMemo(
-    () => buildOneThingCard(activeFiring, studioSignals, stagePositions, hasKilnTab),
-    [activeFiring, studioSignals, stagePositions, hasKilnTab]
+    () => buildPersonaOneThingCard({
+      activeFiring,
+      studioSignals,
+      stagePositions,
+      hasKilnTab,
+      userType,
+      firings,
+      soldThisMonth,
+    }),
+    [activeFiring, studioSignals, stagePositions, hasKilnTab, userType, firings, soldThisMonth],
   );
+
+  const showInviteStudioCard =
+    userType === 'studio-potter' && hasLinkedStudio === false && !studioLinkLoading;
 
   const queuePreview = React.useMemo(
     () => buildQueuePreview(firings, kilns, hasKilnTab),
@@ -436,5 +462,7 @@ export function useOverviewPage() {
     firingQueueSnapshot,
     activeFiringSummary,
     showFiringQueueWidget,
+    showInviteStudioCard,
+    userType,
   };
 }

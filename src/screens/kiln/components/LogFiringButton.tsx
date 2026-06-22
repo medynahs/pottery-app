@@ -38,12 +38,12 @@ export function LogFiringButton({
       onPress={onPress}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel="Log Firing"
+      accessibilityLabel="Record past firing"
       className={className ?? VARIANT_CLASS[variant]}
       style={style}
     >
       <Plus size={variant === 'outline' ? 14 : 15} color={iconColor} />
-      <Text className={TEXT_CLASS[variant]}>Log Firing</Text>
+      <Text className={TEXT_CLASS[variant]}>Record past</Text>
     </TouchableOpacity>
   );
 }

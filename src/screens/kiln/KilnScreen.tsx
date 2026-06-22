@@ -7,34 +7,37 @@ import { Text } from '@/src/components/ui/text';
 import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import { BrandColors } from '@/src/constants/theme';
 import { useAppStore } from '@/src/store';
-import { useRouter } from 'expo-router';
+import { parseKilnSectionParam } from '@/src/screens/overview/utils/kilnNavigation';
+import { getDefaultKilnSection, type KilnSectionMode } from '@/src/utils/roleBasedUx';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Flame, FlameKindling, Layers, Plus, Thermometer } from 'lucide-react-native';
 import React from 'react';
-import { Image, Modal, Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
+import { countOpenSessionsForKiln, kilnHasOpenSessions } from '@/src/utils/firingSessionLabels';
 import { MainTabHeader } from '../../components/MainTabHeader';
 import type { Kiln } from '../../types/kiln';
 import type { Piece } from '../../types/pieces';
-import { ActiveFiringCard } from './components/ActiveFiringCard';
 import { AddKilnModal } from './components/AddKilnModal';
 import { FiringDetailModal } from './components/FiringDetailModal';
-import { ScheduledFiringRow } from './components/FiringRows';
+import { FiringEntrySheet } from './components/FiringEntrySheet';
+import { FiringSessionCard } from './components/FiringSessionCard';
 import { KilnCard } from './components/KilnCard';
 import { KilnSwipeCard } from './components/KilnSwipeCard';
 import { LogFiringModal } from './components/LogFiringModal';
 import { ReadyFilterChip, ReadyPieceRow, ReadySortChip } from './components/ReadyPieces';
 import { SectionHeader } from './components/SectionHeader';
 import { StartFiringModal } from './components/StartFiringModal';
-import { formatReadyDate, getAutoFiringStatus, getExpectedReadyAt } from './firingEstimations';
 import { useKilnScreen } from './hooks/useKilnScreen';
 import { getLastFiredLabel } from './utils/kilnHelpers';
 
 export default function KilnScreen() {
   const router = useRouter();
+  const { section: sectionParam } = useLocalSearchParams<{ section?: string | string[] }>();
   const {
     kilns,
     activeFirings,
     scheduledFirings,
-    completedFirings,
+    completedFirings: _completedFirings,
     waitingForBisque,
     waitingForGlaze,
     kilnFiringCounts,
@@ -44,7 +47,6 @@ export default function KilnScreen() {
     startFiringDefaultKilnId,
     detailFiring, setDetailFiring,
     handleSaveKiln,
-    handleStartFiringFromKiln,
     handleDeleteKiln,
     handleCreateFiring,
   } = useKilnScreen();
@@ -53,7 +55,6 @@ export default function KilnScreen() {
     (kilnId: string) => kilnsById.get(kilnId)?.name ?? 'Unknown Kiln',
     [kilnsById]
   );
-  const getKilnById = React.useCallback((kilnId: string) => kilnsById.get(kilnId), [kilnsById]);
 
   const featuredOpenFiring = activeFirings[0] ?? scheduledFirings[0] ?? null;
   const sessionRows = React.useMemo(() => {
@@ -67,7 +68,15 @@ export default function KilnScreen() {
   }, [activeFirings, featuredOpenFiring?.id, scheduledFirings]);
 
   const waitingCount = waitingForBisque.length + waitingForGlaze.length;
-  const [sectionMode, setSectionMode] = React.useState<'kilns' | 'sessions' | 'queue'>('kilns');
+  const userType = useAppStore((s) => s.onboardingProfile.userType);
+  const [sectionMode, setSectionMode] = React.useState<KilnSectionMode>(
+    () => parseKilnSectionParam(sectionParam) ?? getDefaultKilnSection(userType),
+  );
+
+  React.useEffect(() => {
+    const fromParam = parseKilnSectionParam(sectionParam);
+    if (fromParam) setSectionMode(fromParam);
+  }, [sectionParam]);
   const [firstKilnCeremony, setFirstKilnCeremony] = React.useState(false);
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
   const markCeremonyAsSeen = useAppStore((s) => s.markCeremonyAsSeen);
@@ -78,6 +87,7 @@ export default function KilnScreen() {
   const [photoPreview, setPhotoPreview] = React.useState<{ uri: string; name: string } | null>(null);
   const [pendingDeleteKiln, setPendingDeleteKiln] = React.useState<Kiln | null>(null);
   const [logFiringKiln, setLogFiringKiln] = React.useState<Kiln | null>(null);
+  const [firingEntryOpen, setFiringEntryOpen] = React.useState(false);
   const firings = useAppStore((s) => s.firings);
   const visibleSessionRows = showAllSessions ? sessionRows : sessionRows.slice(0, 4);
   const hiddenSessionCount = Math.max(0, sessionRows.length - visibleSessionRows.length);
@@ -140,6 +150,14 @@ export default function KilnScreen() {
   };
 
   const confirmDeleteKiln = (kiln: Kiln) => {
+    if (kilnHasOpenSessions(kiln.id, firings)) {
+      const count = countOpenSessionsForKiln(kiln.id, firings);
+      Alert.alert(
+        'Complete open firings first',
+        `"${kiln.name}" has ${count} open session${count !== 1 ? 's' : ''}. Finish or delete them before removing this kiln.`,
+      );
+      return;
+    }
     setPendingDeleteKiln(kiln);
   };
 
@@ -148,14 +166,14 @@ export default function KilnScreen() {
       <ConfirmSheet
         visible={!!pendingDeleteKiln}
         title="Delete Kiln?"
-        body={pendingDeleteKiln ? `Delete "${pendingDeleteKiln.name}"? All associated firings will also be deleted.` : ''}
+        body={pendingDeleteKiln ? `Delete "${pendingDeleteKiln.name}"? All associated firing logs will be removed. Your pieces are not deleted.` : ''}
         confirmLabel="Delete"
         destructive
         onConfirm={() => { if (pendingDeleteKiln) handleDeleteKiln(pendingDeleteKiln); setPendingDeleteKiln(null); }}
         onCancel={() => setPendingDeleteKiln(null)}
       />
 
-      <MainTabHeader title='Kiln' description={`${kilns.length} profile${kilns.length !== 1 ? 's' : ''} · ${activeFirings.length + scheduledFirings.length} open sessions`} actionText='New Firing' pressIcon={<FlameKindling size={16} color="white" />} onPress={() => setStartFiringOpen(true)} />
+      <MainTabHeader title='Kiln' description={`${kilns.length} profile${kilns.length !== 1 ? 's' : ''} · ${activeFirings.length + scheduledFirings.length} open sessions`} actionText='+ Firing' pressIcon={<FlameKindling size={16} color="white" />} onPress={() => setFiringEntryOpen(true)} />
 
       <ScrollView
         className="flex-1"
@@ -218,7 +236,7 @@ export default function KilnScreen() {
                       kiln={kiln}
                       firingCount={kilnFiringCounts[kiln.id] ?? 0}
                       lastFiredLabel={getLastFiredLabel(kiln, firings)}
-                      onPress={() => { setEditKiln(kiln); setAddKilnOpen(true); }}
+                      onPress={() => router.push(`/kiln/${kiln.id}` as never)}
                       onViewHistory={() => router.push({ pathname: '/kiln-history', params: { kilnId: kiln.id } } as never)}
                       onLogFiring={() => setLogFiringKiln(kiln)}
                     />
@@ -232,38 +250,27 @@ export default function KilnScreen() {
               <SectionHeader title="Firing Sessions" icon={<Flame size={18} />} />
 
               {featuredOpenFiring ? (
-                <ActiveFiringCard firing={featuredOpenFiring} onPress={() => setDetailFiring(featuredOpenFiring)} />
+                <FiringSessionCard
+                  firing={featuredOpenFiring}
+                  kilnName={getKilnName(featuredOpenFiring.kilnId)}
+                  currencySymbol={currencySymbol}
+                  variant="hero"
+                  onPress={() => setDetailFiring(featuredOpenFiring)}
+                />
               ) : null}
 
               {hasOpenSessionContent ? (
                 <>
-                  {visibleSessionRows.map((firing) => {
-                    const kiln = getKilnById(firing.kilnId);
-                    const status = getAutoFiringStatus(firing, kiln);
-                    const expectedReady = getExpectedReadyAt(firing, kiln);
-                    const statusLabel =
-                      status === 'waiting'
-                        ? 'Waiting'
-                        : status === 'firing'
-                          ? 'Firing'
-                          : status === 'cooling'
-                            ? 'Cooling'
-                            : status === 'ready'
-                              ? 'Ready'
-                              : 'Completed';
-
-                    return (
-                      <ScheduledFiringRow
-                        key={firing.id}
-                        firing={firing}
-                        kilnName={getKilnName(firing.kilnId)}
-                        statusLabel={statusLabel}
-                        expectedReadyLabel={formatReadyDate(expectedReady)}
-                        currencySymbol={currencySymbol}
-                        onPress={() => setDetailFiring(firing)}
-                      />
-                    );
-                  })}
+                  {visibleSessionRows.map((firing) => (
+                    <FiringSessionCard
+                      key={firing.id}
+                      firing={firing}
+                      kilnName={getKilnName(firing.kilnId)}
+                      currencySymbol={currencySymbol}
+                      variant="compact"
+                      onPress={() => setDetailFiring(firing)}
+                    />
+                  ))}
                   {hiddenSessionCount > 0 ? (
                     <TouchableOpacity onPress={() => setShowAllSessions(true)} className="self-start mt-1">
                       <Text className="text-[11px] font-semibold text-primary">
@@ -281,10 +288,10 @@ export default function KilnScreen() {
                 <EmptyState
                   icon={FlameKindling}
                   title="Nothing in the kiln"
-                  description="Start a bisque or glaze firing to track progress, timeline, and piece outcomes automatically."
-                  ctaLabel="Start a Firing"
+                  description="Schedule a bisque or glaze firing to track progress, timeline, and piece outcomes automatically."
+                  ctaLabel="Schedule a Firing"
                   ctaIcon={FlameKindling}
-                  onCtaPress={() => setStartFiringOpen(true)}
+                  onCtaPress={() => setFiringEntryOpen(true)}
                 />
               )}
             </View>
@@ -379,6 +386,16 @@ export default function KilnScreen() {
         tint="rgba(211, 120, 60, 1)"
         durationMs={3000}
         onDismiss={() => setFirstKilnCeremony(false)}
+      />
+      <FiringEntrySheet
+        visible={firingEntryOpen}
+        onClose={() => setFiringEntryOpen(false)}
+        onSchedule={() => setStartFiringOpen(true)}
+        onRecordPast={() => {
+          const defaultKiln = kilns[0] ?? null;
+          if (defaultKiln) setLogFiringKiln(defaultKiln);
+          else setAddKilnOpen(true);
+        }}
       />
       <LogFiringModal
         visible={logFiringKiln !== null}

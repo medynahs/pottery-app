@@ -1,3 +1,5 @@
+import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
+import { PracticeTypePickerSheet } from '@/src/components/PracticeTypePickerSheet';
 import { ConfirmSheet } from '@/src/components/AppSheets';
 import { NotificationDebugPanel } from '@/src/components/dev/NotificationDebugPanel';
 import { KilnkinCompanionPickerSheet } from '@/src/components/KilnkinCompanionPickerSheet';
@@ -23,6 +25,7 @@ import {
   Flame,
   Globe,
   Lock,
+  Hammer,
   LogOut,
   Mail,
   Map,
@@ -52,7 +55,9 @@ export default function AccountSettingsScreen() {
   type Sheet = 'signout' | 'delete1' | 'delete2' | null;
   const [sheet, setSheet] = useState<Sheet>(null);
   const [companionPickerOpen, setCompanionPickerOpen] = useState(false);
+  const [practiceTypeOpen, setPracticeTypeOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const userType = useAppStore((s) => s.onboardingProfile.userType);
 
   async function doSignOut() {
     setBusy(true);
@@ -157,6 +162,18 @@ export default function AccountSettingsScreen() {
             value={isPremium ? 'Premium' : undefined}
             onPress={() => router.push(isPremium ? '/manage-subscription' : '/premium')}
           />
+        </SettingsGroup>
+
+        <SectionLabel title="Studio" />
+        <SettingsGroup>
+          <SettingsRow
+            icon={Hammer}
+            iconColor="hsl(24 30% 45%)"
+            iconBg="bg-stone-100"
+            label="Practice type"
+            value={USER_TYPE_CONFIG[userType]?.label ?? 'Not set'}
+            onPress={() => setPracticeTypeOpen(true)}
+          />
           <SettingsRow
             icon={PawPrint}
             iconColor="hsl(39 57% 51%)"
@@ -239,6 +256,10 @@ export default function AccountSettingsScreen() {
         </View>
       </SettingsHubShell>
 
+      <PracticeTypePickerSheet
+        visible={practiceTypeOpen}
+        onClose={() => setPracticeTypeOpen(false)}
+      />
       <KilnkinCompanionPickerSheet
         visible={companionPickerOpen}
         currentCompanionId={kilnkinCompanion.id}

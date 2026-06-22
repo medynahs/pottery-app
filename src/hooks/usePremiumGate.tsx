@@ -1,9 +1,10 @@
 import { PremiumPaywallSheet } from '@/src/components/PremiumPaywallSheet';
 import {
   checkPremium,
-  PREMIUM_FEATURE_DESCRIPTIONS,
+  getPremiumFeatureDescription,
   PremiumFeature,
 } from '@/src/utils/premiumGate';
+import { useAppStore } from '@/src/store';
 import React, { useCallback, useState } from 'react';
 
 type ActiveGate = {
@@ -17,17 +18,18 @@ type ActiveGate = {
  */
 export function usePremiumGate() {
   const [activeGate, setActiveGate] = useState<ActiveGate | null>(null);
+  const userType = useAppStore((s) => s.onboardingProfile.userType);
 
   const requestAccess = useCallback(
     (feature: PremiumFeature, description?: string): boolean => {
       if (checkPremium(feature)) return true;
       setActiveGate({
         feature,
-        description: description ?? PREMIUM_FEATURE_DESCRIPTIONS[feature],
+        description: description ?? getPremiumFeatureDescription(feature, userType),
       });
       return false;
     },
-    [],
+    [userType],
   );
 
   const PaywallGate = React.useMemo(

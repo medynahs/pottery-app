@@ -29,6 +29,12 @@ import { apiCreatePost } from '@/src/services/community';
 import { apiListChallenges, apiSubmitChallengeEntry, type BackendChallenge } from '@/src/services/challenges';
 import { uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAppStore, useVisiblePieces } from '@/src/store';
+import { useCanPostStudioNotice } from '@/src/hooks/useCanPostStudioNotice';
+import {
+  getAvailablePostKinds,
+  getDefaultAskTopic,
+  getDefaultCommunityPostKind,
+} from '@/src/utils/communityComposerDefaults';
 import type { Piece } from '@/src/types/pieces';
 import { Image } from 'expo-image';
 import { BookOpen, Camera, Flame, ImagePlus, X } from 'lucide-react-native';
@@ -88,6 +94,12 @@ export function CreatePostSheet({
   onPosted,
 }: CreatePostSheetProps) {
   const pieces = useVisiblePieces();
+  const userType = useAppStore((s) => s.onboardingProfile.userType);
+  const { canPostStudioNotice } = useCanPostStudioNotice();
+  const availablePostKinds = React.useMemo(
+    () => getAvailablePostKinds(canPostStudioNotice),
+    [canPostStudioNotice],
+  );
   const { stages } = useStageConfig();
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
@@ -131,7 +143,9 @@ export function CreatePostSheet({
   const challengeTitle = preset?.challengeTitle ?? activeChallenge?.title ?? null;
   const challengeId = preset?.challengeId ?? activeChallenge?.id;
 
-  const activeKindMeta = COMMUNITY_POST_KINDS.find((k) => k.id === postKind) ?? COMMUNITY_POST_KINDS[0];
+  const activeKindMeta = availablePostKinds.find((k) => k.id === postKind)
+    ?? availablePostKinds[0]
+    ?? COMMUNITY_POST_KINDS[0];
 
   const postBody = composeCommunityPostContent({
     kind: postKind,
@@ -156,20 +170,21 @@ export function CreatePostSheet({
   }) && !posting;
 
   const resetForm = React.useCallback(() => {
-    setPostKind('update');
+    const defaultKind = getDefaultCommunityPostKind(userType, canPostStudioNotice);
+    setPostKind(defaultKind);
     setContent('');
     setPhotoUri(null);
     setPhotoIsCustom(false);
     setLinkedPieceId(null);
     setLinkedPieceIds([]);
-    setAskTopic('general');
+    setAskTopic(getDefaultAskTopic(userType));
     setFiringName('Studio firing');
     setFiringType('bisque');
     setFiringCone('6');
     setFiringId(undefined);
     setIncludeChallengeTag(false);
     setPosting(false);
-  }, []);
+  }, [userType, canPostStudioNotice]);
 
   const applyPreset = React.useCallback((next: CommunityPostComposerPreset) => {
     setPostKind(next.kind);
@@ -200,8 +215,18 @@ export function CreatePostSheet({
       resetForm();
       return;
     }
-    if (preset) applyPreset(preset);
+    if (preset) {
+      applyPreset(preset);
+      return;
+    }
+    resetForm();
   }, [visible, preset, resetForm, applyPreset]);
+
+  React.useEffect(() => {
+    if (!canPostStudioNotice && postKind === 'studio_notice') {
+      setPostKind(getDefaultCommunityPostKind(userType, canPostStudioNotice));
+    }
+  }, [canPostStudioNotice, postKind, userType]);
 
   React.useEffect(() => {
     if (!visible || !sessionToken) return;
@@ -396,7 +421,7 @@ export function CreatePostSheet({
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ gap: 8 }}
           >
-            {COMMUNITY_POST_KINDS.map((kind) => {
+            {availablePostKinds.map((kind) => {
               const active = postKind === kind.id;
               return (
                 <TouchableOpacity

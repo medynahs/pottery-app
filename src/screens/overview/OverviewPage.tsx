@@ -9,6 +9,7 @@ import { ChallengeBanner } from '@/src/screens/overview/components/ChallengeBann
 import { FeedbackModal } from '@/src/screens/overview/components/FeedbackModal';
 import { FiringQueueWidget } from '@/src/screens/overview/components/FiringQueueWidget';
 import { GlazeTestWallWidget } from '@/src/screens/overview/components/GlazeTestWallWidget';
+import { InviteStudioCard } from '@/src/screens/overview/components/InviteStudioCard';
 import { LiveStudioStateHero } from '@/src/screens/overview/components/LiveStudioStateHero';
 import { OverviewPageHeader } from '@/src/screens/overview/components/OverviewPageHeader';
 import { SetupModeSection } from '@/src/screens/overview/components/SetupModeSection';
@@ -85,6 +86,7 @@ export function OverviewPage() {
     firingQueueSnapshot,
     activeFiringSummary,
     showFiringQueueWidget,
+    showInviteStudioCard,
   } = useOverviewPage();
 
   const openStudioRhythm = () => navigate('/profile/studio-rhythm');
@@ -150,6 +152,10 @@ export function OverviewPage() {
             onKilnkinPress={onKilnkinPress}
             onPat={handlePat}
           />
+        ) : null}
+
+        {!isSetupMode && showInviteStudioCard ? (
+          <InviteStudioCard onOpenStudios={() => navigate('/studios' as never)} />
         ) : null}
 
         {!isSetupMode ? (

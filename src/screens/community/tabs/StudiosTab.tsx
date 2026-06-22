@@ -601,10 +601,14 @@ export function StudiosTab() {
       {/* ── Join studio by ID ─── */}
       <Card className="p-4 gap-2">
         <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Join a studio</Text>
+        <Text className="text-xs text-muted-foreground leading-4">
+          Ask your studio owner for their studio link or ID. If they do not use Pottery Nook yet, invite them from
+          Overview.
+        </Text>
         <TextInput
           value={studioToJoinId}
           onChangeText={setStudioToJoinId}
-          placeholder="Studio ID"
+          placeholder="Studio ID from your owner"
           className="border border-border rounded-xl px-4 py-3 text-sm text-foreground bg-background"
           autoCapitalize="none"
           autoCorrect={false}

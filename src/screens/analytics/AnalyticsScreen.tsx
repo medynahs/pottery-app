@@ -12,6 +12,7 @@ import {
 import { type AnalyticsPeriodId } from '@/src/utils/analyticsPeriods';
 import { buildStudioExportPayload, shareStudioExport, summarizeExport } from '@/src/utils/exportStudioData';
 import { checkPremium, PremiumFeature } from '@/src/utils/premiumGate';
+import { getAnalyticsLens, getDefaultAnalyticsTab, getPricingCopy } from '@/src/utils/roleBasedUx';
 import { useRouter } from 'expo-router';
 import {
   Coins,
@@ -110,9 +111,11 @@ export default function AnalyticsScreen() {
   const showToast = useAppStore((s) => s.showToast);
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
   const userType = useAppStore((s) => s.onboardingProfile.userType);
+  const analyticsLens = getAnalyticsLens(userType);
+  const pricingCopy = getPricingCopy(userType);
 
   const [periodId, setPeriodId] = React.useState<AnalyticsPeriodId>('this-month');
-  const [tab, setTab] = React.useState<AnalyticsTabId>('overview');
+  const [tab, setTab] = React.useState<AnalyticsTabId>(() => getDefaultAnalyticsTab(userType));
 
   React.useEffect(() => {
     if (!visibleAnalyticsTabs.some((t) => t.id === tab)) {
@@ -160,13 +163,6 @@ export default function AnalyticsScreen() {
     [pieces, firings, kilns, glazes, glazeTests, glazeCollectionNames],
   );
 
-  const isStudioOwner = userType === 'studio-owner-technician';
-
-  const glazeUsageHint = React.useMemo(
-    () => formatGlazeUsageHint(pieces, glazeTests, glazes, periodId),
-    [pieces, glazeTests, glazes, periodId],
-  );
-
   const stats = React.useMemo(
     () => computeStudioStats({ pieces, firings, glazeTests, glazes, periodId }),
     [pieces, firings, glazeTests, glazes, periodId],
@@ -179,6 +175,23 @@ export default function AnalyticsScreen() {
       return `${currencySymbol}${Math.round(v).toLocaleString()}`;
     },
     [currencySymbol],
+  );
+
+  const glazeUsageHint = React.useMemo(
+    () => formatGlazeUsageHint(pieces, glazeTests, glazes, periodId),
+    [pieces, glazeTests, glazes, periodId],
+  );
+
+  const isStudioOwner = analyticsLens === 'studio-ops';
+  const isMemberLens = analyticsLens === 'member-fees';
+  const isSellerLens = analyticsLens === 'seller';
+
+  const costBreakdownMeta = React.useMemo(
+    () =>
+      COST_BREAKDOWN_META.map((item) =>
+        item.key === 'firing' ? { ...item, label: pricingCopy.firingFeeLabel } : item,
+      ),
+    [pricingCopy.firingFeeLabel],
   );
 
   const filteredEconomics = React.useMemo(() => {
@@ -196,9 +209,15 @@ export default function AnalyticsScreen() {
   }, [stats.economics, economicsFilter]);
 
   const dashboard = React.useMemo(() => {
-    if (isStudioOwner) {
+    if (isStudioOwner || isMemberLens) {
       const statsRow: DashboardStat[] = [
-        { key: 'fees', label: 'Fees paid', value: money(stats.firings.totalCost, { dash: true }), sub: 'to kiln', emoji: '🔥' },
+        {
+          key: 'fees',
+          label: isMemberLens ? 'Fees paid' : 'Fees collected',
+          value: money(stats.firings.totalCost, { dash: true }),
+          sub: isMemberLens ? 'to studio' : 'from members',
+          emoji: '🔥',
+        },
         { key: 'avg', label: 'Avg / firing', value: money(stats.firings.avgCostPerFiring, { dash: true }), emoji: '💰' },
         { key: 'load', label: 'Avg load', value: stats.firings.avgPiecesPerFiring != null ? stats.firings.avgPiecesPerFiring.toFixed(1) : '-', sub: 'pieces', emoji: '📦' },
         { key: 'unique', label: 'Unique fired', value: String(stats.firings.uniquePiecesFired), emoji: '🏺' },
@@ -213,9 +232,26 @@ export default function AnalyticsScreen() {
       };
     }
 
+    if (isSellerLens) {
+      const statsRow: DashboardStat[] = [
+        { key: 'rev', label: pricingCopy.revenueLabel, value: money(stats.revenue.soldRevenue, { dash: true }), sub: `${stats.summary.soldCount} sold`, emoji: '💵' },
+        { key: 'margin', label: 'Margin', value: money(stats.revenue.realizedMargin, { dash: true }), sub: 'realized', emoji: '📈' },
+        { key: 'prod', label: 'In production', value: String(stats.summary.piecesFinished), sub: 'finished', emoji: '🧱' },
+        { key: 'hours', label: 'Work hours', value: stats.summary.workHours > 0 ? `${Math.round(stats.summary.workHours)}h` : '-', emoji: '⏱️' },
+      ];
+      return {
+        headline: String(stats.summary.soldCount),
+        headlineSub: `${money(stats.revenue.soldRevenue, { dash: true })} revenue · ${stats.summary.piecesCreated} created this period`,
+        ringValue: stats.summary.survivalRate,
+        ringLabel: 'Survival',
+        ringSub: 'finished vs lost',
+        stats: statsRow,
+      };
+    }
+
     const statsRow: DashboardStat[] = [
       { key: 'cost', label: 'Production', value: money(stats.costs.productionTotal, { dash: true }), sub: 'est. cost', emoji: '🧱' },
-      { key: 'rev', label: 'Sold', value: money(stats.revenue.soldRevenue, { dash: true }), sub: `${stats.summary.soldCount} pieces`, emoji: '💵' },
+      { key: 'rev', label: pricingCopy.revenueLabel, value: money(stats.revenue.soldRevenue, { dash: true }), sub: `${stats.summary.soldCount} pieces`, emoji: '💵' },
       { key: 'avg', label: 'Avg / piece', value: money(stats.costs.avgPerPiece, { dash: true }), emoji: '📊' },
       { key: 'hours', label: 'Work hours', value: stats.summary.workHours > 0 ? `${Math.round(stats.summary.workHours)}h` : '-', emoji: '⏱️' },
     ];
@@ -228,16 +264,16 @@ export default function AnalyticsScreen() {
       ringSub: 'finished vs lost',
       stats: statsRow,
     };
-  }, [isStudioOwner, money, stats]);
+  }, [isMemberLens, isSellerLens, isStudioOwner, money, pricingCopy.revenueLabel, stats]);
 
   const costDonutSegments = React.useMemo(
     () =>
-      COST_BREAKDOWN_META.map((m) => ({
+      costBreakdownMeta.map((m) => ({
         label: m.label,
         color: m.color,
         value: stats.costs.breakdown[m.key],
       })).filter((s) => s.value > 0),
-    [stats.costs.breakdown],
+    [costBreakdownMeta, stats.costs.breakdown],
   );
 
   const marginGroupRows = React.useMemo(() => {
@@ -366,7 +402,7 @@ export default function AnalyticsScreen() {
               </View>
             </AnalyticsSectionCard>
 
-            {!isStudioOwner && stats.costs.productionTotal > 0 ? (
+            {!isStudioOwner && !isMemberLens && stats.costs.productionTotal > 0 ? (
               <AnalyticsSectionCard
                 title="Where costs go"
                 hint="Production spend by category"
@@ -455,11 +491,11 @@ export default function AnalyticsScreen() {
               </AnalyticsSectionCard>
             ) : null}
 
-            {!isStudioOwner ? (
+            {!isStudioOwner && !isMemberLens ? (
               <>
                 <SectionLabel title="Revenue & margin" />
                 <MetricGrid>
-                  <MetricTile tone="revenue" emoji="💵" label="Sold revenue" value={money(stats.revenue.soldRevenue, { dash: true })} sub={`${stats.summary.soldCount} sold`} />
+                  <MetricTile tone="revenue" emoji="💵" label={pricingCopy.revenueLabel} value={money(stats.revenue.soldRevenue, { dash: true })} sub={`${stats.summary.soldCount} sold`} />
                   <MetricTile tone="revenue" emoji="📈" label="Realized margin" value={money(stats.revenue.realizedMargin, { dash: true })} />
                   <MetricTile
                     tone="revenue"

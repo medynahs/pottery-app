@@ -1,3 +1,5 @@
+import { KILN_ACTIVE_KILNS_ROUTE } from '@/src/screens/overview/utils/kilnNavigation';
+
 export type SetupQuestKey =
   | 'customize-stages'
   | 'set-text-size'
@@ -70,7 +72,7 @@ export const SETUP_QUEST_CATALOG: Record<SetupQuestKey, Omit<SetupQuest, 'key'>>
   'add-kiln': {
     title: 'Add your kiln',
     text: 'Register a kiln to start logging firings and tracking temperatures.',
-    route: '/(tabs)/kiln',
+    route: KILN_ACTIVE_KILNS_ROUTE,
     actionLabel: 'Add Kiln',
   },
   'create-glaze-recipe': {

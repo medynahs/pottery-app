@@ -13,6 +13,7 @@ import {
 import { openSubscriptionManagement, useEntitlements } from '@/src/hooks/useEntitlements';
 import { openPlatformSubscriptionSettings } from '@/src/utils/subscriptionSettings';
 import { useAppStore } from '@/src/store';
+import { getPremiumUpgradeHeadline } from '@/src/utils/premiumGate';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
@@ -104,6 +105,8 @@ function CloseButton({ onPress }: { onPress: () => void }) {
 export default function PremiumUpgradeScreen() {
   const router = useRouter();
   const showToast = useAppStore((s) => s.showToast);
+  const userType = useAppStore((s) => s.onboardingProfile.userType);
+  const premiumHeadline = getPremiumUpgradeHeadline(userType);
   const { isPremium, offering, purchase, restore, isLoading, error } = useEntitlements();
   const [selected, setSelected] = useState<PlanKey>('annual');
   const [busy, setBusy] = useState(false);
@@ -263,7 +266,7 @@ export default function PremiumUpgradeScreen() {
                 paddingHorizontal: 4,
               }}
             >
-              Your support goes directly into new features, companions, and tools made for potters.
+              {premiumHeadline}
             </Text>
           </AnimatedLogoHero>
 

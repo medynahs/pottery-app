@@ -15,6 +15,7 @@ import {
     type PricingTier,
     type PricingUserType,
 } from '@/src/types/pricing';
+import { getPricingCopy } from '@/src/utils/roleBasedUx';
 import { useRouter } from 'expo-router';
 import { Calculator, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react-native';
 import React from 'react';
@@ -208,6 +209,8 @@ function CompactField({
 
 export default function PricingRulesScreen() {
   const router = useRouter();
+  const userType = useAppStore((state) => state.onboardingProfile.userType);
+  const pricingCopy = getPricingCopy(userType);
   const pricingSettingsState = useAppStore((state) => state.pricingSettings);
   const pricingSettings = React.useMemo(() => normalizePricingSettings(pricingSettingsState), [pricingSettingsState]);
   const setPricingSettings = useAppStore((state) => state.setPricingSettings);
@@ -285,7 +288,7 @@ export default function PricingRulesScreen() {
       <CustomizationSettingsShell
         eyebrow="Studio pricing"
         title="Pricing rules"
-        subtitle="Build prices from firing, hours, clay, glaze, overhead, fees, and tax."
+        subtitle={pricingCopy.screenSubtitle}
         onBack={() => router.back()}
         onSave={handleSave}
         saveLabel="Save preferences"

@@ -175,10 +175,10 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
       >
         <ModalSheetHeader>
           <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
-            Log Firing
+            Record Past Firing
           </Text>
           <Text className="text-sm text-muted-foreground mt-1">
-            {kiln.name} · {KILN_TYPE_LABELS[kiln.type]}
+            {kiln.name} · {KILN_TYPE_LABELS[kiln.type]} · journal entry
           </Text>
         </ModalSheetHeader>
 
@@ -361,7 +361,7 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
             disabled={!canSave}
             className={`rounded-2xl bg-primary py-4 items-center ${canSave ? '' : 'opacity-45'}`}
           >
-            <Text className="text-sm font-semibold text-white">Save Firing Log</Text>
+            <Text className="text-sm font-semibold text-white">Save to journal</Text>
           </TouchableOpacity>
         </ModalSheetFooter>
       </ModalCard>

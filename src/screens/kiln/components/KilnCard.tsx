@@ -3,7 +3,7 @@ import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { Clock, FlameKindling, ShieldAlert } from 'lucide-react-native';
+import { ChevronRight, Clock, FlameKindling, ShieldAlert } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import type { Kiln } from '../../../types/kiln';
@@ -33,8 +33,8 @@ export function KilnCard({
   const neverFired = lastFiredLabel === 'Never fired';
 
   return (
-    <TouchableOpacity activeOpacity={0.9} onPress={onPress} accessibilityRole="button">
-      <Card className="p-5 mb-3">
+    <Card className="p-5 mb-3">
+      <TouchableOpacity activeOpacity={0.9} onPress={onPress} accessibilityRole="button" accessibilityLabel={`Open ${kiln.name}`}>
         {kiln.imageUri ? (
           <Image
             source={{ uri: kiln.imageUri }}
@@ -47,52 +47,50 @@ export function KilnCard({
           </View>
         )}
 
-        <Text className="text-base font-serif font-bold text-foreground">{kiln.name}</Text>
-        <Text className="text-xs text-muted-foreground mt-0.5">
-          {KILN_TYPE_LABELS[kiln.type]} · {getKilnMaxTempLabel(kiln)}
-        </Text>
-
-        <TouchableOpacity
-          onPress={onViewHistory}
-          className="mt-2 self-start"
-          hitSlop={8}
-        >
-          <Text className={`text-xs font-semibold ${neverFired ? 'text-muted-foreground' : 'text-primary'}`}>
-            {lastFiredLabel}
-          </Text>
-        </TouchableOpacity>
-
-        {kiln.emergencyNotes?.trim() ? (
-          <View
-            className="mt-3 rounded-xl px-3 py-2.5 flex-row items-start gap-2"
-            style={{ backgroundColor: 'hsl(0 60% 98%)', borderWidth: 1, borderColor: 'hsl(0 55% 88%)' }}
-          >
-            <ShieldAlert size={14} color="hsl(0 55% 45%)" style={{ marginTop: 1 }} />
-            <Text className="flex-1 text-xs leading-4" style={{ color: 'hsl(0 45% 32%)' }} numberOfLines={3}>
-              {kiln.emergencyNotes.trim()}
+        <View className="flex-row items-start justify-between gap-2">
+          <View className="flex-1">
+            <Text className="text-base font-serif font-bold text-foreground">{kiln.name}</Text>
+            <Text className="text-xs text-muted-foreground mt-0.5">
+              {KILN_TYPE_LABELS[kiln.type]} · {getKilnMaxTempLabel(kiln)}
+            </Text>
+            <Text className={`text-xs font-semibold mt-2 ${neverFired ? 'text-muted-foreground' : 'text-primary'}`}>
+              {lastFiredLabel}
             </Text>
           </View>
-        ) : null}
-
-        {kiln.notes ? (
-          <Text className="text-xs text-muted-foreground italic mt-2" numberOfLines={2}>
-            "{kiln.notes}"
-          </Text>
-        ) : null}
-
-        <View className="flex-row gap-2 mt-4">
-          <LogFiringButton variant="outline" onPress={onLogFiring} />
-          <TouchableOpacity
-            onPress={onViewHistory}
-            className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary"
-          >
-            <Clock size={14} color={Colors.light.primaryForeground} />
-            <Text className="text-sm font-semibold text-primary-foreground">
-              History ({firingCount})
-            </Text>
-          </TouchableOpacity>
+          <ChevronRight size={18} color={colors.mutedForeground} style={{ marginTop: 4 }} />
         </View>
-      </Card>
-    </TouchableOpacity>
+      </TouchableOpacity>
+
+      {kiln.emergencyNotes?.trim() ? (
+        <View
+          className="mt-3 rounded-xl px-3 py-2.5 flex-row items-start gap-2"
+          style={{ backgroundColor: 'hsl(0 60% 98%)', borderWidth: 1, borderColor: 'hsl(0 55% 88%)' }}
+        >
+          <ShieldAlert size={14} color="hsl(0 55% 45%)" style={{ marginTop: 1 }} />
+          <Text className="flex-1 text-xs leading-4" style={{ color: 'hsl(0 45% 32%)' }} numberOfLines={3}>
+            {kiln.emergencyNotes.trim()}
+          </Text>
+        </View>
+      ) : null}
+
+      {kiln.notes ? (
+        <Text className="text-xs text-muted-foreground italic mt-2" numberOfLines={2}>
+          "{kiln.notes}"
+        </Text>
+      ) : null}
+
+      <View className="flex-row gap-2 mt-4">
+        <LogFiringButton variant="outline" onPress={onLogFiring} />
+        <TouchableOpacity
+          onPress={onViewHistory}
+          className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary"
+        >
+          <Clock size={14} color={Colors.light.primaryForeground} />
+          <Text className="text-sm font-semibold text-primary-foreground">
+            History ({firingCount})
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </Card>
   );
 }
