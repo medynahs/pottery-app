@@ -15,7 +15,7 @@
 
 1. **Members never pay** to link to a studio — adoption depends on frictionless member onboarding.
 2. **Core studio loop stays free** — join, opt-in queue submit, read-only schedule, basic alerts.
-3. **Personal Premium ≠ Studio** — photos, atlas depth, personal analytics on IAP; ops ledger and statements on Studio Pro (web).
+3. **Personal Premium ≠ Studio** — cloud photos, analytics on IAP; ops ledger and statements on Studio Pro (web).
 4. **Solo-in-studio is first-class** — members whose studio has not adopted PN get full personal journal + community; invite-owner flow, not dead ends.
 5. **One app, role-based UX** — five onboarding archetypes change defaults and copy, not separate app SKUs.
 
@@ -23,15 +23,20 @@
 
 ### Free (all personas)
 
-- Piece journal, personal kiln ops, community feed, challenges, friends
+- Unlimited pieces, kiln logs & glazes on device
+- Journal text sync across devices
+- Community text posts, feed, challenges, friends
 - Studio join + queue submit + schedule (when studio loop ships)
 - Member fee balance view (read-only)
+- Cloud media: **500 MB** total, **1 backed-up photo per piece**
+- Community: **text only** (photos use cloud quota / Premium)
 
 ### Premium (individual IAP)
 
-- Unlimited photos per piece
-- Glaze atlas beyond 15 entries
-- Analytics, export, backup
+- Unlimited cloud photo backup
+- Unlimited photos per piece in the cloud
+- Community photo posts
+- Analytics, export
 - Companion swap, unlimited missions, Studio Rhythm advanced
 
 ### Studio Pro (owner, web — future)

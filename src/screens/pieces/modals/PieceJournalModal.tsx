@@ -1,10 +1,19 @@
+import { PremiumLimitChip } from '@/src/components/PremiumLimitChip';
 import { PickSheet, type PickSheetOption } from '@/src/components/AppSheets';
 import { PhotoPickerOverlay } from '@/src/components/PhotoPickerOverlay';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
-import { canAddPiecePhoto, checkPremium, countPiecePhotos, PremiumFeature } from '@/src/utils/premiumGate';
+import { canUploadBytesToCloud, getCloudStorageSnapshot } from '@/src/utils/cloudStorage';
+import {
+  canBackupPiecePhotoToCloud,
+  cloudStorageLimitLabel,
+  piecePhotoLimitLabel,
+  PremiumFeature,
+  premiumRouteForFeature,
+} from '@/src/utils/premiumGate';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PackageCheck } from 'lucide-react-native';
 import React, { useMemo } from 'react';
@@ -78,6 +87,17 @@ export function PieceJournalModal({
   const { drafts, updateNotes, updatePhotoAt, deletePhotoAt } = useJournalDrafts(piece, visible);
   const { openPickSheet } = usePhotoPicker({ aspect: [4, 3] });
   const { requestAccess, PaywallGate } = usePremiumGate();
+  const router = useRouter();
+  const showToast = useAppStore((state) => state.showToast);
+
+  const notifyLocalOnlyPhoto = React.useCallback((updatedPiece: Piece, isReplacing: boolean) => {
+    if (canBackupPiecePhotoToCloud(updatedPiece, isReplacing)) return;
+    if (getCloudStorageSnapshot().atLimit) {
+      showToast('Saved on this device · Cloud storage is full', 'error');
+      return;
+    }
+    showToast('Saved on this device · Premium backs up photos to the cloud', 'success');
+  }, [showToast]);
 
   React.useEffect(() => {
     if (!visible || !piece) return;
@@ -133,15 +153,20 @@ export function PieceJournalModal({
   const pickCoverPhoto = React.useCallback(() => {
     if (!piece) return;
     const heroImage = piece.photo ?? piece.imgUrl;
-    if (!canAddPiecePhoto(piece, !!heroImage)) {
-      requestAccess(PremiumFeature.UnlimitedPhotos);
+    const isReplacing = !!heroImage;
+    if (!isReplacing && !canUploadBytesToCloud() && getCloudStorageSnapshot().atLimit) {
+      requestAccess(PremiumFeature.CloudStorage);
       return;
     }
     openPickSheet(
-      (uri) => onUpdatePiece({ ...piece, photo: uri }),
+      (uri) => {
+        const updated = { ...piece, photo: uri };
+        onUpdatePiece(updated);
+        notifyLocalOnlyPhoto(updated, isReplacing);
+      },
       heroImage ? () => onUpdatePiece({ ...piece, photo: undefined, imgUrl: undefined }) : undefined,
     );
-  }, [piece, onUpdatePiece, openPickSheet, requestAccess]);
+  }, [piece, onUpdatePiece, openPickSheet, requestAccess, notifyLocalOnlyPhoto]);
 
   const handleUpdateDescription = React.useCallback((description: string) => {
     if (!piece) return;
@@ -151,8 +176,9 @@ export function PieceJournalModal({
   const pickPhoto = React.useCallback((entryIndex: number, photoIndex: number) => {
     if (!piece) return;
     const existingUri = drafts[entryIndex]?.photos?.[photoIndex];
-    if (!canAddPiecePhoto(piece, !!existingUri)) {
-      requestAccess(PremiumFeature.UnlimitedPhotos);
+    const isReplacing = !!existingUri;
+    if (!isReplacing && !canUploadBytesToCloud() && getCloudStorageSnapshot().atLimit) {
+      requestAccess(PremiumFeature.CloudStorage);
       return;
     }
     openPickSheet(
@@ -161,6 +187,7 @@ export function PieceJournalModal({
         const currentPhotos = [...(drafts[entryIndex]?.photos ?? [])];
         currentPhotos[photoIndex] = uri;
         onUpdateEntry(piece.id, entryIndex, { photos: currentPhotos });
+        notifyLocalOnlyPhoto(piece, isReplacing);
       },
       existingUri ? () => {
         deletePhotoAt(entryIndex, photoIndex);
@@ -168,7 +195,7 @@ export function PieceJournalModal({
         onUpdateEntry(piece.id, entryIndex, { photos: currentPhotos });
       } : undefined,
     );
-  }, [piece, updatePhotoAt, deletePhotoAt, drafts, onUpdateEntry, openPickSheet, requestAccess]);
+  }, [piece, updatePhotoAt, deletePhotoAt, drafts, onUpdateEntry, openPickSheet, requestAccess, notifyLocalOnlyPhoto]);
 
   const goToPage = React.useCallback((index: number) => {
     const clamped = Math.max(0, Math.min(index, spreads.length - 1));
@@ -204,7 +231,9 @@ export function PieceJournalModal({
 
   if (!piece) return null;
 
-  const canAddMorePhotos = checkPremium(PremiumFeature.UnlimitedPhotos) || countPiecePhotos(piece) < 1;
+  const photoLimitLabel = piecePhotoLimitLabel(piece);
+  const accountCloudLabel = cloudStorageLimitLabel();
+  const canAddMorePhotos = true;
   const showContents = spreads.length >= CONTENTS_THRESHOLD;
   const showGallery = galleryPhotos.length > 0;
 
@@ -249,6 +278,25 @@ export function PieceJournalModal({
             showContents={showContents}
             showGallery={showGallery}
           />
+
+          {(photoLimitLabel || accountCloudLabel) ? (
+            <View style={{ paddingHorizontal: isCompact ? 8 : 12, paddingBottom: 6, gap: 6 }}>
+              {photoLimitLabel ? (
+                <PremiumLimitChip
+                  label={photoLimitLabel}
+                  hint="Unlimited cloud backup"
+                  onPress={() => router.push(premiumRouteForFeature(PremiumFeature.UnlimitedPhotos) as never)}
+                />
+              ) : null}
+              {accountCloudLabel ? (
+                <PremiumLimitChip
+                  label={accountCloudLabel}
+                  hint="Upgrade for more"
+                  onPress={() => router.push(premiumRouteForFeature(PremiumFeature.CloudStorage) as never)}
+                />
+              ) : null}
+            </View>
+          ) : null}
 
           <JournalBookShell
             isCompact={isCompact}

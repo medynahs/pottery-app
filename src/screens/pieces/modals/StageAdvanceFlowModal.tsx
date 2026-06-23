@@ -7,7 +7,8 @@ import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { checkPremium, PremiumFeature } from '@/src/utils/premiumGate';
+import { canUploadBytesToCloud, getCloudStorageSnapshot } from '@/src/utils/cloudStorage';
+import { PremiumFeature } from '@/src/utils/premiumGate';
 import type { LucideIcon } from 'lucide-react-native';
 import { ImagePlus, Sparkles, X } from 'lucide-react-native';
 import React from 'react';
@@ -115,12 +116,12 @@ export function StageAdvanceFlowModal({
   }, [request, defaultBisqueTemp, defaultGlazeTemp]);
 
   const pickPhoto = React.useCallback(() => {
-    if (!photo && piecePhotoCount >= 1 && !checkPremium(PremiumFeature.UnlimitedPhotos)) {
-      requestAccess(PremiumFeature.UnlimitedPhotos);
+    if (!photo && !canUploadBytesToCloud() && getCloudStorageSnapshot().atLimit) {
+      requestAccess(PremiumFeature.CloudStorage);
       return;
     }
     openPickSheet((uri) => setPhoto(uri));
-  }, [openPickSheet, piecePhotoCount, photo, requestAccess]);
+  }, [openPickSheet, photo, requestAccess]);
 
   const handleConfirm = React.useCallback(() => {
     const capture: StageAdvanceCapture = {

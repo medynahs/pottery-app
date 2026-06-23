@@ -20,7 +20,6 @@ import {
   buildFiringQueueSnapshot,
   shouldShowFiringQueueWidget,
 } from '@/src/screens/overview/utils/firingQueueUtils';
-import { PremiumFeature } from '@/src/utils/premiumGate';
 import { computeStudioStats } from '@/src/utils/computeStudioStats';
 import { useRouter, type Href } from 'expo-router';
 import React from 'react';
@@ -39,7 +38,7 @@ export function useOverviewPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   useCurrentUser();
-  const { requestAccess, PaywallGate } = usePremiumGate();
+  const { PaywallGate } = usePremiumGate();
   const user = useAppStore((state) => state.user);
   const isPremium = useAppStore((state) => state.isPremium);
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
@@ -448,11 +447,7 @@ export function useOverviewPage() {
     showJournalWidget,
     setShowJournalWidget,
     navigate,
-    onAnalyticsPress: () => {
-      if (requestAccess(PremiumFeature.Analytics)) {
-        navigate('/analytics');
-      }
-    },
+    onAnalyticsPress: () => navigate('/analytics'),
     onProfilePress: () => navigate('/(tabs)/profile'),
     onKilnkinPress: () => navigate('/kilnkin'),
     onChallengePress: () => navigate('/(tabs)/community?tab=challenges'),

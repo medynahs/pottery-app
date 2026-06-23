@@ -2,10 +2,12 @@
 import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useAppStore } from '@/src/store';
+import { profilePremiumTeaser } from '@/src/utils/premiumGate';
 import { useRouter } from 'expo-router';
 import { Crown } from 'lucide-react-native';
 import React, { useCallback } from 'react';
 import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
+import { ProfileCloudStorageCard } from './components/ProfileCloudStorageCard';
 import { ProfileGrid } from './components/ProfileGrid';
 import { ProfileHeader } from './components/ProfileHeader';
 import { useProfilePosts } from './hooks/useProfilePosts';
@@ -14,6 +16,8 @@ export default function ProfileScreen() {
   const router = useRouter();
   const meQuery = useCurrentUser();
   const isPremium = useAppStore((s) => s.isPremium);
+  const userType = useAppStore((s) => s.onboardingProfile.userType);
+  const premiumTeaser = profilePremiumTeaser(userType);
   const { PaywallGate } = usePremiumGate();
   const { posts, loading, reload, isReloading } = useProfilePosts();
 
@@ -39,6 +43,8 @@ export default function ProfileScreen() {
         onOpenJourney={() => router.push('/profile/journey' as never)}
       />
 
+      <ProfileCloudStorageCard />
+
       {!isPremium && (
         <TouchableOpacity
           onPress={() => router.push('/premium')}
@@ -63,7 +69,9 @@ export default function ProfileScreen() {
               Upgrade to Premium
             </Text>
           </View>
-          <Text style={{ fontSize: 12, color: 'hsl(24, 20%, 45%)' }}>Unlock all features →</Text>
+            <Text style={{ fontSize: 12, color: 'hsl(24, 20%, 45%)', flex: 1, textAlign: 'right' }}>
+              {premiumTeaser} →
+            </Text>
         </TouchableOpacity>
       )}
 

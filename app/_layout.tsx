@@ -150,7 +150,7 @@ function AppShell() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="premium" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="premium" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="manage-subscription" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="stage-customization" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="clay-bodies" options={{ headerShown: false, presentation: 'modal' }} />

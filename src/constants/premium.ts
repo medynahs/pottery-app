@@ -12,7 +12,7 @@ export function premiumDisplayPrice(
   pkg: PurchasesPackage | undefined,
   fallbackEur: string,
 ): string {
-  if (!pkg?.product.priceString) return fallbackEur;
-  if (pkg.product.currencyCode === 'EUR') return pkg.product.priceString;
+  if (!pkg?.product?.priceString) return fallbackEur;
+  if (pkg.product?.currencyCode === 'EUR') return pkg.product.priceString;
   return fallbackEur;
 }

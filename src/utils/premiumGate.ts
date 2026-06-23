@@ -1,7 +1,13 @@
-import type { GlazeLibraryItem } from '../screens/glazes/types';
 import type { Piece } from '../types/pieces';
 import type { OnboardingUserType } from '../types/user';
 import { useAppStore } from '../store/appStore';
+import {
+  canSyncPiecePhotoToCloud,
+  countPieceCloudBackedPhotos,
+  formatCloudStorageLabel,
+  FREE_CLOUD_STORAGE_MB,
+  getCloudStorageSnapshot,
+} from './cloudStorage';
 
 /**
  * Enum of all premium-gated features.
@@ -11,7 +17,10 @@ import { useAppStore } from '../store/appStore';
 export enum PremiumFeature {
   Analytics        = 'analytics',
   UnlimitedPhotos  = 'unlimited-photos',
+  /** @deprecated Glazes are unlimited locally; kept for deep links. */
   FullGlazeAtlas   = 'full-glaze-atlas',
+  CloudStorage     = 'cloud-storage',
+  CommunityPhotos  = 'community-photos',
   CompanionSwap    = 'companion-swap',
   FullPricing      = 'full-pricing',
   KilnAnalytics    = 'kiln-analytics',
@@ -22,14 +31,194 @@ export enum PremiumFeature {
   Backup            = 'backup',
 }
 
-/** Free-tier glaze library cap (ticket #65). */
-export const FREE_GLAZE_LIMIT = 15;
+export { FREE_CLOUD_STORAGE_MB } from './cloudStorage';
+
+/** Free tier: one cloud-backed photo per piece (more can stay on-device). */
+export const FREE_PHOTO_LIMIT = 1;
+
+export type PremiumComparisonRow = {
+  label: string;
+  free: string;
+  premium: string;
+};
+
+/** Free vs Premium rows for the upgrade screen comparison table. */
+export const PREMIUM_COMPARISON_ROWS: PremiumComparisonRow[] = [
+  { label: 'Pieces, kiln & glazes', free: 'Unlimited', premium: 'Unlimited' },
+  { label: 'Text sync across devices', free: 'Included', premium: 'Included' },
+  { label: 'Cloud photo storage', free: `${FREE_CLOUD_STORAGE_MB} MB`, premium: 'Unlimited' },
+  { label: 'Photos backed up per piece', free: '1', premium: 'Unlimited' },
+  { label: 'Community posts', free: 'Text', premium: 'Text + photos' },
+  { label: 'Studio analytics', free: 'Preview only', premium: 'Full dashboards' },
+  { label: 'Data export', free: '—', premium: 'Included' },
+  { label: 'Studio Rhythm', free: 'Weekly', premium: 'Sprint & freeform' },
+  { label: 'Companions', free: 'Your pick', premium: 'All 4 + swap anytime' },
+];
+
+export type PaywallFeatureStatus = 'included' | 'coming-soon';
+
+export type PaywallFeatureItem = {
+  key: string;
+  label: string;
+  status: PaywallFeatureStatus;
+};
+
+/** Shipped Premium benefits — shown on the upgrade screen. */
+export const PAYWALL_INCLUDED_FEATURES: PaywallFeatureItem[] = [
+  { key: 'cloud', label: 'Unlimited cloud photo backup', status: 'included' },
+  { key: 'photos', label: 'Unlimited photos per piece in the cloud', status: 'included' },
+  { key: 'community', label: 'Photo posts in the community feed', status: 'included' },
+  { key: 'companions', label: 'All 4 elemental companions + free swap', status: 'included' },
+  { key: 'analytics', label: 'Studio & kiln analytics', status: 'included' },
+  { key: 'export', label: 'Data export', status: 'included' },
+  { key: 'rhythm', label: 'Studio Rhythm sprint & freeform modes', status: 'included' },
+];
+
+export const PAYWALL_COMING_SOON_FEATURES: PaywallFeatureItem[] = [
+  { key: 'wrap', label: 'Yearly pottery wrap', status: 'coming-soon' },
+];
+
+/** Explains the local vs cloud split on upgrade screens. */
+export const PAYWALL_LOCAL_CLOUD_EXPLAINER =
+  'Free: unlimited pieces, kiln logs & glazes on your device, with journal text synced across devices. Cloud photos and media are limited; Premium unlocks full backup.';
+
+const PREMIUM_CONTEXTUAL_TITLES: Record<PremiumFeature, string> = {
+  [PremiumFeature.Analytics]: 'Unlock studio analytics',
+  [PremiumFeature.UnlimitedPhotos]: 'Back up every stage photo',
+  [PremiumFeature.FullGlazeAtlas]: 'Unlock unlimited cloud backup',
+  [PremiumFeature.CloudStorage]: 'Unlock unlimited cloud backup',
+  [PremiumFeature.CommunityPhotos]: 'Share photos in the feed',
+  [PremiumFeature.CompanionSwap]: 'Switch companions anytime',
+  [PremiumFeature.FullPricing]: 'Unlock pricing insights',
+  [PremiumFeature.KilnAnalytics]: 'See kiln utilisation analytics',
+  [PremiumFeature.Export]: 'Export your studio data',
+  [PremiumFeature.UnlimitedMissions]: 'Unlock unlimited missions',
+  [PremiumFeature.StudioRhythmAdvanced]: 'Unlock advanced Studio Rhythm',
+  [PremiumFeature.YearlyWrap]: 'See your year in clay',
+  [PremiumFeature.Backup]: 'Back up your full studio archive',
+};
+
+const PREMIUM_LIMIT_LINES: Partial<Record<PremiumFeature, string>> = {
+  [PremiumFeature.UnlimitedPhotos]: `Free: ${FREE_PHOTO_LIMIT} cloud-backed photo per piece · Premium: unlimited`,
+  [PremiumFeature.CloudStorage]: `Free: ${FREE_CLOUD_STORAGE_MB} MB cloud media · Premium: unlimited`,
+  [PremiumFeature.CommunityPhotos]: 'Free: text posts · Premium: photo posts in the community feed',
+  [PremiumFeature.FullGlazeAtlas]: `Free: ${FREE_CLOUD_STORAGE_MB} MB cloud media · Premium: unlimited`,
+  [PremiumFeature.Backup]: `Free: ${FREE_CLOUD_STORAGE_MB} MB cloud media · Premium: unlimited`,
+  [PremiumFeature.Analytics]: 'Free: preview teaser · Premium: full cost, firing, and margin dashboards',
+  [PremiumFeature.Export]: 'Free: view in app · Premium: export pieces, firings, and glazes',
+  [PremiumFeature.CompanionSwap]: 'Free: your onboarding companion · Premium: all 4 elements + swap anytime',
+  [PremiumFeature.StudioRhythmAdvanced]: 'Free: weekly rhythm · Premium: sprint mode & freeform scheduling',
+  [PremiumFeature.KilnAnalytics]: 'Included with Premium analytics — kiln load, fees, and firing trends',
+};
+
+const STUDIO_OWNER_PAYWALL_FOOTNOTE =
+  'Studio member queue & schedule stay free. Studio billing, statements, and member admin will live on the web owner portal.';
+
+export function getStudioOwnerPaywallFootnote(userType: OnboardingUserType): string | null {
+  return userType === 'studio-owner-technician' ? STUDIO_OWNER_PAYWALL_FOOTNOTE : null;
+}
+
+export function getPremiumContextualTitle(feature: PremiumFeature): string {
+  return PREMIUM_CONTEXTUAL_TITLES[feature] ?? 'Unlock Premium';
+}
+
+export function getPremiumLimitLine(feature: PremiumFeature): string | null {
+  return PREMIUM_LIMIT_LINES[feature] ?? null;
+}
+
+export function parsePremiumFeatureParam(
+  raw: string | string[] | undefined,
+): PremiumFeature | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value) return null;
+  return Object.values(PremiumFeature).includes(value as PremiumFeature)
+    ? (value as PremiumFeature)
+    : null;
+}
+
+export function premiumRouteForFeature(feature: PremiumFeature): string {
+  return `/premium?feature=${feature}`;
+}
+
+const FEATURE_TO_PAYWALL_KEY: Partial<Record<PremiumFeature, string>> = {
+  [PremiumFeature.UnlimitedPhotos]: 'photos',
+  [PremiumFeature.CloudStorage]: 'cloud',
+  [PremiumFeature.CommunityPhotos]: 'community',
+  [PremiumFeature.FullGlazeAtlas]: 'cloud',
+  [PremiumFeature.CompanionSwap]: 'companions',
+  [PremiumFeature.Analytics]: 'analytics',
+  [PremiumFeature.KilnAnalytics]: 'analytics',
+  [PremiumFeature.Export]: 'export',
+  [PremiumFeature.StudioRhythmAdvanced]: 'rhythm',
+  [PremiumFeature.YearlyWrap]: 'wrap',
+  [PremiumFeature.Backup]: 'cloud',
+};
+
+/** Paywall list item that best matches a gated feature trigger. */
+export function paywallItemForFeature(feature: PremiumFeature): PaywallFeatureItem | null {
+  const key = FEATURE_TO_PAYWALL_KEY[feature];
+  if (!key) return null;
+  return (
+    [...PAYWALL_INCLUDED_FEATURES, ...PAYWALL_COMING_SOON_FEATURES].find((item) => item.key === key) ??
+    null
+  );
+}
+
+export type PiecePhotoLimitStatus = {
+  count: number;
+  limit: number;
+  atLimit: boolean;
+  isPremium: boolean;
+};
+
+export function piecePhotoLimitStatus(piece: Piece): PiecePhotoLimitStatus {
+  const count = countPieceCloudBackedPhotos(piece);
+  const isPremium = checkPremium(PremiumFeature.UnlimitedPhotos);
+  return {
+    count,
+    limit: FREE_PHOTO_LIMIT,
+    atLimit: !isPremium && count >= FREE_PHOTO_LIMIT,
+    isPremium,
+  };
+}
+
+/** Short chip label for cloud backup limits on a piece. */
+export function piecePhotoLimitLabel(piece: Piece): string | null {
+  const status = piecePhotoLimitStatus(piece);
+  if (status.isPremium) return null;
+  if (status.atLimit) {
+    return `Cloud backup full (${status.limit}/${status.limit})`;
+  }
+  return `Cloud backup: ${status.count}/${status.limit}`;
+}
+
+/** Account-wide cloud media meter for profile / paywall surfaces. */
+export function cloudStorageLimitLabel(): string | null {
+  const snapshot = getCloudStorageSnapshot();
+  if (snapshot.isPremium) return null;
+  return formatCloudStorageLabel(snapshot);
+}
+
+export function profilePremiumTeaser(userType: OnboardingUserType = 'not-sure'): string {
+  switch (userType) {
+    case 'studio-owner-technician':
+      return 'Unlimited cloud backup, kiln analytics & export — from €4.99/mo';
+    case 'business-owner':
+      return 'Unlimited cloud backup, margin analytics & export — from €4.99/mo';
+    case 'studio-potter':
+      return 'Unlimited cloud backup, export & analytics — from €4.99/mo';
+    default:
+      return 'Unlimited cloud backup, photos & analytics — from €4.99/mo';
+  }
+}
 
 /** One-line copy shown on contextual paywalls. */
 export const PREMIUM_FEATURE_DESCRIPTIONS: Record<PremiumFeature, string> = {
   [PremiumFeature.Analytics]: 'Unlock studio analytics: costs, materials, firing trends, and more.',
-  [PremiumFeature.UnlimitedPhotos]: 'Document every stage of your process.',
-  [PremiumFeature.FullGlazeAtlas]: 'Build your complete glaze library without limits.',
+  [PremiumFeature.UnlimitedPhotos]: 'Back up unlimited photos per piece to the cloud.',
+  [PremiumFeature.FullGlazeAtlas]: 'Unlimited glazes stay free on your device — Premium unlocks full cloud backup.',
+  [PremiumFeature.CloudStorage]: 'Back up all your studio photos and media to the cloud.',
+  [PremiumFeature.CommunityPhotos]: 'Attach photos to community posts, not just text.',
   [PremiumFeature.CompanionSwap]: 'Switch between your elemental companions anytime.',
   [PremiumFeature.FullPricing]: 'Access full pricing presets and revenue tools.',
   [PremiumFeature.KilnAnalytics]: 'See detailed kiln utilisation and firing analytics.',
@@ -37,15 +226,15 @@ export const PREMIUM_FEATURE_DESCRIPTIONS: Record<PremiumFeature, string> = {
   [PremiumFeature.UnlimitedMissions]: 'Complete unlimited studio missions every week.',
   [PremiumFeature.StudioRhythmAdvanced]: 'Unlock sprint mode, recurring events, and calendar overlays.',
   [PremiumFeature.YearlyWrap]: 'See your year in clay with a personalised wrap.',
-  [PremiumFeature.Backup]: 'Back up and restore your full studio archive.',
+  [PremiumFeature.Backup]: 'Unlimited cloud backup for your full studio archive.',
 };
 
 const PREMIUM_HEADLINES: Record<OnboardingUserType, string> = {
-  'home-potter': 'Unlimited photos, glaze depth, and firing analytics for your home studio.',
-  'studio-potter': 'Full glaze library and export — your personal toolkit at the shared studio.',
-  'studio-owner-technician': 'Kiln analytics, export, and deeper ops insight for your studio.',
-  'business-owner': 'Margin analytics, full pricing presets, and production insights.',
-  'not-sure': 'Unlock the full Pottery Nook toolkit for your practice.',
+  'home-potter': 'Unlimited cloud backup, photos, and firing analytics for your home studio.',
+  'studio-potter': 'Full cloud backup and export — your personal toolkit at the shared studio.',
+  'studio-owner-technician': 'Unlimited cloud backup, kiln analytics, and deeper ops insight.',
+  'business-owner': 'Unlimited cloud backup, margin analytics, and production insights.',
+  'not-sure': 'Unlimited cloud backup and the full Pottery Nook toolkit.',
 };
 
 const PREMIUM_FEATURE_BY_ARCHETYPE: Partial<
@@ -53,12 +242,12 @@ const PREMIUM_FEATURE_BY_ARCHETYPE: Partial<
 > = {
   'home-potter': {
     [PremiumFeature.Analytics]: 'See firing costs, materials, and trends for your home kiln.',
-    [PremiumFeature.UnlimitedPhotos]: 'Document every stage of your home practice.',
-    [PremiumFeature.FullGlazeAtlas]: 'Build your complete home glaze library without limits.',
+    [PremiumFeature.UnlimitedPhotos]: 'Back up every stage of your home practice to the cloud.',
+    [PremiumFeature.CloudStorage]: 'Keep your full photo archive safe across devices.',
   },
   'studio-potter': {
-    [PremiumFeature.FullGlazeAtlas]: 'Save every glaze test and recipe you use at the studio.',
-    [PremiumFeature.UnlimitedPhotos]: 'Portfolio-ready photos for every piece you make.',
+    [PremiumFeature.CloudStorage]: 'Back up glaze tests, pieces, and journal photos to the cloud.',
+    [PremiumFeature.UnlimitedPhotos]: 'Portfolio-ready cloud photos for every piece you make.',
     [PremiumFeature.Export]: 'Export your work history anytime.',
   },
   'studio-owner-technician': {
@@ -109,46 +298,22 @@ export function countPiecePhotos(piece: Piece): number {
 }
 
 /**
- * Free tier: one photo per piece (cover counts). Replacing an existing photo
- * is always allowed; adding a new slot requires premium once the limit is hit.
+ * Local photos are always allowed. Cloud backup is gated separately via
+ * {@link canSyncPiecePhotoToCloud}.
  */
-export function canAddPiecePhoto(piece: Piece, isReplacing: boolean): boolean {
-  if (isReplacing) return true;
-  if (checkPremium(PremiumFeature.UnlimitedPhotos)) return true;
-  return countPiecePhotos(piece) < 1;
+export function canAddPiecePhoto(_piece: Piece, _isReplacing = false): boolean {
+  return true;
 }
 
-/**
- * Each saved batch counts toward the free cap, including new versions
- * (every version is its own `GlazeLibraryItem` in the atlas).
- */
-export function countGlazeAtlasEntries(glazes: readonly GlazeLibraryItem[]): number {
-  return glazes.length;
+/** Whether a new or replaced photo can be uploaded to cloud storage. */
+export function canBackupPiecePhotoToCloud(
+  piece: Piece,
+  isReplacing: boolean,
+): boolean {
+  return canSyncPiecePhotoToCloud(piece, isReplacing);
 }
 
-export type GlazeAtlasLimitStatus = {
-  count: number;
-  limit: number;
-  remaining: number | null;
-  atLimit: boolean;
-  isPremium: boolean;
-};
-
-export function glazeAtlasLimitStatus(glazes: readonly GlazeLibraryItem[]): GlazeAtlasLimitStatus {
-  const count = countGlazeAtlasEntries(glazes);
-  const isPremium = checkPremium(PremiumFeature.FullGlazeAtlas);
-  return {
-    count,
-    limit: FREE_GLAZE_LIMIT,
-    remaining: isPremium ? null : Math.max(0, FREE_GLAZE_LIMIT - count),
-    atLimit: !isPremium && count >= FREE_GLAZE_LIMIT,
-    isPremium,
-  };
-}
-
-/** Free tier: up to {@link FREE_GLAZE_LIMIT} glaze batches in the atlas. */
-export function canAddGlaze(glazes: readonly GlazeLibraryItem[] | number): boolean {
-  if (checkPremium(PremiumFeature.FullGlazeAtlas)) return true;
-  const count = typeof glazes === 'number' ? glazes : countGlazeAtlasEntries(glazes);
-  return count < FREE_GLAZE_LIMIT;
+/** @deprecated Glazes are unlimited on-device; kept for compatibility. */
+export function canAddGlaze(_glazes?: unknown): boolean {
+  return true;
 }

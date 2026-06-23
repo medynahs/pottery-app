@@ -10,6 +10,7 @@
  */
 
 import type { GlazeLibraryItem, GlazeTestTile } from '@/src/screens/glazes/types';
+import { canUploadGlazeMedia } from '@/src/utils/cloudStorage';
 import {
   apiDeleteGlazeImage,
   apiListGlazeTests,
@@ -195,6 +196,10 @@ export async function reconcileGlazeImages(): Promise<void> {
       for (const uri of glaze.accidentPhotoUris) if (isLocalUri(uri)) pending.push({ type: 'accident', uri });
 
       for (const { type, uri } of pending) {
+        if (!canUploadGlazeMedia()) {
+          if (__DEV__) console.warn(`[glazes:image] cloud quota reached, skipping upload for glaze ${glaze.id}`);
+          continue;
+        }
         try {
           const res = await apiUploadGlazeImage(sessionToken, glaze.backendId, fileFromUri(uri, type), type);
           replaceGlazePhotoUri(glaze.id, uri, res.image.url);

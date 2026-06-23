@@ -2,7 +2,6 @@
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
-import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useAnalytics } from '@/src/hooks/useAnalytics';
 import { SaveCommunityGlazeSheet } from '@/src/screens/community/components/SaveCommunityGlazeSheet';
 import { communityGlazeToLibraryItem } from '@/src/screens/community/utils/saveCommunityGlaze';
@@ -27,7 +26,6 @@ import { parsePieceJournalFromPost } from '@/src/screens/community/utils/pieceJo
 import { PostReactionBar } from '@/src/screens/community/components/PostReactionBar';
 import { apiSendFriendRequest } from '@/src/services/friends';
 import { useAppStore } from '@/src/store';
-import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
 import { Image } from 'expo-image';
 import { Bookmark, Check, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -65,7 +63,6 @@ export function FeedPostCard({ post, sessionToken }: Props) {
   const recordCommunityPostSave = useAppStore((s) => s.recordCommunityPostSave);
   const communityPostSaveCounts = useAppStore((s) => s.communityPostSaveCounts);
   const showToast = useAppStore((s) => s.showToast);
-  const { requestAccess, PaywallGate } = usePremiumGate();
   const { trackGlazeSavedFromCommunity } = useAnalytics();
 
   const recipePayload = React.useMemo(
@@ -128,19 +125,11 @@ export function FeedPostCard({ post, sessionToken }: Props) {
 
   const handleSavePress = () => {
     if (!recipePayload || savedFromPost) return;
-    if (!canAddGlaze(glazes)) {
-      requestAccess(PremiumFeature.FullGlazeAtlas);
-      return;
-    }
     setSaveSheetOpen(true);
   };
 
   const handleSaveToAtlas = (selectedCollections: string[]) => {
     if (!recipePayload || savedFromPost) return;
-    if (!canAddGlaze(glazes)) {
-      requestAccess(PremiumFeature.FullGlazeAtlas);
-      return;
-    }
 
     const customCollections = sanitizeCustomCollections(selectedCollections);
     registerGlazeCollections(customCollections);
@@ -177,7 +166,6 @@ export function FeedPostCard({ post, sessionToken }: Props) {
 
   return (
     <>
-      {PaywallGate}
       <SaveCommunityGlazeSheet
         payload={saveSheetOpen ? recipePayload : null}
         postId={saveSheetOpen ? post.id : null}

@@ -13,7 +13,10 @@ import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { useUploadAvatar, useUploadCover } from '@/src/hooks/useCurrentUser';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
+import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useAppStore } from '@/src/store/appStore';
+import { canUploadProfileMedia } from '@/src/utils/cloudStorage';
+import { PremiumFeature } from '@/src/utils/premiumGate';
 import { Camera, ImageIcon } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -37,6 +40,7 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const uploadCover = useUploadCover();
   const avatarPicker = usePhotoPicker({ aspect: [1, 1], quality: 0.85 });
   const coverPicker = usePhotoPicker({ aspect: [16, 9], quality: 0.85 });
+  const { requestAccess, PaywallGate } = usePremiumGate();
 
   const [name, setName] = useState('');
   const [studioName, setStudioName] = useState('');
@@ -70,6 +74,10 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   }, [visible]);
 
   const pickAvatar = () => {
+    if (!canUploadProfileMedia()) {
+      requestAccess(PremiumFeature.CloudStorage);
+      return;
+    }
     avatarPicker.openPickSheet((uri) => {
       setAvatarImageUri(uri);
       setAvatarMimeType('image/jpeg');
@@ -78,6 +86,10 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   };
 
   const pickCover = () => {
+    if (!canUploadProfileMedia()) {
+      requestAccess(PremiumFeature.CloudStorage);
+      return;
+    }
     coverPicker.openPickSheet((uri) => {
       setCoverImageUri(uri);
       coverChanged.current = true;
@@ -122,7 +134,9 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const avatarInitial = ((name.trim() || user.name || 'U')[0] ?? 'U').toUpperCase();
 
   return (
-    <ModalShell visible={visible} onClose={onClose}>
+    <>
+      {PaywallGate}
+      <ModalShell visible={visible} onClose={onClose}>
       <ModalCard radius={MODAL_SHEET_RADIUS} height={sheetHeight} maxHeight={sheetHeight} withHandle={false}>
         <ModalSheetHeader>
           <Text className="text-2xl font-serif font-bold text-foreground">Edit Profile</Text>
@@ -253,5 +267,6 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
             </ModalSheetFooter>
       </ModalCard>
     </ModalShell>
+    </>
   );
 }

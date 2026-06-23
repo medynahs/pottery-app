@@ -1,8 +1,6 @@
 import { useAnalytics } from '@/src/hooks/useAnalytics';
-import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { glazeDraftToItem } from '@/src/screens/glazes/glazeItemHelpers';
 import { useAppStore } from '@/src/store';
-import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
 import React from 'react';
 import { deriveCustomCollectionNames, sanitizeCustomCollections } from './atlas/collections';
 import { hasValidRecipeIngredients } from './atlas/GlazeRecipeBuilder';
@@ -21,7 +19,6 @@ export function useGlazeAtlas() {
   const registerGlazeCollections = useAppStore((state) => state.registerGlazeCollections);
   const addGlazeCollection = useAppStore((state) => state.addGlazeCollection);
   const showToast = useAppStore((state) => state.showToast);
-  const { requestAccess, PaywallGate } = usePremiumGate();
   const { trackGlazeCreated, trackTestTileLogged } = useAnalytics();
 
   const collections = React.useMemo(
@@ -33,12 +30,8 @@ export function useGlazeAtlas() {
   const [testOpen, setTestOpen] = React.useState(false);
 
   const openAddGlaze = React.useCallback(() => {
-    if (!canAddGlaze(glazes)) {
-      requestAccess(PremiumFeature.FullGlazeAtlas);
-      return;
-    }
     setAddOpen(true);
-  }, [glazes, requestAccess]);
+  }, []);
 
   const openLogTest = React.useCallback(() => {
     if (glazes.length === 0) {
@@ -50,10 +43,6 @@ export function useGlazeAtlas() {
   }, [glazes.length, showToast, openAddGlaze]);
 
   const handleSaveGlaze = React.useCallback((draft: GlazeDraft) => {
-    if (!canAddGlaze(glazes)) {
-      requestAccess(PremiumFeature.FullGlazeAtlas);
-      return;
-    }
     if (!draft.name.trim() || !hasValidRecipeIngredients(draft.recipeIngredients)) {
       showToast('Name and at least one ingredient row are required', 'error');
       return;
@@ -76,7 +65,7 @@ export function useGlazeAtlas() {
     scheduleGlazesSync();
     setAddOpen(false);
     showToast('Glaze saved', 'success');
-  }, [addGlaze, glazes, registerGlazeCollections, requestAccess, showToast, trackGlazeCreated]);
+  }, [addGlaze, registerGlazeCollections, showToast, trackGlazeCreated]);
 
   const handleSaveTest = React.useCallback((testDraft: TestDraft) => {
     const selectedGlaze = glazes.find((g) => g.id === testDraft.glazeId);
@@ -112,6 +101,5 @@ export function useGlazeAtlas() {
     handleSaveGlaze,
     handleSaveTest,
     addGlazeCollection,
-    PaywallGate,
   };
 }

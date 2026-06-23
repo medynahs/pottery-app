@@ -39,8 +39,6 @@ import {
   getGlazeRootId,
   getGlazeVersions,
 } from '@/src/screens/glazes/glazeVersionUtils';
-import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
 import { GLAZE_OUTCOME_LABELS } from '@/src/screens/pieces/utils/constants';
 import { formatDateShort } from '@/src/utils/dates';
 import { useAppStore, useVisiblePieces } from '@/src/store';
@@ -142,7 +140,6 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
   const registerGlazeCollections = useAppStore((s) => s.registerGlazeCollections);
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const showToast = useAppStore((s) => s.showToast);
-  const { requestAccess, PaywallGate } = usePremiumGate();
 
   const [editOpen, setEditOpen] = React.useState(false);
   const [newVersionOpen, setNewVersionOpen] = React.useState(false);
@@ -215,20 +212,12 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
   );
 
   const openNewVersion = React.useCallback(() => {
-    if (!canAddGlaze(glazes)) {
-      requestAccess(PremiumFeature.FullGlazeAtlas);
-      return;
-    }
     setNewVersionOpen(true);
-  }, [glazes, requestAccess]);
+  }, []);
 
   const handleSaveNewVersion = React.useCallback(
     (draft: GlazeDraft) => {
       if (!glaze) return;
-      if (!canAddGlaze(glazes)) {
-        requestAccess(PremiumFeature.FullGlazeAtlas);
-        return;
-      }
       if (!draft.name.trim() || !hasValidRecipeIngredients(draft.recipeIngredients)) {
         showToast('Name and at least one ingredient row are required', 'error');
         return;
@@ -248,7 +237,7 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
       showToast(`Version ${versionNumber} saved`, 'success');
       router.replace(`/glaze/${id}` as never);
     },
-    [addGlaze, glaze, glazes, registerGlazeCollections, requestAccess, router, showToast],
+    [addGlaze, glaze, glazes, registerGlazeCollections, router, showToast],
   );
 
   const handleStatusChange = React.useCallback(
@@ -329,7 +318,6 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
 
   return (
     <View className="flex-1 bg-background">
-      {PaywallGate}
       <ImageLightbox
         visible={lightboxOpen}
         uri={heroUri}

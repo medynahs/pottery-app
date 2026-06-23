@@ -4,7 +4,6 @@ import LibraryGlazesScreen from '@/src/screens/library/LibraryGlazesScreen';
 import { AddGlazeModal } from '@/src/screens/library/atlas/AddGlazeModal';
 import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
 import { useGlazeAtlas } from '@/src/screens/library/useGlazeAtlas';
-import { glazeAtlasLimitStatus } from '@/src/utils/premiumGate';
 import { useLocalSearchParams } from 'expo-router';
 import { Plus, Sparkles } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -49,11 +48,6 @@ export default function JournalScreen() {
     }
   }, [action, atlas]);
 
-  const atlasLimit = React.useMemo(
-    () => glazeAtlasLimitStatus(atlas.glazes),
-    [atlas.glazes],
-  );
-
   const headerActions = (
     <View className="flex-row items-center gap-2">
       <TouchableOpacity
@@ -70,9 +64,7 @@ export default function JournalScreen() {
         onPress={atlas.openAddGlaze}
         activeOpacity={0.85}
         accessibilityRole="button"
-        accessibilityLabel={
-          atlasLimit.atLimit ? 'Add glaze batch, premium required' : 'Add glaze batch'
-        }
+        accessibilityLabel="Add glaze batch"
         className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-primary"
         style={{
           shadowColor: '#8B6A2A',
@@ -90,9 +82,7 @@ export default function JournalScreen() {
 
   const atlasDescription =
     activeTab === 'my-atlas'
-      ? atlasLimit.isPremium
-        ? `${atlas.glazes.length} batch${atlas.glazes.length !== 1 ? 'es' : ''} · ${atlas.glazeTests.length} test${atlas.glazeTests.length !== 1 ? 's' : ''}`
-        : `${atlasLimit.count}/${atlasLimit.limit} free batches · ${atlas.glazeTests.length} test${atlas.glazeTests.length !== 1 ? 's' : ''}`
+      ? `${atlas.glazes.length} batch${atlas.glazes.length !== 1 ? 'es' : ''} · ${atlas.glazeTests.length} test${atlas.glazeTests.length !== 1 ? 's' : ''}`
       : 'Recipes and layering ideas to try in your studio';
 
   return (
@@ -155,7 +145,6 @@ export default function JournalScreen() {
         defaultGlazeTemp={atlas.defaultGlazeTemp}
       />
 
-      {atlas.PaywallGate}
     </StudioTabScreen>
   );
 }

@@ -1,8 +1,10 @@
 import { Button } from '@/src/components/ui/button';
 import { Text } from '@/src/components/ui/text';
 import { useVisiblePieces, useAppStore } from '@/src/store';
+import { usePremiumGate } from '@/src/hooks/usePremiumGate';
+import { checkPremium, PremiumFeature } from '@/src/utils/premiumGate';
 import { useRouter } from 'expo-router';
-import { ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Crown, Lock } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,8 +14,6 @@ import { RhythmSectionLabel } from './components/RhythmSectionLabel';
 import { RhythmTipCard } from './components/RhythmTipCard';
 import { WeekGridCard } from './components/WeekGridCard';
 import { RHYTHM_BROWN } from './rhythmTheme';
-import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { PremiumFeature } from '@/src/utils/premiumGate';
 import type { RhythmType, StageKey } from './studioRhythm';
 import { STAGE_CONFIG, SUGGESTED_WEEKLY_STAGE_DAYS } from './studioRhythm';
 import { STAGE_RHYTHM_ICONS } from './studioRhythmIcons';
@@ -38,6 +38,7 @@ export default function StudioRhythmScheduleScreen() {
   const setSprintGoalPieces = useAppStore((s) => s.setSprintGoalPieces);
   const confirmStudioRhythm = useAppStore((s) => s.confirmStudioRhythm);
   const { requestAccess, PaywallGate } = usePremiumGate();
+  const isPremium = checkPremium(PremiumFeature.StudioRhythmAdvanced);
 
   const [sprintDraft, setSprintDraft] = useState(studioRhythm.sprintLengthWeeks ?? 2);
   const [goalDraft, setGoalDraft] = useState(studioRhythm.sprintGoalPieces ?? 0);
@@ -89,6 +90,8 @@ export default function StudioRhythmScheduleScreen() {
         <View className="gap-2.5 mb-6">
           {RHYTHM_TYPES.map((rt) => {
             const selected = studioRhythm.type === rt.key;
+            const isPremiumType = rt.key === 'sprint' || rt.key === 'freeform';
+            const locked = isPremiumType && !isPremium;
             return (
               <TouchableOpacity
                 key={rt.key}
@@ -106,7 +109,17 @@ export default function StudioRhythmScheduleScreen() {
                 }}
               >
                 <View className="flex-row items-center justify-between mb-1">
-                  <Text className="text-sm font-bold text-foreground">{rt.label}</Text>
+                  <View className="flex-row items-center gap-2 flex-1 pr-2">
+                    <Text className="text-sm font-bold text-foreground">{rt.label}</Text>
+                    {locked ? (
+                      <View className="flex-row items-center gap-1 rounded-full px-2 py-0.5 bg-primary/10">
+                        <Lock size={10} color="hsl(39 57% 51%)" />
+                        <Text className="text-[10px] font-bold text-primary">Premium</Text>
+                      </View>
+                    ) : isPremiumType && isPremium ? (
+                      <Crown size={12} color="hsl(39 57% 51%)" />
+                    ) : null}
+                  </View>
                   <View
                     className="w-4 h-4 rounded-full border-2 items-center justify-center"
                     style={{

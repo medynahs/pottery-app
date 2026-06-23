@@ -12,6 +12,7 @@ import { setPiecesIfChanged, useAppStore } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
 import { useIsFetching, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
+import { canSyncPiecePhotoToCloud } from '@/src/utils/cloudStorage';
 import {
   API_TO_LOCAL_STAGE,
   LOCAL_STAGE_TO_API,
@@ -428,6 +429,10 @@ export function useUploadPieceAssetMutation() {
   return useMutation({
     mutationFn: async ({ pieceBackendId, file, stage, description }: UploadPieceAssetOptions) => {
       if (!sessionToken) throw new Error('Not signed in');
+      const piece = useAppStore.getState().pieces.find((p) => p.backendId === pieceBackendId);
+      if (piece && !canSyncPiecePhotoToCloud(piece, false)) {
+        throw new Error('Cloud backup limit reached');
+      }
       const apiStatus: ApiPieceStatus | undefined = stage
         ? (LOCAL_STAGE_TO_API[stage] ?? undefined)
         : undefined;
@@ -437,7 +442,12 @@ export function useUploadPieceAssetMutation() {
       void queryClient.invalidateQueries({ queryKey: pieceAssetsQueryKey(pieceBackendId) });
       useAppStore.getState().showToast('Photo uploaded', 'success');
     },
-    onError: () => {
+    onError: (err) => {
+      const message = err instanceof Error ? err.message : '';
+      if (message.includes('Cloud backup limit')) {
+        useAppStore.getState().showToast('Photo saved on device · Premium backs up to the cloud', 'success');
+        return;
+      }
       useAppStore.getState().showToast('Could not upload photo', 'error');
     },
   });

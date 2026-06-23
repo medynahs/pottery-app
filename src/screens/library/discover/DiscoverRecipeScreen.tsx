@@ -1,5 +1,4 @@
 import { Text } from '@/src/components/ui/text';
-import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import {
   deriveCustomCollectionNames,
   sanitizeCustomCollections,
@@ -8,7 +7,6 @@ import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { GLAZE_FINISH_LABELS } from '@/src/screens/glazes/types';
 import type { GlazeFinish } from '@/src/screens/glazes/types';
 import { useAppStore } from '@/src/store';
-import { canAddGlaze, PremiumFeature } from '@/src/utils/premiumGate';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Check } from 'lucide-react-native';
@@ -28,7 +26,6 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
   const addGlaze = useAppStore((s) => s.addGlaze);
   const registerGlazeCollections = useAppStore((s) => s.registerGlazeCollections);
   const showToast = useAppStore((s) => s.showToast);
-  const { requestAccess, PaywallGate } = usePremiumGate();
 
   const [saveSheetOpen, setSaveSheetOpen] = React.useState(false);
 
@@ -41,19 +38,11 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
 
   const handleSavePress = () => {
     if (!recipe || saved) return;
-    if (!canAddGlaze(glazes)) {
-      requestAccess(PremiumFeature.FullGlazeAtlas);
-      return;
-    }
     setSaveSheetOpen(true);
   };
 
   const handleSaveToCollections = (selectedCollections: string[]) => {
     if (!recipe || saved) return;
-    if (!canAddGlaze(glazes)) {
-      requestAccess(PremiumFeature.FullGlazeAtlas);
-      return;
-    }
 
     const customCollections = sanitizeCustomCollections(selectedCollections);
     registerGlazeCollections(customCollections);
@@ -158,7 +147,6 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
         </TouchableOpacity>
       </View>
 
-      {PaywallGate}
     </View>
   );
 }
