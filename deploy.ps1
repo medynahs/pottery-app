@@ -59,7 +59,11 @@ try {
     }
     else {
         if ([string]::IsNullOrWhiteSpace($Message)) {
-            $Message = git log -1 --pretty=%s 2>$null
+            if (Get-Command git -ErrorAction SilentlyContinue) {
+                $Message = git log -1 --pretty=%s 2>$null
+            } else {
+                Write-Warning "git not found — using timestamp as update message. Install Git or pass -Message to set one."
+            }
             if ([string]::IsNullOrWhiteSpace($Message)) {
                 $Message = "ota update $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
             }
