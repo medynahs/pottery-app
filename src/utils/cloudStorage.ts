@@ -2,7 +2,7 @@ import type { GlazeLibraryItem } from '../screens/glazes/types';
 import type { Piece } from '../types/pieces';
 import { useAppStore } from '../store/appStore';
 
-/** Free-tier cap for all cloud-backed media (photos, avatars, community images). */
+/** Free-tier cap for cloud-backed studio media (piece/glaze photos, avatars). */
 export const FREE_CLOUD_STORAGE_MB = 500;
 export const FREE_CLOUD_STORAGE_BYTES = FREE_CLOUD_STORAGE_MB * 1024 * 1024;
 
@@ -136,12 +136,6 @@ export function canSyncPiecePhotoToCloud(
   }
   return canUploadBytesToCloud(additionalBytes);
 }
-
-/** Community image posts count toward cloud quota; text-only posts are always free. */
-export function canAttachCommunityPhoto(additionalBytes = ESTIMATED_CLOUD_PHOTO_BYTES): boolean {
-  return canUploadBytesToCloud(additionalBytes);
-}
-
 export function canUploadProfileMedia(additionalBytes = ESTIMATED_CLOUD_PHOTO_BYTES): boolean {
   return canUploadBytesToCloud(additionalBytes);
 }

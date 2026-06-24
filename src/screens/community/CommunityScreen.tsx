@@ -127,19 +127,21 @@ export default function CommunityScreen() {
         <Pencil size={20} color="white" />
       </TouchableOpacity>
 
-      <CreatePostSheet
-        visible={createPostVisible}
-        preset={composerPreset}
-        onClose={() => {
-          clearComposerPreset();
-          setCreatePostVisible(false);
-        }}
-        sessionToken={sessionToken}
-        onPosted={() => {
-          setActiveFilter('For You');
-          handleRefresh();
-        }}
-      />
+      {(createPostVisible || composerPreset) ? (
+        <CreatePostSheet
+          visible={createPostVisible}
+          preset={composerPreset}
+          onClose={() => {
+            clearComposerPreset();
+            setCreatePostVisible(false);
+          }}
+          sessionToken={sessionToken}
+          onPosted={() => {
+            setActiveFilter('For You');
+            handleRefresh();
+          }}
+        />
+      ) : null}
     </StudioTabScreen>
   );
 }

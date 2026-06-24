@@ -25,17 +25,15 @@
 
 - Unlimited pieces, kiln logs & glazes on device
 - Journal text sync across devices
-- Community text posts, feed, challenges, friends
+- Community text and photo posts, feed, challenges, friends
 - Studio join + queue submit + schedule (when studio loop ships)
 - Member fee balance view (read-only)
 - Cloud media: **500 MB** total, **1 backed-up photo per piece**
-- Community: **text only** (photos use cloud quota / Premium)
 
 ### Premium (individual IAP)
 
 - Unlimited cloud photo backup
 - Unlimited photos per piece in the cloud
-- Community photo posts
 - Analytics, export
 - Companion swap, unlimited missions, Studio Rhythm advanced
 

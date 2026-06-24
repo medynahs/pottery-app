@@ -20,6 +20,7 @@ export enum PremiumFeature {
   /** @deprecated Glazes are unlimited locally; kept for deep links. */
   FullGlazeAtlas   = 'full-glaze-atlas',
   CloudStorage     = 'cloud-storage',
+  /** @deprecated Community photo posts are free; kept for deep links. */
   CommunityPhotos  = 'community-photos',
   CompanionSwap    = 'companion-swap',
   FullPricing      = 'full-pricing',
@@ -48,7 +49,6 @@ export const PREMIUM_COMPARISON_ROWS: PremiumComparisonRow[] = [
   { label: 'Text sync across devices', free: 'Included', premium: 'Included' },
   { label: 'Cloud photo storage', free: `${FREE_CLOUD_STORAGE_MB} MB`, premium: 'Unlimited' },
   { label: 'Photos backed up per piece', free: '1', premium: 'Unlimited' },
-  { label: 'Community posts', free: 'Text', premium: 'Text + photos' },
   { label: 'Studio analytics', free: 'Preview only', premium: 'Full dashboards' },
   { label: 'Data export', free: '—', premium: 'Included' },
   { label: 'Studio Rhythm', free: 'Weekly', premium: 'Sprint & freeform' },
@@ -67,7 +67,6 @@ export type PaywallFeatureItem = {
 export const PAYWALL_INCLUDED_FEATURES: PaywallFeatureItem[] = [
   { key: 'cloud', label: 'Unlimited cloud photo backup', status: 'included' },
   { key: 'photos', label: 'Unlimited photos per piece in the cloud', status: 'included' },
-  { key: 'community', label: 'Photo posts in the community feed', status: 'included' },
   { key: 'companions', label: 'All 4 elemental companions + free swap', status: 'included' },
   { key: 'analytics', label: 'Studio & kiln analytics', status: 'included' },
   { key: 'export', label: 'Data export', status: 'included' },
@@ -87,7 +86,7 @@ const PREMIUM_CONTEXTUAL_TITLES: Record<PremiumFeature, string> = {
   [PremiumFeature.UnlimitedPhotos]: 'Back up every stage photo',
   [PremiumFeature.FullGlazeAtlas]: 'Unlock unlimited cloud backup',
   [PremiumFeature.CloudStorage]: 'Unlock unlimited cloud backup',
-  [PremiumFeature.CommunityPhotos]: 'Share photos in the feed',
+  [PremiumFeature.CommunityPhotos]: 'Unlock unlimited cloud backup',
   [PremiumFeature.CompanionSwap]: 'Switch companions anytime',
   [PremiumFeature.FullPricing]: 'Unlock pricing insights',
   [PremiumFeature.KilnAnalytics]: 'See kiln utilisation analytics',
@@ -101,7 +100,7 @@ const PREMIUM_CONTEXTUAL_TITLES: Record<PremiumFeature, string> = {
 const PREMIUM_LIMIT_LINES: Partial<Record<PremiumFeature, string>> = {
   [PremiumFeature.UnlimitedPhotos]: `Free: ${FREE_PHOTO_LIMIT} cloud-backed photo per piece · Premium: unlimited`,
   [PremiumFeature.CloudStorage]: `Free: ${FREE_CLOUD_STORAGE_MB} MB cloud media · Premium: unlimited`,
-  [PremiumFeature.CommunityPhotos]: 'Free: text posts · Premium: photo posts in the community feed',
+  [PremiumFeature.CommunityPhotos]: `Free: ${FREE_CLOUD_STORAGE_MB} MB cloud media · Premium: unlimited`,
   [PremiumFeature.FullGlazeAtlas]: `Free: ${FREE_CLOUD_STORAGE_MB} MB cloud media · Premium: unlimited`,
   [PremiumFeature.Backup]: `Free: ${FREE_CLOUD_STORAGE_MB} MB cloud media · Premium: unlimited`,
   [PremiumFeature.Analytics]: 'Free: preview teaser · Premium: full cost, firing, and margin dashboards',
@@ -143,7 +142,7 @@ export function premiumRouteForFeature(feature: PremiumFeature): string {
 const FEATURE_TO_PAYWALL_KEY: Partial<Record<PremiumFeature, string>> = {
   [PremiumFeature.UnlimitedPhotos]: 'photos',
   [PremiumFeature.CloudStorage]: 'cloud',
-  [PremiumFeature.CommunityPhotos]: 'community',
+  [PremiumFeature.CommunityPhotos]: 'cloud',
   [PremiumFeature.FullGlazeAtlas]: 'cloud',
   [PremiumFeature.CompanionSwap]: 'companions',
   [PremiumFeature.Analytics]: 'analytics',
@@ -218,7 +217,7 @@ export const PREMIUM_FEATURE_DESCRIPTIONS: Record<PremiumFeature, string> = {
   [PremiumFeature.UnlimitedPhotos]: 'Back up unlimited photos per piece to the cloud.',
   [PremiumFeature.FullGlazeAtlas]: 'Unlimited glazes stay free on your device — Premium unlocks full cloud backup.',
   [PremiumFeature.CloudStorage]: 'Back up all your studio photos and media to the cloud.',
-  [PremiumFeature.CommunityPhotos]: 'Attach photos to community posts, not just text.',
+  [PremiumFeature.CommunityPhotos]: 'Community photo posts are free — Premium unlocks unlimited cloud backup for your studio archive.',
   [PremiumFeature.CompanionSwap]: 'Switch between your elemental companions anytime.',
   [PremiumFeature.FullPricing]: 'Access full pricing presets and revenue tools.',
   [PremiumFeature.KilnAnalytics]: 'See detailed kiln utilisation and firing analytics.',

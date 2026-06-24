@@ -28,9 +28,6 @@ import {
 import { apiCreatePost } from '@/src/services/community';
 import { apiListChallenges, apiSubmitChallengeEntry, type BackendChallenge } from '@/src/services/challenges';
 import { uploadPostPhotoAsset } from '@/src/services/communityUpload';
-import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { canAttachCommunityPhoto } from '@/src/utils/cloudStorage';
-import { FREE_CLOUD_STORAGE_MB, PremiumFeature } from '@/src/utils/premiumGate';
 import { useAppStore, useVisiblePieces } from '@/src/store';
 import { useCanPostStudioNotice } from '@/src/hooks/useCanPostStudioNotice';
 import {
@@ -105,7 +102,6 @@ export function CreatePostSheet({
   );
   const { stages } = useStageConfig();
   const showToast = useAppStore((s) => s.showToast);
-  const { requestAccess, PaywallGate } = usePremiumGate();
   const markPostCreated = useAppStore((s) => s.markPostCreated);
   const { trackCommunityPostCreated } = useAnalytics();
   const { openPickSheet } = usePhotoPicker({ aspect: [4, 3], quality: 0.85 });
@@ -272,10 +268,6 @@ export function CreatePostSheet({
 
   const handlePickPhoto = () => {
     Keyboard.dismiss();
-    if (!canAttachCommunityPhoto()) {
-      requestAccess(PremiumFeature.CommunityPhotos);
-      return;
-    }
     openPickSheet(
       (uri) => {
         setPhotoUri(uri);
@@ -406,9 +398,7 @@ export function CreatePostSheet({
   const challengeTag = challengeTitle ? challengeHashtag(challengeTitle) : null;
 
   return (
-    <>
-      {PaywallGate}
-      <ModalShell visible={visible} onClose={handleClose}>
+    <ModalShell visible={visible} onClose={handleClose}>
       <ModalCard
         radius={MODAL_SHEET_RADIUS}
         height={sheetHeight}
@@ -609,7 +599,7 @@ export function CreatePostSheet({
                     ? 'Pick a piece below to use its journal photo, or add your own'
                     : postKind === 'kiln_firing'
                       ? 'Unload photo optional, piece chips carry the story'
-                      : `Free: text posts · Photos use cloud storage (${FREE_CLOUD_STORAGE_MB} MB cap)`}
+                      : 'Share a snapshot from the studio'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -828,6 +818,5 @@ export function CreatePostSheet({
         </KeyboardAvoidingView>
       </ModalCard>
     </ModalShell>
-    </>
   );
 }

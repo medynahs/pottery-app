@@ -107,7 +107,7 @@ Match the app’s warm pottery-studio aesthetic:
 3. **Glaze atlas** — Recipe library, test tiles, collections (unlimited on-device).
 4. **Studio Rhythm** — Weekly schedule, drying timers, events, rituals; Premium adds sprint & freeform modes.
 5. **Analytics** — Studio ledger: costs, materials, firing trends (Premium unlocks full dashboards).
-6. **Community** — Feed, challenges, Hall of Fame; free text posts, Premium photo posts.
+6. **Community** — Feed, challenges, Hall of Fame; text and photo posts free for everyone.
 7. **Kilnkins** — Pick Fire, Earth, Air, or Water companion; Premium unlocks all four + swap anytime.
 
 **Kilnkin section** — name all four:
@@ -133,8 +133,8 @@ Align copy with in-app paywall (`src/utils/premiumGate.ts`, `src/constants/premi
 
 **Critical explainer** (use prominently — this is the current product model):
 
-> **Free:** Unlimited pieces, kiln logs, and glazes on your device. Journal text syncs across devices. Cloud photo backup is limited (500 MB total, 1 cloud-backed photo per piece). Community text posts. One Kilnkin companion. Studio Rhythm weekly mode. Analytics preview only.  
-> **Premium (Pottery Nook Pro):** Unlimited cloud photo backup, unlimited cloud-backed photos per piece, photo posts in community, all four Kilnkins + swap, full analytics & kiln analytics, data export, Studio Rhythm sprint & freeform. Yearly pottery wrap — coming soon.
+> **Free:** Unlimited pieces, kiln logs, and glazes on your device. Journal text syncs across devices. Cloud photo backup is limited (500 MB total, 1 cloud-backed photo per piece). Community text and photo posts. One Kilnkin companion. Studio Rhythm weekly mode. Analytics preview only.  
+> **Premium (Pottery Nook Pro):** Unlimited cloud photo backup, unlimited cloud-backed photos per piece, all four Kilnkins + swap, full analytics & kiln analytics, data export, Studio Rhythm sprint & freeform. Yearly pottery wrap — coming soon.
 
 **Comparison table** (match app):
 
@@ -144,7 +144,7 @@ Align copy with in-app paywall (`src/utils/premiumGate.ts`, `src/constants/premi
 | Text sync across devices | Included | Included |
 | Cloud photo storage | 500 MB | Unlimited |
 | Photos backed up per piece | 1 | Unlimited |
-| Community posts | Text | Text + photos |
+| Community posts | Text + photos | Text + photos |
 | Studio analytics | Preview only | Full dashboards |
 | Data export | — | Included |
 | Studio Rhythm | Weekly | Sprint & freeform |
