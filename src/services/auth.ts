@@ -52,6 +52,15 @@ export class OryHttpError extends Error {
   }
 }
 
+/** The user backed out of the OAuth browser sheet. Not a real failure —
+ *  callers should swallow this silently instead of showing an error. */
+export class OryUserCancelledError extends Error {
+  constructor() {
+    super('Google sign-in was cancelled.');
+    this.name = 'OryUserCancelledError';
+  }
+}
+
 /** Last-resort messages when Ory's response body carried no usable text. */
 function GENERIC_ERROR_BY_STATUS(status: number): string {
   switch (status) {
@@ -178,19 +187,22 @@ export async function oryGetSession(sessionToken: string): Promise<OrySession> {
 
 // ─── Account recovery (password reset via emailed code) ─────────────────────
 //
-// Ory native recovery flow:
-//   1. Init:   GET  /self-service/recovery/api → flow id
-//   2. Email:  POST { method: 'code', email }  → Ory emails a 6-digit code
-//   3. Code:   POST { method: 'code', code }   → success returns continue_with
-//      containing a fresh ory_session_token (+ a settings flow id)
-//   4. Set the new password via the settings flow with that session token.
-// The recovery-issued session was just authenticated, so it is privileged to
-// change the password without re-entering the old one.
+// Recovery is a Kratos state machine, but it answers every "I still need input"
+// step with HTTP 400 — so the status code can't separate success from failure.
+// We drive off flow.state and continue_with instead. Ory ships two recovery
+// versions with different state names; we accept both:
+//
+//   send email  → awaiting code : "sent_email" (v1) | "recovery_awaiting_code" (v2)
+//   submit code → recovered     : continue_with carries a fresh ory_session_token
+//
+// The recovered session is freshly authenticated, so it's privileged to set a
+// new password via the settings flow without re-entering the old one.
+const RECOVERY_CODE_SENT_STATES = ['sent_email', 'recovery_awaiting_code'];
 
 interface OryRecoveryFlow {
   id: string;
   state?: string;
-  ui?: { messages?: OryUiMessage[] };
+  ui?: { messages?: OryUiMessage[]; nodes?: Array<{ messages?: OryUiMessage[] }> };
   continue_with?: Array<{
     action: string;
     ory_session_token?: string;
@@ -198,13 +210,70 @@ interface OryRecoveryFlow {
   }>;
 }
 
-/** Step 1+2: starts a recovery flow and sends the code email. Returns the flow id. */
+// Validation errors (malformed email, wrong code) land on the form nodes, not
+// in ui.messages — Kratos leaves the top-level list empty for those.
+function recoveryFlowMessages(flow: OryRecoveryFlow): OryUiMessage[] {
+  return [
+    ...(flow.ui?.messages ?? []),
+    ...(flow.ui?.nodes ?? []).flatMap((n) => n.messages ?? []),
+  ];
+}
+
+function recoverySessionToken(flow: OryRecoveryFlow): string | undefined {
+  return flow.continue_with?.find((c) => c.action === 'set_ory_session_token')?.ory_session_token;
+}
+
+function logRecoveryStep(step: string, flow: OryRecoveryFlow, status: number): void {
+  if (!__DEV__) return;
+  const messages = recoveryFlowMessages(flow);
+  console.warn(
+    `[ory:recovery] ${step} http=${status} state=${flow.state ?? 'unknown'} flow=${flow.id}`,
+    messages.length ? messages : '(no messages)',
+  );
+}
+
+// The one place that absorbs Ory's "expected 400": POST a step, parse the flow
+// even on a 400, log it for tracing, and fail only on real transport errors.
+// `isComplete` decides whether the step actually advanced; if it didn't, we
+// throw Ory's own message so the UI shows something real instead of a guess.
+async function submitRecoveryStep(
+  step: string,
+  flowId: string,
+  body: object,
+  isComplete: (flow: OryRecoveryFlow) => boolean,
+): Promise<OryRecoveryFlow> {
+  const res = await fetch(`${ORY_BASE}/self-service/recovery?flow=${flowId}`, {
+    method: 'POST',
+    credentials: 'omit',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 429 || res.status >= 500) {
+    throw new OryHttpError(GENERIC_ERROR_BY_STATUS(res.status), res.status);
+  }
+
+  const flow = (await res.json()) as OryRecoveryFlow;
+  logRecoveryStep(step, flow, res.status);
+  if (isComplete(flow)) {
+    return flow;
+  }
+
+  const messages = recoveryFlowMessages(flow);
+  const detail =
+    messages.find((m) => m.type === 'error' && m.text)?.text
+    ?? messages.find((m) => m.text)?.text;
+  throw new OryHttpError(detail || GENERIC_ERROR_BY_STATUS(res.status), res.status);
+}
+
+/** Starts a recovery flow and emails the code. Returns the flow id for the code step. */
 export async function oryRecoveryStart(email: string): Promise<string> {
   const flow = await oryFetch<{ id: string }>('/self-service/recovery/api');
-  const result = await oryFetch<OryRecoveryFlow>(`/self-service/recovery?flow=${flow.id}`, {
-    method: 'POST',
-    body: JSON.stringify({ method: 'code', email: email.trim() }),
-  });
+  const result = await submitRecoveryStep(
+    'send-code',
+    flow.id,
+    { method: 'code', recovery_address: email.trim() },
+    (f) => RECOVERY_CODE_SENT_STATES.includes(f.state ?? ''),
+  );
   return result.id ?? flow.id;
 }
 
@@ -213,22 +282,23 @@ export interface OryRecoveryResult {
   settingsFlowId: string | null;
 }
 
-/** Step 3: submits the emailed code. Returns a session token for the recovered account. */
+/**
+ * Submits the emailed code and returns a freshly authenticated session for the
+ * recovered account. Needs `use_continue_with_transitions` enabled in Ory —
+ * without it Ory answers with a browser redirect instead of the session token.
+ */
 export async function oryRecoverySubmitCode(flowId: string, code: string): Promise<OryRecoveryResult> {
-  const result = await oryFetch<OryRecoveryFlow>(`/self-service/recovery?flow=${flowId}`, {
-    method: 'POST',
-    body: JSON.stringify({ method: 'code', code: code.trim() }),
-  });
-  const continueWith = result.continue_with ?? [];
-  const sessionToken = continueWith.find((c) => c.action === 'set_ory_session_token')?.ory_session_token;
+  const result = await submitRecoveryStep(
+    'submit-code',
+    flowId,
+    { method: 'code', code: code.trim() },
+    (f) => recoverySessionToken(f) !== undefined,
+  );
+  const sessionToken = recoverySessionToken(result);
   if (!sessionToken) {
-    // Invalid/expired codes come back as 200 with the error inside ui.messages.
-    const message =
-      result.ui?.messages?.find((m) => m.type === 'error')?.text
-      ?? result.ui?.messages?.[0]?.text;
-    throw new Error(message || 'That code is invalid or has expired. Please try again.');
+    throw new Error('Recovery succeeded but no session was returned. Please try again.');
   }
-  const settingsFlowId = continueWith.find((c) => c.action === 'show_settings_ui')?.flow?.id ?? null;
+  const settingsFlowId = result.continue_with?.find((c) => c.action === 'show_settings_ui')?.flow?.id ?? null;
   return { sessionToken, settingsFlowId };
 }
 
@@ -251,11 +321,16 @@ export async function orySetPassword(
     });
     flowId = flow.id;
   }
-  await oryFetch<unknown>(`/self-service/settings?flow=${flowId}`, {
-    method: 'POST',
-    headers: { 'X-Session-Token': sessionToken },
-    body: JSON.stringify({ method: 'password', password: newPassword }),
-  });
+  try {
+    await oryFetch<unknown>(`/self-service/settings?flow=${flowId}`, {
+      method: 'POST',
+      headers: { 'X-Session-Token': sessionToken },
+      body: JSON.stringify({ method: 'password', password: newPassword }),
+    });
+  } catch (e) {
+    if (__DEV__) console.warn('[ory:recovery] set-password error:', e instanceof Error ? e.message : e);
+    throw e;
+  }
 }
 
 // ─── Logout ──────────────────────────────────────────────────────────────────
@@ -395,16 +470,19 @@ async function oryGoogleOAuth(
     const res = await WebBrowser.openAuthSessionAsync(browserUrl, OAUTH_RETURN_TO, {
       preferEphemeralSession: true,
     });
+    if (res.type === 'cancel' || res.type === 'dismiss') {
+      throw new OryUserCancelledError();
+    }
     if (res.type !== 'success' || !(res as { url?: string }).url) {
-      throw new Error('Google sign-in was cancelled or failed.');
+      throw new Error('Google sign-in failed. Please try again.');
     }
 
     const callbackUrl = (res as { url: string }).url;
     // Stop at & or #, a fragment suffix would corrupt the code value
-    const codeMatch   = callbackUrl.match(/[?&]code=([^&#]+)/);
-    const flowMatch   = callbackUrl.match(/[?&]flow=([^&#]+)/);
-    const code        = codeMatch?.[1] ? decodeURIComponent(codeMatch[1]) : null;
-    const flowId      = flowMatch?.[1] ? decodeURIComponent(flowMatch[1]) : null;
+    const codeMatch = callbackUrl.match(/[?&]code=([^&#]+)/);
+    const flowMatch = callbackUrl.match(/[?&]flow=([^&#]+)/);
+    const code = codeMatch?.[1] ? decodeURIComponent(codeMatch[1]) : null;
+    const flowId = flowMatch?.[1] ? decodeURIComponent(flowMatch[1]) : null;
 
     if (!code && !flowId) {
       throw new Error('No return_to_code (code/flow) found in the redirect URL.');
