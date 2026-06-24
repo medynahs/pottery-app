@@ -2,7 +2,7 @@
 
 **Purpose:** How the Pottery Life mobile app talks to the server — patterns, deployment status, and where to find detailed work.
 
-**Last updated:** June 21, 2026  
+**Last updated:** June 24, 2026  
 **Task backlog:** [`BACKEND-TASKS.md`](./BACKEND-TASKS.md) (prioritized P0 → P2)  
 **Frontend companion:** [`FRONTEND.md`](./FRONTEND.md)
 
@@ -37,8 +37,8 @@
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Login / register / logout | ✅ | Ory flows |
-| Password recovery | 🟡 | FE wired; Ory deployment TBD |
+| Login / register / logout | ✅ | Ory flows — Google + email/password verified on device |
+| Password recovery | ✅ | Verified end-to-end (Google + email) — Ory Recovery V2 |
 | Account delete | 🟡 | FE calls `DELETE /users/me`; cascade TBD |
 | Current user profile | 🔶 | `GET /users/me`, avatar/cover upload |
 | Profile identity edit | ❌ | `PUT /users/me` — name, studio, location, bio; FE saves locally today → [P1-2](./BACKEND-TASKS.md) |

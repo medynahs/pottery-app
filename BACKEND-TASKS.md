@@ -2,7 +2,7 @@
 
 **Purpose:** Single prioritized backlog for all API, sync, and server-side work. The mobile app repo tracks FE wiring here; deployment is verified separately.
 
-**Last updated:** June 21, 2026  
+**Last updated:** June 24, 2026  
 **Companion docs:** [`BACKEND.md`](./BACKEND.md) (overview + API surface) · [`FRONTEND.md`](./FRONTEND.md) (FE tickets + roadmaps)
 
 ---
@@ -17,7 +17,7 @@ Fix before sending builds to testers.
 
 | Item | Why it blocks beta | BE task | FE task |
 |------|-------------------|---------|---------|
-| Auth login / register / session restore | App unusable without account | Ory deployed | — |
+| Auth login / register / session restore | App unusable without account | ✅ Ory live — Google + email sign up/in verified on device | — |
 | Core tab crashes (Overview, Pieces, Kiln, Glaze Atlas) | Instant uninstall | — | Stability pass |
 | Production EAS build + OTA channel | Can't distribute | Deploy pipeline | `eas update` verified |
 | Account delete call doesn't hard-crash | Apple expects deletion path even in beta | P0-5 (cascade can be incomplete if 204 returned) | #5 wired |
@@ -47,7 +47,7 @@ Do not submit until these pass. App Review or marketing accuracy will fail other
 |------|------------------------------|----|----|
 | Account deletion end-to-end | Required by Apple; must cascade user data | **P0-5** + P2-8 | #5 |
 | Privacy policy URL live | App Store Connect + in-app link | — | #42 |
-| Password recovery | Expected for email/password accounts | **P1-1** Ory | #4 |
+| Password recovery | Expected for email/password accounts | ✅ **P1-1** verified (Google + email) | #4 |
 | Public profile API | Share button copies `potterynook.app/user/{id}` — must resolve | **P0-2** | Route exists |
 | Privacy toggles enforced server-side | `profile_public` must gate public profile (404 when private) | **P1-3** | #14 |
 | Real community OR hide mock UI | V1 decision: real UGC backend; mock gallery/voting is misleading | **P0-8, P0-9, P1-6** | Remove `src/screens/community/mock/` |
@@ -260,11 +260,13 @@ Persist: `batch_id`, `date_mixed`, `status`, `best_clay_type`, `best_firing_temp
 
 ## P1 — V1 fidelity
 
-### P1-1 · Auth — Password recovery (Ory Kratos)
+### P1-1 · Auth — Password recovery (Ory Kratos) — ✅ Verified
 
 Recovery flow on submit. Email sent. Session invalidated on success.
 
-**FE wired:** `oryRecoveryStart` / `oryRecoverySubmitCode` — Ory deployment not verified in this repo.
+**Status (Jun 24):** Verified end-to-end on device for both Google and email/password accounts — request → emailed code → new password → signed in. Runs on Ory **Recovery V2**
+
+**FE:** `oryRecoveryStart` / `oryRecoverySubmitCode` in `src/services/auth.ts`.
 
 ---
 
