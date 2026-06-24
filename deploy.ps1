@@ -69,9 +69,9 @@ try {
             }
         }
 
-        Write-Host "Pushing OTA update to '$Profile' branch: $Message" -ForegroundColor Cyan
+        Write-Host "Pushing OTA update to '$Profile' channel: $Message" -ForegroundColor Cyan
         Invoke-CheckedCommand `
-            -Command { & $easExe @easArgs update --branch $Profile --message $Message } `
+            -Command { & $easExe @easArgs update --channel $Profile --message $Message } `
             -ErrorMessage "EAS update failed."
         Write-Host "OTA update published to '$Profile'." -ForegroundColor Green
     }
