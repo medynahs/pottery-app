@@ -1,4 +1,5 @@
 // src/screens/community/components/FeedPostCard.tsx
+import { ConfirmSheet, PickSheet } from '@/src/components/AppSheets';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
@@ -24,11 +25,13 @@ import {
   sanitizeCustomCollections,
 } from '@/src/screens/library/atlas/collections';
 import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
+import { removeCachedProfilePost } from '@/src/screens/overview/profile/utils/profilePostCache';
+import { apiDeletePost } from '@/src/services/community';
 import { apiSendFriendRequest } from '@/src/services/friends';
 import { useAppStore } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Bookmark, Check, Users } from 'lucide-react-native';
+import { Bookmark, Check, MoreHorizontal, Trash2, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import type { BackendFeedPost } from '../../../services/community';
@@ -50,9 +53,10 @@ function timeAgo(isoDate: string): string {
 interface Props {
   post: BackendFeedPost;
   sessionToken: string;
+  onDeleted?: (postId: string) => void;
 }
 
-export function FeedPostCard({ post, sessionToken }: Props) {
+export function FeedPostCard({ post, sessionToken, onDeleted }: Props) {
   const router = useRouter();
   const backendUserId = useAppStore((s) => s.backendUserId);
   const user = useAppStore((s) => s.user);
@@ -63,6 +67,7 @@ export function FeedPostCard({ post, sessionToken }: Props) {
   const recordCommunityPostSave = useAppStore((s) => s.recordCommunityPostSave);
   const communityPostSaveCounts = useAppStore((s) => s.communityPostSaveCounts);
   const showToast = useAppStore((s) => s.showToast);
+  const markPostDeleted = useAppStore((s) => s.markPostDeleted);
   const { trackGlazeSavedFromCommunity } = useAnalytics();
 
   const recipePayload = React.useMemo(
@@ -127,6 +132,10 @@ export function FeedPostCard({ post, sessionToken }: Props) {
 
   const [requestState, setRequestState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [saveSheetOpen, setSaveSheetOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleted, setDeleted] = useState(false);
 
   const handleSavePress = () => {
     if (!recipePayload || savedFromPost) return;
@@ -169,6 +178,26 @@ export function FeedPostCard({ post, sessionToken }: Props) {
     }
   };
 
+  const handleDeletePost = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await apiDeletePost(sessionToken, post.id);
+      removeCachedProfilePost(post.id);
+      markPostDeleted();
+      setDeleted(true);
+      setDeleteConfirmOpen(false);
+      onDeleted?.(post.id);
+      showToast('Post deleted', 'success');
+    } catch {
+      showToast('Unable to delete post', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (deleted) return null;
+
   return (
     <>
       <SaveCommunityGlazeSheet
@@ -177,6 +206,32 @@ export function FeedPostCard({ post, sessionToken }: Props) {
         collections={collections}
         onClose={() => setSaveSheetOpen(false)}
         onSave={handleSaveToAtlas}
+      />
+
+      <ConfirmSheet
+        visible={deleteConfirmOpen}
+        title="Delete post?"
+        body="This will permanently remove your post from the community. This can't be undone."
+        confirmLabel="Delete post"
+        destructive
+        loading={deleting}
+        onConfirm={handleDeletePost}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
+
+      <PickSheet
+        visible={actionsOpen}
+        title="Your post"
+        options={[
+          {
+            label: 'Delete post',
+            destructive: true,
+            icon: Trash2,
+            onPress: () => setDeleteConfirmOpen(true),
+          },
+        ]}
+        onCancel={() => setActionsOpen(false)}
+        layout="list"
       />
 
       <Card className="p-4 overflow-visible">
@@ -206,6 +261,16 @@ export function FeedPostCard({ post, sessionToken }: Props) {
               <Text className={`text-xs font-semibold ${requestState === 'sent' ? 'text-green-700' : 'text-muted-foreground'}`}>
                 {requestState === 'sending' ? 'Sending...' : requestState === 'sent' ? 'Requested' : 'Add Friend'}
               </Text>
+            </TouchableOpacity>
+          )}
+          {isOwnPost && (
+            <TouchableOpacity
+              onPress={() => setActionsOpen(true)}
+              className="w-8 h-8 items-center justify-center -mr-1"
+              activeOpacity={0.75}
+              accessibilityLabel="Post options"
+            >
+              <MoreHorizontal size={18} color="hsl(24 20% 55%)" />
             </TouchableOpacity>
           )}
         </View>

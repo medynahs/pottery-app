@@ -1,6 +1,21 @@
 export type ConeFilter = 'all' | 'cone-06' | 'cone-6' | 'cone-10';
 export type FinishFilter = 'all' | 'glossy' | 'matte' | 'satin' | 'crystalline';
 export type ColorFilter = 'all' | 'blue' | 'green' | 'amber' | 'red' | 'white' | 'black';
+export type ContentTypeFilter = 'all' | 'recipes' | 'combos';
+export type BrandFilter = 'all' | string;
+
+export type DiscoverProductRole = 'base' | 'accent' | 'liner';
+export type DiscoverProductMethod = 'brush' | 'dip' | 'pour' | 'spray';
+
+export interface DiscoverProductRef {
+  brand: string;
+  name: string;
+  role?: DiscoverProductRole;
+  layers?: number;
+  method?: DiscoverProductMethod;
+  /** Optional retailer URL — affiliate or direct, shown as “Find online”. */
+  purchaseUrl?: string;
+}
 
 export interface RecipeIngredient {
   material: string;
@@ -24,9 +39,11 @@ export interface DiscoverRecipe {
   /** Pre-computed USD cost for a 100 g test batch */
   estimatedCostPer100g: number;
   previewUri?: string;
+  /** Dev-only: atlas glaze this preview was built from. */
+  devSourceGlazeId?: string;
 }
 
-/** Photo + notes layering idea, no formula, not saved to atlas. */
+/** Photo + product stack idea — no formula, reference only. */
 export interface DiscoverInspiration {
   id: string;
   title: string;
@@ -36,12 +53,22 @@ export interface DiscoverInspiration {
   coneLabel: string;
   colorHex: string;
   colorFamily?: string;
+  /** Outcome finish when known (used for finish filter). */
+  finish?: string;
   previewUri?: string;
+  /** Structured product stack for filtering and detail UI. */
+  products?: DiscoverProductRef[];
 }
 
 export type DiscoverItem =
   | { kind: 'recipe'; recipe: DiscoverRecipe }
   | { kind: 'inspiration'; inspiration: DiscoverInspiration };
+
+export const CONTENT_TYPE_OPTIONS: { key: ContentTypeFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'recipes', label: 'Recipes' },
+  { key: 'combos', label: 'Combos' },
+];
 
 export const CONE_OPTIONS: { key: ConeFilter; label: string }[] = [
   { key: 'all', label: 'All Cones' },

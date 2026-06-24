@@ -1,10 +1,10 @@
 import {
-  ModalCard,
+  DialogCard,
+  DialogHeader,
+  DialogShell,
   ModalSheetActions,
-  ModalSheetHeader,
-  ModalShell,
   SheetButton,
-  useModalSheetHeight,
+  useDialogMaxHeight,
 } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
 import { BrandColors } from '@/src/constants/theme';
@@ -22,7 +22,8 @@ type PracticeTypePickerSheetProps = {
 };
 
 export function PracticeTypePickerSheet({ visible, onClose }: PracticeTypePickerSheetProps) {
-  const sheetHeight = useModalSheetHeight(0.78);
+  const dialogMaxHeight = useDialogMaxHeight(0.78);
+  const listMaxHeight = Math.max(160, dialogMaxHeight - 150);
   const userType = useAppStore((s) => s.onboardingProfile.userType);
   const hasOwnKiln = useAppStore((s) => s.onboardingProfile.hasOwnKiln);
   const setOnboardingProfile = useAppStore((s) => s.setOnboardingProfile);
@@ -77,9 +78,9 @@ export function PracticeTypePickerSheet({ visible, onClose }: PracticeTypePicker
   };
 
   return (
-    <ModalShell visible={visible} onClose={handleClose}>
-      <ModalCard variant="pottery" height={sheetHeight} maxHeight={sheetHeight} withHandle={false}>
-        <ModalSheetHeader>
+    <DialogShell visible={visible} onClose={handleClose}>
+      <DialogCard maxHeight={dialogMaxHeight}>
+        <DialogHeader onClose={handleClose}>
           <Text className="text-xl font-serif font-bold text-foreground">
             {pending ? 'Update practice type?' : 'Change practice type'}
           </Text>
@@ -89,25 +90,28 @@ export function PracticeTypePickerSheet({ visible, onClose }: PracticeTypePicker
               Customization.
             </Text>
           ) : null}
-        </ModalSheetHeader>
+        </DialogHeader>
 
         {pending ? (
-          <View className="flex-1 px-6 pt-2 pb-8 justify-between" style={{ minHeight: 0 }}>
+          <View className="px-6 pt-2 pb-6 justify-between" style={{ minHeight: 0 }}>
             <Text className="text-sm text-muted-foreground leading-5">
               Switch to "{USER_TYPE_CONFIG[pending].label}"? Tab defaults and pricing presets will
               update.
             </Text>
-            <ModalSheetActions>
-              <SheetButton label="Update" onPress={() => applyType(pending)} variant="confirm" />
-              <SheetButton label="Cancel" onPress={() => setPending(null)} variant="cancel" />
-            </ModalSheetActions>
+            <View className="mt-6">
+              <ModalSheetActions>
+                <SheetButton label="Update" onPress={() => applyType(pending)} variant="confirm" />
+                <SheetButton label="Cancel" onPress={() => setPending(null)} variant="cancel" />
+              </ModalSheetActions>
+            </View>
           </View>
         ) : (
           <ScrollView
-            className="flex-1 px-6"
-            style={{ minHeight: 0 }}
+            className="px-6"
+            style={{ maxHeight: listMaxHeight }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 20 }}
           >
             {(Object.keys(USER_TYPE_CONFIG) as OnboardingUserType[]).map((key) => {
               const config = USER_TYPE_CONFIG[key];
@@ -135,10 +139,9 @@ export function PracticeTypePickerSheet({ visible, onClose }: PracticeTypePicker
                 </TouchableOpacity>
               );
             })}
-            <View className="h-6" />
           </ScrollView>
         )}
-      </ModalCard>
-    </ModalShell>
+      </DialogCard>
+    </DialogShell>
   );
 }

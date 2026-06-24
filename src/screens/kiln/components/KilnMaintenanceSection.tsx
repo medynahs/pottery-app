@@ -1,10 +1,11 @@
+import { NotesInput } from '@/src/components/NotesInput';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import type { Kiln, KilnMaintenanceLog } from '@/src/types/kiln';
 import { formatFiringLogDate } from '../utils/kilnHelpers';
 import { Plus, Trash2, Wrench } from 'lucide-react-native';
 import React from 'react';
-import { TextInput, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 
 interface KilnMaintenanceSectionProps {
   kiln: Kiln;
@@ -74,23 +75,14 @@ export function KilnMaintenanceSection({ kiln, onAddLog, onRemoveLog }: KilnMain
       <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
         Add entry
       </Text>
-      <TextInput
-        multiline
-        numberOfLines={3}
+      <NotesInput
+        label="Maintenance note"
+        hint="What you did and when — elements, shelves, vents."
         placeholder="e.g. Replaced top element, rewashed shelves 2–4"
         value={noteDraft}
         onChangeText={setNoteDraft}
-        style={{
-          borderWidth: 1,
-          borderColor: 'hsl(34 20% 88%)',
-          borderRadius: 12,
-          padding: 12,
-          fontSize: 14,
-          textAlignVertical: 'top',
-          minHeight: 72,
-          marginBottom: 10,
-        }}
-        placeholderTextColor="hsl(24 12% 55%)"
+        minHeight={88}
+        containerStyle={{ marginBottom: 8 }}
       />
       <TouchableOpacity
         onPress={handleAdd}

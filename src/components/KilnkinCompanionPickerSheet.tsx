@@ -1,4 +1,4 @@
-import { ModalCard, ModalShell } from '@/src/components/AppSheets';
+import { DialogCard, DialogHeader, DialogShell, DIALOG_MAX_WIDTH } from '@/src/components/AppSheets';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
 import {
@@ -6,18 +6,16 @@ import {
   type KilnkinCompanion,
   type KilnkinPersonality,
 } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
-import { Droplets, Flame, Leaf, Wind, X } from 'lucide-react-native';
+import { Droplets, Flame, Leaf, Wind } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import {
   Animated,
-  Dimensions,
   ScrollView,
   TouchableOpacity,
   View,
 } from 'react-native';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - 48;
+const CARD_WIDTH = DIALOG_MAX_WIDTH - 48;
 
 const ELEMENT_THEME: Record<
   KilnkinPersonality,
@@ -82,24 +80,14 @@ export function KilnkinCompanionPickerSheet({
   const selected = AVAILABLE_KILNKIN_COMPANIONS[currentIndex];
 
   return (
-    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.45)">
-      <ModalCard>
-        <View className="flex-row items-center justify-between px-6 pb-4 border-b border-border">
-          <View className="flex-1 pr-3">
-            <Text className="text-xl font-serif font-bold text-foreground">Choose your Kilnkin</Text>
-            <Text className="text-xs text-muted-foreground mt-0.5">
-              Swipe to browse · tap a card to select
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={onClose}
-            className="w-9 h-9 rounded-full bg-muted/60 items-center justify-center"
-            accessibilityRole="button"
-            accessibilityLabel="Close companion picker"
-          >
-            <X size={18} color="hsl(24 30% 40%)" />
-          </TouchableOpacity>
-        </View>
+    <DialogShell visible={visible} onClose={onClose}>
+      <DialogCard>
+        <DialogHeader onClose={onClose}>
+          <Text className="text-xl font-serif font-bold text-foreground">Choose your Kilnkin</Text>
+          <Text className="text-xs text-muted-foreground mt-0.5">
+            Swipe to browse · tap a card to select
+          </Text>
+        </DialogHeader>
 
         <View className="px-6 pt-5 pb-2">
           <Text className="text-lg font-semibold text-foreground text-center">{selected.name}</Text>
@@ -184,7 +172,7 @@ export function KilnkinCompanionPickerSheet({
             }}
           />
         </View>
-      </ModalCard>
-    </ModalShell>
+      </DialogCard>
+    </DialogShell>
   );
 }

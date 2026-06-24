@@ -33,7 +33,7 @@ export function createEmptyGlazeDraft(
     colorFamily: '',
     coneRange: defaultCone ?? 'Cone 6',
     defaultCone: defaultCone ?? 'Cone 6',
-    source: 'custom',
+    source: 'store-bought',
     recipeIngredients: [],
     dateMixed: todayDateIso(),
     status: 'experimental',

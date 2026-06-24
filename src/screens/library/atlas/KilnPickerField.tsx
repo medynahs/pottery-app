@@ -1,17 +1,11 @@
-import {
-  ModalCard,
-  ModalSheetHeader,
-  ModalShell,
-  MODAL_SHEET_RADIUS,
-  useModalSheetHeight,
-} from '@/src/components/AppSheets';
+import { DropdownField } from '@/src/components/DropdownField';
 import { Text } from '@/src/components/ui/text';
 import { KILN_TYPE_LABELS } from '@/src/screens/kiln/constants';
 import type { Kiln } from '@/src/types/kiln';
 import { useAppStore } from '@/src/store';
 import { ChevronDown, FlameKindling } from 'lucide-react-native';
 import React from 'react';
-import { Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 
 type KilnPickerFieldProps = {
   value: string;
@@ -53,39 +47,44 @@ function KilnRow({
 
 export function KilnPickerField({ value, onChange }: KilnPickerFieldProps) {
   const kilns = useAppStore((s) => s.kilns);
-  const sheetHeight = useModalSheetHeight();
-  const [sheetOpen, setSheetOpen] = React.useState(false);
 
   const selectedKiln = React.useMemo(
     () => kilns.find((kiln) => kiln.name === value),
     [kilns, value],
   );
 
-  const openSheet = React.useCallback(() => {
-    setSheetOpen(true);
-  }, []);
-
-  const handleSelect = React.useCallback(
-    (kiln: Kiln) => {
-      onChange(kiln.name, kiln);
-      setSheetOpen(false);
-    },
-    [onChange],
+  const options = React.useMemo(
+    () =>
+      kilns.map((kiln) => ({
+        value: kiln.name,
+        label: kiln.name,
+        description: [KILN_TYPE_LABELS[kiln.type], kiln.location].filter(Boolean).join(' · '),
+      })),
+    [kilns],
   );
 
-  const handleClear = React.useCallback(() => {
-    onChange('');
-  }, [onChange]);
-
   return (
-    <>
-      <Pressable
-        onPress={openSheet}
-        accessibilityRole="button"
-        accessibilityLabel="Select kiln"
-        className="rounded-2xl border border-border bg-card px-3 py-3"
-      >
-        {selectedKiln ? (
+    <DropdownField
+      value={value}
+      onValueChange={(kilnName) => {
+        const kiln = kilns.find((item) => item.name === kilnName);
+        onChange(kilnName, kiln);
+      }}
+      options={options}
+      variant="card"
+      placeholder={
+        kilns.length > 0 ? 'Choose a kiln (optional)' : 'No kilns yet — add one in the Kiln tab'
+      }
+      title="Select Kiln"
+      subtitle="Optional: link this test to one of your studio kilns."
+      clearable
+      clearLabel="Clear kiln"
+      emptyMessage="Add a kiln from the Kiln tab first, or leave this blank."
+      dialogMaxHeightRatio={0.55}
+      accessibilityLabel="Select kiln"
+      disabled={kilns.length === 0}
+      renderValue={() =>
+        selectedKiln ? (
           <View className="flex-row items-center gap-3">
             <View className="w-10 h-10 rounded-xl bg-muted/60 items-center justify-center">
               <FlameKindling size={18} color="hsl(24 20% 45%)" />
@@ -100,60 +99,13 @@ export function KilnPickerField({ value, onChange }: KilnPickerFieldProps) {
             </View>
             <ChevronDown size={18} color="hsl(24 20% 55%)" />
           </View>
-        ) : (
-          <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-muted-foreground">
-              {kilns.length > 0 ? 'Choose a kiln (optional)' : 'No kilns yet, add one in the Kiln tab'}
-            </Text>
-            {kilns.length > 0 ? (
-              <ChevronDown size={18} color="hsl(24 20% 55%)" />
-            ) : null}
-          </View>
-        )}
-      </Pressable>
-
-      {selectedKiln ? (
-        <TouchableOpacity onPress={handleClear} activeOpacity={0.75} className="self-start mt-2">
-          <Text className="text-xs font-semibold text-primary">Clear kiln</Text>
-        </TouchableOpacity>
-      ) : null}
-
-      <ModalShell visible={sheetOpen} onClose={() => setSheetOpen(false)}>
-        <ModalCard radius={MODAL_SHEET_RADIUS} height={sheetHeight} maxHeight={sheetHeight} withHandle={false}>
-          <ModalSheetHeader>
-            <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
-              Select Kiln
-            </Text>
-            <Text className="text-sm text-muted-foreground mt-1">
-              Optional: link this test to one of your studio kilns.
-            </Text>
-          </ModalSheetHeader>
-
-          <ScrollView
-            className="px-6"
-            style={{ flex: 1, minHeight: 0 }}
-            contentContainerStyle={{ paddingBottom: 24, gap: 8 }}
-            showsVerticalScrollIndicator={false}
-          >
-            {kilns.length === 0 ? (
-              <View className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-8 items-center">
-                <Text className="text-sm text-muted-foreground text-center leading-5">
-                  Add a kiln from the Kiln tab first, or leave this blank.
-                </Text>
-              </View>
-            ) : (
-              kilns.map((kiln) => (
-                <KilnRow
-                  key={kiln.id}
-                  kiln={kiln}
-                  active={value === kiln.name}
-                  onPress={() => handleSelect(kiln)}
-                />
-              ))
-            )}
-          </ScrollView>
-        </ModalCard>
-      </ModalShell>
-    </>
+        ) : undefined
+      }
+      renderOption={(option, active, onSelect) => {
+        const kiln = kilns.find((item) => item.name === option.value);
+        if (!kiln) return null;
+        return <KilnRow kiln={kiln} active={active} onPress={onSelect} />;
+      }}
+    />
   );
 }

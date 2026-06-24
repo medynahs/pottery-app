@@ -1,4 +1,4 @@
-
+import { NOTES_INPUT_MIN_HEIGHT } from '@/src/components/NotesInput';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollText } from 'lucide-react-native';
 import React from 'react';
@@ -47,12 +47,13 @@ export function NotesCard({
                 </View>
                 <TextInput
                     multiline
+                    scrollEnabled={false}
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholder}
                     placeholderTextColor={JournalTheme.placeholder}
                     style={{
-                        minHeight: compact ? 126 : 166,
+                        minHeight: compact ? 126 : Math.max(NOTES_INPUT_MIN_HEIGHT, 166),
                         fontFamily: 'DMSans_400Regular',
                         fontSize: 13,
                         lineHeight: 22,

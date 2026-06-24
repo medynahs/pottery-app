@@ -1,5 +1,6 @@
 import {
   ModalCard,
+  ModalFormScrollView,
   ModalSheetFooter,
   ModalSheetHeader,
   ModalShell,
@@ -8,6 +9,8 @@ import {
 } from '@/src/components/AppSheets';
 import { Banner } from '@/src/components/Banner';
 import { UserAvatar } from '@/src/components/UserAvatar';
+import { FormSectionCard } from '@/src/components/form/FormSectionCard';
+import { NotesInput } from '@/src/components/NotesInput';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
@@ -21,9 +24,8 @@ import { Camera, ImageIcon } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
-  ScrollView,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 
 interface EditProfileModalProps {
@@ -142,11 +144,8 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
           <Text className="text-2xl font-serif font-bold text-foreground">Edit Profile</Text>
         </ModalSheetHeader>
 
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              style={{ flex: 1, minHeight: 0 }}
-              contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 8 }}
-              showsVerticalScrollIndicator={false}
+            <ModalFormScrollView
+              contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 120 }}
             >
               {uploadError ? (
                 <Banner message={uploadError} className="mb-4" />
@@ -206,57 +205,55 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
                 </View>
               </View>
 
-              {/* Name */}
-              <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
-                Name
-              </Text>
-              <Input
-                value={name}
-                onChangeText={setName}
-                placeholder="Your name"
-                className="mb-4"
-                autoCorrect={false}
-              />
+              <FormSectionCard title="Profile" subtitle="How you appear to other potters." topGap>
+              <View>
+                <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
+                  Name
+                </Text>
+                <Input
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Your name"
+                  className="mb-4"
+                  autoCorrect={false}
+                />
+              </View>
 
-              {/* Studio name */}
-              <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
-                Studio Name
-              </Text>
-              <Input
-                value={studioName}
-                onChangeText={setStudioName}
-                placeholder="e.g. My Studio"
-                className="mb-4"
-                autoCorrect={false}
-              />
+              <View>
+                <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
+                  Studio Name
+                </Text>
+                <Input
+                  value={studioName}
+                  onChangeText={setStudioName}
+                  placeholder="e.g. My Studio"
+                  className="mb-4"
+                  autoCorrect={false}
+                />
+              </View>
 
-              {/* Location */}
-              <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
-                Location
-              </Text>
-              <Input
-                value={location}
-                onChangeText={setLocation}
-                placeholder="e.g. Portland, OR"
-                className="mb-4"
-                autoCorrect={false}
-              />
+              <View>
+                <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
+                  Location
+                </Text>
+                <Input
+                  value={location}
+                  onChangeText={setLocation}
+                  placeholder="e.g. Portland, OR"
+                  autoCorrect={false}
+                />
+              </View>
+              </FormSectionCard>
 
-              {/* Bio */}
-              <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
-                Bio
-              </Text>
-              <Input
+              <NotesInput
+                label="Bio"
+                hint="Tell other potters about your practice."
                 value={bio}
                 onChangeText={setBio}
                 placeholder="Tell us about your pottery practice…"
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-                className="mb-6"
-                style={{ minHeight: 80, paddingTop: 10 }}
+                minHeight={88}
               />
-            </ScrollView>
+            </ModalFormScrollView>
 
             <ModalSheetFooter>
               <Button onPress={handleSave} disabled={!name.trim() || isSaving} className="w-full">

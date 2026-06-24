@@ -1,5 +1,9 @@
-import { ModalCard, ModalShell, useModalSheetHeight } from '@/src/components/AppSheets';
+import { ModalCard, ModalFormScrollView, ModalShell, useModalSheetHeight } from '@/src/components/AppSheets';
+import { FormField } from '@/src/components/form/FormField';
+import { FormSectionCard } from '@/src/components/form/FormSectionCard';
+import { NotesInput } from '@/src/components/NotesInput';
 import { Button } from '@/src/components/ui/button';
+import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Flame, ScrollText, Sparkles, X } from 'lucide-react-native';
@@ -8,8 +12,6 @@ import {
   Animated,
   Easing,
   Image,
-  ScrollView,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -28,29 +30,40 @@ function MemorialField({
   value,
   onChangeText,
   multiline,
+  first,
+  last,
 }: {
   label: string;
   placeholder: string;
   value: string;
   onChangeText: (value: string) => void;
   multiline?: boolean;
+  first?: boolean;
+  last?: boolean;
 }) {
+  if (multiline) {
+    return (
+      <NotesInput
+        label={label}
+        placeholder={placeholder}
+        value={value}
+        onChangeText={onChangeText}
+        minHeight={104}
+        containerStyle={{ marginTop: first ? 0 : 16, marginBottom: last ? 0 : 0 }}
+      />
+    );
+  }
+
   return (
-    <View className="mb-4">
-      <Text className="text-[11px] font-bold uppercase tracking-[1.8px] text-muted-foreground mb-2">
-        {label}
-      </Text>
-      <TextInput
+    <FormField label={label} nested first={first} last={last}>
+      <Input
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor="#8F8378"
-        multiline={multiline}
-        textAlignVertical={multiline ? 'top' : 'center'}
-        className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        style={multiline ? { minHeight: 104 } : undefined}
+        className="rounded-2xl border border-border bg-card px-4 py-3 text-sm"
       />
-    </View>
+    </FormField>
   );
 }
 
@@ -298,11 +311,9 @@ export function CemeterySacrificeModal({
               </View>
             </LinearGradient>
 
-            <ScrollView
+            <ModalFormScrollView
               className="px-6"
               contentContainerStyle={{ paddingTop: 22, paddingBottom: 22 }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
             >
               <View className="rounded-3xl border border-border bg-card px-4 py-4 mb-5">
                 <View className="flex-row items-start gap-3">
@@ -320,26 +331,30 @@ export function CemeterySacrificeModal({
                 </View>
               </View>
 
+              <FormSectionCard title="Memorial" subtitle="Epitaph and cause of death for the cemetery.">
               <MemorialField
                 label="Epitaph"
                 placeholder="Gone too soon, but gloriously glazed."
                 value={epitaph}
                 onChangeText={setEpitaph}
+                first
               />
 
               <MemorialField
-                label="Cause Of Death"
+                label="Cause of death"
                 placeholder="Cracked in the bisque after an overconfident trim session..."
                 value={causeOfDeath}
                 onChangeText={setCauseOfDeath}
                 multiline
+                last
               />
 
-              <Text className="text-xs text-muted-foreground mb-5">
+              <Text className="text-xs text-muted-foreground mt-3">
                 {suggestedCause}
               </Text>
+              </FormSectionCard>
 
-              <View className="rounded-[28px] overflow-hidden border border-border bg-card">
+              <View className="rounded-[28px] overflow-hidden border border-border bg-card mt-4">
                 <LinearGradient
                   colors={['rgba(209,151,95,0.16)', 'rgba(81,51,37,0.08)']}
                   start={{ x: 0, y: 0 }}
@@ -363,7 +378,7 @@ export function CemeterySacrificeModal({
                   </Text>
                 </LinearGradient>
               </View>
-            </ScrollView>
+            </ModalFormScrollView>
 
             <View className="px-6 pt-4 pb-10 border-t border-border flex-row gap-3">
               <Button

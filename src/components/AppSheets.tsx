@@ -5,117 +5,18 @@
  * ConfirmSheet , confirm / cancel (optionally destructive)
  * InfoSheet    , informational with a single dismiss button
  * PickSheet    , free-form list of labelled options + cancel
+ *
+ * Short interrupts use centered DialogShell. Full forms use ModalShell.
  */
+import {
+  DialogCard,
+  DialogOverlay,
+  DialogShell,
+  useDialogActionHandoff,
+} from '@/src/components/DialogShell';
 import { Text } from '@/src/components/ui/text';
 import React from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-
-// ─── Shared sheet animation (Modal or in-modal overlay) ─────────────────────
-
-function SheetOverlay({
-  visible,
-  children,
-  onBackdrop,
-}: {
-  visible: boolean;
-  children: React.ReactNode;
-  onBackdrop: () => void;
-}) {
-  const { height } = useWindowDimensions();
-  const backdropOpacity = React.useRef(new Animated.Value(0)).current;
-  const slideY = React.useRef(new Animated.Value(height)).current;
-  const [mounted, setMounted] = React.useState(visible);
-
-  React.useEffect(() => {
-    if (visible) {
-      setMounted(true);
-      backdropOpacity.setValue(0);
-      slideY.setValue(height);
-      Animated.parallel([
-        Animated.timing(backdropOpacity, {
-          toValue: 1,
-          duration: 200,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideY, {
-          toValue: 0,
-          duration: 320,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]).start();
-      return;
-    }
-
-    if (!mounted) return;
-
-    Animated.parallel([
-      Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration: 180,
-        easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideY, {
-        toValue: height,
-        duration: 220,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start(({ finished }) => {
-      if (finished) setMounted(false);
-    });
-  }, [visible, mounted, height, backdropOpacity, slideY]);
-
-  if (!mounted) return null;
-
-  return (
-    <View
-      style={[StyleSheet.absoluteFill, { zIndex: 9999, elevation: 9999 }]}
-      pointerEvents="box-none"
-    >
-      <Animated.View
-        pointerEvents="none"
-        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(22,14,10,0.52)', opacity: backdropOpacity }]}
-      />
-      <Pressable style={StyleSheet.absoluteFill} onPress={onBackdrop} accessibilityRole="button" accessibilityLabel="Close sheet" />
-      <Animated.View
-        pointerEvents="box-none"
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          transform: [{ translateY: slideY }],
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
-          backgroundColor: '#FFFBF2',
-          borderTopWidth: 1,
-          borderColor: '#E8D9BE',
-          paddingBottom: 36,
-        }}
-      >
-        <View pointerEvents="auto">
-          <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#C9B48C' }} />
-          </View>
-          {children}
-        </View>
-      </Animated.View>
-    </View>
-  );
-}
-
-function SheetCard({ visible, children, onBackdrop }: { visible: boolean; children: React.ReactNode; onBackdrop: () => void }) {
-  return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onBackdrop}>
-      <SheetOverlay visible={visible} onBackdrop={onBackdrop}>
-        {children}
-      </SheetOverlay>
-    </Modal>
-  );
-}
+import { TouchableOpacity, View } from 'react-native';
 
 export function SheetButton({
   label,
@@ -176,20 +77,30 @@ export function SheetButton({
   );
 }
 
-/** Stacked sheet footer actions, matches PrimaryButton sizing app-wide. */
+/** Stacked dialog footer actions, matches PrimaryButton sizing app-wide. */
 export function ModalSheetActions({ children }: { children: React.ReactNode }) {
   return <View style={{ gap: 10 }}>{children}</View>;
 }
 
 export {
-  ModalCard,
-  ModalShell,
-  ModalSheetFooter,
-  ModalSheetHeader,
+  deferAfterDialogClose, DIALOG_LIST_HEIGHT_RATIO,
+  DIALOG_MAX_WIDTH,
+  DIALOG_RADIUS, DialogCard,
+  DialogHeader,
+  DialogOverlay,
+  DialogShell, useDialogActionHandoff,
+  useDialogMaxHeight
+} from '@/src/components/DialogShell';
+
+export { DropdownField, DropdownOptionRow } from '@/src/components/DropdownField';
+export type { DropdownFieldProps, DropdownOption } from '@/src/components/DropdownField';
+export { MODAL_FORM_FOOTER_OFFSET, MODAL_SHEET_FOOTER_HEIGHT, ModalFormScrollView } from '@/src/components/ModalFormScrollView';
+export type { ModalFormScrollViewProps } from '@/src/components/ModalFormScrollView';
+export {
   MODAL_BACKDROP_COLOR,
   MODAL_SHEET_HEIGHT_RATIO,
-  MODAL_SHEET_RADIUS,
-  useModalSheetHeight,
+  MODAL_SHEET_RADIUS, ModalCard, ModalSheetFooter,
+  ModalSheetHeader, ModalShell, useModalSheetHeight
 } from '@/src/components/ModalShell';
 export type { ModalCardProps, ModalShellProps } from '@/src/components/ModalShell';
 
@@ -202,6 +113,7 @@ export interface ConfirmSheetProps {
   confirmLabel: string;
   destructive?: boolean;
   loading?: boolean;
+  dismissOnConfirm?: () => void;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -213,25 +125,45 @@ export function ConfirmSheet({
   confirmLabel,
   destructive,
   loading,
+  dismissOnConfirm,
   onConfirm,
   onCancel,
 }: ConfirmSheetProps) {
+  const handoff = useDialogActionHandoff(visible);
+
+  const handleConfirm = React.useCallback(() => {
+    if (loading) return;
+    handoff.runAfterClose(onConfirm, dismissOnConfirm);
+  }, [handoff, loading, onConfirm, dismissOnConfirm]);
+
+  const handleCancel = React.useCallback(() => {
+    handoff.cancelHandoff();
+    onCancel();
+  }, [handoff, onCancel]);
+
   return (
-    <SheetCard visible={visible} onBackdrop={onCancel}>
-      <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
-        <Text className="text-lg font-bold text-foreground">{title}</Text>
-        <Text className="text-sm text-muted-foreground mt-2 leading-5">{body}</Text>
-      </View>
-      <View style={{ paddingHorizontal: 24, paddingTop: 20, gap: 10 }}>
-        <SheetButton
-          label={loading ? 'Please wait…' : confirmLabel}
-          onPress={onConfirm}
-          variant={destructive ? 'destructive' : 'confirm'}
-          disabled={loading}
-        />
-        <SheetButton label="Cancel" onPress={onCancel} variant="cancel" disabled={loading} />
-      </View>
-    </SheetCard>
+    <DialogShell
+      visible={handoff.shellVisible}
+      onClose={handleCancel}
+      onClosed={handoff.handleClosed}
+      dismissMode={handoff.dismissMode}
+    >
+      <DialogCard>
+        <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 8 }}>
+          <Text className="text-lg font-bold text-foreground">{title}</Text>
+          <Text className="text-sm text-muted-foreground mt-2 leading-5">{body}</Text>
+        </View>
+        <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24, gap: 10 }}>
+          <SheetButton
+            label={loading ? 'Please wait…' : confirmLabel}
+            onPress={handleConfirm}
+            variant={destructive ? 'destructive' : 'confirm'}
+            disabled={loading}
+          />
+          <SheetButton label="Cancel" onPress={handleCancel} variant="cancel" disabled={loading} />
+        </View>
+      </DialogCard>
+    </DialogShell>
   );
 }
 
@@ -247,15 +179,17 @@ export interface InfoSheetProps {
 
 export function InfoSheet({ visible, title, body, buttonLabel = 'Got it', onDismiss }: InfoSheetProps) {
   return (
-    <SheetCard visible={visible} onBackdrop={onDismiss}>
-      <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
-        <Text className="text-lg font-bold text-foreground">{title}</Text>
-        <Text className="text-sm text-muted-foreground mt-2 leading-5">{body}</Text>
-      </View>
-      <View style={{ paddingHorizontal: 24, paddingTop: 20 }}>
-        <SheetButton label={buttonLabel} onPress={onDismiss} variant="confirm" />
-      </View>
-    </SheetCard>
+    <DialogShell visible={visible} onClose={onDismiss}>
+      <DialogCard>
+        <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 8 }}>
+          <Text className="text-lg font-bold text-foreground">{title}</Text>
+          <Text className="text-sm text-muted-foreground mt-2 leading-5">{body}</Text>
+        </View>
+        <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24 }}>
+          <SheetButton label={buttonLabel} onPress={onDismiss} variant="confirm" />
+        </View>
+      </DialogCard>
+    </DialogShell>
   );
 }
 
@@ -287,15 +221,18 @@ function PickSheetContent({
   body,
   options,
   onCancel,
+  onSelectOption,
   layout = 'buttons',
-}: Pick<PickSheetProps, 'title' | 'body' | 'options' | 'onCancel' | 'layout'>) {
+}: Pick<PickSheetProps, 'title' | 'body' | 'options' | 'onCancel' | 'layout'> & {
+  onSelectOption: (opt: PickSheetOption) => void;
+}) {
   return (
-    <>
-      <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
+    <DialogCard>
+      <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 8 }}>
         <Text className="text-lg font-bold text-foreground">{title}</Text>
         {body ? <Text className="text-sm text-muted-foreground mt-2 leading-5">{body}</Text> : null}
       </View>
-      <View style={{ paddingHorizontal: 24, paddingTop: 20, gap: 10 }}>
+      <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24, gap: 10 }}>
         {layout === 'list' ? (
           <View
             style={{
@@ -312,10 +249,7 @@ function PickSheetContent({
               return (
                 <TouchableOpacity
                   key={opt.label}
-                  onPress={() => {
-                    opt.onPress();
-                    onCancel();
-                  }}
+                  onPress={() => onSelectOption(opt)}
                   activeOpacity={0.72}
                   style={{
                     flexDirection: 'row',
@@ -349,36 +283,64 @@ function PickSheetContent({
             <SheetButton
               key={opt.label}
               label={opt.label}
-              onPress={() => {
-                opt.onPress();
-                onCancel();
-              }}
+              onPress={() => onSelectOption(opt)}
               variant={opt.destructive ? 'destructive' : 'confirm'}
             />
           ))
         )}
         <SheetButton label="Cancel" onPress={onCancel} variant="cancel" />
       </View>
-    </>
+    </DialogCard>
   );
 }
 
 export function PickSheet({ visible, title, body, options, onCancel, embedded, layout = 'buttons' }: PickSheetProps) {
+  const handoff = useDialogActionHandoff(visible);
+
+  const handleSelectOption = React.useCallback(
+    (opt: PickSheetOption) => {
+      if (embedded) {
+        opt.onPress();
+        onCancel();
+        return;
+      }
+      handoff.runAfterClose(opt.onPress, onCancel);
+    },
+    [embedded, handoff, onCancel],
+  );
+
+  const handleCancel = React.useCallback(() => {
+    handoff.cancelHandoff();
+    onCancel();
+  }, [handoff, onCancel]);
+
   const content = (
-    <PickSheetContent title={title} body={body} options={options} onCancel={onCancel} layout={layout} />
+    <PickSheetContent
+      title={title}
+      body={body}
+      options={options}
+      onCancel={handleCancel}
+      onSelectOption={handleSelectOption}
+      layout={layout}
+    />
   );
 
   if (embedded) {
     return (
-      <SheetOverlay visible={visible} onBackdrop={onCancel}>
+      <DialogOverlay visible={visible} onClose={handleCancel}>
         {content}
-      </SheetOverlay>
+      </DialogOverlay>
     );
   }
 
   return (
-    <SheetCard visible={visible} onBackdrop={onCancel}>
+    <DialogShell
+      visible={handoff.shellVisible}
+      onClose={handleCancel}
+      onClosed={handoff.handleClosed}
+      dismissMode={handoff.dismissMode}
+    >
       {content}
-    </SheetCard>
+    </DialogShell>
   );
 }

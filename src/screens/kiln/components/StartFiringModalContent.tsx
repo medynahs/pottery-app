@@ -1,4 +1,7 @@
 // src/screens/kiln/components/StartFiringModalContent.tsx
+import { FormField, FormFieldRow } from '@/src/components/form/FormField';
+import { FormSectionCard } from '@/src/components/form/FormSectionCard';
+import { NotesInput } from '@/src/components/NotesInput';
 import { Input } from '@/src/components/ui/input';
 import { Select } from '@/src/components/ui/select';
 import { Text } from '@/src/components/ui/text';
@@ -7,7 +10,6 @@ import React from 'react';
 import {
   Image,
   ScrollView,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -111,63 +113,50 @@ export function StartFiringModalContent({
 
       {step === 'setup' ? (
         <>
-          {/* Firing Name */}
-          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-            Firing Name *
-          </Text>
-          <Input
-            placeholder="e.g. Bisque Firing #12"
-            value={form.name}
-            onChangeText={set('name')}
-            className="mb-4"
-          />
-
-          {/* Type + Cone row */}
-          <View className="flex-row gap-3 mb-4">
-            <View className="flex-1">
-              <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Type
-              </Text>
-              <Select
-                value={CORE_FIRING_TYPE_OPTIONS.find((o) => o.value === form.type)}
-                onValueChange={(opt) =>
-                  opt && setForm((f) => ({ ...f, type: opt.value as FiringType }))
-                }
-                options={CORE_FIRING_TYPE_OPTIONS}
+          <FormSectionCard title="Firing details" subtitle="Name, type, and target cone." topGap>
+            <FormField label="Firing name" required nested first>
+              <Input
+                placeholder="e.g. Bisque Firing #12"
+                value={form.name}
+                onChangeText={set('name')}
               />
-            </View>
-            <View className="flex-1">
-              <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Cone
-              </Text>
-              <Select
-                value={CONE_OPTIONS.find((o) => o.value === form.cone)}
-                onValueChange={(opt) => opt && setForm((f) => ({ ...f, cone: opt.value }))}
-                options={CONE_OPTIONS}
-              />
-            </View>
-          </View>
+            </FormField>
 
-          {/* Pieces */}
-          <View className="flex-row items-center justify-between mb-1">
-            <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Ready to fire ({selectedPieceIds.size})
-            </Text>
+            <FormFieldRow nested last>
+              <FormField label="Type" nested inline>
+                <Select
+                  value={CORE_FIRING_TYPE_OPTIONS.find((o) => o.value === form.type)}
+                  onValueChange={(opt) =>
+                    opt && setForm((f) => ({ ...f, type: opt.value as FiringType }))
+                  }
+                  options={CORE_FIRING_TYPE_OPTIONS}
+                />
+              </FormField>
+              <FormField label="Cone" nested inline>
+                <Select
+                  value={CONE_OPTIONS.find((o) => o.value === form.cone)}
+                  onValueChange={(opt) => opt && setForm((f) => ({ ...f, cone: opt.value }))}
+                  options={CONE_OPTIONS}
+                />
+              </FormField>
+            </FormFieldRow>
+          </FormSectionCard>
+
+          <FormSectionCard
+            title={`Ready to fire (${selectedPieceIds.size})`}
+            subtitle="Pieces at the right stage for this firing type."
+          >
             {readyAssignablePieceIds.size > 0 ? (
-              <TouchableOpacity onPress={handleSelectAllReady}>
-                <Text
-                  className="text-[11px] font-semibold"
-                  style={{ color: palette.primary }}
-                >
+              <TouchableOpacity onPress={handleSelectAllReady} className="mb-3 self-end">
+                <Text className="text-[11px] font-semibold" style={{ color: palette.primary }}>
                   {allReadySelected
                     ? 'Clear all'
                     : `Select all (${readyAssignablePieceIds.size})`}
                 </Text>
               </TouchableOpacity>
             ) : null}
-          </View>
 
-          <View className="border border-border rounded-2xl overflow-hidden mb-4">
+            <View className="border border-border rounded-2xl overflow-hidden">
             {sortedAssignablePieces.length === 0 ? (
               <View className="p-4">
                 <Text className="text-sm text-muted-foreground leading-5">
@@ -222,68 +211,49 @@ export function StartFiringModalContent({
               </ScrollView>
             )}
           </View>
+          </FormSectionCard>
 
-          {/* Kiln */}
-          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-            Kiln
-          </Text>
-          {kilns.length === 0 ? (
-            <Text className="text-sm text-muted-foreground mb-4">
-              No kilns added yet. Add a kiln first.
-            </Text>
-          ) : (
-            <Select
-              value={kilnOptions.find((o) => o.value === form.kilnId)}
-              onValueChange={(opt) => opt && setForm((f) => ({ ...f, kilnId: opt.value }))}
-              options={kilnOptions}
-              className="mb-4"
-            />
-          )}
-
-          {selectedKiln && (
-            <Text className="text-xs text-muted-foreground mb-4 -mt-2">
-              {selectedKiln.location ? `📍 ${selectedKiln.location}` : ''}
-              {selectedKiln.coneRange ? `  ·  ${selectedKiln.coneRange}` : ''}
-            </Text>
-          )}
-
-          {form.type === 'glaze' && (
-            <>
-              <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Glaze Notes
+          <FormSectionCard title="Kiln" subtitle="Where this firing will run.">
+            {kilns.length === 0 ? (
+              <Text className="text-sm text-muted-foreground">
+                No kilns added yet. Add a kiln first.
               </Text>
-              <Input
-                value={form.glazeNotes}
-                onChangeText={set('glazeNotes')}
-                placeholder="e.g. Satin White + Tenmoku rim"
-                className="mb-4"
-              />
-            </>
-          )}
+            ) : (
+              <FormField label="Kiln" nested first last>
+                <Select
+                  value={kilnOptions.find((o) => o.value === form.kilnId)}
+                  onValueChange={(opt) => opt && setForm((f) => ({ ...f, kilnId: opt.value }))}
+                  options={kilnOptions}
+                />
+                {selectedKiln ? (
+                  <Text className="text-xs text-muted-foreground mt-2">
+                    {selectedKiln.location ? `📍 ${selectedKiln.location}` : ''}
+                    {selectedKiln.coneRange ? `  ·  ${selectedKiln.coneRange}` : ''}
+                  </Text>
+                ) : null}
+              </FormField>
+            )}
+          </FormSectionCard>
 
-          {/* Notes */}
-          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-            Notes
-          </Text>
-          <TextInput
-            multiline
-            numberOfLines={3}
+          {form.type === 'glaze' ? (
+            <NotesInput
+              label="Glaze notes"
+              hint="Layers and combinations for this load."
+              placeholder="e.g. Satin White + Tenmoku rim"
+              value={form.glazeNotes}
+              onChangeText={set('glazeNotes')}
+              minHeight={88}
+            />
+          ) : null}
+
+          <NotesInput
+            label="Notes"
+            hint="Temperature schedule or special instructions."
             placeholder="Temperature schedule, special instructions..."
             value={form.notes}
             onChangeText={set('notes')}
-            style={{
-              borderWidth: 1,
-              borderColor: palette.border,
-              borderRadius: 12,
-              padding: 12,
-              color: palette.foreground,
-              backgroundColor: palette.background,
-              textAlignVertical: 'top',
-              minHeight: 80,
-              fontSize: 14,
-              marginBottom: 24,
-            }}
-            placeholderTextColor={palette.mutedForeground}
+            minHeight={88}
+            containerStyle={{ marginBottom: 8 }}
           />
         </>
       ) : (

@@ -5,9 +5,12 @@ import { TextInput, TouchableOpacity, View } from 'react-native';
 import {
   COLOR_OPTIONS,
   CONE_OPTIONS,
+  CONTENT_TYPE_OPTIONS,
   FINISH_OPTIONS,
+  type BrandFilter,
   type ColorFilter,
   type ConeFilter,
+  type ContentTypeFilter,
   type FinishFilter,
 } from './types';
 
@@ -93,7 +96,7 @@ export function SearchBar({
         <TextInput
           value={value}
           onChangeText={onChange}
-          placeholder="Search recipes and ideas…"
+          placeholder="Search recipes, combos, brands…"
           placeholderTextColor="hsl(24 10% 65%)"
           className="flex-1 text-sm text-foreground p-0"
         />
@@ -125,23 +128,94 @@ export function FilterPanel({
   coneFilter,
   finishFilter,
   colorFilter,
+  contentTypeFilter,
+  brandFilter,
+  brandOptions,
+  ownedGlazesOnly,
+  showOwnedFilter,
   onCone,
   onFinish,
   onColor,
+  onContentType,
+  onBrand,
+  onOwnedGlazesOnly,
   onClear,
 }: {
   coneFilter: ConeFilter;
   finishFilter: FinishFilter;
   colorFilter: ColorFilter;
+  contentTypeFilter: ContentTypeFilter;
+  brandFilter: BrandFilter;
+  brandOptions: string[];
+  ownedGlazesOnly: boolean;
+  showOwnedFilter: boolean;
   onCone: (v: ConeFilter) => void;
   onFinish: (v: FinishFilter) => void;
   onColor: (v: ColorFilter) => void;
+  onContentType: (v: ContentTypeFilter) => void;
+  onBrand: (v: BrandFilter) => void;
+  onOwnedGlazesOnly: (v: boolean) => void;
   onClear: () => void;
 }) {
-  const hasActive = coneFilter !== 'all' || finishFilter !== 'all' || colorFilter !== 'all';
+  const hasActive =
+    coneFilter !== 'all'
+    || finishFilter !== 'all'
+    || colorFilter !== 'all'
+    || contentTypeFilter !== 'all'
+    || brandFilter !== 'all'
+    || ownedGlazesOnly;
 
   return (
     <View className="mb-4 rounded-2xl border border-border bg-card p-4 gap-3.5">
+      <View>
+        <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+          Show
+        </Text>
+        <View className="flex-row flex-wrap gap-2">
+          {CONTENT_TYPE_OPTIONS.map((opt) => (
+            <FilterPill
+              key={opt.key}
+              label={opt.label}
+              active={contentTypeFilter === opt.key}
+              onPress={() => onContentType(opt.key)}
+            />
+          ))}
+        </View>
+      </View>
+
+      {brandOptions.length > 0 ? (
+        <View>
+          <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Brand
+          </Text>
+          <View className="flex-row flex-wrap gap-2">
+            <FilterPill
+              label="Any brand"
+              active={brandFilter === 'all'}
+              onPress={() => onBrand('all')}
+            />
+            {brandOptions.map((brand) => (
+              <FilterPill
+                key={brand}
+                label={brand}
+                active={brandFilter.toLowerCase() === brand.toLowerCase()}
+                onPress={() => onBrand(brand)}
+              />
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {showOwnedFilter ? (
+        <View>
+          <FilterPill
+            label="Uses glazes I have"
+            active={ownedGlazesOnly}
+            onPress={() => onOwnedGlazesOnly(!ownedGlazesOnly)}
+          />
+        </View>
+      ) : null}
+
       <View>
         <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
           Cone

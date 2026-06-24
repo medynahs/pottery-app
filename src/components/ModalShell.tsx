@@ -1,7 +1,7 @@
 import { PhotoPickerOverlay } from '@/src/components/PhotoPickerOverlay';
-import { KeyboardAvoidingView } from '@/src/components/ui/keyboard-avoiding-view';
 import { X } from 'lucide-react-native';
 import React from 'react';
+import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import {
   Animated,
   Easing,
@@ -14,7 +14,6 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const MODAL_BACKDROP_COLOR = 'rgba(22,14,10,0.52)';
 export const MODAL_SHEET_RADIUS = 32;
@@ -49,7 +48,6 @@ export function ModalShell({
   overlay,
 }: ModalShellProps) {
   const { height } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
   const backdropOpacity = React.useRef(new Animated.Value(0)).current;
   const slideY = React.useRef(new Animated.Value(height)).current;
   const dragY = React.useRef(new Animated.Value(0)).current;
@@ -161,16 +159,11 @@ export function ModalShell({
               accessibilityRole="button"
               accessibilityLabel="Close modal"
             />
-            <KeyboardAvoidingView
-              behavior="padding"
-              keyboardVerticalOffset={insets.top}
-              style={{ flex: 1, justifyContent: 'flex-end' }}
-              pointerEvents="box-none"
-            >
+            <View style={{ flex: 1, justifyContent: 'flex-end' }} pointerEvents="box-none">
               <Animated.View style={{ transform: [{ translateY: sheetTranslateY }] }} pointerEvents="box-none">
                 <View pointerEvents="auto">{children}</View>
               </Animated.View>
-            </KeyboardAvoidingView>
+            </View>
             {visible ? <PhotoPickerOverlay /> : null}
             {visible ? overlay : null}
           </View>
@@ -229,12 +222,14 @@ export function ModalSheetHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Sticky footer for tall form sheets. */
+/** Sticky footer for tall form sheets — rides the keyboard instead of leaving a gap. */
 export function ModalSheetFooter({ children }: { children: React.ReactNode }) {
   return (
-    <View className="px-6 pt-4 pb-8 border-t border-border shrink-0">
-      {children}
-    </View>
+    <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+      <View className="px-6 pt-4 pb-8 border-t border-border shrink-0 bg-background">
+        {children}
+      </View>
+    </KeyboardStickyView>
   );
 }
 
@@ -251,6 +246,8 @@ export function ModalCard({
     maxHeight,
     height,
     flexDirection: 'column' as const,
+    flexShrink: 1,
+    minHeight: 0,
   };
 
   if (variant === 'pottery') {

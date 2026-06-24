@@ -1,6 +1,7 @@
 ﻿// src/screens/community/components/FestivalSignUpSheet.tsx
 import {
   ModalCard,
+  ModalFormScrollView,
   ModalSheetActions,
   ModalSheetFooter,
   ModalSheetHeader,
@@ -11,7 +12,7 @@ import {
 import { Text } from '@/src/components/ui/text';
 import { ArrowLeft, CheckSquare, Square } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import type { Festival, FestivalTrack } from '../types';
 
 type Step = 'track' | 'rules';
@@ -153,10 +154,8 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose }: P
               </Text>
             </ModalSheetHeader>
 
-            <ScrollView
-              style={{ flex: 1 }}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
+            <ModalFormScrollView
+              style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}
             >
               {festival.tracks.map((track) => (
@@ -168,7 +167,7 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose }: P
                   onSelect={() => setSelectedTrack(track.id)}
                 />
               ))}
-            </ScrollView>
+            </ModalFormScrollView>
 
             <ModalSheetFooter>
               <ModalSheetActions>
@@ -200,9 +199,8 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose }: P
               </TouchableOpacity>
             </ModalSheetHeader>
 
-            <ScrollView
-              style={{ flex: 1 }}
-              showsVerticalScrollIndicator={false}
+            <ModalFormScrollView
+              style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{
                 paddingHorizontal: 24,
                 paddingTop: 4,
@@ -292,7 +290,7 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose }: P
                   I&apos;ve read and accept the festival rules
                 </Text>
               </TouchableOpacity>
-            </ScrollView>
+            </ModalFormScrollView>
 
             <ModalSheetFooter>
               <ModalSheetActions>

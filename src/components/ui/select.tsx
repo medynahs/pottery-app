@@ -1,15 +1,11 @@
-import * as React from "react";
-import { Modal, Platform } from "react-native";
-import { ChevronDownIcon, CheckIcon } from "./lib/icons";
-import { Text } from "./text";
-import { ScrollView } from "./scroll-view";
-import { View } from "./view";
-import { Pressable } from "./pressable";
-import { cn } from "./utils/cn";
+import { DropdownField, type DropdownOption } from '@/src/components/DropdownField';
+import * as React from 'react';
+import { View } from './view';
 
 export interface SelectOption {
   value: string;
   label: string;
+  description?: string;
 }
 
 export interface SelectProps {
@@ -21,94 +17,33 @@ export interface SelectProps {
   className?: string;
 }
 
-export function Select({ 
-  value, 
-  onValueChange, 
-  options = [], 
-  placeholder = "Select...",
+/** App-wide single-select dropdown. Prefer this over ad-hoc pickers. */
+export function Select({
+  value,
+  onValueChange,
+  options = [],
+  placeholder = 'Select…',
   disabled = false,
-  className 
+  className,
 }: SelectProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0, width: 0 });
-  const triggerRef = React.useRef<React.ElementRef<typeof View>>(null);
-
-  const handleSelect = (option: SelectOption) => {
-    onValueChange?.(option);
-    setIsOpen(false);
-  };
-
-  const handleOpen = () => {
-    if (disabled || !triggerRef.current) return;
-    
-    triggerRef.current.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
-      setDropdownPosition({
-        top: pageY + height + 2,
-        left: pageX,
-        width: Math.max(width, 120),
-      });
-      setIsOpen(true);
-    });
-  };
+  const mappedOptions: DropdownOption[] = React.useMemo(
+    () => options.map((option) => ({ ...option })),
+    [options],
+  );
 
   return (
-    <View className={className}>
-      <Pressable
-        ref={triggerRef}
-        onPress={handleOpen}
-        className={cn(
-          "flex-row items-center justify-between rounded-md border border-input bg-background px-2 py-1",
-          disabled && "opacity-50"
-        )}
-      >
-        <Text variant="small" className={cn(!value && "text-muted-foreground", "mr-1")}>
-          {value?.label || placeholder}
-        </Text>
-        <ChevronDownIcon className="h-3 w-3 opacity-50" />
-      </Pressable>
-
-      {isOpen && (
-        <Modal
-          transparent
-          visible={isOpen}
-          onRequestClose={() => setIsOpen(false)}
-          animationType="fade"
-        >
-          <Pressable
-            className="flex-1"
-            style={{ backgroundColor: 'transparent' }}
-            onPress={() => setIsOpen(false)}
-          >
-            <View 
-              className="absolute bg-popover rounded-md border border-border shadow-lg overflow-hidden"
-              style={{
-                top: dropdownPosition.top,
-                left: dropdownPosition.left,
-                width: dropdownPosition.width,
-                maxHeight: 200,
-              }}
-            >
-              <ScrollView>
-                {options.map((option) => (
-                  <Pressable
-                    key={option.value}
-                    onPress={() => handleSelect(option)}
-                    className="flex-row items-center px-2 py-1.5 active:bg-accent"
-                  >
-                    <View className="w-4 mr-1">
-                      {value?.value === option.value && (
-                        <CheckIcon className="h-3 w-3" />
-                      )}
-                    </View>
-                    <Text variant="small">{option.label}</Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
-          </Pressable>
-        </Modal>
-      )}
-    </View>
+    <DropdownField
+      value={value?.value}
+      onValueChange={(nextValue) => {
+        const option = mappedOptions.find((item) => item.value === nextValue);
+        onValueChange?.(option);
+      }}
+      options={mappedOptions}
+      placeholder={placeholder}
+      disabled={disabled}
+      className={className}
+      searchable={mappedOptions.length >= 8}
+    />
   );
 }
 
@@ -125,13 +60,13 @@ export const SelectValue = ({ placeholder }: { placeholder?: string }) => {
   return null;
 };
 
-export const SelectItem = ({ 
-  value, 
-  label, 
-  children 
-}: { 
-  value: string; 
-  label: string; 
+export const SelectItem = ({
+  value,
+  label,
+  children,
+}: {
+  value: string;
+  label: string;
   children: React.ReactNode;
 }) => {
   return null;

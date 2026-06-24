@@ -1,5 +1,9 @@
+import { NotesInput } from '@/src/components/NotesInput';
+import { FormField } from '@/src/components/form/FormField';
+import { FormSectionCard } from '@/src/components/form/FormSectionCard';
 import {
   ModalCard,
+  ModalFormScrollView,
   ModalShell,
   ModalSheetFooter,
   ModalSheetHeader,
@@ -39,8 +43,6 @@ import { Bookmark, Copy, RotateCcw } from 'lucide-react-native';
 import React from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -79,19 +81,6 @@ function ToggleChip({
         {label}
       </Text>
     </TouchableOpacity>
-  );
-}
-
-function FieldLabel({ title, hint }: { title: string; hint?: string }) {
-  return (
-    <View className="mb-2.5">
-      <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {title}
-      </Text>
-      {hint ? (
-        <Text className="text-[11px] text-muted-foreground mt-1 leading-4">{hint}</Text>
-      ) : null}
-    </View>
   );
 }
 
@@ -255,21 +244,13 @@ export function ShareGlazeRecipeSheet({
           </Text>
         </ModalSheetHeader>
 
-        <KeyboardAvoidingView
-          style={{ flex: 1, minHeight: 0 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+        <ModalFormScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 24,
+            paddingTop: FORM_FIELD_GAP,
+            paddingBottom: FORM_FIELD_GAP + 8,
+          }}
         >
-          <ScrollView
-            style={{ flex: 1, minHeight: 0 }}
-            contentContainerStyle={{
-              paddingHorizontal: 24,
-              paddingTop: FORM_FIELD_GAP,
-              paddingBottom: FORM_FIELD_GAP + 8,
-            }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
             {!sessionToken ? (
               <Text className="text-sm text-muted-foreground leading-6">
                 Sign in to share recipes with other potters. Your atlas stays private until you post.
@@ -293,8 +274,8 @@ export function ShareGlazeRecipeSheet({
                   </View>
                 </View>
 
-                <View className="mb-6">
-                  <FieldLabel title="Opening line" hint="Tap a preset or write your own." />
+                <FormSectionCard title="Compose" subtitle="Opening line and post body." topGap>
+                  <FormField label="Opening line" hint="Tap a preset or write your own." nested first>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -311,32 +292,20 @@ export function ShareGlazeRecipeSheet({
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
-                  <TextInput
+                  <NotesInput
                     value={draft.intro}
                     onChangeText={(intro) => patchDraft({ intro })}
                     placeholder="What do you want to say about this glaze?"
-                    placeholderTextColor="hsl(24 10% 65%)"
-                    multiline
+                    minHeight={88}
+                    maxHeight={140}
                     maxLength={600}
-                    style={{
-                      minHeight: 88,
-                      maxHeight: 140,
-                      borderWidth: 1,
-                      borderColor: 'hsl(24 15% 88%)',
-                      borderRadius: 16,
-                      paddingHorizontal: 14,
-                      paddingVertical: 12,
-                      fontSize: 15,
-                      lineHeight: 22,
-                      color: 'hsl(24 25% 15%)',
-                      backgroundColor: 'hsl(40 40% 98%)',
-                      textAlignVertical: 'top',
-                    }}
+                    containerStyle={{ marginTop: 12, marginBottom: 0 }}
                   />
-                </View>
+                  </FormField>
+                </FormSectionCard>
 
-                <View className="mb-6">
-                  <FieldLabel title="Post options" />
+                <FormSectionCard title="Post options">
+                  <FormField label="Options" nested first last>
                   <View className="flex-row flex-wrap gap-2">
                     <ToggleChip
                       label="Teaser mode"
@@ -372,11 +341,12 @@ export function ShareGlazeRecipeSheet({
                       Teaser shares the glaze name, finish, cone, and photo only, no formula.
                     </Text>
                   ) : null}
-                </View>
+                  </FormField>
+                </FormSectionCard>
 
                 {draft.attachPhoto ? (
-                  <View className="mb-6">
-                    <FieldLabel title="Photo source" />
+                  <FormSectionCard title="Photo source">
+                    <FormField label="Source" nested first last>
                     <View className="flex-row flex-wrap gap-2">
                       <ToggleChip
                         label="Glaze tile"
@@ -396,12 +366,13 @@ export function ShareGlazeRecipeSheet({
                         />
                       ) : null}
                     </View>
-                  </View>
+                    </FormField>
+                  </FormSectionCard>
                 ) : null}
 
                 {pieceOptions.length > 0 ? (
-                  <View className="mb-6">
-                    <FieldLabel title="Linked piece" hint="Show which pot wore this glaze." />
+                  <FormSectionCard title="Linked piece" subtitle="Show which pot wore this glaze.">
+                    <FormField label="Piece" nested first last>
                     <ScrollView
                       horizontal
                       showsHorizontalScrollIndicator={false}
@@ -434,15 +405,16 @@ export function ShareGlazeRecipeSheet({
                         );
                       })}
                     </ScrollView>
-                  </View>
+                    </FormField>
+                  </FormSectionCard>
                 ) : null}
 
                 {activeChallenge ? (
-                  <View className="mb-6">
-                    <FieldLabel
-                      title="Monthly challenge"
-                      hint={`Enter "${activeChallenge.title}" with this post.`}
-                    />
+                  <FormSectionCard
+                    title="Monthly challenge"
+                    subtitle={`Enter "${activeChallenge.title}" with this post.`}
+                  >
+                    <FormField label="Challenge entry" nested first last>
                     <ToggleChip
                       label={
                         draft.challengeId === activeChallenge.id
@@ -457,11 +429,12 @@ export function ShareGlazeRecipeSheet({
                         })
                       }
                     />
-                  </View>
+                    </FormField>
+                  </FormSectionCard>
                 ) : null}
 
-                <View className="mb-6">
-                  <FieldLabel title="Hashtags" hint="Space-separated tags for discoverability." />
+                <FormSectionCard title="Hashtags" subtitle="Space-separated tags for discoverability." last>
+                  <FormField label="Tags" nested first last>
                   <TextInput
                     value={draft.hashtags}
                     onChangeText={(hashtags) => patchDraft({ hashtags })}
@@ -482,7 +455,8 @@ export function ShareGlazeRecipeSheet({
                       backgroundColor: 'hsl(40 40% 98%)',
                     }}
                   />
-                </View>
+                  </FormField>
+                </FormSectionCard>
 
                 <View className="flex-row items-center justify-between mb-3">
                   <TouchableOpacity onPress={() => setShowPreview((v) => !v)} activeOpacity={0.75}>
@@ -517,8 +491,7 @@ export function ShareGlazeRecipeSheet({
                 </Text>
               </>
             ) : null}
-          </ScrollView>
-        </KeyboardAvoidingView>
+        </ModalFormScrollView>
 
         <ModalSheetFooter>
           {sessionToken ? (

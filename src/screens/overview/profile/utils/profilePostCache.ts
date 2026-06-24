@@ -11,6 +11,10 @@ export function getCachedProfilePosts(): BackendFeedPost[] {
   return cachedPosts;
 }
 
+export function removeCachedProfilePost(postId: string): void {
+  cachedPosts = cachedPosts.filter((p) => p.id !== postId);
+}
+
 export function mergeProfilePosts(
   serverPosts: BackendFeedPost[],
   cached: BackendFeedPost[],

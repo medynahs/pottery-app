@@ -2,6 +2,7 @@
 import {
   InfoSheet,
   ModalCard,
+  ModalFormScrollView,
   ModalSheetFooter,
   ModalSheetHeader,
   ModalShell,
@@ -14,7 +15,6 @@ import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useAppStore } from '@/src/store';
 import React from 'react';
-import { ScrollView } from 'react-native';
 import type { Kiln } from '../../../types/kiln';
 import { DEFAULT_KILN_MAX_TEMP_C, trimOrEmpty } from '../utils/kilnHelpers';
 import {
@@ -132,11 +132,10 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
               <Text className="text-2xl font-serif font-bold text-foreground">{isEditing ? 'Edit Kiln' : 'Add Kiln'}</Text>
             </ModalSheetHeader>
 
-            <ScrollView
-              className="px-6 pt-4"
+            <ModalFormScrollView
+              className="px-6"
               style={{ flex: 1, minHeight: 0 }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 24 }}
             >
               <AddKilnModalForm
                 form={form}
@@ -153,7 +152,7 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
                   mutedForeground: colors.mutedForeground,
                 }}
               />
-            </ScrollView>
+            </ModalFormScrollView>
 
             <ModalSheetFooter>
               <Button onPress={handleSave} disabled={!canSave} className="w-full">

@@ -5,6 +5,7 @@ import React from 'react';
 import { Keyboard, Pressable, TextInput, TouchableOpacity, View } from 'react-native';
 import { JournalEditScope } from './journalEditScope';
 import { JournalTheme } from '../utils/journalTheme';
+import { NOTES_INPUT_MIN_HEIGHT } from '@/src/components/NotesInput';
 
 type JournalInlineNotesProps = {
   title: string;
@@ -144,13 +145,14 @@ export function JournalInlineNotes({
           <TextInput
             ref={inputRef}
             multiline
+            scrollEnabled={false}
             value={value}
             onChangeText={onChangeText}
             onBlur={stopEditing}
             placeholder={placeholder}
             placeholderTextColor={JournalTheme.placeholder}
             style={{
-              minHeight: compact ? 88 : 104,
+              minHeight: compact ? 88 : Math.max(NOTES_INPUT_MIN_HEIGHT, 104),
               fontFamily: 'DMSans_400Regular',
               fontSize: scaled(14),
               lineHeight: scaled(22),

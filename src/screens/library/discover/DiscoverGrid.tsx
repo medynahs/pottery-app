@@ -3,17 +3,20 @@ import type { GlazeFinish } from '@/src/screens/glazes/types';
 import React from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import { GlazePhotoTile } from '../GlazePhotoTile';
+import { inspirationProductLabel } from './products';
 import type { DiscoverItem } from './types';
 
 function DiscoverTile({
   item,
   width,
   saved,
+  usesOwnedGlaze,
   onPress,
 }: {
   item: DiscoverItem;
   width: number;
   saved: boolean;
+  usesOwnedGlaze: boolean;
   onPress: () => void;
 }) {
   if (item.kind === 'inspiration') {
@@ -23,10 +26,12 @@ function DiscoverTile({
         width={width}
         name={inspiration.title}
         coneLabel={inspiration.coneLabel}
-        finishLabel="Layering idea"
+        finishLabel={inspirationProductLabel(inspiration)}
         previewUri={inspiration.previewUri}
         colorHex={inspiration.colorHex}
-        cornerBadge={undefined}
+        cornerBadge={
+          usesOwnedGlaze ? { label: 'You have this', tone: 'success' } : { label: 'Combo', tone: 'accent' }
+        }
         onPress={onPress}
       />
     );
@@ -34,6 +39,7 @@ function DiscoverTile({
 
   const { recipe } = item;
   const finishLabel = GLAZE_FINISH_LABELS[recipe.finish as GlazeFinish] ?? recipe.finish;
+  const devBadge = recipe.devSourceGlazeId ? { label: 'Dev', tone: 'accent' as const } : undefined;
 
   return (
     <GlazePhotoTile
@@ -43,7 +49,9 @@ function DiscoverTile({
       finishLabel={finishLabel}
       previewUri={recipe.previewUri}
       colorHex={recipe.colorHex}
-      cornerBadge={saved ? { label: 'Saved', tone: 'success' } : undefined}
+      cornerBadge={
+        devBadge ?? (saved ? { label: 'Saved', tone: 'success' } : undefined)
+      }
       onPress={onPress}
     />
   );
@@ -52,10 +60,12 @@ function DiscoverTile({
 export function DiscoverGrid({
   items,
   savedRecipeIds,
+  ownedGlazeIds,
   onPressItem,
 }: {
   items: DiscoverItem[];
   savedRecipeIds?: Set<string>;
+  ownedGlazeIds?: Set<string>;
   onPressItem: (item: DiscoverItem) => void;
 }) {
   const { width } = useWindowDimensions();
@@ -75,6 +85,9 @@ export function DiscoverGrid({
             item={item}
             width={tileWidth}
             saved={item.kind === 'recipe' ? savedRecipeIds?.has(item.recipe.id) ?? false : false}
+            usesOwnedGlaze={
+              item.kind === 'inspiration' ? ownedGlazeIds?.has(item.inspiration.id) ?? false : false
+            }
             onPress={() => onPressItem(item)}
           />
         ))}
@@ -86,6 +99,9 @@ export function DiscoverGrid({
             item={item}
             width={tileWidth}
             saved={item.kind === 'recipe' ? savedRecipeIds?.has(item.recipe.id) ?? false : false}
+            usesOwnedGlaze={
+              item.kind === 'inspiration' ? ownedGlazeIds?.has(item.inspiration.id) ?? false : false
+            }
             onPress={() => onPressItem(item)}
           />
         ))}

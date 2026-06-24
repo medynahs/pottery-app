@@ -1,11 +1,14 @@
 import {
   ModalCard,
+  ModalFormScrollView,
   ModalSheetFooter,
   ModalSheetHeader,
   ModalShell,
   MODAL_SHEET_RADIUS,
   useModalSheetHeight,
 } from '@/src/components/AppSheets';
+import { CollapsibleFormSection, FormSectionCard } from '@/src/components/form/FormSectionCard';
+import { NotesInput } from '@/src/components/NotesInput';
 import { DatePickerField } from '@/src/components/DatePickerField';
 import { PhotoPickField } from '@/src/components/PhotoPickField';
 import { Input } from '@/src/components/ui/input';
@@ -78,9 +81,12 @@ export function LogTestModal({
 
   const [testDraft, setTestDraft] = React.useState<TestDraft>(buildDraft);
 
+  const [showMoreDetails, setShowMoreDetails] = React.useState(false);
+
   React.useEffect(() => {
     if (visible) {
       setTestDraft(buildDraft());
+      setShowMoreDetails(false);
     }
   }, [visible, buildDraft]);
 
@@ -116,13 +122,11 @@ export function LogTestModal({
             </Text>
           </ModalSheetHeader>
 
-          <ScrollView
+          <ModalFormScrollView
             className="px-6"
-            style={{ flex: 1, minHeight: 0 }}
-            contentContainerStyle={{ paddingBottom: 24 }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 120 }}
           >
+            <FormSectionCard title="Essentials" subtitle="Photo, glaze, result, and firing context." topGap>
             <FormField label="Test tile photo" first>
               <PhotoPickField
                 variant="slot"
@@ -228,20 +232,24 @@ export function LogTestModal({
               />
             </FormField>
 
-            <FormField label="Notes">
-              <Input
-                value={testDraft.notes}
-                onChangeText={(v) => setTestDraft((d) => ({ ...d, notes: v }))}
-                placeholder="Color, texture, lesson learned"
-                multiline
-                numberOfLines={2}
-                style={{ minHeight: 64, textAlignVertical: 'top' }}
-              />
-            </FormField>
+            </FormSectionCard>
 
-            <View className="mt-6 border-t border-border" />
+            <NotesInput
+              label="Notes"
+              hint="Color, texture, or what you learned from this tile."
+              value={testDraft.notes}
+              onChangeText={(v) => setTestDraft((d) => ({ ...d, notes: v }))}
+              placeholder="Color, texture, lesson learned"
+              minHeight={88}
+            />
 
-            <FormField label="Kiln (optional)">
+            <CollapsibleFormSection
+              title="More test details"
+              subtitle="Kiln, application, defects, layering — optional."
+              open={showMoreDetails}
+              onOpenChange={setShowMoreDetails}
+            >
+            <FormField label="Kiln (optional)" first>
               <KilnPickerField
                 value={testDraft.kilnName ?? ''}
                 onChange={(kilnName, kiln) => {
@@ -325,7 +333,8 @@ export function LogTestModal({
                 </View>
               </FormField>
             ) : null}
-          </ScrollView>
+            </CollapsibleFormSection>
+          </ModalFormScrollView>
 
           <ModalSheetFooter>
             <TouchableOpacity

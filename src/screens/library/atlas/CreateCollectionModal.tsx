@@ -1,4 +1,4 @@
-import { ModalCard, ModalShell } from '@/src/components/AppSheets';
+import { DialogCard, DialogShell } from '@/src/components/AppSheets';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import React from 'react';
@@ -23,9 +23,9 @@ export function CreateCollectionModal({
   const canSave = sanitizeCustomCollections([name]).length > 0;
 
   return (
-    <ModalShell visible={visible} onClose={onClose} backdropColor="rgba(0,0,0,0.46)">
-      <ModalCard radius={28} maxHeight={320}>
-        <View className="px-6 pb-4 border-b border-border">
+    <DialogShell visible={visible} onClose={onClose}>
+      <DialogCard>
+        <View className="px-6 pb-4 pt-6 border-b border-border">
           <Text className="text-xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
             New collection
           </Text>
@@ -62,7 +62,7 @@ export function CreateCollectionModal({
             <Text className="text-sm font-semibold text-white">Create</Text>
           </TouchableOpacity>
         </View>
-      </ModalCard>
-    </ModalShell>
+      </DialogCard>
+    </DialogShell>
   );
 }

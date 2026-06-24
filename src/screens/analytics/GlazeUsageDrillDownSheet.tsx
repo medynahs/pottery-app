@@ -1,4 +1,5 @@
 import { Text } from '@/src/components/ui/text';
+import { deferAfterDialogClose } from '@/src/components/DialogShell';
 import {
   buildGlazeFamilyDrillDown,
   type GlazeFamilyDrillDown,
@@ -96,8 +97,9 @@ export function GlazeUsageDrillDownSheet({
                     <TouchableOpacity
                       key={row.pieceId}
                       onPress={() => {
-                        onClose();
-                        router.push(`/(tabs)/pieces?openJournalPieceId=${row.pieceId}` as never);
+                        deferAfterDialogClose(onClose, () => {
+                          router.push(`/(tabs)/pieces?openJournalPieceId=${row.pieceId}` as never);
+                        });
                       }}
                       activeOpacity={0.82}
                       className="flex-row items-center rounded-xl border border-border bg-card px-3 py-3"
@@ -127,8 +129,9 @@ export function GlazeUsageDrillDownSheet({
                     <TouchableOpacity
                       key={row.testId}
                       onPress={() => {
-                        onClose();
-                        router.push(`/glaze/${row.glazeId}` as never);
+                        deferAfterDialogClose(onClose, () => {
+                          router.push(`/glaze/${row.glazeId}` as never);
+                        });
                       }}
                       activeOpacity={0.82}
                       className="flex-row items-center rounded-xl border border-border bg-card px-3 py-3"

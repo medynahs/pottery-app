@@ -1,3 +1,4 @@
+import { NotesInput } from '@/src/components/NotesInput';
 import { Button } from '@/src/components/ui/button';
 
 import { Text } from '@/src/components/ui/text';
@@ -8,7 +9,7 @@ import { Check, Clock3, FlameKindling, Receipt, Thermometer } from 'lucide-react
 
 import React from 'react';
 
-import { Image, Pressable, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, Pressable, TouchableOpacity, View } from 'react-native';
 
 import type { Firing, FiringResult, FiringStatusOverride, Kiln } from '../../../types/kiln';
 
@@ -1055,48 +1056,14 @@ export function FiringDetailContent({
 
 
 
-          <TextInput
-
-            multiline
-
-            numberOfLines={3}
-
+          <NotesInput
             placeholder={
-
               notesRequired ? 'Describe what went wrong…' : 'Optional notes on this firing…'
-
             }
-
             value={resultNotes}
-
             onChangeText={onChangeResultNotes}
-
-            style={{
-
-              borderWidth: 1,
-
-              borderColor: KILN_UI.warmBorder,
-
-              borderRadius: 14,
-
-              padding: 12,
-
-              color: palette.foreground,
-
-              backgroundColor: KILN_UI.cream,
-
-              textAlignVertical: 'top',
-
-              minHeight: 88,
-
-              fontSize: 14,
-
-              marginBottom: 14,
-
-            }}
-
-            placeholderTextColor={palette.mutedForeground}
-
+            minHeight={88}
+            containerStyle={{ marginBottom: 14 }}
           />
 
 

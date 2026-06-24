@@ -176,6 +176,23 @@ export async function apiCreatePost(
 }
 
 /**
+ * DELETE /posts/{post_id}
+ * Permanently deletes the authenticated user's own post. Returns 204 on success.
+ */
+export async function apiDeletePost(
+  sessionToken: string,
+  postId: string,
+): Promise<void> {
+  const res = await authedFetch(sessionToken, `${API_BASE}/posts/${postId}`, {
+    method: 'DELETE',
+  });
+  // 404 means already gone, treat as success
+  if (!res.ok && res.status !== 404) {
+    throw new CommunityApiError(res.status, `DELETE /posts/${postId}`);
+  }
+}
+
+/**
  * POST /posts/{post_id}/reactions
  * Adds a like reaction to a post. Returns 201 on success.
  */

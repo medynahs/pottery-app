@@ -540,13 +540,14 @@ interface AppState {
   /** Local vote on bundled demo poll when GET /polls is empty. */
   communityDemoPollVoteId: string | null;
   voteCommunityDemoPoll: (optionId: string) => void;
-  /** Bumped when a community post is created, feeds subscribe to refresh. */
+  /** Bumped when a community post is created or deleted, feeds subscribe to refresh. */
   communityFeedRevision: number;
   /** Pre-fill community composer when opening from journal, kiln, etc. */
   communityPostComposerPreset: CommunityPostComposerPreset | null;
   /** Local stub for BE-8.5 until server returns save_count. */
   communityPostSaveCounts: Record<string, number>;
   markPostCreated: () => void;
+  markPostDeleted: () => void;
   openCommunityPostComposer: (preset: CommunityPostComposerPreset) => void;
   clearCommunityPostComposerPreset: () => void;
   recordCommunityPostSave: (postId: string) => void;
@@ -577,6 +578,11 @@ interface AppState {
   deleteGlazeTest: (id: string) => void;
   addGlazeCollection: (name: string) => void;
   registerGlazeCollections: (names: string[]) => void;
+  /** Dev-only glaze IDs shown in Discover for local seed preview. */
+  devDiscoverGlazeIds: string[];
+  addDevDiscoverGlaze: (glazeId: string) => void;
+  removeDevDiscoverGlaze: (glazeId: string) => void;
+  clearDevDiscoverGlazes: () => void;
 
   // ── Kilns ─────────────────────────────────────────────────────
   kilns: Kiln[];
@@ -1323,6 +1329,10 @@ export const useAppStore = create<AppState>()(
       hasCreatedPost: true,
       communityFeedRevision: state.communityFeedRevision + 1,
     })),
+  markPostDeleted: () =>
+    set((state) => ({
+      communityFeedRevision: state.communityFeedRevision + 1,
+    })),
   openCommunityPostComposer: (preset) => set({ communityPostComposerPreset: preset }),
   clearCommunityPostComposerPreset: () => set({ communityPostComposerPreset: null }),
   recordCommunityPostSave: (postId) =>
@@ -1465,6 +1475,18 @@ export const useAppStore = create<AppState>()(
       if (merged.length === state.glazeCollectionNames.length) return state;
       return { glazeCollectionNames: merged };
     }),
+  devDiscoverGlazeIds: [],
+  addDevDiscoverGlaze: (glazeId) =>
+    set((state) => ({
+      devDiscoverGlazeIds: state.devDiscoverGlazeIds.includes(glazeId)
+        ? state.devDiscoverGlazeIds
+        : [glazeId, ...state.devDiscoverGlazeIds],
+    })),
+  removeDevDiscoverGlaze: (glazeId) =>
+    set((state) => ({
+      devDiscoverGlazeIds: state.devDiscoverGlazeIds.filter((id) => id !== glazeId),
+    })),
+  clearDevDiscoverGlazes: () => set({ devDiscoverGlazeIds: [] }),
 
   // ── Kilns ─────────────────────────────────────────────────────
   kilns: [],
@@ -1960,6 +1982,7 @@ export const useAppStore = create<AppState>()(
         glazeCollectionNames: state.glazeCollectionNames,
         pendingGlazeDeletions: state.pendingGlazeDeletions,
         pendingGlazeTestDeletions: state.pendingGlazeTestDeletions,
+        devDiscoverGlazeIds: state.devDiscoverGlazeIds,
         pendingSyncOps: state.pendingSyncOps,
         studioRhythm: state.studioRhythm,
         defaultNewPieceStage: state.defaultNewPieceStage,

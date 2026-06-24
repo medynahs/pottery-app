@@ -1,6 +1,7 @@
 // src/screens/community/components/SubmitPieceSheet.tsx
 import {
   ModalCard,
+  ModalFormScrollView,
   ModalSheetActions,
   ModalSheetFooter,
   ModalSheetHeader,
@@ -8,10 +9,11 @@ import {
   SheetButton,
   useModalSheetHeight,
 } from '@/src/components/AppSheets';
-import { Text } from '@/src/components/ui/text';
+import { FormField } from '@/src/components/form/FormField';
+import { NotesInput } from '@/src/components/NotesInput';
 import { PhotoPickField } from '@/src/components/PhotoPickField';
+import { Text } from '@/src/components/ui/text';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
 
 export type SubmitPiecePayload = {
   note: string;
@@ -96,41 +98,31 @@ export function SubmitPieceSheet({
           </Text>
         </ModalSheetHeader>
 
-        <ScrollView
-          style={{ flex: 1 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        <ModalFormScrollView
+          style={{ flex: 1, minHeight: 0 }}
           contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}
         >
-          <PhotoPickField
-            photo={photoUri}
-            onPhotoChange={(uri) => setPhotoUri(uri ?? null)}
-            aspect={[4, 3]}
-            quality={0.85}
-            iconColor={accentColor}
-            disabled={submitting}
-          />
+          <FormField label="Photo" sectionStart first>
+            <PhotoPickField
+              photo={photoUri}
+              onPhotoChange={(uri) => setPhotoUri(uri ?? null)}
+              aspect={[4, 3]}
+              quality={0.85}
+              iconColor={accentColor}
+              disabled={submitting}
+            />
+          </FormField>
 
-          <View style={{ marginTop: 16 }}>
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: '700',
-                color: '#8a7058',
-                letterSpacing: 0.6,
-                marginBottom: 8,
-              }}
-            >
-              PROCESS NOTE
-            </Text>
-            <TextInput
+          <FormField label="Process note" hint="What was your intention? What went right or wrong?">
+            <NotesInput
+              variant="plain"
               placeholder="What was your intention? What went right or wrong? Share some insight..."
               placeholderTextColor="#C9B48C"
-              multiline
               value={note}
               onChangeText={setNote}
               maxLength={400}
               editable={!submitting}
+              minHeight={110}
               style={{
                 borderWidth: 1.5,
                 borderColor: note.length > 0 ? accentColor : '#E8D9BE',
@@ -139,8 +131,6 @@ export function SubmitPieceSheet({
                 fontSize: 14,
                 color: '#3a2a1a',
                 backgroundColor: '#FAF5E9',
-                minHeight: 110,
-                textAlignVertical: 'top',
                 lineHeight: 22,
                 opacity: submitting ? 0.7 : 1,
               }}
@@ -148,8 +138,8 @@ export function SubmitPieceSheet({
             <Text style={{ fontSize: 11, color: '#C9B48C', textAlign: 'right', marginTop: 4 }}>
               {note.length}/400
             </Text>
-          </View>
-        </ScrollView>
+          </FormField>
+        </ModalFormScrollView>
 
         <ModalSheetFooter>
           <ModalSheetActions>

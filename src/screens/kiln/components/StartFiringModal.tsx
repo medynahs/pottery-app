@@ -1,6 +1,7 @@
 // src/screens/kiln/StartFiringModal.tsx
 import {
   ModalCard,
+  ModalFormScrollView,
   ModalSheetFooter,
   ModalSheetHeader,
   ModalShell,
@@ -14,7 +15,6 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { useVisiblePieces, useAppStore } from '@/src/store';
 import React from 'react';
 import {
-    ScrollView,
     View
 } from 'react-native';
 import type { Firing } from '../../../types/kiln';
@@ -201,11 +201,10 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
               <Text className="text-2xl font-serif font-bold text-foreground">Schedule a Firing</Text>
             </ModalSheetHeader>
 
-            <ScrollView
-              className="px-6 pt-4"
+            <ModalFormScrollView
+              className="px-6"
               style={{ flex: 1, minHeight: 0 }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 24 }}
             >
               {step === 'safety' ? (
                 <View className="mb-6">
@@ -255,7 +254,7 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
                   }}
                 />
               )}
-            </ScrollView>
+            </ModalFormScrollView>
 
             <ModalSheetFooter>
               {step === 'setup' ? (

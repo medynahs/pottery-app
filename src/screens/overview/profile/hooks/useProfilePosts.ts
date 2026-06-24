@@ -64,5 +64,9 @@ export function useProfilePosts() {
 
   const reload = useCallback(() => load({ background: true }), [load]);
 
-  return { posts, loading, reload, isReloading, sessionToken };
+  const removePost = useCallback((postId: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+  }, []);
+
+  return { posts, loading, reload, isReloading, sessionToken, removePost };
 }

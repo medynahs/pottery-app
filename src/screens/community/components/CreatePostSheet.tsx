@@ -1,6 +1,8 @@
+import { NotesInput } from '@/src/components/NotesInput';
 import type { CommunityPostComposerPreset } from '@/src/screens/community/types/composerPreset';
 import {
   ModalCard,
+  ModalFormScrollView,
   ModalSheetFooter,
   ModalSheetHeader,
   ModalShell,
@@ -43,11 +45,8 @@ import React from 'react';
 import {
   ActivityIndicator,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   Switch,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -456,24 +455,15 @@ export function CreatePostSheet({
           </ScrollView>
         </View>
 
-        <KeyboardAvoidingView
-          style={{ flex: 1, minHeight: 0 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 6 : 0}
+        <ModalFormScrollView
+          ref={scrollRef}
+          contentContainerStyle={{
+            paddingHorizontal: 24,
+            paddingTop: 20,
+            paddingBottom: 24,
+          }}
+          nestedScrollEnabled
         >
-          <ScrollView
-            ref={scrollRef}
-            style={{ flex: 1, minHeight: 0 }}
-            contentContainerStyle={{
-              paddingHorizontal: 24,
-              paddingTop: 20,
-              paddingBottom: 24,
-            }}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            nestedScrollEnabled
-            showsVerticalScrollIndicator={false}
-          >
             {postKind === 'piece_journal' && linkedPiece ? (
               <View className="rounded-2xl border border-primary/25 bg-primary/5 px-3 py-3 mb-5 flex-row items-center gap-3">
                 <View className="w-10 h-10 rounded-xl bg-primary/15 items-center justify-center">
@@ -725,7 +715,7 @@ export function CreatePostSheet({
                     ? 'Unload notes (optional)'
                     : 'Caption'}
             </Text>
-            <TextInput
+            <NotesInput
               value={content}
               onChangeText={setContent}
               placeholder={
@@ -743,9 +733,9 @@ export function CreatePostSheet({
                         ? 'Everything came out even, happy with the soda slip.'
                         : 'Share an update, finished piece, or discovery…'
               }
-              placeholderTextColor="hsl(24 10% 65%)"
-              multiline
               maxLength={MAX_POST_LENGTH}
+              minHeight={100}
+              maxHeight={140}
               onFocus={() => {
                 requestAnimationFrame(() => {
                   scrollRef.current?.scrollToEnd({ animated: true });
@@ -753,25 +743,11 @@ export function CreatePostSheet({
               }}
               blurOnSubmit
               returnKeyType="done"
-              onSubmitEditing={Keyboard.dismiss}
-              style={{
-                minHeight: 100,
-                maxHeight: 140,
-                fontSize: 15,
-                lineHeight: 22,
-                color: 'hsl(24 25% 15%)',
-                textAlignVertical: 'top',
-                borderWidth: 1,
-                borderColor: 'hsl(24 15% 88%)',
-                borderRadius: 14,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                backgroundColor: 'hsl(40 40% 98%)',
-              }}
+              onSubmitEditing={() => Keyboard.dismiss()}
             />
-          </ScrollView>
+          </ModalFormScrollView>
 
-          <ModalSheetFooter>
+        <ModalSheetFooter>
             <View className="flex-row items-center justify-between px-1">
               <Text className="text-xs text-muted-foreground">
                 {content.length}/{MAX_POST_LENGTH}
@@ -795,8 +771,7 @@ export function CreatePostSheet({
                 </TouchableOpacity>
               </View>
             </View>
-          </ModalSheetFooter>
-        </KeyboardAvoidingView>
+        </ModalSheetFooter>
       </ModalCard>
     </ModalShell>
   );

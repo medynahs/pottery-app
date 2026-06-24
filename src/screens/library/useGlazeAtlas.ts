@@ -43,7 +43,11 @@ export function useGlazeAtlas() {
   }, [glazes.length, showToast, openAddGlaze]);
 
   const handleSaveGlaze = React.useCallback((draft: GlazeDraft) => {
-    if (!draft.name.trim() || !hasValidRecipeIngredients(draft.recipeIngredients)) {
+    if (!draft.name.trim()) {
+      showToast('Glaze name is required', 'error');
+      return;
+    }
+    if (draft.source !== 'store-bought' && !hasValidRecipeIngredients(draft.recipeIngredients)) {
       showToast('Name and at least one ingredient row are required', 'error');
       return;
     }

@@ -10,7 +10,6 @@ interface EmptyStateProps {
   ctaLabel?: string;
   ctaIcon?: LucideIcon;
   onCtaPress?: () => void;
-  variant?: 'plain' | 'card';
 }
 
 export function EmptyState({

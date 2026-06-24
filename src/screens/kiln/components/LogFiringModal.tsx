@@ -1,14 +1,18 @@
 import {
   ModalCard,
+  ModalFormScrollView,
   ModalSheetFooter,
   ModalSheetHeader,
   ModalShell,
   MODAL_SHEET_RADIUS,
   useModalSheetHeight,
 } from '@/src/components/AppSheets';
+import { FormSectionCard } from '@/src/components/form/FormSectionCard';
+import { NotesInput } from '@/src/components/NotesInput';
 import { DatePickerField } from '@/src/components/DatePickerField';
 import { PhotoPickField } from '@/src/components/PhotoPickField';
 import { Input } from '@/src/components/ui/input';
+import { Select } from '@/src/components/ui/select';
 import { Text } from '@/src/components/ui/text';
 import { FormField, FormFieldRow } from '@/src/screens/library/atlas/FormField';
 import { Pill } from '@/src/screens/library/atlas/Pill';
@@ -16,7 +20,7 @@ import { useVisiblePieces, useAppStore } from '@/src/store';
 import type { Firing, FiringType, Kiln } from '@/src/types/kiln';
 import { todayIso } from '@/src/utils/dates';
 import React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { FIRING_SOURCE_STAGE, KILN_TYPE_LABELS } from '../constants';
 import { buildFiringCostBreakdown } from '../firingEstimations';
 import { useCreateFiringMutation } from '../hooks/useFiringsSync';
@@ -56,29 +60,45 @@ const FIRING_TYPE_OPTIONS: { value: FiringType; label: string }[] = [
 
 interface LogFiringModalProps {
   visible: boolean;
-  kiln: Kiln | null;
+  /** Pre-selected kiln; omit when the user should pick from their kiln list. */
+  kiln?: Kiln | null;
   onClose: () => void;
   onSaved?: (firing: Firing) => void;
 }
 
-export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringModalProps) {
+export function LogFiringModal({ visible, kiln: kilnProp, onClose, onSaved }: LogFiringModalProps) {
   const sheetHeight = useModalSheetHeight();
+  const kilns = useAppStore((s) => s.kilns);
   const pieces = useVisiblePieces();
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
   const logFiring = useAppStore((s) => s.logFiring);
   const createFiringMutation = useCreateFiringMutation();
 
+  const [selectedKilnId, setSelectedKilnId] = React.useState('');
   const [form, setForm] = React.useState<LogFiringForm>(EMPTY_FORM);
   const [selectedPieceIds, setSelectedPieceIds] = React.useState<Set<number>>(new Set());
 
+  const kilnOptions = React.useMemo(
+    () => kilns.map((k) => ({ value: k.id, label: `${k.name} (${KILN_TYPE_LABELS[k.type]})` })),
+    [kilns],
+  );
+
+  const kiln = React.useMemo(
+    () => kilns.find((k) => k.id === selectedKilnId) ?? kilnProp ?? null,
+    [kilns, selectedKilnId, kilnProp],
+  );
+
+  const showKilnPicker = kilns.length > 1;
+
   React.useEffect(() => {
     if (!visible) return;
+    setSelectedKilnId(kilnProp?.id ?? kilns[0]?.id ?? '');
     setForm({
       ...EMPTY_FORM,
       firedDate: todayIso(),
     });
     setSelectedPieceIds(new Set());
-  }, [visible, kiln?.id]);
+  }, [visible, kilnProp?.id, kilns]);
 
   const set = (key: keyof LogFiringForm) => (value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -146,14 +166,20 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
     onClose();
   };
 
-  if (!kiln) return null;
+  if (!visible) return null;
 
   const pricingHint =
-    kiln.pricingModel === 'per-volume'
+    kiln?.pricingModel === 'per-volume'
       ? 'Costs use each piece volume when set.'
-      : kiln.pricingModel === 'per-shelf'
+      : kiln?.pricingModel === 'per-shelf'
         ? 'Costs use shelf pricing from this kiln profile.'
         : 'Costs use the per-kiln rate from this kiln profile.';
+
+  const headerSubtitle = kiln
+    ? `${kiln.name} · ${KILN_TYPE_LABELS[kiln.type]} · journal entry`
+    : showKilnPicker
+      ? 'Pick a kiln · journal entry'
+      : 'Journal entry';
 
   return (
     <ModalShell visible={visible} onClose={onClose}>
@@ -168,17 +194,28 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
             Record Past Firing
           </Text>
           <Text className="text-sm text-muted-foreground mt-1">
-            {kiln.name} · {KILN_TYPE_LABELS[kiln.type]} · journal entry
+            {headerSubtitle}
           </Text>
         </ModalSheetHeader>
 
-        <ScrollView
+        <ModalFormScrollView
           className="px-6"
-          style={{ flex: 1, minHeight: 0 }}
-          contentContainerStyle={{ paddingBottom: 24 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
         >
+          {showKilnPicker ? (
+            <FormSectionCard title="Kiln" subtitle="Which kiln ran this load?" topGap>
+              <FormField label="Kiln profile" required nested first last>
+                <Select
+                  value={kilnOptions.find((o) => o.value === selectedKilnId)}
+                  onValueChange={(opt) => opt && setSelectedKilnId(opt.value)}
+                  options={kilnOptions}
+                  placeholder="Select kiln..."
+                />
+              </FormField>
+            </FormSectionCard>
+          ) : null}
+
+          <FormSectionCard title="Firing details" subtitle="When it ran and how hot it got." topGap={!showKilnPicker}>
           <FormField label="Date" required first>
             <DatePickerField valueIso={form.firedDate} onChangeIso={set('firedDate')} />
           </FormField>
@@ -215,10 +252,13 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
             </View>
           </FormField>
 
-          <FormField
-            label="Pieces in this firing"
-            hint={`Optional: ${readyPieces.length} piece${readyPieces.length !== 1 ? 's' : ''} ready for ${form.type}. ${pricingHint}`}
+          </FormSectionCard>
+
+          <FormSectionCard
+            title="Pieces in this firing"
+            subtitle={`Optional — ${readyPieces.length} piece${readyPieces.length !== 1 ? 's' : ''} ready for ${form.type}. ${pricingHint}`}
           >
+          <FormField label="Select pieces" first last>
             {readyPieces.length === 0 ? (
               <Text className="text-sm text-muted-foreground leading-5">
                 No pieces in {readyStage.replace('-', ' ')} stage right now.
@@ -229,7 +269,7 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
                   <FiringPieceRow
                     key={piece.id}
                     piece={piece}
-                    kiln={kiln}
+                    kiln={kiln ?? undefined}
                     selected={selectedPieceIds.has(piece.id)}
                     selectable
                     lineCost={
@@ -264,7 +304,7 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
                     <Text className="text-sm font-medium text-foreground">{piece.name}</Text>
                     <Text className="text-xs text-muted-foreground">
                       {piece.clay}
-                      {kiln.pricingModel === 'per-volume' && volumeCm3
+                      {kiln?.pricingModel === 'per-volume' && volumeCm3
                         ? ` · ${volumeCm3} cm³`
                         : ''}
                     </Text>
@@ -285,7 +325,10 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
             </View>
           ) : null}
 
-          <FormField label="Photo">
+          </FormSectionCard>
+
+          <FormSectionCard title="Photo & outcome" subtitle="How the load came out.">
+          <FormField label="Photo" first>
             <PhotoPickField
               variant="slot"
               label="Tap to add firing photo"
@@ -309,23 +352,21 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
             </View>
           </FormField>
 
-          <FormField label="Outcome notes" required={notesRequired} last>
-            <Input
-              multiline
-              numberOfLines={4}
-              placeholder={notesRequired ? 'Describe what went wrong…' : 'Optional notes…'}
-              value={form.resultNotes}
-              onChangeText={set('resultNotes')}
-              className="native:min-h-[96px] min-h-[96px] native:h-auto h-auto py-3"
-              style={{ textAlignVertical: 'top' }}
-            />
-            {notesRequired && !notesValid ? (
-              <Text className="text-xs text-muted-foreground mt-2 leading-5">
-                Add a short note when reporting an issue.
-              </Text>
-            ) : null}
-          </FormField>
-        </ScrollView>
+          </FormSectionCard>
+
+          <NotesInput
+            label="Outcome notes"
+            hint={notesRequired ? 'Required when reporting an issue.' : 'Optional journal note for this firing.'}
+            placeholder={notesRequired ? 'Describe what went wrong…' : 'Optional notes…'}
+            value={form.resultNotes}
+            onChangeText={set('resultNotes')}
+          />
+          {notesRequired && !notesValid ? (
+            <Text className="text-xs text-muted-foreground -mt-2 mb-4 leading-5">
+              Add a short note when reporting an issue.
+            </Text>
+          ) : null}
+        </ModalFormScrollView>
 
         <ModalSheetFooter>
           <TouchableOpacity

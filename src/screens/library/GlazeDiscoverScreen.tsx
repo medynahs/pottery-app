@@ -3,19 +3,25 @@ import { Text } from '@/src/components/ui/text';
 import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
+import { Plus } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import {
   buildDiscoverCatalog,
+  collectDiscoverBrands,
   itemMatchesFilters,
   itemMatchesSearch,
 } from './discover/discoverSearch';
+import { DevAddDiscoverSheet } from './discover/DevAddDiscoverSheet';
 import { DiscoverGrid } from './discover/DiscoverGrid';
 import { FilterPanel, SearchBar } from './discover/FilterPanel';
 import { isDiscoverRecipeSaved } from './discover/recipeLookup';
+import { comboUsesOwnedGlaze } from './discover/products';
 import {
+  type BrandFilter,
   type ColorFilter,
   type ConeFilter,
+  type ContentTypeFilter,
   type DiscoverItem,
   type FinishFilter,
 } from './discover/types';
@@ -23,8 +29,22 @@ import {
 export default function GlazeDiscoverScreen() {
   const router = useRouter();
   const glazes = useAppStore((s) => s.glazes);
+  const user = useAppStore((s) => s.user);
+  const devDiscoverGlazeIds = useAppStore((s) => s.devDiscoverGlazeIds);
 
-  const catalog = React.useMemo(() => buildDiscoverCatalog(), []);
+  const [devSheetOpen, setDevSheetOpen] = React.useState(false);
+
+  const catalog = React.useMemo(
+    () =>
+      buildDiscoverCatalog({
+        glazes,
+        devDiscoverGlazeIds,
+        authorName: user.name?.trim() || 'My Studio',
+      }),
+    [glazes, devDiscoverGlazeIds, user.name],
+  );
+
+  const brandOptions = React.useMemo(() => collectDiscoverBrands(catalog), [catalog]);
 
   const savedRecipeIds = React.useMemo(() => {
     const ids = new Set<string>();
@@ -41,11 +61,17 @@ export default function GlazeDiscoverScreen() {
   const [coneFilter, setConeFilter] = React.useState<ConeFilter>('all');
   const [finishFilter, setFinishFilter] = React.useState<FinishFilter>('all');
   const [colorFilter, setColorFilter] = React.useState<ColorFilter>('all');
+  const [contentTypeFilter, setContentTypeFilter] = React.useState<ContentTypeFilter>('all');
+  const [brandFilter, setBrandFilter] = React.useState<BrandFilter>('all');
+  const [ownedGlazesOnly, setOwnedGlazesOnly] = React.useState(false);
 
   const activeFilterCount = [
     coneFilter !== 'all',
     finishFilter !== 'all',
     colorFilter !== 'all',
+    contentTypeFilter !== 'all',
+    brandFilter !== 'all',
+    ownedGlazesOnly,
   ].filter(Boolean).length;
 
   const filteredItems = React.useMemo(
@@ -53,10 +79,28 @@ export default function GlazeDiscoverScreen() {
       catalog.filter((item) => {
         return (
           itemMatchesSearch(item, search)
-          && itemMatchesFilters(item, { coneFilter, finishFilter, colorFilter })
+          && itemMatchesFilters(item, {
+            coneFilter,
+            finishFilter,
+            colorFilter,
+            contentTypeFilter,
+            brandFilter,
+            ownedGlazesOnly,
+            glazes,
+          })
         );
       }),
-    [catalog, search, coneFilter, finishFilter, colorFilter],
+    [
+      catalog,
+      search,
+      coneFilter,
+      finishFilter,
+      colorFilter,
+      contentTypeFilter,
+      brandFilter,
+      ownedGlazesOnly,
+      glazes,
+    ],
   );
 
   const openItem = React.useCallback(
@@ -72,6 +116,12 @@ export default function GlazeDiscoverScreen() {
 
   return (
     <View className="flex-1">
+      <DevAddDiscoverSheet
+        visible={devSheetOpen}
+        glazes={glazes}
+        onClose={() => setDevSheetOpen(false)}
+      />
+
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: TAB_SCROLL_BOTTOM_PADDING }}
@@ -79,6 +129,19 @@ export default function GlazeDiscoverScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="px-6 py-4">
+          {__DEV__ ? (
+            <TouchableOpacity
+              onPress={() => setDevSheetOpen(true)}
+              activeOpacity={0.85}
+              className="mb-4 flex-row items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3"
+            >
+              <Plus size={16} color="hsl(39 57% 41%)" />
+              <Text className="text-xs font-semibold text-primary">
+                Add glaze to Discover preview (dev)
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+
           <SearchBar
             value={search}
             onChange={setSearch}
@@ -92,13 +155,24 @@ export default function GlazeDiscoverScreen() {
               coneFilter={coneFilter}
               finishFilter={finishFilter}
               colorFilter={colorFilter}
+              contentTypeFilter={contentTypeFilter}
+              brandFilter={brandFilter}
+              brandOptions={brandOptions}
+              ownedGlazesOnly={ownedGlazesOnly}
+              showOwnedFilter={glazes.length > 0}
               onCone={setConeFilter}
               onFinish={setFinishFilter}
               onColor={setColorFilter}
+              onContentType={setContentTypeFilter}
+              onBrand={setBrandFilter}
+              onOwnedGlazesOnly={setOwnedGlazesOnly}
               onClear={() => {
                 setConeFilter('all');
                 setFinishFilter('all');
                 setColorFilter('all');
+                setContentTypeFilter('all');
+                setBrandFilter('all');
+                setOwnedGlazesOnly(false);
               }}
             />
           ) : null}
@@ -108,17 +182,32 @@ export default function GlazeDiscoverScreen() {
           <View className="px-6">
             <EmptyState
               title="No matches"
-              description="Try a different cone, finish, or search term."
+              description="Try a different brand, cone, or search term."
             />
           </View>
         ) : (
           <DiscoverGrid
             items={filteredItems}
             savedRecipeIds={savedRecipeIds}
+            ownedGlazeIds={ownedComboIds(filteredItems, glazes)}
             onPressItem={openItem}
           />
         )}
       </ScrollView>
     </View>
   );
+}
+
+function ownedComboIds(
+  items: DiscoverItem[],
+  glazes: { name: string; supplier?: string; source?: string }[],
+): Set<string> {
+  const ids = new Set<string>();
+  for (const item of items) {
+    if (item.kind !== 'inspiration') continue;
+    if (comboUsesOwnedGlaze(item.inspiration, glazes)) {
+      ids.add(item.inspiration.id);
+    }
+  }
+  return ids;
 }

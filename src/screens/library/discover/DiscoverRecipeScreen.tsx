@@ -1,3 +1,4 @@
+import { FixedOverlayBackButton } from '@/src/components/FixedOverlayBackButton';
 import { Text } from '@/src/components/ui/text';
 import {
   deriveCustomCollectionNames,
@@ -9,7 +10,7 @@ import type { GlazeFinish } from '@/src/screens/glazes/types';
 import { useAppStore } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Check } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,6 +23,7 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const glazes = useAppStore((s) => s.glazes);
+  const user = useAppStore((s) => s.user);
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const addGlaze = useAppStore((s) => s.addGlaze);
   const registerGlazeCollections = useAppStore((s) => s.registerGlazeCollections);
@@ -29,16 +31,26 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
 
   const [saveSheetOpen, setSaveSheetOpen] = React.useState(false);
 
-  const recipe = getDiscoverRecipe(recipeId);
-  const saved = recipe ? isDiscoverRecipeSaved(recipe.id, glazes) : false;
+  const recipe = getDiscoverRecipe(
+    recipeId,
+    glazes,
+    user.name?.trim() || 'My Studio',
+  );
+  const isDevPreview = Boolean(recipe?.devSourceGlazeId);
+  const saved = recipe && !isDevPreview ? isDiscoverRecipeSaved(recipe.id, glazes) : false;
   const collections = React.useMemo(
     () => deriveCustomCollectionNames(glazes, glazeCollectionNames),
     [glazes, glazeCollectionNames],
   );
 
   const handleSavePress = () => {
-    if (!recipe || saved) return;
+    if (!recipe || saved || isDevPreview) return;
     setSaveSheetOpen(true);
+  };
+
+  const handleDevOpenGlaze = () => {
+    if (!recipe?.devSourceGlazeId) return;
+    router.push(`/glaze/${encodeURIComponent(recipe.devSourceGlazeId)}` as never);
   };
 
   const handleSaveToCollections = (selectedCollections: string[]) => {
@@ -90,21 +102,23 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
           ) : (
             <View style={{ width: '100%', height: 320, backgroundColor: recipe.colorHex }} />
           )}
-
-          <TouchableOpacity
-            onPress={() => router.back()}
-            activeOpacity={0.85}
-            className="absolute w-10 h-10 rounded-full bg-black/45 items-center justify-center"
-            style={{ top: insets.top + 8, left: 16 }}
-          >
-            <ChevronLeft size={22} color="white" />
-          </TouchableOpacity>
         </View>
 
         <View className="px-6 pt-5">
-          <Text className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-            Starter recipe
-          </Text>
+          {isDevPreview ? (
+            <View className="mb-4 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3">
+              <Text className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                Dev preview
+              </Text>
+              <Text className="text-sm text-muted-foreground mt-1 leading-5">
+                This recipe is pulled from My Glazes for local Discover seeding preview.
+              </Text>
+            </View>
+          ) : (
+            <Text className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+              Starter recipe
+            </Text>
+          )}
           <Text className="text-3xl text-foreground mt-1" style={{ fontFamily: 'Fraunces_700Bold' }}>
             {recipe.name}
           </Text>
@@ -130,19 +144,27 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
         </View>
       </ScrollView>
 
+      <FixedOverlayBackButton onPress={() => router.back()} />
+
       <View
         className="absolute left-0 right-0 px-6 pt-3 border-t border-border bg-background"
         style={{ bottom: 0, paddingBottom: insets.bottom + 12 }}
       >
         <TouchableOpacity
-          onPress={handleSavePress}
-          activeOpacity={saved ? 1 : 0.85}
-          disabled={saved}
-          className={`flex-row items-center justify-center gap-2 rounded-2xl py-4 ${saved ? 'bg-muted' : 'bg-primary'}`}
+          onPress={isDevPreview ? handleDevOpenGlaze : handleSavePress}
+          activeOpacity={saved && !isDevPreview ? 1 : 0.85}
+          disabled={saved && !isDevPreview}
+          className={`flex-row items-center justify-center gap-2 rounded-2xl py-4 ${
+            saved && !isDevPreview ? 'bg-muted' : 'bg-primary'
+          }`}
         >
-          {saved ? <Check size={18} color="hsl(24 20% 40%)" /> : null}
-          <Text className={`text-sm font-semibold ${saved ? 'text-muted-foreground' : 'text-white'}`}>
-            {saved ? 'Saved to My Glazes' : 'Save to My Glazes'}
+          {saved && !isDevPreview ? <Check size={18} color="hsl(24 20% 40%)" /> : null}
+          <Text className={`text-sm font-semibold ${saved && !isDevPreview ? 'text-muted-foreground' : 'text-white'}`}>
+            {isDevPreview
+              ? 'Open in My Glazes'
+              : saved
+                ? 'Saved to My Glazes'
+                : 'Save to My Glazes'}
           </Text>
         </TouchableOpacity>
       </View>

@@ -3,6 +3,24 @@ import type { DiscoverInspiration } from './types';
 
 export const DISCOVER_INSPIRATIONS: DiscoverInspiration[] = [
   {
+    id: 'combo-green-tea-alabaster',
+    title: 'Green Tea over Alabaster',
+    description:
+      'Soft celadon-green break over a warm white base. Works on stoneware and buff clays — Green Tea pools slightly in texture.',
+    applicationNotes:
+      'Brush 2× Alabaster on the full piece. When dry, brush 2× Green Tea on the body and rim. Wipe the foot clean before firing cone 5–6.',
+    cone: 'cone-6',
+    coneLabel: 'Cone 5–6',
+    colorFamily: 'green',
+    finish: 'glossy',
+    colorHex: '#A8CBB7',
+    previewUri: PREVIEW.green,
+    products: [
+      { brand: 'Amaco', name: 'Alabaster', role: 'base', layers: 2, method: 'brush' },
+      { brand: 'Amaco', name: 'Green Tea', role: 'accent', layers: 2, method: 'brush' },
+    ],
+  },
+  {
     id: 'inspo-honey-rose-quartz',
     title: 'Honey Flux over Rose Quartz',
     description:
@@ -12,8 +30,13 @@ export const DISCOVER_INSPIRATIONS: DiscoverInspiration[] = [
     cone: 'cone-6',
     coneLabel: 'Cone 5–6',
     colorFamily: 'amber',
+    finish: 'glossy',
     colorHex: '#D4A574',
     previewUri: PREVIEW.amber,
+    products: [
+      { brand: 'Amaco', name: 'Rose Quartz', role: 'base', layers: 2, method: 'brush' },
+      { brand: 'Amaco', name: 'Honey Flux', role: 'accent', layers: 1, method: 'brush' },
+    ],
   },
   {
     id: 'inspo-sea-glass-clear',
@@ -25,8 +48,13 @@ export const DISCOVER_INSPIRATIONS: DiscoverInspiration[] = [
     cone: 'cone-6',
     coneLabel: 'Cone 6',
     colorFamily: 'green',
+    finish: 'satin',
     colorHex: '#8FBFA0',
     previewUri: PREVIEW.green,
+    products: [
+      { brand: 'Studio blend', name: 'Clear liner', role: 'liner', layers: 1, method: 'dip' },
+      { brand: 'Mid-Fire Favorite', name: 'Sea Glass Satin', role: 'accent', layers: 1, method: 'dip' },
+    ],
   },
   {
     id: 'inspo-oatmeal-floating',
@@ -38,8 +66,13 @@ export const DISCOVER_INSPIRATIONS: DiscoverInspiration[] = [
     cone: 'cone-6',
     coneLabel: 'Cone 6',
     colorFamily: 'blue',
+    finish: 'matte',
     colorHex: '#7BA7CC',
     previewUri: PREVIEW.blue,
+    products: [
+      { brand: 'Classic Cone 6', name: 'Oatmeal Matte', role: 'base', layers: 2, method: 'brush' },
+      { brand: 'Classic Cone 6', name: 'Floating Blue', role: 'accent', layers: 1, method: 'dip' },
+    ],
   },
   {
     id: 'inspo-shino-foot',
@@ -51,8 +84,13 @@ export const DISCOVER_INSPIRATIONS: DiscoverInspiration[] = [
     cone: 'cone-10',
     coneLabel: 'Cone 10 · Reduction',
     colorFamily: 'amber',
+    finish: 'matte',
     colorHex: '#C48B5A',
     previewUri: PREVIEW.amber,
+    products: [
+      { brand: 'High Fire Classic', name: 'Malcolm Davis Shino', role: 'base', layers: 2, method: 'brush' },
+      { brand: 'High Fire Staple', name: 'Simple Tenmoku', role: 'accent', layers: 1, method: 'brush' },
+    ],
   },
   {
     id: 'inspo-celadon-liner',
@@ -64,8 +102,13 @@ export const DISCOVER_INSPIRATIONS: DiscoverInspiration[] = [
     cone: 'cone-6',
     coneLabel: 'Cone 6',
     colorFamily: 'green',
+    finish: 'glossy',
     colorHex: '#A8CBB7',
     previewUri: PREVIEW.green,
+    products: [
+      { brand: 'Studio blend', name: 'Clear liner', role: 'liner', layers: 1, method: 'dip' },
+      { brand: 'Mid-Fire Favorite', name: 'Pale Celadon', role: 'accent', layers: 1, method: 'dip' },
+    ],
   },
   {
     id: 'inspo-matte-black-accent',
@@ -77,7 +120,12 @@ export const DISCOVER_INSPIRATIONS: DiscoverInspiration[] = [
     cone: 'cone-6',
     coneLabel: 'Cone 6',
     colorFamily: 'black',
+    finish: 'matte',
     colorHex: '#2A2018',
     previewUri: PREVIEW.black,
+    products: [
+      { brand: 'Mid-Fire Favorite', name: 'Oatmeal Matte', role: 'base', layers: 2, method: 'brush' },
+      { brand: 'Mid-Fire Favorite', name: 'Obsidian Gloss', role: 'accent', layers: 1, method: 'brush' },
+    ],
   },
 ];

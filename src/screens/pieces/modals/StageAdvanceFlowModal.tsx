@@ -1,8 +1,10 @@
-import { ModalCard, ModalShell } from '@/src/components/AppSheets';
+import { ModalCard, ModalFormScrollView, ModalSheetFooter, ModalSheetHeader, ModalShell } from '@/src/components/AppSheets';
+import { FormField } from '@/src/components/form/FormField';
+import { FormSectionCard } from '@/src/components/form/FormSectionCard';
+import { NotesInput } from '@/src/components/NotesInput';
 import { PhotoPickField } from '@/src/components/PhotoPickField';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
-import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
@@ -10,9 +12,9 @@ import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { canUploadBytesToCloud, getCloudStorageSnapshot } from '@/src/utils/cloudStorage';
 import { PremiumFeature } from '@/src/utils/premiumGate';
 import type { LucideIcon } from 'lucide-react-native';
-import { Sparkles, X } from 'lucide-react-native';
+import { Sparkles } from 'lucide-react-native';
 import React from 'react';
-import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
+import { Image, TouchableOpacity, View } from 'react-native';
 import { OptionPills } from '../components/OptionPills';
 import { BISQUE_TEMPS, GLAZE_OUTCOME_LABELS, GLAZE_OUTCOME_OPTIONS, GLAZE_TEMPS, PIECE_DISPOSITION_STATUSES } from '../utils/constants';
 import { FINISHED_STAGE_ID } from '../utils/stageFlow';
@@ -149,21 +151,15 @@ export function StageAdvanceFlowModal({
     <>
       {PaywallGate}
       <ModalShell visible onClose={onClose} backdropColor="rgba(0,0,0,0.45)">
-      <ModalCard>
+      <ModalCard withHandle={false}>
+            <ModalSheetHeader>
+              <Text className="text-xl font-serif font-bold text-foreground">Advance Stage</Text>
+              <Text className="text-xs text-muted-foreground mt-0.5">
+                {fromLabel} → {toLabel}
+              </Text>
+            </ModalSheetHeader>
 
-            <View className="flex-row items-center justify-between px-6 pb-4 border-b border-border">
-              <View className="flex-1 pr-3">
-                <Text className="text-xl font-serif font-bold text-foreground">Advance Stage</Text>
-                <Text className="text-xs text-muted-foreground mt-0.5">
-                  {fromLabel} → {toLabel}
-                </Text>
-              </View>
-              <Pressable onPress={onClose} className="p-1" accessibilityRole="button" accessibilityLabel="Close stage advance modal">
-                <X size={20} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
-
-            <ScrollView className="px-6" contentContainerStyle={{ paddingTop: 18, paddingBottom: 20 }}>
+            <ModalFormScrollView className="px-6" contentContainerStyle={{ paddingBottom: 20 }}>
               <View className="flex-row items-center gap-3">
                 <View className="w-10 h-10 rounded-xl bg-primary/10 items-center justify-center">
                   <StageIcon size={18} color={colors.primary} />
@@ -190,8 +186,8 @@ export function StageAdvanceFlowModal({
                   </View>
               )}
 
-              <View className="mt-5">
-                <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Photo (Optional)</Text>
+              <FormSectionCard title="Stage update" subtitle="Photo and firing details for this advance." topGap>
+              <FormField label="Photo (optional)" nested first>
                 <PhotoPickField
                   photo={photo}
                   onPhotoChange={setPhoto}
@@ -204,45 +200,26 @@ export function StageAdvanceFlowModal({
                     }
                   }}
                 />
-              </View>
-
-              <View className="mt-5">
-                <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Notes (Optional)</Text>
-                <Input
-                  placeholder="Quick note for this stage..."
-                  value={notes}
-                  onChangeText={setNotes}
-                  multiline
-                  numberOfLines={3}
-                  className="min-h-[82px]"
-                  style={{ textAlignVertical: 'top' }}
-                />
-              </View>
+              </FormField>
 
               {request.toStage === 'bisque' && (
-                <View className="mt-5">
-                  <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Bisque Cone</Text>
+                <FormField label="Bisque cone" nested>
                   <OptionPills options={BISQUE_TEMPS} value={bisqueTemp} onChange={setBisqueTemp} />
-                </View>
+                </FormField>
               )}
 
               {request.toStage === 'glaze-fired' && (
-                <View className="mt-5">
-                  <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Glaze Cone</Text>
+                <FormField label="Glaze cone" nested>
                   <OptionPills options={GLAZE_TEMPS} value={glazeTemp} onChange={setGlazeTemp} />
-                </View>
+                </FormField>
               )}
 
               {showGlazeOutcome && (
-                <View className="mt-5">
-                  <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                    Glaze Outcome{hasLinkedGlaze ? '' : ' (Optional)'}
-                  </Text>
-                  {hasLinkedGlaze ? (
-                    <Text className="text-xs text-muted-foreground mb-2 leading-5">
-                      Linked to {linkedGlazeLabel}. This rolls up in your glaze batch stats.
-                    </Text>
-                  ) : null}
+                <FormField
+                  label={`Glaze outcome${hasLinkedGlaze ? '' : ' (optional)'}`}
+                  hint={hasLinkedGlaze ? `Linked to ${linkedGlazeLabel}. This rolls up in your glaze batch stats.` : undefined}
+                  nested
+                >
                   <OptionPills
                     options={GLAZE_OUTCOME_OPTIONS.map((option) => GLAZE_OUTCOME_LABELS[option])}
                     value={glazeOutcome ? GLAZE_OUTCOME_LABELS[glazeOutcome as keyof typeof GLAZE_OUTCOME_LABELS] ?? '' : ''}
@@ -253,36 +230,46 @@ export function StageAdvanceFlowModal({
                       setGlazeOutcome(match ?? '');
                     }}
                   />
-                </View>
+                </FormField>
               )}
 
               {isFinished && (
-                <View className="mt-5">
-                  <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Disposition</Text>
+                <FormField label="Disposition" nested>
                   <OptionPills options={PIECE_DISPOSITION_STATUSES} value={status} onChange={setStatus} />
                   {status.toLowerCase() === 'sold' ? (
                     <View className="mt-3">
-                      <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sale price</Text>
-                      <Input
-                        value={soldPriceDraft}
-                        onChangeText={setSoldPriceDraft}
-                        placeholder="Amount you sold it for"
-                        keyboardType="decimal-pad"
-                      />
+                      <FormField label="Sale price" nested>
+                        <Input
+                          value={soldPriceDraft}
+                          onChangeText={setSoldPriceDraft}
+                          placeholder="Amount you sold it for"
+                          keyboardType="decimal-pad"
+                        />
+                      </FormField>
                     </View>
                   ) : null}
-                </View>
+                </FormField>
               )}
-            </ScrollView>
+              </FormSectionCard>
 
-            <View className="px-6 pt-3 pb-10 border-t border-border">
+              <NotesInput
+                label="Notes"
+                hint="Optional quick note for this stage."
+                placeholder="Quick note for this stage..."
+                value={notes}
+                onChangeText={setNotes}
+                minHeight={88}
+              />
+            </ModalFormScrollView>
+
+            <ModalSheetFooter>
               <Button onPress={handleConfirm} className="w-full">
                 <Text className="text-primary-foreground font-semibold">Save & Advance</Text>
               </Button>
               <TouchableOpacity onPress={onSkip} activeOpacity={0.7} className="py-3.5 items-center">
                 <Text className="text-sm font-semibold text-muted-foreground">Skip</Text>
               </TouchableOpacity>
-            </View>
+            </ModalSheetFooter>
       </ModalCard>
     </ModalShell>
     </>

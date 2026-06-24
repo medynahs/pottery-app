@@ -1,26 +1,25 @@
-import { InfoSheet, ModalCard, ModalShell } from '@/src/components/AppSheets';
+import { InfoSheet, ModalCard, ModalFormScrollView, ModalShell, useModalSheetHeight } from '@/src/components/AppSheets';
+import { NotesInput } from '@/src/components/NotesInput';
+import { FormSectionCard } from '@/src/components/form/FormSectionCard';
 import { Text } from '@/src/components/ui/text';
 import { Check, MessageSquarePlus, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
   Linking,
   Platform,
-  ScrollView,
-  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const FEEDBACK_EMAIL = process.env.EXPO_PUBLIC_FEEDBACK_EMAIL ?? 'support@pottery-life.app';
 
 type FeedbackKind = 'bug' | 'feature' | 'general' | 'support';
 
 const KINDS: { key: FeedbackKind; emoji: string; label: string; subject: string }[] = [
-  { key: 'bug',     emoji: '🐛', label: 'Bug Report',      subject: 'Bug Report, Pottery Nook'      },
-  { key: 'feature', emoji: '✨', label: 'Feature Idea',     subject: 'Feature Idea, Pottery Nook'   },
-  { key: 'general', emoji: '💬', label: 'Just a note',      subject: 'Feedback, Pottery Nook'       },
-  { key: 'support', emoji: '🙋', label: 'Need Help',        subject: 'Support Request, Pottery Nook' },
+  { key: 'bug', emoji: '🐛', label: 'Bug Report', subject: 'Bug Report, Pottery Nook' },
+  { key: 'feature', emoji: '✨', label: 'Feature Idea', subject: 'Feature Idea, Pottery Nook' },
+  { key: 'general', emoji: '💬', label: 'Just a note', subject: 'Feedback, Pottery Nook' },
+  { key: 'support', emoji: '🙋', label: 'Need Help', subject: 'Support Request, Pottery Nook' },
 ];
 
 interface Props {
@@ -29,10 +28,10 @@ interface Props {
 }
 
 export function FeedbackModal({ visible, onClose }: Props) {
-  const insets = useSafeAreaInsets();
-  const [kind, setKind]       = useState<FeedbackKind>('general');
+  const sheetHeight = useModalSheetHeight();
+  const [kind, setKind] = useState<FeedbackKind>('general');
   const [message, setMessage] = useState('');
-  const [sent, setSent]       = useState(false);
+  const [sent, setSent] = useState(false);
   const [infoSheet, setInfoSheet] = useState<{ title: string; body: string } | null>(null);
 
   useEffect(() => {
@@ -64,45 +63,37 @@ export function FeedbackModal({ visible, onClose }: Props) {
 
   return (
     <>
-    <InfoSheet
-      visible={!!infoSheet}
-      title={infoSheet?.title ?? ''}
-      body={infoSheet?.body ?? ''}
-      onDismiss={() => setInfoSheet(null)}
-    />
-    <ModalShell visible={visible} onClose={onClose}>
-          {/* Letter card */}
-      <ModalCard variant="pottery">
+      <InfoSheet
+        visible={!!infoSheet}
+        title={infoSheet?.title ?? ''}
+        body={infoSheet?.body ?? ''}
+        onDismiss={() => setInfoSheet(null)}
+      />
+      <ModalShell visible={visible} onClose={onClose}>
+        {/* Letter card */}
+        <ModalCard variant="pottery" height={sheetHeight} maxHeight={sheetHeight}>
 
-            {/* Envelope flap strip */}
-            <View
-              className="mx-5 rounded-xl px-4 py-3 mb-1"
-              style={{ backgroundColor: '#FDF3DC', borderWidth: 1, borderColor: '#E8D9BE' }}
-            >
-              <View className="flex-row items-center gap-2">
-                <MessageSquarePlus size={15} color="hsl(39 57% 51%)" />
-                <Text className="text-sm font-serif font-bold" style={{ color: '#6B4E2A' }}>
-                  Write to Pottery Nook team
-                </Text>
-              </View>
-              <Text className="text-[11px] mt-1 leading-4" style={{ color: '#A68555' }}>
-                Share a bug, a wish, or just say hello. We read every letter 🏺
+          {/* Envelope flap strip */}
+          <View
+            className="mx-5 rounded-xl px-4 py-3 mb-1"
+            style={{ backgroundColor: '#FDF3DC', borderWidth: 1, borderColor: '#E8D9BE' }}
+          >
+            <View className="flex-row items-center gap-2">
+              <MessageSquarePlus size={15} color="hsl(39 57% 51%)" />
+              <Text className="text-sm font-serif font-bold" style={{ color: '#6B4E2A' }}>
+                Write to Pottery Nook team
               </Text>
             </View>
+            <Text className="text-[11px] mt-1 leading-4" style={{ color: '#A68555' }}>
+              Share a bug, a wish, or just say hello. We read every letter 🏺
+            </Text>
+          </View>
 
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: insets.bottom + 28 }}
-            >
-              {/* Kind selector */}
-              <Text
-                className="text-[10px] font-semibold uppercase tracking-wider mb-2"
-                style={{ color: '#A68555' }}
-              >
-                What kind of note is this?
-              </Text>
-              <View className="flex-row flex-wrap gap-2 mb-5">
+          <ModalFormScrollView
+            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 }}
+          >
+            <FormSectionCard title="What kind of note is this?" topGap>
+              <View className="flex-row flex-wrap gap-2">
                 {KINDS.map(({ key, emoji, label }) => {
                   const active = kind === key;
                   return (
@@ -129,16 +120,9 @@ export function FeedbackModal({ visible, onClose }: Props) {
                   );
                 })}
               </View>
+            </FormSectionCard>
 
-              {/* Letter body */}
-              <Text
-                className="text-[10px] font-semibold uppercase tracking-wider mb-2"
-                style={{ color: '#A68555' }}
-              >
-                Your message
-              </Text>
-
-              {/* Ruled paper textarea */}
+            <FormSectionCard title="Your message">
               <View
                 className="rounded-2xl overflow-hidden"
                 style={{ borderWidth: 1, borderColor: '#E0CBA8', backgroundColor: '#FFFEF9' }}
@@ -153,18 +137,16 @@ export function FeedbackModal({ visible, onClose }: Props) {
                   </Text>
                 </View>
 
-                <TextInput
+                <NotesInput
+                  variant="plain"
                   value={message}
                   onChangeText={setMessage}
                   placeholder="I wanted to share something with you…"
                   placeholderTextColor="#C9B48C"
-                  multiline
-                  textAlignVertical="top"
+                  minHeight={120}
+                  className="border-0 bg-transparent rounded-none"
                   style={{
-                    minHeight: 120,
                     paddingHorizontal: 16,
-                    paddingTop: 12,
-                    paddingBottom: 12,
                     fontSize: 13,
                     lineHeight: 22,
                     color: '#4A3010',
@@ -182,49 +164,50 @@ export function FeedbackModal({ visible, onClose }: Props) {
                   </Text>
                 </View>
               </View>
+            </FormSectionCard>
 
-              <View className="mt-5 gap-3">
-                {sent ? (
-                  /* Confirmation state */
-                  <View
-                    className="rounded-2xl py-3.5 items-center justify-center flex-row gap-2"
-                    style={{ backgroundColor: '#EEF7EC', borderWidth: 1, borderColor: '#C5E0BE' }}
-                  >
-                    <Check size={15} color="hsl(100 35% 42%)" />
-                    <Text className="text-sm font-semibold" style={{ color: 'hsl(100 35% 36%)' }}>
-                      Letter sealed. Thank you!
-                    </Text>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    onPress={handleSend}
-                    activeOpacity={0.8}
-                    disabled={!message.trim()}
-                    className="rounded-2xl py-3.5 items-center justify-center flex-row gap-2"
-                    style={{
-                      backgroundColor: message.trim() ? '#C9963A' : '#E0CBA8',
-                      opacity: message.trim() ? 1 : 0.7,
-                    }}
-                  >
-                    <Sparkles size={15} color="white" />
-                    <Text className="text-sm font-semibold text-white">Send Letter</Text>
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  onPress={onClose}
-                  activeOpacity={0.75}
-                  className="rounded-2xl py-3 items-center"
-                  style={{ backgroundColor: '#F0E5D0' }}
+            <View className="mt-5 gap-3">
+              {sent ? (
+                /* Confirmation state */
+                <View
+                  className="rounded-2xl py-3.5 items-center justify-center flex-row gap-2"
+                  style={{ backgroundColor: '#EEF7EC', borderWidth: 1, borderColor: '#C5E0BE' }}
                 >
-                  <Text className="text-sm font-medium" style={{ color: '#A68555' }}>
-                    {sent ? 'Close' : 'Not now'}
+                  <Check size={15} color="hsl(100 35% 42%)" />
+                  <Text className="text-sm font-semibold" style={{ color: 'hsl(100 35% 36%)' }}>
+                    Letter sealed. Thank you!
                   </Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={handleSend}
+                  activeOpacity={0.8}
+                  disabled={!message.trim()}
+                  className="rounded-2xl py-3.5 items-center justify-center flex-row gap-2"
+                  style={{
+                    backgroundColor: message.trim() ? '#C9963A' : '#E0CBA8',
+                    opacity: message.trim() ? 1 : 0.7,
+                  }}
+                >
+                  <Sparkles size={15} color="white" />
+                  <Text className="text-sm font-semibold text-white">Send Letter</Text>
                 </TouchableOpacity>
-              </View>
-            </ScrollView>
-      </ModalCard>
-    </ModalShell>
+              )}
+
+              <TouchableOpacity
+                onPress={onClose}
+                activeOpacity={0.75}
+                className="rounded-2xl py-3 items-center"
+                style={{ backgroundColor: '#F0E5D0' }}
+              >
+                <Text className="text-sm font-medium" style={{ color: '#A68555' }}>
+                  {sent ? 'Close' : 'Not now'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ModalFormScrollView>
+        </ModalCard>
+      </ModalShell>
     </>
   );
 }

@@ -60,6 +60,10 @@ export function ForYouFeed({
 
   const isRefreshRef = useRef(false);
 
+  const handlePostDeleted = useCallback((postId: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+  }, []);
+
   const fetchFeed = useCallback(
     async (cursor?: string) => {
       if (!sessionToken) {
@@ -204,7 +208,12 @@ export function ForYouFeed({
             </Text>
           ) : null}
           {posts.map((post) => (
-            <FeedPostCard key={post.id} post={post} sessionToken={sessionToken!} />
+            <FeedPostCard
+              key={post.id}
+              post={post}
+              sessionToken={sessionToken!}
+              onDeleted={handlePostDeleted}
+            />
           ))}
         </>
       ) : null}
