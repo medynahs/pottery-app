@@ -1,10 +1,10 @@
 import { PremiumPaywallSheet } from '@/src/components/PremiumPaywallSheet';
+import { useAppStore } from '@/src/store';
 import {
   checkPremium,
   getPremiumFeatureDescription,
   PremiumFeature,
 } from '@/src/utils/premiumGate';
-import { useAppStore } from '@/src/store';
 import React, { useCallback, useState } from 'react';
 
 type ActiveGate = {
@@ -12,10 +12,6 @@ type ActiveGate = {
   description: string;
 };
 
-/**
- * Hook for gating premium features. Call `requestAccess` before the action;
- * render `PaywallGate` once near the root of your screen/component tree.
- */
 export function usePremiumGate() {
   const [activeGate, setActiveGate] = useState<ActiveGate | null>(null);
   const userType = useAppStore((s) => s.onboardingProfile.userType);

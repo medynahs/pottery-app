@@ -16,7 +16,7 @@ type MockChallengeState = {
 };
 
 let state: MockChallengeState = {
-  phase: 'voting',
+  phase: 'open',
   joinedTrackId: null,
   hasSubmitted: false,
   submittedNote: '',
@@ -46,7 +46,7 @@ export function setMockChallengePhase(phase: ChallengePhase) {
 
 export function resetMockChallengeStore() {
   state = {
-    phase: 'voting',
+    phase: 'open',
     joinedTrackId: null,
     hasSubmitted: false,
     submittedNote: '',

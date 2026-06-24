@@ -20,7 +20,11 @@ const TABS: { key: AtlasTab; label: string }[] = [
 ];
 
 export default function JournalScreen() {
-  const { action, collection } = useLocalSearchParams<{ action?: string; collection?: string }>();
+  const { action, collection, tab } = useLocalSearchParams<{
+    action?: string;
+    collection?: string;
+    tab?: string;
+  }>();
   const [activeTab, setActiveTab] = useState<AtlasTab>('my-atlas');
   const atlas = useGlazeAtlas();
   const didAutoOpen = React.useRef(false);
@@ -30,6 +34,10 @@ export default function JournalScreen() {
       : undefined),
     [collection],
   );
+
+  React.useEffect(() => {
+    if (tab === 'discover') setActiveTab('discover');
+  }, [tab]);
 
   React.useEffect(() => {
     if (initialCollectionKey) setActiveTab('my-atlas');

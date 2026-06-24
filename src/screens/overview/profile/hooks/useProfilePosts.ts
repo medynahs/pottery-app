@@ -1,14 +1,22 @@
-import { apiListMyPosts, type BackendFeedPost } from '@/src/services/community';
+import {
+  apiListMyPosts,
+  CommunityApiError,
+  type BackendFeedPost,
+} from '@/src/services/community';
 import { useAppStore } from '@/src/store/appStore';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  getCachedProfilePosts,
+  mergeProfilePosts,
+} from '../utils/profilePostCache';
 
 export function useProfilePosts() {
   const sessionToken = useAppStore((s) => s.sessionToken);
+  const communityFeedRevision = useAppStore((s) => s.communityFeedRevision);
   const [posts, setPosts] = useState<BackendFeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [isReloading, setIsReloading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (options?: { background?: boolean }) => {
     if (!sessionToken) {
@@ -16,18 +24,31 @@ export function useProfilePosts() {
       setLoading(false);
       return;
     }
-    setError(null);
+
     if (options?.background) {
       setIsReloading(true);
     } else {
       setLoading(true);
     }
+
+    const cached = getCachedProfilePosts();
+
     try {
       const page = await apiListMyPosts(sessionToken, { limit: 50 });
-      setPosts(page.items ?? page.posts ?? []);
+      const serverPosts = page.items ?? page.posts ?? [];
+      setPosts(mergeProfilePosts(serverPosts, cached));
     } catch (e) {
-      console.error('[useProfilePosts] load error:', e);
-      setError('Could not load posts.');
+      const details = e instanceof CommunityApiError ? e.details : null;
+      if (__DEV__) {
+        console.warn(
+          '[useProfilePosts] GET /users/me/posts failed',
+          e instanceof CommunityApiError ? e.message : e,
+          details ? `(${details})` : '',
+        );
+      }
+
+      // Backend 500 (often missing DB columns) — show cached posts if we have them.
+      setPosts(cached);
     } finally {
       setLoading(false);
       setIsReloading(false);
@@ -36,7 +57,12 @@ export function useProfilePosts() {
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
+  useEffect(() => {
+    if (communityFeedRevision === 0) return;
+    void load({ background: true });
+  }, [communityFeedRevision, load]);
+
   const reload = useCallback(() => load({ background: true }), [load]);
 
-  return { posts, loading, error, reload, isReloading, sessionToken };
+  return { posts, loading, reload, isReloading, sessionToken };
 }

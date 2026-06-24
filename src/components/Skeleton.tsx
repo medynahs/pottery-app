@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, type ViewProps } from 'react-native';
 
-/** Base shimmer placeholder block. */
 export function Skeleton({ className = '', style }: ViewProps & { className?: string }) {
   return <View className={`rounded bg-muted ${className}`} style={style} />;
 }
@@ -15,7 +14,6 @@ export function SkeletonCircle({ size, className = '' }: { size: number; classNa
   );
 }
 
-/** Friend / request list row placeholder. */
 export function SkeletonListRow() {
   return (
     <View className="flex-row items-center gap-3 py-3 px-4 bg-card rounded-2xl border border-border">
@@ -28,7 +26,6 @@ export function SkeletonListRow() {
   );
 }
 
-/** Community feed post placeholder. */
 export function SkeletonFeedPost() {
   return (
     <View className="rounded-2xl border border-border bg-card p-4">
@@ -46,7 +43,6 @@ export function SkeletonFeedPost() {
   );
 }
 
-/** Hall of Fame leaderboard row placeholder. */
 export function SkeletonLeaderboardRow() {
   return (
     <View className="flex-row items-center gap-3 py-3 px-4 border-b border-border/40">
@@ -61,7 +57,6 @@ export function SkeletonLeaderboardRow() {
   );
 }
 
-/** Studio card placeholder. */
 export function SkeletonStudioCard() {
   return (
     <View className="rounded-2xl border border-border bg-card p-4 gap-2">

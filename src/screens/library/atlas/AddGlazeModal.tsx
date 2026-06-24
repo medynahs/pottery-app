@@ -7,9 +7,9 @@ import {
   useModalSheetHeight,
 } from '@/src/components/AppSheets';
 import { DatePickerField } from '@/src/components/DatePickerField';
+import { PhotoPickField } from '@/src/components/PhotoPickField';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
-import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import {
   GLAZE_ATMOSPHERE_LABELS,
   GLAZE_ATMOSPHERE_OPTIONS,
@@ -26,7 +26,6 @@ import { CollectionPicker } from './CollectionPicker';
 import { createEmptyGlazeDraft } from './helpers';
 import { FormField, FormFieldRow } from './FormField';
 import { GlazeRecipeBuilder, hasValidRecipeIngredients } from './GlazeRecipeBuilder';
-import { MediaSlot } from './MediaSlot';
 import { Pill } from './Pill';
 import { GlazeStatusPill, GlazeStatusPillRow } from '@/src/screens/glazes/components/GlazeStatusPill';
 import type { GlazeDraft } from './types';
@@ -58,7 +57,6 @@ export function AddGlazeModal({
   const [draft, setDraft] = React.useState<GlazeDraft>(() =>
     initialDraft ?? createEmptyGlazeDraft(defaultCone, collections),
   );
-  const { openPickSheet } = usePhotoPicker();
   const sheetHeight = useModalSheetHeight();
 
   React.useEffect(() => {
@@ -99,12 +97,11 @@ export function AddGlazeModal({
           keyboardShouldPersistTaps="handled"
         >
           <FormField label="Photo" first>
-            <MediaSlot
+            <PhotoPickField
+              variant="slot"
               label="Tap to add a photo"
-              uri={draft.bucketPhotoUri ?? draft.firstTilePhotoUri}
-              onPress={() =>
-                openPickSheet((uri) => setDraft((d) => ({ ...d, bucketPhotoUri: uri })))
-              }
+              photo={draft.bucketPhotoUri ?? draft.firstTilePhotoUri}
+              onPhotoChange={(uri) => setDraft((d) => ({ ...d, bucketPhotoUri: uri }))}
               large
             />
           </FormField>

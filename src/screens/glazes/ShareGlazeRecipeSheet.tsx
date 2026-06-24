@@ -9,7 +9,7 @@ import {
 import { Text } from '@/src/components/ui/text';
 import { FORM_FIELD_GAP } from '@/src/screens/library/atlas/FormField';
 import { glazeCardColor } from '@/src/screens/library/atlas/helpers';
-import { GlazeThumbnail } from '@/src/screens/library/atlas/MediaSlot';
+import { GlazeThumbnail } from '@/src/screens/library/atlas/GlazeThumbnail';
 import { stripGlazeVersionSuffix } from '@/src/screens/glazes/glazeVersionUtils';
 import { GLAZE_FINISH_LABELS, type GlazeLibraryItem } from '@/src/screens/glazes/types';
 import {

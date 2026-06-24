@@ -3,7 +3,6 @@ import * as ImagePicker from 'expo-image-picker';
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 
 export interface UsePhotoPickerOptions {
-  /** Aspect ratio for the crop tool. Omit to allow free-form crop. */
   aspect?: [number, number];
   quality?: number;
 }
@@ -122,9 +121,4 @@ export function usePhotoPickerState() {
     throw new Error('usePhotoPicker must be used within PhotoPickerProvider');
   }
   return ctx;
-}
-
-/** @deprecated use usePhotoPickerState().openPickSheet via usePhotoPicker hook */
-export function usePhotoPickerContext() {
-  return usePhotoPickerState().openPickSheet;
 }

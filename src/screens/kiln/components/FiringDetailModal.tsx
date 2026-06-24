@@ -37,6 +37,10 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const sessionToken = useAppStore((state) => state.sessionToken);
   const pieces = useVisiblePieces();
   const shareToCommunity = useCommunityComposer();
+  const showToast = useAppStore((state) => state.showToast);
+  const hasCreatedPost = useAppStore((state) => state.hasCreatedPost);
+  const kilnShareHintShown = useAppStore((state) => state.communityKilnShareHintShown);
+  const markKilnShareHintShown = useAppStore((state) => state.markCommunityKilnShareHintShown);
   const currencySymbol = useAppStore((state) => state.pricingSettings.currencySymbol);
   const assignPiecesToFiring = useAppStore((state) => state.assignPiecesToFiring);
   const setCompletedFiringPieces = useAppStore((state) => state.setCompletedFiringPieces);
@@ -301,7 +305,14 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
       footnote="Pieces advanced from the firing."
       tint="rgba(211, 120, 60, 1)"
       durationMs={3000}
-      onDismiss={() => { setFiringCeremonyVisible(false); onClose(); }}
+      onDismiss={() => {
+        setFiringCeremonyVisible(false);
+        if (sessionToken && !hasCreatedPost && !kilnShareHintShown) {
+          markKilnShareHintShown();
+          showToast('Share this firing to the community — tap the button below', 'success');
+        }
+        onClose();
+      }}
     />
     <ModalShell
       visible={visible}

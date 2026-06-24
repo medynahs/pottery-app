@@ -7,6 +7,7 @@
  *   onPress={() => openPickSheet((uri) => setPhoto(uri))}
  *
  * The custom pick sheet is rendered inside ModalShell via PhotoPickerOverlay.
+ * Prefer PhotoPickField for form slots that need camera/library picking.
  */
 import { usePhotoPickerState, type UsePhotoPickerOptions } from '@/src/components/PhotoPickerProvider';
 import { useCallback } from 'react';

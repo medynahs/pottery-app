@@ -7,9 +7,9 @@ import {
   useModalSheetHeight,
 } from '@/src/components/AppSheets';
 import { DatePickerField } from '@/src/components/DatePickerField';
+import { PhotoPickField } from '@/src/components/PhotoPickField';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
-import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import {
   GLAZE_APPLICATION_METHOD_LABELS,
   GLAZE_APPLICATION_METHOD_OPTIONS,
@@ -35,7 +35,6 @@ import { FormField } from './FormField';
 import { createEmptyTestDraft } from './helpers';
 import { isValidTestDraft, buildGlazeTestFromDraft, kilnTypeFromStudioKiln } from './glazeTestDraft';
 import { KilnPickerField } from './KilnPickerField';
-import { MediaSlot } from './MediaSlot';
 import { Pill } from './Pill';
 import type { TestDraft } from './types';
 
@@ -58,7 +57,6 @@ export function LogTestModal({
 }) {
   const showToast = useAppStore((s) => s.showToast);
   const defaultClayBodyId = useAppStore((s) => s.defaultClayBodyId);
-  const { openPickSheet } = usePhotoPicker();
   const sheetHeight = useModalSheetHeight();
   const resolveDefaultClayBody = React.useCallback(() => {
     if (defaultClayBodyId) {
@@ -126,10 +124,11 @@ export function LogTestModal({
             keyboardShouldPersistTaps="handled"
           >
             <FormField label="Test tile photo" first>
-              <MediaSlot
+              <PhotoPickField
+                variant="slot"
                 label="Tap to add tile photo"
-                uri={testDraft.photoUri}
-                onPress={() => openPickSheet((uri) => setTestDraft((d) => ({ ...d, photoUri: uri })))}
+                photo={testDraft.photoUri}
+                onPhotoChange={(uri) => setTestDraft((d) => ({ ...d, photoUri: uri }))}
                 large
               />
             </FormField>

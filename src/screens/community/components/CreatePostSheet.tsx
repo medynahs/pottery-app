@@ -8,8 +8,8 @@ import {
   useModalSheetHeight,
 } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
+import { PhotoPickField } from '@/src/components/PhotoPickField';
 import { useAnalytics } from '@/src/hooks/useAnalytics';
-import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
 import {
   ASK_TOPIC_OPTIONS,
@@ -25,6 +25,7 @@ import {
   buildCommunityPostMeta,
   embedCommunityPostMeta,
 } from '@/src/screens/community/utils/communityPostPayload';
+import { cacheProfilePost } from '@/src/screens/overview/profile/utils/profilePostCache';
 import { apiCreatePost } from '@/src/services/community';
 import { apiListChallenges, apiSubmitChallengeEntry, type BackendChallenge } from '@/src/services/challenges';
 import { uploadPostPhotoAsset } from '@/src/services/communityUpload';
@@ -37,7 +38,7 @@ import {
 } from '@/src/utils/communityComposerDefaults';
 import type { Piece } from '@/src/types/pieces';
 import { Image } from 'expo-image';
-import { BookOpen, Camera, Flame, ImagePlus, X } from 'lucide-react-native';
+import { BookOpen, Flame, X } from 'lucide-react-native';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -104,7 +105,6 @@ export function CreatePostSheet({
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
   const { trackCommunityPostCreated } = useAnalytics();
-  const { openPickSheet } = usePhotoPicker({ aspect: [4, 3], quality: 0.85 });
   const sheetHeight = useModalSheetHeight(0.88);
   const scrollRef = React.useRef<ScrollView>(null);
 
@@ -266,19 +266,12 @@ export function CreatePostSheet({
     onClose();
   };
 
-  const handlePickPhoto = () => {
-    Keyboard.dismiss();
-    openPickSheet(
-      (uri) => {
-        setPhotoUri(uri);
-        setPhotoIsCustom(true);
-      },
-      photoUri ? () => {
-        setPhotoUri(null);
-        setPhotoIsCustom(false);
-      } : undefined,
-    );
-  };
+  const photoHint =
+    postKind === 'piece_journal'
+      ? 'Pick a piece below to use its journal photo, or add your own'
+      : postKind === 'kiln_firing'
+        ? 'Unload photo optional, piece chips carry the story'
+        : 'Share a snapshot from the studio';
 
   const handleKindChange = (kind: CommunityPostKind) => {
     Keyboard.dismiss();
@@ -335,11 +328,14 @@ export function CreatePostSheet({
       });
       let finalContent = embedCommunityPostMeta(postBody, meta);
 
+      let uploadedPhoto: { assetId: string; publicUrl?: string } | null = null;
+
       if (photoUri) {
         try {
           const uploaded = await uploadPostPhotoAsset(sessionToken, photoUri);
           if (uploaded?.assetId) {
             assetIds.push(uploaded.assetId);
+            uploadedPhoto = uploaded;
           } else if (!finalContent) {
             showToast('Photo upload unavailable, add a caption or try again', 'error');
             return;
@@ -355,9 +351,23 @@ export function CreatePostSheet({
         }
       }
 
-      await apiCreatePost(sessionToken, {
+      const created = await apiCreatePost(sessionToken, {
         content: finalContent,
         asset_ids: assetIds.length > 0 ? assetIds : undefined,
+      });
+
+      cacheProfilePost({
+        ...created,
+        assets: created.assets?.length
+          ? created.assets
+          : uploadedPhoto?.publicUrl
+            ? [{
+                id: uploadedPhoto.assetId,
+                url: uploadedPhoto.publicUrl,
+                created_at: created.created_at,
+              }]
+            : created.assets,
+        asset_ids: created.asset_ids?.length ? created.asset_ids : assetIds,
       });
 
       if (meta.challenge && challengeId) {
@@ -558,51 +568,22 @@ export function CreatePostSheet({
               </View>
             ) : null}
 
-            {photoUri ? (
-              <View className="rounded-2xl overflow-hidden border border-border mb-5">
-                <Image
-                  source={{ uri: photoUri }}
-                  style={{ width: '100%', height: 200 }}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                />
-                <View className="absolute top-2 right-2 flex-row gap-2">
-                  <TouchableOpacity
-                    onPress={handlePickPhoto}
-                    activeOpacity={0.82}
-                    className="w-9 h-9 rounded-full bg-black/45 items-center justify-center"
-                  >
-                    <Camera size={16} color="white" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setPhotoUri(null);
-                      setPhotoIsCustom(false);
-                    }}
-                    activeOpacity={0.82}
-                    className="w-9 h-9 rounded-full bg-black/45 items-center justify-center"
-                  >
-                    <X size={16} color="white" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <TouchableOpacity
-                onPress={handlePickPhoto}
-                activeOpacity={0.82}
-                className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-5 items-center mb-5"
-              >
-                <ImagePlus size={22} color="hsl(24 20% 45%)" />
-                <Text className="text-sm font-semibold text-foreground mt-2">Add photo</Text>
-                <Text className="text-xs text-muted-foreground mt-1 text-center px-4">
-                  {postKind === 'piece_journal'
-                    ? 'Pick a piece below to use its journal photo, or add your own'
-                    : postKind === 'kiln_firing'
-                      ? 'Unload photo optional, piece chips carry the story'
-                      : 'Share a snapshot from the studio'}
-                </Text>
-              </TouchableOpacity>
-            )}
+            <View className="mb-5">
+              <PhotoPickField
+                photo={photoUri}
+                onPhotoChange={(uri) => {
+                  setPhotoUri(uri ?? null);
+                  setPhotoIsCustom(Boolean(uri));
+                }}
+                aspect={[4, 3]}
+                quality={0.85}
+                hint={photoHint}
+                disabled={posting}
+                onBeforePick={() => {
+                  Keyboard.dismiss();
+                }}
+              />
+            </View>
 
             {showKilnPiecePicker ? (
               <View className="mb-5">

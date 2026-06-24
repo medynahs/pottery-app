@@ -11,7 +11,7 @@ import { glazeCardColorForItem, resolveGlazePhotoUri } from '@/src/screens/glaze
 import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
 import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
 import { glazeSearchHaystack } from '@/src/screens/library/atlas/glazeListUtils';
-import { GlazeThumbnail } from '@/src/screens/library/atlas/MediaSlot';
+import { GlazeThumbnail } from '@/src/screens/library/atlas/GlazeThumbnail';
 import { useAppStore } from '@/src/store';
 import { ChevronDown, Search, X } from 'lucide-react-native';
 import React from 'react';

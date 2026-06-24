@@ -8,9 +8,6 @@ type TextScaleRootProps = ViewProps & {
   children: React.ReactNode;
 };
 
-/**
- * Applies text-scale CSS variable on web so rem-based styles scale with user preference.
- */
 export function TextScaleRoot({ children, style, ...props }: TextScaleRootProps) {
   const textScale = useAppStore((s) => s.textScale);
   const multiplier = TEXT_SCALE_MULTIPLIERS[textScale] ?? 1;

@@ -17,7 +17,6 @@ type ImageLightboxProps = {
   uri?: string;
   caption?: string;
   onClose: () => void;
-  /** Render inside an existing modal (avoids RN modal stacking issues). */
   embedded?: boolean;
 };
 

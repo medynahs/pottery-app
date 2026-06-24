@@ -2,7 +2,7 @@ import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
-import type { MockHallOfFameWinner } from '@/src/screens/community/mock/challengeMockTypes';
+import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Trophy } from 'lucide-react-native';
@@ -14,7 +14,7 @@ export function HallOfFameWinnerCard({
   winner,
   compact,
 }: {
-  winner: MockHallOfFameWinner;
+  winner: ChallengeWinnerDisplay;
   compact?: boolean;
 }) {
   const router = useRouter();
@@ -51,7 +51,7 @@ export function HallOfFameWinnerCard({
   );
 }
 
-export function HallOfFameFeaturedHero({ winner }: { winner: MockHallOfFameWinner }) {
+export function HallOfFameFeaturedHero({ winner }: { winner: ChallengeWinnerDisplay }) {
   const router = useRouter();
 
   return (
@@ -71,16 +71,17 @@ export function HallOfFameFeaturedHero({ winner }: { winner: MockHallOfFameWinne
         <View className="flex-row items-center gap-2 mb-2">
           <Trophy size={14} color={COMMUNITY_THEME.heroText} />
           <Text className="text-[10px] font-bold uppercase tracking-widest" style={{ color: COMMUNITY_THEME.heroLabel }}>
-            Latest winners · {winner.challengeTitle}
+            {winner.challengeEmoji} {winner.challengeTitle}
           </Text>
         </View>
         <Text className="text-xl font-serif font-bold" style={{ color: COMMUNITY_THEME.heroText }}>
-          {winner.trackTitle}, {winner.pieceTitle}
+          {winner.trackTitle} · {winner.pieceTitle}
         </Text>
         <View className="flex-row items-center gap-2 mt-3">
           <UserAvatar initial={winner.artistName.slice(0, 1)} size={32} />
           <Text className="text-sm font-semibold" style={{ color: COMMUNITY_THEME.heroMuted }}>
-            {winner.artistName} · {winner.studioName}
+            {winner.artistName}
+            {winner.studioName ? ` · ${winner.studioName}` : ''}
           </Text>
         </View>
         <View className="mt-4">

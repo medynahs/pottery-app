@@ -3,7 +3,6 @@ import { usePhotoPickerState } from '@/src/components/PhotoPickerProvider';
 import { Camera, ImageIcon, Trash2 } from 'lucide-react-native';
 import React from 'react';
 
-/** Custom photo source sheet, rendered inside an open modal so it stacks correctly. */
 export function PhotoPickerOverlay() {
   const {
     sheetOpen,

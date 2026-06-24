@@ -12,7 +12,6 @@ import { Button } from '@/src/components/ui/button';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { useAppStore } from '@/src/store';
 import React from 'react';
 import { ScrollView } from 'react-native';
@@ -43,8 +42,6 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
   const [openHelp, setOpenHelp] = React.useState<AddKilnHelpField | null>(null);
   const [showAdvancedTiming, setShowAdvancedTiming] = React.useState(false);
   const [infoSheet, setInfoSheet] = React.useState<{ title: string; body: string } | null>(null);
-
-  const { openPickSheet } = usePhotoPicker({ aspect: [4, 3] });
 
   React.useEffect(() => {
     if (!visible) {
@@ -85,17 +82,6 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
 
   const toggleHelp = React.useCallback((field: AddKilnHelpField) => {
     setOpenHelp((current) => (current === field ? null : field));
-  }, []);
-
-  const handleChooseKilnImageSource = React.useCallback(() => {
-    openPickSheet(
-      (uri) => setForm((current) => ({ ...current, imageUri: uri })),
-      form.imageUri ? () => setForm((current) => ({ ...current, imageUri: '' })) : undefined,
-    );
-  }, [openPickSheet, form.imageUri]);
-
-  const handleRemoveKilnImage = React.useCallback(() => {
-    setForm((current) => ({ ...current, imageUri: '' }));
   }, []);
 
   const handleSave = () => {
@@ -159,8 +145,6 @@ export function AddKilnModal({ visible, onClose, onSave, editKiln }: AddKilnModa
                 onToggleHelp={toggleHelp}
                 showAdvancedTiming={showAdvancedTiming}
                 onToggleAdvancedTiming={() => setShowAdvancedTiming((current) => !current)}
-                onChooseKilnImageSource={handleChooseKilnImageSource}
-                onRemoveKilnImage={handleRemoveKilnImage}
                 currencySymbol={currencySymbol}
                 palette={{
                   border: colors.border,

@@ -1,6 +1,6 @@
 import { Text } from '@/src/components/ui/text';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
-import type { ChallengePhase } from '@/src/screens/community/mock/challengeMockTypes';
+import type { ChallengePhase } from '@/src/screens/community/types';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 

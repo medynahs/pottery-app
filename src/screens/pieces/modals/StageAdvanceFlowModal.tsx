@@ -1,16 +1,16 @@
 import { ModalCard, ModalShell } from '@/src/components/AppSheets';
+import { PhotoPickField } from '@/src/components/PhotoPickField';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { canUploadBytesToCloud, getCloudStorageSnapshot } from '@/src/utils/cloudStorage';
 import { PremiumFeature } from '@/src/utils/premiumGate';
 import type { LucideIcon } from 'lucide-react-native';
-import { ImagePlus, Sparkles, X } from 'lucide-react-native';
+import { Sparkles, X } from 'lucide-react-native';
 import React from 'react';
 import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
 import { OptionPills } from '../components/OptionPills';
@@ -84,7 +84,6 @@ export function StageAdvanceFlowModal({
 }: StageAdvanceFlowModalProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
-  const { openPickSheet } = usePhotoPicker({ aspect: [4, 3] });
   const { requestAccess, PaywallGate } = usePremiumGate();
 
   const [photo, setPhoto] = React.useState<string | undefined>(undefined);
@@ -114,14 +113,6 @@ export function StageAdvanceFlowModal({
     setStatus('');
     setGlazeOutcome('');
   }, [request, defaultBisqueTemp, defaultGlazeTemp]);
-
-  const pickPhoto = React.useCallback(() => {
-    if (!photo && !canUploadBytesToCloud() && getCloudStorageSnapshot().atLimit) {
-      requestAccess(PremiumFeature.CloudStorage);
-      return;
-    }
-    openPickSheet((uri) => setPhoto(uri));
-  }, [openPickSheet, photo, requestAccess]);
 
   const handleConfirm = React.useCallback(() => {
     const capture: StageAdvanceCapture = {
@@ -201,21 +192,18 @@ export function StageAdvanceFlowModal({
 
               <View className="mt-5">
                 <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Photo (Optional)</Text>
-                <Pressable onPress={pickPhoto} className="w-full h-32 rounded-2xl bg-muted/60 border border-dashed border-border items-center justify-center gap-2">
-                  {photo ? (
-                    <Image source={{ uri: photo }} className="w-full h-full rounded-2xl" resizeMode="cover" />
-                  ) : (
-                    <>
-                      <ImagePlus size={24} color={colors.mutedForeground} />
-                      <Text className="text-sm text-muted-foreground">Tap to add stage photo</Text>
-                    </>
-                  )}
-                </Pressable>
-                {photo ? (
-                  <TouchableOpacity onPress={() => setPhoto(undefined)} activeOpacity={0.7} className="self-start mt-2">
-                    <Text className="text-xs font-semibold text-primary">Remove photo</Text>
-                  </TouchableOpacity>
-                ) : null}
+                <PhotoPickField
+                  photo={photo}
+                  onPhotoChange={setPhoto}
+                  aspect={[4, 3]}
+                  iconColor={colors.mutedForeground}
+                  onBeforePick={() => {
+                    if (!photo && !canUploadBytesToCloud() && getCloudStorageSnapshot().atLimit) {
+                      requestAccess(PremiumFeature.CloudStorage);
+                      return false;
+                    }
+                  }}
+                />
               </View>
 
               <View className="mt-5">

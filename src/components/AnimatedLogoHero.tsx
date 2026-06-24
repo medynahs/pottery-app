@@ -5,12 +5,9 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, View, type StyleProp, type ViewStyle } from 'react-native';
 
 type AnimatedLogoHeroProps = {
-  /** Logo width/height in px. Halos scale proportionally. */
   logoSize?: number;
-  /** Show the uppercase Pottery Nook pill above the logo. */
   showWordmark?: boolean;
   wordmark?: string;
-  /** Headline + subcopy rendered below the logo with entrance animation. */
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 };

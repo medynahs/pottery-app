@@ -1,4 +1,4 @@
-export type ChallengePhase = 'open' | 'voting' | 'closed';
+export type { ChallengePhase } from '../types';
 
 export type MockChallengeEntry = {
   id: string;

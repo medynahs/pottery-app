@@ -9,12 +9,6 @@ interface InlineErrorCardProps {
   retryLabel?: string;
 }
 
-/**
- * Compact fetch-failure state for tab/section content: error message with a
- * retry button. Replaces the identical error cards copied across the
- * community tabs. (Full-screen connectivity problems use NetworkError from
- * the error-boundary folder instead.)
- */
 export function InlineErrorCard({ message, onRetry, retryLabel = 'Retry' }: InlineErrorCardProps) {
   return (
     <Card className="p-5 items-center gap-3">

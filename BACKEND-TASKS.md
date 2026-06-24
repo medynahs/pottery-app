@@ -386,6 +386,8 @@ Enforce on `GET /users/:userId/profile` → 404 when `profile_public=false`; `pi
 
 `GET /polls`, `POST /polls/:id/vote` (one per user), `GET /polls/:id/results`.
 
+**Create polls:** Admin / backend only — there is no in-app poll composer. Seed active polls via SQL, admin script, or `POST /admin/polls` (to define). Until then, the app shows a bundled demo poll with local-only votes.
+
 **FE wired**
 
 ---

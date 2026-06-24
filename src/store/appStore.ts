@@ -24,7 +24,20 @@ import {
 } from '../screens/overview/kilnkin/kilnkinCompanion';
 import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import type { TextScale } from '../constants/typography';
-import { DEFAULT_STUDIO_RHYTHM, getDateKey, normalizeStudioRhythm, normalizeStudioRhythmStageDays } from '../screens/overview/studioRythm/studioRhythm';
+import {
+  DEFAULT_STUDIO_RHYTHM,
+  getDateKey,
+  normalizeStudioRhythm,
+  normalizeStudioRhythmStageDays,
+  type DryingTimers,
+  type Ritual,
+  type StageDay,
+  type StudioEvent,
+  type StudioRhythm,
+  type StudioRhythmConfig,
+  type StudioRhythmEvent,
+  type StudioRhythmGoal,
+} from '../screens/overview/studioRythm/studioRhythm';
 import type { CommunityPostComposerPreset } from '../screens/community/types/composerPreset';
 import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
@@ -517,6 +530,16 @@ interface AppState {
   setupProgress: SetupProgress;
   markSetupProgress: (key: keyof SetupProgress) => void;
   hasCreatedPost: boolean;
+  /** First visit defaults Community to Challenges until user has posted. */
+  hasOpenedCommunityTab: boolean;
+  markCommunityTabOpened: () => void;
+  communityKilnShareHintShown: boolean;
+  communityPieceShareHintShown: boolean;
+  markCommunityKilnShareHintShown: () => void;
+  markCommunityPieceShareHintShown: () => void;
+  /** Local vote on bundled demo poll when GET /polls is empty. */
+  communityDemoPollVoteId: string | null;
+  voteCommunityDemoPoll: (optionId: string) => void;
   /** Bumped when a community post is created, feeds subscribe to refresh. */
   communityFeedRevision: number;
   /** Pre-fill community composer when opening from journal, kiln, etc. */
@@ -728,7 +751,7 @@ export const useAppStore = create<AppState>()(
       // Reset user-specific fields so the next sign-in starts clean.
       // Without this, the previous user's avatar persists in AsyncStorage
       // and is shown briefly (or permanently) when a different account signs in.
-      user: { name: '', avatarInitial: 'U', avatarImageUri: undefined },
+      user: { name: '', avatarInitial: 'U', avatarImageUri: undefined, coverImageUri: undefined },
     });
     void clearSecureAuth();
   },
@@ -1018,6 +1041,8 @@ export const useAppStore = create<AppState>()(
       batchId: undefined,
       batchSize: undefined,
       backendId: undefined,
+      coverAssetId: undefined,
+      photoAssetIds: undefined,
       deleted: undefined,
       syncDirty: true,
     };
@@ -1035,6 +1060,8 @@ export const useAppStore = create<AppState>()(
       timeline: [{ stage: p.stage, timestamp: now }],
       batchId: newBatchId,
       backendId: undefined,
+      coverAssetId: undefined,
+      photoAssetIds: undefined,
       deleted: undefined,
       syncDirty: true,
     }));
@@ -1280,6 +1307,14 @@ export const useAppStore = create<AppState>()(
       setupProgress: { ...state.setupProgress, [key]: true },
     })),
   hasCreatedPost: false,
+  hasOpenedCommunityTab: false,
+  markCommunityTabOpened: () => set({ hasOpenedCommunityTab: true }),
+  communityKilnShareHintShown: false,
+  communityPieceShareHintShown: false,
+  markCommunityKilnShareHintShown: () => set({ communityKilnShareHintShown: true }),
+  markCommunityPieceShareHintShown: () => set({ communityPieceShareHintShown: true }),
+  communityDemoPollVoteId: null,
+  voteCommunityDemoPoll: (optionId) => set({ communityDemoPollVoteId: optionId }),
   communityFeedRevision: 0,
   communityPostComposerPreset: null,
   communityPostSaveCounts: {},
@@ -1905,10 +1940,10 @@ export const useAppStore = create<AppState>()(
         practiceMode: state.practiceMode,
         role: state.role,
         enabledModules: state.enabledModules,
-        // avatarImageUri is excluded, it's a large base64 string fetched fresh
-        // from /api/me on every login. Persisting it leaks one user's avatar to
-        // the next account that signs in on the same device.
-        user: (({ avatarImageUri, ...rest }) => rest)(state.user),
+        // avatarImageUri / coverImageUri are excluded — fetched fresh from
+        // /users/me on login. Persisting them can leak one user's media to the
+        // next account that signs in on the same device.
+        user: (({ avatarImageUri, coverImageUri, ...rest }) => rest)(state.user),
         kilnkinCompanion: state.kilnkinCompanion,
         studioRhythmConfig: state.studioRhythmConfig,
         dailyMissionCompletion: state.dailyMissionCompletion,
@@ -1930,6 +1965,10 @@ export const useAppStore = create<AppState>()(
         defaultNewPieceStage: state.defaultNewPieceStage,
         setupProgress: state.setupProgress,
         hasCreatedPost: state.hasCreatedPost,
+        hasOpenedCommunityTab: state.hasOpenedCommunityTab,
+        communityKilnShareHintShown: state.communityKilnShareHintShown,
+        communityPieceShareHintShown: state.communityPieceShareHintShown,
+        communityDemoPollVoteId: state.communityDemoPollVoteId,
         notificationPrefs: state.notificationPrefs,
         privacyPrefs: state.privacyPrefs,
         lastSyncedAt: state.lastSyncedAt,

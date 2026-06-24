@@ -17,9 +17,6 @@ export interface UnauthenticatedGateProps {
   features: string[];
 }
 
-/**
- * Full-tab sign-in prompt shared by Community and Profile when no session exists.
- */
 export function UnauthenticatedGate({
   tabTitle,
   tabDescription,

@@ -7,16 +7,14 @@ import {
   useModalSheetHeight,
 } from '@/src/components/AppSheets';
 import { DatePickerField } from '@/src/components/DatePickerField';
+import { PhotoPickField } from '@/src/components/PhotoPickField';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
-import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { FormField, FormFieldRow } from '@/src/screens/library/atlas/FormField';
-import { MediaSlot } from '@/src/screens/library/atlas/MediaSlot';
 import { Pill } from '@/src/screens/library/atlas/Pill';
 import { useVisiblePieces, useAppStore } from '@/src/store';
 import type { Firing, FiringType, Kiln } from '@/src/types/kiln';
 import { todayIso } from '@/src/utils/dates';
-import { Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { FIRING_SOURCE_STAGE, KILN_TYPE_LABELS } from '../constants';
@@ -69,7 +67,6 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
   const logFiring = useAppStore((s) => s.logFiring);
   const createFiringMutation = useCreateFiringMutation();
-  const { openPickSheet } = usePhotoPicker({ aspect: [4, 3] });
 
   const [form, setForm] = React.useState<LogFiringForm>(EMPTY_FORM);
   const [selectedPieceIds, setSelectedPieceIds] = React.useState<Set<number>>(new Set());
@@ -147,13 +144,6 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
     createFiringMutation.mutate(firing);
     onSaved?.(firing);
     onClose();
-  };
-
-  const handleChoosePhoto = () => {
-    openPickSheet(
-      (uri) => setForm((current) => ({ ...current, photoUri: uri })),
-      form.photoUri ? () => setForm((current) => ({ ...current, photoUri: '' })) : undefined,
-    );
   };
 
   if (!kiln) return null;
@@ -296,31 +286,14 @@ export function LogFiringModal({ visible, kiln, onClose, onSaved }: LogFiringMod
           ) : null}
 
           <FormField label="Photo">
-            <MediaSlot
+            <PhotoPickField
+              variant="slot"
               label="Tap to add firing photo"
-              uri={form.photoUri || undefined}
-              onPress={handleChoosePhoto}
+              photo={form.photoUri || undefined}
+              onPhotoChange={(uri) => setForm((current) => ({ ...current, photoUri: uri ?? '' }))}
+              aspect={[4, 3]}
               large
             />
-            {form.photoUri ? (
-              <View className="flex-row gap-2 mt-3">
-                <TouchableOpacity
-                  onPress={handleChoosePhoto}
-                  activeOpacity={0.85}
-                  className="flex-1 items-center rounded-xl border border-border bg-card py-3"
-                >
-                  <Text className="text-sm font-semibold text-foreground">Change photo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setForm((current) => ({ ...current, photoUri: '' }))}
-                  activeOpacity={0.85}
-                  className="flex-row items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-3"
-                >
-                  <Trash2 size={15} color="hsl(24 20% 45%)" />
-                  <Text className="text-sm font-semibold text-foreground">Remove</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
           </FormField>
 
           <FormField label="Outcome" required>
