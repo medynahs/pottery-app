@@ -2,7 +2,7 @@ import { Banner } from '@/src/components/Banner';
 import { LabeledInput } from '@/src/components/LabeledInput';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
-import { oryGoogleRegister, oryRegister } from '@/src/services/auth';
+import { oryGoogleRegister, oryRegister, OryUserCancelledError } from '@/src/services/auth';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Mail } from 'lucide-react-native';
@@ -45,6 +45,7 @@ export default function RegisterScreen({ onSuccess }: Props) {
       const r = await oryGoogleRegister();
       handleDone(r.session_token, r.session.identity.id, r.session.identity.traits.email);
     } catch (e) {
+      if (e instanceof OryUserCancelledError) return;
       setError(e instanceof Error ? e.message : 'Google sign-up failed.');
     } finally {
       setGoogleLoading(false);
