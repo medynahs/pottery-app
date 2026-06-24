@@ -40,11 +40,11 @@
 | Login / register / logout | ✅ | Ory flows — Google + email/password verified on device |
 | Password recovery | ✅ | Verified end-to-end (Google + email) — Ory Recovery V2 |
 | Account delete | 🟡 | FE calls `DELETE /users/me`; cascade TBD |
-| Current user profile | 🔶 | `GET /users/me`, avatar/cover upload |
+| Current user profile | 🔶 | `GET /users/me`, avatar/cover upload — avatar/cover verified end-to-end (P1-2b ✅ Sprint A) |
 | Profile identity edit | ❌ | `PUT /users/me` — name, studio, location, bio; FE saves locally today → [P1-2](./BACKEND-TASKS.md) |
-| Privacy settings | ❌ | `PUT /users/me/privacy` — FE toggles local only |
-| Public profile | ❌ | **Blocks share links** — see BACKEND-TASKS P0-2 |
-| Friends | ❌ | **500 on list** — `cover_url` bug, P0-1 |
+| Privacy settings | 🔶 | `PUT /users/me/privacy` shipped (P1-3 ✅ Sprint A) + enforcement; FE toggles still local only |
+| Public profile | 🔶 | `GET /users/:userId/profile` shipped (P0-2 ✅ Sprint A) |
+| Friends | 🔶 | `cover_url` fix shipped — list returns 200 (P0-1 ✅ Sprint A) |
 | Friend requests | 🔶 | FE wired |
 | Studios | 🔶 | Owned/member-of, invites, join requests |
 
@@ -137,7 +137,7 @@ Recipient (app) → GET /users/:userId/profile → grid + Add Clay Friend
 Recipient (no app, V2) → web landing page
 ```
 
-Blocked today by missing public profile endpoint and broken friends list.
+Public profile endpoint and friends list shipped in Sprint A (P0-2, P0-1). Remaining FE work: wire privacy toggles (#14); OG web preview (P1-17) for rich link unfurls.
 
 ---
 
