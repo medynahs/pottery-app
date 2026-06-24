@@ -41,7 +41,7 @@ try {
         $easArgs = @()
     } else {
         $easExe = "npx"
-        $easArgs = @("eas-cli")
+        $easArgs = @("--yes", "eas-cli")
     }
 
     $account = & $easExe @easArgs whoami 2>$null
