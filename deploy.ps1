@@ -12,8 +12,8 @@ param(
 )
 
 # Examples:
-#   .\deploy.ps1                                    OTA update -> preview branch
-#   .\deploy.ps1 -Profile production                OTA update -> production
+#   .\deploy.ps1                                    OTA update -> preview channel
+#   .\deploy.ps1 -Profile production                OTA update -> production channel
 #   .\deploy.ps1 -Action build -Platform android    cloud-build the preview APK
 #   .\deploy.ps1 -Action build -Profile production -Platform all
 
