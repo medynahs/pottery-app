@@ -52,7 +52,7 @@
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Pieces CRUD / sync | 🔶 | FE fully wired; offline sync active |
+| Pieces CRUD / sync | 🔶 | `POST /users/me/pieces/sync` verified + deployed (P0-3 ✅ Sprint B); FE fully wired; offline sync active |
 | Kilns CRUD | 🔶 | FE wired |
 | Firings CRUD | 🔶 | FE wired; **log fields** (peak temp, hold, photo) not in API yet |
 | Piece ↔ glaze link | ❌ | Local only until glaze P0-10 |

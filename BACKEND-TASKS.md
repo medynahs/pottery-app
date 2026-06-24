@@ -162,11 +162,13 @@ Posts accept flat `{ id, image_url, created_at, reaction_count }` or nested `ass
 
 ---
 
-### P0-3 · Core — Pieces REST API
+### P0-3 · Core — Pieces REST API ✅ Sprint B
 
 `GET/POST/PUT/DELETE /pieces` (or `/users/me/pieces/sync`). Authenticated. All fields from `src/types/pieces.ts`.
 
 **FE wired:** `src/services/pieces.ts`, `useOfflineSync`
+
+**Status:** Deployed + verified. `POST /users/me/pieces/sync` returns full `pieces[]` + `client_ref_map`; idempotent upsert keyed on `(user_id, client_ref)`; `deleted:true` soft-deletes (gone from `pieces[]`, kept in map). Payload extend (journal/pricing/glaze link) tracked separately in B3/P0-10.
 
 ---
 
