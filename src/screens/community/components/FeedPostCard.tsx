@@ -13,7 +13,6 @@ import {
   communityPostKindLabel,
   stripCommunityPostPayload,
 } from '@/src/screens/community/utils/feedDisplayContent';
-import { parsePieceJournalFromPost } from '@/src/screens/community/utils/pieceJournalPostPayload';
 import { communityGlazeToLibraryItem } from '@/src/screens/community/utils/saveCommunityGlaze';
 import {
   isCommunityGlazePostSaved,
@@ -95,16 +94,12 @@ export function FeedPostCard({ post, sessionToken, onDeleted }: Props) {
     [post.content],
   );
   const pieceJournalPayload = React.useMemo(() => {
-    if (postMeta?.pieceJournal) {
-      return {
-        pieceId: postMeta.pieceJournal.pieceId,
-        pieceName: postMeta.pieceJournal.pieceName,
-      };
-    }
-    const legacy = post.content ? parsePieceJournalFromPost(post.content) : null;
-    if (!legacy) return null;
-    return { pieceId: legacy.pieceId, pieceName: legacy.pieceName };
-  }, [post.content, postMeta]);
+    if (!postMeta?.pieceJournal) return null;
+    return {
+      pieceId: postMeta.pieceJournal.pieceId,
+      pieceName: postMeta.pieceJournal.pieceName,
+    };
+  }, [postMeta]);
   const kilnPieceChips = postMeta?.kilnFiring?.pieceIds ?? [];
   const firstAsset = post.assets?.[0];
   const isOwnPost = Boolean(backendUserId && backendUserId === post.user_id);

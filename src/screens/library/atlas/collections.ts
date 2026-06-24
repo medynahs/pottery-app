@@ -5,10 +5,6 @@ export const FAVORITES_COLLECTION = 'Favorites';
 /** Auto-assigned when saving a glaze recipe from a community post. */
 export const SAVED_FROM_COMMUNITY_COLLECTION = 'Saved from Community';
 
-/** @deprecated Use MY_GLAZES_COLLECTION / FAVORITES_COLLECTION */
-export const DEFAULT_GLAZE_COLLECTIONS = [MY_GLAZES_COLLECTION, FAVORITES_COLLECTION] as const;
-export type DefaultGlazeCollection = (typeof DEFAULT_GLAZE_COLLECTIONS)[number];
-
 /** Demo seed data shipped before v3, stripped on store migration. */
 export const LEGACY_SEED_GLAZE_IDS = new Set([
   'glaze-satin-blue',
@@ -94,11 +90,6 @@ export function matchesCollectionFilter(
   if (!collectionFilter || collectionFilter === MY_GLAZES_COLLECTION) return true;
   if (collectionFilter === FAVORITES_COLLECTION) return glaze.favorite;
   return glaze.collections.includes(collectionFilter);
-}
-
-/** @deprecated Glazes no longer store the implicit "My Glazes" tag. */
-export function normalizeGlazeCollections(selected: string[] = []): string[] {
-  return sanitizeCustomCollections(selected);
 }
 
 export function collectionLabel(key: AtlasCollectionKey): string {

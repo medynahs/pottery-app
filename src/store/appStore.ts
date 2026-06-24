@@ -38,6 +38,7 @@ import {
   type StudioRhythmEvent,
   type StudioRhythmGoal,
 } from '../screens/overview/studioRythm/studioRhythm';
+import { migrateStudioRituals } from '../screens/overview/studioRythm/studioRhythmIcons';
 import type { CommunityPostComposerPreset } from '../screens/community/types/composerPreset';
 import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
@@ -1858,7 +1859,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'pottery-life-store',
-      version: 7,
+      version: 8,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
@@ -1915,6 +1916,14 @@ export const useAppStore = create<AppState>()(
           );
         }
 
+        let studioRhythm = state.studioRhythm;
+        if (version < 8 && studioRhythm?.rituals) {
+          studioRhythm = {
+            ...studioRhythm,
+            rituals: migrateStudioRituals(studioRhythm.rituals),
+          };
+        }
+
         const migratedEnabledModules = normalizeModuleList(state.enabledModules);
         return {
           ...state,
@@ -1926,6 +1935,7 @@ export const useAppStore = create<AppState>()(
           glazeCollectionNames,
           kilns,
           firings,
+          studioRhythm,
         };
       },
       merge: (persistedState, currentState) => {

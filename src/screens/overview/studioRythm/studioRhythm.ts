@@ -83,8 +83,6 @@ export interface StudioEvent {
 export interface Ritual {
   id: string;
   label: string;
-  /** @deprecated Use iconKey, kept for persisted data migration */
-  emoji?: string;
   iconKey?: string;
   enabled: boolean;
   cadence: 'weekly' | 'fortnightly' | 'monthly';

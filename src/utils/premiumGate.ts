@@ -17,11 +17,7 @@ import {
 export enum PremiumFeature {
   Analytics        = 'analytics',
   UnlimitedPhotos  = 'unlimited-photos',
-  /** @deprecated Glazes are unlimited locally; kept for deep links. */
-  FullGlazeAtlas   = 'full-glaze-atlas',
   CloudStorage     = 'cloud-storage',
-  /** @deprecated Community photo posts are free; kept for deep links. */
-  CommunityPhotos  = 'community-photos',
   CompanionSwap    = 'companion-swap',
   FullPricing      = 'full-pricing',
   KilnAnalytics    = 'kiln-analytics',
@@ -84,9 +80,7 @@ export const PAYWALL_LOCAL_CLOUD_EXPLAINER =
 const PREMIUM_CONTEXTUAL_TITLES: Record<PremiumFeature, string> = {
   [PremiumFeature.Analytics]: 'Unlock studio analytics',
   [PremiumFeature.UnlimitedPhotos]: 'Back up every stage photo',
-  [PremiumFeature.FullGlazeAtlas]: 'Unlock unlimited cloud backup',
   [PremiumFeature.CloudStorage]: 'Unlock unlimited cloud backup',
-  [PremiumFeature.CommunityPhotos]: 'Unlock unlimited cloud backup',
   [PremiumFeature.CompanionSwap]: 'Switch companions anytime',
   [PremiumFeature.FullPricing]: 'Unlock pricing insights',
   [PremiumFeature.KilnAnalytics]: 'See kiln utilisation analytics',
@@ -100,8 +94,6 @@ const PREMIUM_CONTEXTUAL_TITLES: Record<PremiumFeature, string> = {
 const PREMIUM_LIMIT_LINES: Partial<Record<PremiumFeature, string>> = {
   [PremiumFeature.UnlimitedPhotos]: `Free: ${FREE_PHOTO_LIMIT} cloud-backed photo per piece · Premium: unlimited`,
   [PremiumFeature.CloudStorage]: `Free: ${FREE_CLOUD_STORAGE_MB} MB cloud media · Premium: unlimited`,
-  [PremiumFeature.CommunityPhotos]: `Free: ${FREE_CLOUD_STORAGE_MB} MB cloud media · Premium: unlimited`,
-  [PremiumFeature.FullGlazeAtlas]: `Free: ${FREE_CLOUD_STORAGE_MB} MB cloud media · Premium: unlimited`,
   [PremiumFeature.Backup]: `Free: ${FREE_CLOUD_STORAGE_MB} MB cloud media · Premium: unlimited`,
   [PremiumFeature.Analytics]: 'Free: preview teaser · Premium: full cost, firing, and margin dashboards',
   [PremiumFeature.Export]: 'Free: view in app · Premium: export pieces, firings, and glazes',
@@ -130,6 +122,9 @@ export function parsePremiumFeatureParam(
 ): PremiumFeature | null {
   const value = Array.isArray(raw) ? raw[0] : raw;
   if (!value) return null;
+  if (value === 'full-glaze-atlas' || value === 'community-photos') {
+    return PremiumFeature.CloudStorage;
+  }
   return Object.values(PremiumFeature).includes(value as PremiumFeature)
     ? (value as PremiumFeature)
     : null;
@@ -142,8 +137,6 @@ export function premiumRouteForFeature(feature: PremiumFeature): string {
 const FEATURE_TO_PAYWALL_KEY: Partial<Record<PremiumFeature, string>> = {
   [PremiumFeature.UnlimitedPhotos]: 'photos',
   [PremiumFeature.CloudStorage]: 'cloud',
-  [PremiumFeature.CommunityPhotos]: 'cloud',
-  [PremiumFeature.FullGlazeAtlas]: 'cloud',
   [PremiumFeature.CompanionSwap]: 'companions',
   [PremiumFeature.Analytics]: 'analytics',
   [PremiumFeature.KilnAnalytics]: 'analytics',
@@ -215,9 +208,7 @@ export function profilePremiumTeaser(userType: OnboardingUserType = 'not-sure'):
 export const PREMIUM_FEATURE_DESCRIPTIONS: Record<PremiumFeature, string> = {
   [PremiumFeature.Analytics]: 'Unlock studio analytics: costs, materials, firing trends, and more.',
   [PremiumFeature.UnlimitedPhotos]: 'Back up unlimited photos per piece to the cloud.',
-  [PremiumFeature.FullGlazeAtlas]: 'Unlimited glazes stay free on your device — Premium unlocks full cloud backup.',
   [PremiumFeature.CloudStorage]: 'Back up all your studio photos and media to the cloud.',
-  [PremiumFeature.CommunityPhotos]: 'Community photo posts are free — Premium unlocks unlimited cloud backup for your studio archive.',
   [PremiumFeature.CompanionSwap]: 'Switch between your elemental companions anytime.',
   [PremiumFeature.FullPricing]: 'Access full pricing presets and revenue tools.',
   [PremiumFeature.KilnAnalytics]: 'See detailed kiln utilisation and firing analytics.',
@@ -310,9 +301,4 @@ export function canBackupPiecePhotoToCloud(
   isReplacing: boolean,
 ): boolean {
   return canSyncPiecePhotoToCloud(piece, isReplacing);
-}
-
-/** @deprecated Glazes are unlimited on-device; kept for compatibility. */
-export function canAddGlaze(_glazes?: unknown): boolean {
-  return true;
 }

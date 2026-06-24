@@ -89,13 +89,24 @@ const DEFAULT_RITUAL_ICON_KEYS: Record<string, string> = {
   'ritual-test-tiles': 'layers',
 };
 
-export function resolveRitualIconKey(ritual: Pick<Ritual, 'id' | 'iconKey' | 'emoji'>): string {
+export function migrateStudioRituals(rituals: Array<Ritual & { emoji?: string }>): Ritual[] {
+  return rituals.map(({ emoji, ...ritual }) => {
+    if (ritual.iconKey && RITUAL_PICKABLE_ICONS_MAP[ritual.iconKey]) {
+      return ritual;
+    }
+    const iconKey = (emoji && LEGACY_RITUAL_EMOJI_ICON[emoji])
+      ?? DEFAULT_RITUAL_ICON_KEYS[ritual.id]
+      ?? 'star';
+    return { ...ritual, iconKey };
+  });
+}
+
+export function resolveRitualIconKey(ritual: Pick<Ritual, 'id' | 'iconKey'>): string {
   if (ritual.iconKey && RITUAL_PICKABLE_ICONS_MAP[ritual.iconKey]) return ritual.iconKey;
-  if (ritual.emoji && LEGACY_RITUAL_EMOJI_ICON[ritual.emoji]) return LEGACY_RITUAL_EMOJI_ICON[ritual.emoji];
   if (DEFAULT_RITUAL_ICON_KEYS[ritual.id]) return DEFAULT_RITUAL_ICON_KEYS[ritual.id];
   return 'star';
 }
 
-export function resolveRitualIcon(ritual: Pick<Ritual, 'id' | 'iconKey' | 'emoji'>): RhythmIconComponent {
+export function resolveRitualIcon(ritual: Pick<Ritual, 'id' | 'iconKey'>): RhythmIconComponent {
   return RITUAL_PICKABLE_ICONS_MAP[resolveRitualIconKey(ritual)] ?? Star;
 }

@@ -4,7 +4,7 @@ import type { GlazeDraft } from '@/src/screens/library/atlas/types';
 import { computeUnifiedSuccessRate, formatUnifiedOutcomeStatsLine } from '@/src/screens/glazes/glazeOutcomeMap';
 import type { GlazeIngredient, GlazeLibraryItem, GlazeTestTile } from '@/src/screens/glazes/types';
 import type { Piece } from '@/src/types/pieces';
-import { todayDateIso } from '@/src/utils/dates';
+import { todayIso } from '@/src/utils/dates';
 
 /** Remove a trailing " v3" suffix from a glaze name. */
 export function stripGlazeVersionSuffix(name: string): string {
@@ -87,7 +87,7 @@ export function computeNextVersionNumber(
 export function buildNewVersionDraft(parent: GlazeLibraryItem): GlazeDraft {
   const draft = glazeToEditDraft(parent);
   draft.name = stripGlazeVersionSuffix(parent.name);
-  draft.dateMixed = todayDateIso();
+  draft.dateMixed = todayIso();
   draft.status = 'experimental';
   draft.bucketPhotoUri = undefined;
   draft.firstTilePhotoUri = undefined;

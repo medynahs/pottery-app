@@ -3,8 +3,7 @@ import type { CommunityPostKind } from '@/src/screens/community/utils/createPost
 export const COMMUNITY_POST_META_START = '---pottery-life-community-post:v1---';
 export const COMMUNITY_POST_META_END = '---end-pottery-life-community-post---';
 
-/** @deprecated Legacy piece-journal embed; still parsed. */
-export const PIECE_JOURNAL_POST_START = '---pottery-life-piece-journal:v1---';
+const LEGACY_PIECE_JOURNAL_POST_START = '---pottery-life-piece-journal:v1---';
 
 export type CommunityPostMeta = {
   v: 1;
@@ -70,9 +69,9 @@ export function parseCommunityPostMeta(content: string): CommunityPostMeta | nul
 }
 
 function parseLegacyPieceJournalPayload(content: string): CommunityPostMeta | null {
-  const legacyStart = content.indexOf(PIECE_JOURNAL_POST_START);
+  const legacyStart = content.indexOf(LEGACY_PIECE_JOURNAL_POST_START);
   if (legacyStart < 0) return null;
-  const after = content.slice(legacyStart + PIECE_JOURNAL_POST_START.length);
+  const after = content.slice(legacyStart + LEGACY_PIECE_JOURNAL_POST_START.length);
   const end = after.indexOf('---end-pottery-life-piece-journal---');
   const json = (end >= 0 ? after.slice(0, end) : after).trim();
   try {
@@ -94,7 +93,7 @@ export function stripCommunityPostMeta(content: string): string {
   let trimmed = content.trim();
   const unifiedStart = trimmed.indexOf(COMMUNITY_POST_META_START);
   if (unifiedStart >= 0) trimmed = trimmed.slice(0, unifiedStart).trim();
-  const legacyStart = trimmed.indexOf(PIECE_JOURNAL_POST_START);
+  const legacyStart = trimmed.indexOf(LEGACY_PIECE_JOURNAL_POST_START);
   if (legacyStart >= 0) trimmed = trimmed.slice(0, legacyStart).trim();
   return trimmed;
 }

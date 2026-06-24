@@ -49,11 +49,6 @@ export function formatGlazeUsageStatsLine(tests: GlazeTestTile[], linkedPieces: 
   return formatUnifiedOutcomeStatsLine(tests, linkedPieces);
 }
 
-/** @deprecated Prefer `formatGlazeUsageStatsLine` when linked pieces are available. */
-export function formatGlazeTestStatsLine(tests: GlazeTestTile[]): string {
-  return formatGlazeUsageStatsLine(tests);
-}
-
 export function buildGlazeTestInsight(
   tests: GlazeTestTile[],
   linkedPieces: Piece[] = [],

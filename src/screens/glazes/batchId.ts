@@ -33,4 +33,4 @@ export function generateGlazeBatchId(
   return `${initials}-${month}-v${version}`;
 }
 
-export { todayDateIso, todayIso } from '@/src/utils/dates';
+export { todayIso } from '@/src/utils/dates';

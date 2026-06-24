@@ -10,8 +10,6 @@ import type { ShareGlazeDraft } from './shareGlazeDraft';
 /** Plain-text delimiters, avoid HTML comments (often stripped server-side). */
 export const GLAZE_POST_PAYLOAD_START = '---pottery-life-glaze:v1---';
 export const GLAZE_POST_PAYLOAD_END = '---end-pottery-life-glaze---';
-/** @deprecated Legacy embed format; still parsed for older posts. */
-export const GLAZE_POST_PAYLOAD_MARKER = '<!-- pottery-life-glaze:v1';
 
 /** Embedded in community post content until BE supports structured post metadata. */
 export type CommunityGlazeRecipePayload = {
@@ -95,101 +93,10 @@ function parsePlainTextPayload(content: string): CommunityGlazeRecipePayload | n
   return parseEmbeddedJsonPayload(jsonBlock);
 }
 
-function parseHtmlCommentPayload(content: string): CommunityGlazeRecipePayload | null {
-  const markerIndex = content.indexOf(GLAZE_POST_PAYLOAD_MARKER);
-  if (markerIndex < 0) return null;
-  const afterMarker = content.slice(markerIndex + GLAZE_POST_PAYLOAD_MARKER.length);
-  const endIndex = afterMarker.indexOf('-->');
-  const jsonBlock = (endIndex >= 0 ? afterMarker.slice(0, endIndex) : afterMarker).trim();
-  return parseEmbeddedJsonPayload(jsonBlock);
-}
-
 export function parseGlazeRecipeFromPost(
   content: string,
 ): CommunityGlazeRecipePayload | null {
-  return (
-    parsePlainTextPayload(content)
-    ?? parseHtmlCommentPayload(content)
-    ?? parseLegacyGlazeCaption(content)
-  );
-}
-
-/** Best-effort parser for atlas share captions without embedded JSON. */
-function parseLegacyGlazeCaption(content: string): CommunityGlazeRecipePayload | null {
-  const visible = stripPayloadFromDisplay(content);
-  const lines = visible.split('\n').map((l) => l.trim()).filter(Boolean);
-  const nameLine = lines.find((l) => l.startsWith('🍶'));
-  if (!nameLine) return null;
-
-  const name = nameLine.replace(/^🍶\s*/, '').trim();
-  if (!name) return null;
-
-  const metaLine = lines.find((l) => l.includes('·') && !l.startsWith('·') && !l.startsWith('#'));
-  const ingredients: CommunityGlazeRecipePayload['ingredients'] = [];
-  let inRecipe = false;
-
-  for (const line of lines) {
-    if (line.toLowerCase() === 'recipe:') {
-      inRecipe = true;
-      continue;
-    }
-    if (line.toLowerCase() === 'notes:' || line.startsWith('#')) {
-      inRecipe = false;
-    }
-    if (inRecipe && line.startsWith('·')) {
-      const match = line.match(/^·\s*(.+?)\s+([\d.,]+)%$/);
-      if (match) {
-        ingredients.push({ material: match[1].trim(), percentage: match[2].replace(',', '.') });
-      }
-    }
-  }
-
-  let ingredientsText: string | undefined;
-  if (ingredients.length === 0) {
-    const recipeIdx = lines.findIndex((l) => l.toLowerCase() === 'recipe:');
-    if (recipeIdx >= 0) {
-      const chunks: string[] = [];
-      for (let i = recipeIdx + 1; i < lines.length; i += 1) {
-        const line = lines[i];
-        if (line.toLowerCase() === 'notes:' || line.startsWith('#')) break;
-        chunks.push(line.replace(/^·\s*/, ''));
-      }
-      ingredientsText = chunks.join('\n').trim();
-    } else if (metaLine) {
-      const metaIdx = lines.indexOf(metaLine);
-      const chunks: string[] = [];
-      for (let i = metaIdx + 1; i < lines.length; i += 1) {
-        const line = lines[i];
-        if (
-          line.toLowerCase() === 'notes:'
-          || line.startsWith('#')
-          || line.toLowerCase().startsWith('piece:')
-          || line.startsWith('🍶')
-        ) {
-          break;
-        }
-        chunks.push(line);
-      }
-      ingredientsText = chunks.join('\n').trim();
-    }
-  }
-
-  if (ingredients.length === 0 && !ingredientsText) return null;
-
-  const finishGuess = metaLine?.split('·')[0]?.trim() ?? 'glossy';
-  const coneGuess = metaLine?.split('·')[1]?.trim() ?? 'Cone 6';
-
-  return {
-    v: 1,
-    kind: 'glaze-recipe',
-    name,
-    finish: finishGuess as GlazeFinish,
-    colorFamily: 'neutral',
-    defaultCone: coneGuess,
-    coneRange: coneGuess,
-    ingredients,
-    ingredientsText,
-  };
+  return parsePlainTextPayload(content);
 }
 
 export function stripPayloadFromDisplay(content: string): string {
@@ -197,10 +104,6 @@ export function stripPayloadFromDisplay(content: string): string {
   const plainStart = trimmed.indexOf(GLAZE_POST_PAYLOAD_START);
   if (plainStart >= 0) {
     trimmed = trimmed.slice(0, plainStart).trim();
-  }
-  const htmlStart = trimmed.indexOf(GLAZE_POST_PAYLOAD_MARKER);
-  if (htmlStart >= 0) {
-    trimmed = trimmed.slice(0, htmlStart).trim();
   }
   return trimmed;
 }

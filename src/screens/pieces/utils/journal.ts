@@ -1,5 +1,5 @@
 
-export { formatDate, formatDateNumeric, formatDateShort, todayDateIso, todayIso } from '@/src/utils/dates';
+export { formatDate, formatDateNumeric, formatDateShort, todayIso } from '@/src/utils/dates';
 
 export function formatDuration(ms: number): string {
     const hours = Math.floor(ms / 3_600_000);

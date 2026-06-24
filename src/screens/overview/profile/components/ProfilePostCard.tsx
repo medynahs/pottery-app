@@ -6,7 +6,6 @@ import {
   stripCommunityPostPayload,
 } from '@/src/screens/community/utils/feedDisplayContent';
 import { parseCommunityPostMeta } from '@/src/screens/community/utils/communityPostPayload';
-import { parsePieceJournalFromPost } from '@/src/screens/community/utils/pieceJournalPostPayload';
 import type { BackendFeedPost } from '@/src/services/community';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -47,10 +46,7 @@ function usePostDisplay(post: BackendFeedPost) {
     const kindLabel = post.content ? communityPostKindLabel(post.content) : null;
     const displayContent = post.content ? stripCommunityPostPayload(post.content) : '';
     const meta = post.content ? parseCommunityPostMeta(post.content) : null;
-    const legacyJournal = post.content ? parsePieceJournalFromPost(post.content) : null;
-    const pieceJournal = meta?.pieceJournal ?? (legacyJournal
-      ? { pieceId: legacyJournal.pieceId, pieceName: legacyJournal.pieceName }
-      : null);
+    const pieceJournal = meta?.pieceJournal ?? null;
     const challengeTag = post.content ? communityPostChallengeHashtag(post.content) : null;
     const firstAsset = post.assets?.[0];
     const style = postKindStyle(kindLabel);

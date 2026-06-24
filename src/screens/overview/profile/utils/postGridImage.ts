@@ -1,5 +1,4 @@
 import { parseCommunityPostMeta } from '@/src/screens/community/utils/communityPostPayload';
-import { parsePieceJournalFromPost } from '@/src/screens/community/utils/pieceJournalPostPayload';
 import type { BackendFeedPost } from '@/src/services/community';
 import type { Piece } from '@/src/types/pieces';
 
@@ -12,8 +11,7 @@ export function resolvePostGridImage(
   if (asset) return asset;
 
   const meta = post.content ? parseCommunityPostMeta(post.content) : null;
-  const legacy = post.content ? parsePieceJournalFromPost(post.content) : null;
-  const pieceId = meta?.pieceJournal?.pieceId ?? legacy?.pieceId;
+  const pieceId = meta?.pieceJournal?.pieceId;
   if (!pieceId) return null;
 
   const piece = pieces.find((p) => p.id === pieceId);

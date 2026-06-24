@@ -6,11 +6,6 @@ export function todayIso(): string {
   return isoFromParts(now.getFullYear(), now.getMonth() + 1, now.getDate());
 }
 
-/** @deprecated Use `todayIso`, kept for compatibility with older call sites. */
-export function todayDateIso(): string {
-  return todayIso();
-}
-
 export function isoFromParts(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }

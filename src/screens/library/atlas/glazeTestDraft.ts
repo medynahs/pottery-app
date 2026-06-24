@@ -1,6 +1,6 @@
 import type { GlazeTestTile } from '@/src/screens/glazes/types';
 import type { KilnType } from '@/src/types/kiln';
-import { todayDateIso } from '@/src/utils/dates';
+import { todayIso } from '@/src/utils/dates';
 import type { TestDraft } from './types';
 
 function parseCommaList(value?: string): string[] {
@@ -22,7 +22,7 @@ export function buildGlazeTestFromDraft(
 ): GlazeTestTile {
   const clayBody = testDraft.clayBody?.trim() ?? '';
   const cone = testDraft.cone?.trim() ?? '';
-  const firingDateRaw = testDraft.firingDate?.trim() || todayDateIso();
+  const firingDateRaw = testDraft.firingDate?.trim() || todayIso();
   const firingDate =
     firingDateRaw.length === 10 ? `${firingDateRaw}T12:00:00.000Z` : firingDateRaw;
 

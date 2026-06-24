@@ -1,7 +1,7 @@
 import type { GlazeDraft } from '@/src/screens/library/atlas/types';
 import { stripGlazeVersionSuffix } from './glazeVersionUtils';
 import { generateGlazeBatchId } from './batchId';
-import { todayDateIso } from '@/src/utils/dates';
+import { todayIso } from '@/src/utils/dates';
 import type { GlazeIngredient, GlazeLibraryItem } from './types';
 
 function sanitizeRecipeIngredients(ingredients: GlazeIngredient[]): GlazeIngredient[] {
@@ -77,7 +77,7 @@ export function glazeDraftToItem(
 ): GlazeLibraryItem {
   const existing = opts.existing;
   const versionFromParent = opts.versionFromParent;
-  const dateMixed = draft.dateMixed.trim() || existing?.dateMixed || todayDateIso();
+  const dateMixed = draft.dateMixed.trim() || existing?.dateMixed || todayIso();
   const versionNumber =
     existing?.versionNumber
     ?? versionFromParent?.versionNumber

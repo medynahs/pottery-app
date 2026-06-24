@@ -1,5 +1,5 @@
 import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
-import { formatDateShort, todayDateIso } from '@/src/utils/dates';
+import { formatDateShort, todayIso } from '@/src/utils/dates';
 import type { GlazeDraft, TestDraft } from './types';
 
 export function glazeCardColor(colorFamily: string): string {
@@ -35,7 +35,7 @@ export function createEmptyGlazeDraft(
     defaultCone: defaultCone ?? 'Cone 6',
     source: 'store-bought',
     recipeIngredients: [],
-    dateMixed: todayDateIso(),
+    dateMixed: todayIso(),
     status: 'experimental',
     bestClayType: undefined,
     bestFiringTempC: '',
@@ -108,7 +108,7 @@ export function createEmptyTestDraft(
     thickness: 'medium',
     layeredWith: '',
     shelfPosition: '',
-    firingDate: todayDateIso(),
+    firingDate: todayIso(),
     notes: '',
     resultRating: 'interesting',
     defects: [],
