@@ -6,7 +6,6 @@ type BaseProps = UsePhotoPickerOptions & {
   photo?: string | null;
   onPhotoChange: (uri: string | undefined) => void;
   disabled?: boolean;
-  /** Return false to cancel opening the pick sheet. */
   onBeforePick?: () => boolean | void;
 };
 
@@ -24,7 +23,6 @@ type SlotVariant = BaseProps & {
 
 export type PhotoPickFieldProps = CardVariant | SlotVariant;
 
-/** Shared photo slot + camera/library pick sheet (via usePhotoPicker / PhotoPickerOverlay). */
 export function PhotoPickField(props: PhotoPickFieldProps) {
   const {
     photo,

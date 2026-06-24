@@ -21,7 +21,6 @@ export const TEXT_SCALE_DESCRIPTIONS: Record<TextScale, string> = {
   large: 'Larger, best for low vision',
 };
 
-/** Base font sizes (px) aligned with text.tsx variants, tightened from prior onboarding inline sizes */
 export const FONT_SIZES = {
   eyebrow: 10,
   caption: 11,

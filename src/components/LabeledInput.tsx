@@ -1,23 +1,16 @@
 import { Text } from '@/src/components/ui/text';
+import { useTextScale } from '@/src/hooks/useTextScale';
 import type { LucideIcon } from 'lucide-react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { TextInput, TouchableOpacity, View, type TextInputProps } from 'react-native';
-import { useTextScale } from '@/src/hooks/useTextScale';
 
 interface LabeledInputProps extends Omit<TextInputProps, 'style'> {
   label: string;
-  /** Optional leading icon shown inside the field. */
   icon?: LucideIcon;
-  /** Renders as a password field with a show/hide toggle. */
   secure?: boolean;
 }
 
-/**
- * Standard labeled form field: uppercase micro-label above a 56pt card row,
- * with optional leading icon and password visibility toggle. Replaces the
- * nine hand-rolled field blocks across the auth screens.
- */
 export function LabeledInput({ label, icon: Icon, secure = false, ...inputProps }: LabeledInputProps) {
   const [showSecret, setShowSecret] = useState(false);
   const { scaled } = useTextScale();

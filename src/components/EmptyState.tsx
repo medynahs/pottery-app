@@ -10,18 +10,9 @@ interface EmptyStateProps {
   ctaLabel?: string;
   ctaIcon?: LucideIcon;
   onCtaPress?: () => void;
-  /**
-   * 'plain', bare centered block for full-screen list areas.
-   * 'card' , bordered card for empty sections embedded between other content.
-   */
   variant?: 'plain' | 'card';
 }
 
-/**
- * Shared empty state used across all list screens (ticket #43) so empty
- * surfaces speak with one voice: tinted icon circle, serif title, muted
- * description, and an optional primary CTA.
- */
 export function EmptyState({
   icon: Icon,
   title,
@@ -34,7 +25,6 @@ export function EmptyState({
     <>
       {Icon ? (
         <View className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center mb-1">
-          {/* Matches the theme's --primary gold from global.css */}
           <Icon size={26} color="hsl(39 57% 51%)" />
         </View>
       ) : null}

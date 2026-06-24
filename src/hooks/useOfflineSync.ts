@@ -1,15 +1,9 @@
+import { useEffect, useRef } from 'react';
 import { flushGlazesSync, hasPendingGlazesSync } from '../screens/library/useGlazesSync';
 import { flushPiecesSync, hasPendingPiecesSync } from '../screens/pieces/hooks/usePiecesSync';
 import { useAppStore } from '../store/appStore';
 import { useNetworkConnection } from './useNetworkConnection';
-import { useEffect, useRef } from 'react';
 
-/**
- * Watches network state and flushes pending piece sync whenever the device
- * comes back online.
- *
- * Mount this once at the root of the app (in _layout.tsx).
- */
 export function useOfflineSync() {
   const { isConnected, isInternetReachable } = useNetworkConnection();
   const isOnline = isConnected && isInternetReachable;
@@ -32,7 +26,6 @@ export function useOfflineSync() {
     if (hasGlazes) {
       await flushGlazesSync();
     }
-    // Legacy queue, non-piece ops only
     if (hasLegacyOps && !hasPendingPiecesSync()) {
       clearSyncQueue();
       setLastSyncedAt(new Date().toISOString());

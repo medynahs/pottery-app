@@ -18,7 +18,6 @@ export function useNetworkConnection() {
   });
 
   useEffect(() => {
-    // Subscribe to network state updates
     const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
       setNetworkState({
         isConnected: state.isConnected ?? false,
@@ -27,7 +26,6 @@ export function useNetworkConnection() {
       });
     });
 
-    // Fetch initial network state
     NetInfo.fetch().then((state: NetInfoState) => {
       setNetworkState({
         isConnected: state.isConnected ?? false,
@@ -36,7 +34,6 @@ export function useNetworkConnection() {
       });
     });
 
-    // Cleanup subscription on unmount
     return () => {
       unsubscribe();
     };
@@ -60,7 +57,6 @@ export function useNetworkConnection() {
   return { ...networkState, checkConnection };
 }
 
-// Hook to check if network is available
 export function useIsOnline() {
   const { isConnected, isInternetReachable } = useNetworkConnection();
   return isConnected && isInternetReachable;

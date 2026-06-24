@@ -6,9 +6,7 @@ import React from 'react';
 import { View, type ViewStyle } from 'react-native';
 
 interface UserAvatarProps {
-  /** Used to derive initials when `initial` is not provided. */
   name?: string;
-  /** Single character or short initials override. */
   initial?: string;
   imageUri?: string | null;
   size?: number;
@@ -17,15 +15,10 @@ interface UserAvatarProps {
   borderColor?: string;
   borderWidth?: number;
   textColor?: string;
-  /** Use serif bold for profile-scale avatars. */
   serif?: boolean;
   style?: ViewStyle;
 }
 
-/**
- * Consistent user avatar: photo when available, otherwise initials on brand gold
- * (or custom colors for special contexts like Hall of Fame podium medals).
- */
 export function UserAvatar({
   name = '',
   initial,

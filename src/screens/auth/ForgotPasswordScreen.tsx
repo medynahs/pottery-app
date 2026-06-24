@@ -100,7 +100,6 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
     try {
       await orySetPassword(recoveryToken, password, settingsFlowId);
-      // The recovery session is a real session, sign the user in with it.
       const session = await oryGetSession(recoveryToken);
       setSessionToken(recoveryToken, session.identity.id, session.identity.traits.email);
       setStep('done');

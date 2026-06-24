@@ -7,16 +7,10 @@ interface PrimaryButtonProps {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  /** Optional leading element (lucide icon, Google "G" badge, …). Hidden while loading. */
   icon?: React.ReactNode;
   variant?: 'primary' | 'outline';
 }
 
-/**
- * The app's main CTA button: 56pt tall, rounded-2xl, primary gold fill
- * (or bordered card for the outline variant) with a built-in loading spinner.
- * Replaces the inline TouchableOpacity copies that lived in every auth screen.
- */
 export function PrimaryButton({
   label,
   onPress,

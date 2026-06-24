@@ -24,7 +24,20 @@ import {
 } from '../screens/overview/kilnkin/kilnkinCompanion';
 import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import type { TextScale } from '../constants/typography';
-import { DEFAULT_STUDIO_RHYTHM, getDateKey, normalizeStudioRhythm, normalizeStudioRhythmStageDays } from '../screens/overview/studioRythm/studioRhythm';
+import {
+  DEFAULT_STUDIO_RHYTHM,
+  getDateKey,
+  normalizeStudioRhythm,
+  normalizeStudioRhythmStageDays,
+  type DryingTimers,
+  type Ritual,
+  type StageDay,
+  type StudioEvent,
+  type StudioRhythm,
+  type StudioRhythmConfig,
+  type StudioRhythmEvent,
+  type StudioRhythmGoal,
+} from '../screens/overview/studioRythm/studioRhythm';
 import type { CommunityPostComposerPreset } from '../screens/community/types/composerPreset';
 import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
@@ -738,7 +751,7 @@ export const useAppStore = create<AppState>()(
       // Reset user-specific fields so the next sign-in starts clean.
       // Without this, the previous user's avatar persists in AsyncStorage
       // and is shown briefly (or permanently) when a different account signs in.
-      user: { name: '', avatarInitial: 'U', avatarImageUri: undefined },
+      user: { name: '', avatarInitial: 'U', avatarImageUri: undefined, coverImageUri: undefined },
     });
     void clearSecureAuth();
   },
@@ -1927,10 +1940,10 @@ export const useAppStore = create<AppState>()(
         practiceMode: state.practiceMode,
         role: state.role,
         enabledModules: state.enabledModules,
-        // avatarImageUri is excluded, it's a large base64 string fetched fresh
-        // from /api/me on every login. Persisting it leaks one user's avatar to
-        // the next account that signs in on the same device.
-        user: (({ avatarImageUri, ...rest }) => rest)(state.user),
+        // avatarImageUri / coverImageUri are excluded — fetched fresh from
+        // /users/me on login. Persisting them can leak one user's media to the
+        // next account that signs in on the same device.
+        user: (({ avatarImageUri, coverImageUri, ...rest }) => rest)(state.user),
         kilnkinCompanion: state.kilnkinCompanion,
         studioRhythmConfig: state.studioRhythmConfig,
         dailyMissionCompletion: state.dailyMissionCompletion,

@@ -9,11 +9,6 @@ interface BannerProps {
   className?: string;
 }
 
-/**
- * Inline feedback banner shown above forms, red for errors, green for
- * success. Replaces the identical bg-red-50 boxes copied across the auth
- * screens and profile modals.
- */
 export function Banner({ message, intent = 'error', className = '' }: BannerProps) {
   if (intent === 'success') {
     return (

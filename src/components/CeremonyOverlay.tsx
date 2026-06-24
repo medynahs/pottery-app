@@ -15,22 +15,19 @@
  *     onDismiss={() => setShowCeremony(false)}
  *   />
  */
+import { Text } from '@/src/components/ui/text';
 import { Sparkles } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Text } from '@/src/components/ui/text';
 
 interface CeremonyOverlayProps {
   visible: boolean;
   emoji: string;
   title: string;
   subtitle?: string;
-  /** Accent RGB colour for the glow rings. Default: clay gold. */
   tint?: string;
-  /** ms before auto-dismiss. 0 = no auto-dismiss (user must tap). Default: 2600. */
   durationMs?: number;
   onDismiss: () => void;
-  /** Optional second line below subtitle */
   footnote?: string;
 }
 
@@ -56,7 +53,6 @@ export function CeremonyOverlay({
   useEffect(() => {
     if (!visible) return;
 
-    // Reset all values before playing
     backdropOpacity.setValue(0);
     medallionScale.setValue(0.3);
     medallionY.setValue(32);
@@ -104,7 +100,6 @@ export function CeremonyOverlay({
 
   if (!visible) return null;
 
-  // Parse tint into glow rgba strings (we just swap in the tint text)
   const glowOuter = tint.replace('1)', '0.22)');
   const glowInner = tint.replace('1)', '0.18)');
 
@@ -130,9 +125,7 @@ export function CeremonyOverlay({
         ]}
         pointerEvents="box-none"
       >
-        {/* Glow rings + sparkles orbit + medallion */}
         <Animated.View style={{ alignItems: 'center', justifyContent: 'center' }}>
-          {/* Outer glow */}
           <Animated.View
             style={{
               position: 'absolute',
@@ -144,7 +137,6 @@ export function CeremonyOverlay({
               transform: [{ scale: glowScale }],
             }}
           />
-          {/* Inner glow */}
           <Animated.View
             style={{
               position: 'absolute',

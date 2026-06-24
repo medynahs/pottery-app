@@ -1,5 +1,6 @@
 import { PhotoPickerOverlay } from '@/src/components/PhotoPickerOverlay';
 import { KeyboardAvoidingView } from '@/src/components/ui/keyboard-avoiding-view';
+import { X } from 'lucide-react-native';
 import React from 'react';
 import {
   Animated,
@@ -14,9 +15,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X } from 'lucide-react-native';
 
-/** Shared bottom-sheet defaults, use across form modals for consistency. */
 export const MODAL_BACKDROP_COLOR = 'rgba(22,14,10,0.52)';
 export const MODAL_SHEET_RADIUS = 32;
 export const MODAL_SHEET_HEIGHT_RATIO = 0.92;
@@ -31,7 +30,6 @@ export interface ModalShellProps {
   onClose: () => void;
   children: React.ReactNode;
   backdropColor?: string;
-  /** Full-screen overlay rendered above the sheet (e.g. embedded lightbox). */
   overlay?: React.ReactNode;
 }
 
@@ -43,7 +41,6 @@ export const ModalSheetPanContext = React.createContext<ModalSheetPanContextValu
 
 const ModalSheetCloseContext = React.createContext<(() => void) | null>(null);
 
-/** Full-screen bottom-sheet modal. Embeds the photo picker overlay when active. */
 export function ModalShell({
   visible,
   onClose,

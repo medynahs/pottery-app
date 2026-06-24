@@ -26,7 +26,6 @@ export type PhotoSlotCompactProps = PhotoSlotBaseProps & {
 
 export type PhotoSlotProps = PhotoSlotCardProps | PhotoSlotCompactProps;
 
-/** Empty / filled photo tap target for forms. Pair with PhotoPickField for camera + library picking. */
 export function PhotoSlot(props: PhotoSlotProps) {
   const { uri, onPress, disabled } = props;
 
