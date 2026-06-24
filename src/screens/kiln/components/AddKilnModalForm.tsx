@@ -1,10 +1,11 @@
+import { PhotoPickField } from '@/src/components/PhotoPickField';
 import { Input } from '@/src/components/ui/input';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Select } from '@/src/components/ui/select';
 import { Text } from '@/src/components/ui/text';
-import { Camera, ChevronDown, HelpCircle, Trash2 } from 'lucide-react-native';
+import { ChevronDown, HelpCircle } from 'lucide-react-native';
 import React from 'react';
-import { Image, TextInput, TouchableOpacity, View } from 'react-native';
+import { TextInput, TouchableOpacity, View } from 'react-native';
 import type { KilnPricingModel, KilnType } from '../../../types/kiln';
 import { KILN_PRICING_MODEL_OPTIONS, KILN_TYPE_OPTIONS } from '../constants';
 import { DEFAULT_KILN_MAX_TEMP_C } from '../utils/kilnHelpers';
@@ -63,8 +64,6 @@ interface AddKilnModalFormProps {
   onToggleHelp: (field: AddKilnHelpField) => void;
   showAdvancedTiming: boolean;
   onToggleAdvancedTiming: () => void;
-  onChooseKilnImageSource: () => void;
-  onRemoveKilnImage: () => void;
   currencySymbol: string;
   palette: FormPalette;
 }
@@ -107,8 +106,6 @@ export function AddKilnModalForm({
   onToggleHelp,
   showAdvancedTiming,
   onToggleAdvancedTiming,
-  onChooseKilnImageSource,
-  onRemoveKilnImage,
   currencySymbol,
   palette,
 }: AddKilnModalFormProps) {
@@ -120,40 +117,12 @@ export function AddKilnModalForm({
     <>
       <FieldLabel label="Kiln Photo" openHelp={openHelp} onToggleHelp={onToggleHelp} />
       <View className="mb-4">
-        {form.imageUri ? (
-          <View>
-            <Image source={{ uri: form.imageUri }} style={{ width: '100%', height: 180, borderRadius: 18 }} resizeMode="cover" />
-            <View className="flex-row gap-2 mt-3">
-              <TouchableOpacity
-                onPress={onChooseKilnImageSource}
-                className="flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3"
-              >
-                <Camera size={15} color="hsl(24 12% 48%)" />
-                <Text className="text-sm font-semibold text-foreground">Change Photo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={onRemoveKilnImage}
-                className="flex-row items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3"
-              >
-                <Trash2 size={15} color="hsl(24 12% 48%)" />
-                <Text className="text-sm font-semibold text-foreground">Remove</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity
-            onPress={onChooseKilnImageSource}
-            className="items-center justify-center rounded-2xl border border-dashed border-border bg-card px-4 py-8"
-          >
-            <View className="w-12 h-12 rounded-full bg-primary/10 items-center justify-center mb-3">
-              <Camera size={18} color="hsl(24 90% 45%)" />
-            </View>
-            <Text className="text-sm font-semibold text-foreground">Add a kiln photo</Text>
-            <Text className="text-xs text-muted-foreground mt-1 text-center">
-              Use camera or library to add a picture and recognise profiles at a glance.
-            </Text>
-          </TouchableOpacity>
-        )}
+        <PhotoPickField
+          photo={form.imageUri || undefined}
+          onPhotoChange={(uri) => setForm((current) => ({ ...current, imageUri: uri ?? '' }))}
+          aspect={[4, 3]}
+          hint="Use camera or library to add a picture and recognise profiles at a glance."
+        />
       </View>
 
       <FieldLabel label="Kiln Name *" openHelp={openHelp} onToggleHelp={onToggleHelp} />

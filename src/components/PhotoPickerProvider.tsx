@@ -123,8 +123,3 @@ export function usePhotoPickerState() {
   }
   return ctx;
 }
-
-/** @deprecated use usePhotoPickerState().openPickSheet via usePhotoPicker hook */
-export function usePhotoPickerContext() {
-  return usePhotoPickerState().openPickSheet;
-}

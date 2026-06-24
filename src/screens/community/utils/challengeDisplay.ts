@@ -1,5 +1,6 @@
 import type { BackendChallenge } from '@/src/services/challenges';
 import type { ImageSourcePropType } from 'react-native';
+import { resolveChallengePhase } from '@/src/screens/community/utils/challengePhase';
 
 export type ChallengeDisplay = {
   id: string;
@@ -35,18 +36,33 @@ function daysUntil(iso: string | null | undefined): number | null {
 }
 
 function isChallengeActive(challenge: BackendChallenge): boolean {
-  const now = Date.now();
-  const start = challenge.starts_at ? new Date(challenge.starts_at).getTime() : 0;
-  const end = challenge.ends_at
-    ? new Date(challenge.ends_at).getTime()
-    : Number.POSITIVE_INFINITY;
-  return now >= start && now <= end;
+  const phase = resolveChallengePhase(challenge);
+  if (phase === 'open' || phase === 'voting') return true;
+  if (phase === 'closed') {
+    const until = challenge.winners_display_until
+      ? new Date(challenge.winners_display_until).getTime()
+      : null;
+    return until === null || until > Date.now();
+  }
+  return false;
 }
 
 export function pickPrimaryChallenge(challenges: BackendChallenge[]): BackendChallenge | null {
   if (!challenges.length) return null;
-  const active = challenges.find(isChallengeActive);
-  return active ?? challenges[0] ?? null;
+
+  const phaseOrder = (challenge: BackendChallenge) => {
+    const phase = resolveChallengePhase(challenge);
+    if (phase === 'open') return 0;
+    if (phase === 'voting') return 1;
+    if (phase === 'closed') return 2;
+    return 3;
+  };
+
+  const active = [...challenges]
+    .filter(isChallengeActive)
+    .sort((a, b) => phaseOrder(a) - phaseOrder(b));
+
+  return active[0] ?? challenges[0] ?? null;
 }
 
 export function toChallengeDisplay(challenge: BackendChallenge): ChallengeDisplay {
@@ -66,5 +82,15 @@ export function toChallengeDisplay(challenge: BackendChallenge): ChallengeDispla
 
 export function challengeEntryId(challenge: BackendChallenge | null): string | null {
   if (!challenge) return null;
-  return (challenge as unknown as { my_entry_id?: string | null }).my_entry_id ?? null;
+  return challenge.my_entry_id ?? null;
+}
+
+export function challengeIsJoined(challenge: BackendChallenge | null): boolean {
+  if (!challenge) return false;
+  return Boolean(challenge.is_joined ?? challenge.my_entry_id);
+}
+
+export function challengeHasSubmitted(challenge: BackendChallenge | null): boolean {
+  if (!challenge) return false;
+  return Boolean(challenge.has_submitted);
 }

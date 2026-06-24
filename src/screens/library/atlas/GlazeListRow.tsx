@@ -9,7 +9,7 @@ import { Star } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { formatShortDate, glazeCardColor } from './helpers';
-import { GlazeThumbnail } from './MediaSlot';
+import { GlazeThumbnail } from './GlazeThumbnail';
 
 function resultLabel(result: GlazeTestTile['resultRating']) {
   return GLAZE_RESULT_LABELS[result];

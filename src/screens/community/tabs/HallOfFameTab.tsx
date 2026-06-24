@@ -1,4 +1,5 @@
-// src/screens/community/tabs/HallOfFameTab.tsx
+import { InlineErrorCard } from '@/src/components/InlineErrorCard';
+import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
 import { Text } from '@/src/components/ui/text';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
 import {
@@ -6,13 +7,87 @@ import {
   HallOfFameWinnerCard,
 } from '@/src/screens/community/components/challenge/HallOfFameWinnerCard';
 import { MOCK_HALL_OF_FAME_CYCLES } from '@/src/screens/community/mock/challengeMockData';
+import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
+import { mockCycleToWinners } from '@/src/screens/community/utils/challengeWinners';
+import { apiGetHallOfFameArchive } from '@/src/services/community';
+import { backendWinnerToDisplay } from '@/src/screens/community/utils/challengeWinners';
+import { useAppStore } from '@/src/store';
 import { Trophy } from 'lucide-react-native';
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+type ArchiveCycle = {
+  id: string;
+  label: string;
+  title: string;
+  emoji: string;
+  winners: ChallengeWinnerDisplay[];
+};
+
+function mockCycles(): ArchiveCycle[] {
+  return MOCK_HALL_OF_FAME_CYCLES.map((cycle) => ({
+    id: cycle.challengeId,
+    label: cycle.label,
+    title: cycle.title,
+    emoji: cycle.emoji,
+    winners: mockCycleToWinners(cycle),
+  }));
+}
+
 export function HallOfFameTab() {
-  const featured = MOCK_HALL_OF_FAME_CYCLES[0];
-  const featuredWinner = featured?.winners[0] ?? null;
+  const sessionToken = useAppStore((s) => s.sessionToken);
+  const [loading, setLoading] = useState(true);
+  const [cycles, setCycles] = useState<ArchiveCycle[]>([]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (sessionToken) {
+        const archive = await apiGetHallOfFameArchive(sessionToken);
+        if (archive?.cycles?.length) {
+          setCycles(
+            archive.cycles.map((cycle) => ({
+              id: cycle.challenge_id,
+              label: cycle.label?.trim() || 'Past challenge',
+              title: cycle.title,
+              emoji: cycle.emoji?.trim() || '🏆',
+              winners: cycle.winners.map((w) =>
+                backendWinnerToDisplay(w, {
+                  id: cycle.challenge_id,
+                  title: cycle.title,
+                }),
+              ),
+            })),
+          );
+          return;
+        }
+      }
+      setCycles(mockCycles());
+    } catch {
+      setCycles(mockCycles());
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionToken]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const featuredWinner = useMemo(() => {
+    const firstCycle = cycles[0];
+    return firstCycle?.winners[0] ?? null;
+  }, [cycles]);
+
+  if (loading) {
+    return (
+      <View className="gap-2">
+        {[0, 1, 2].map((i) => (
+          <SkeletonLeaderboardRow key={i} />
+        ))}
+      </View>
+    );
+  }
 
   return (
     <>
@@ -27,17 +102,17 @@ export function HallOfFameTab() {
           </Text>
         </View>
         <Text className="text-2xl font-serif font-bold" style={{ color: COMMUNITY_THEME.ink }}>
-          Challenge winners
+          Past challenge winners
         </Text>
         <Text className="text-sm leading-relaxed mt-2" style={{ color: COMMUNITY_THEME.inkSoft }}>
-          Each seasonal challenge crowns one winner per track. Their pieces live here permanently.
+          Every closed challenge crowns winners per track. Their pieces are archived here permanently.
         </Text>
       </View>
 
       {featuredWinner ? <HallOfFameFeaturedHero winner={featuredWinner} /> : null}
 
-      {MOCK_HALL_OF_FAME_CYCLES.map((cycle) => (
-        <View key={cycle.challengeId} className="mb-4">
+      {cycles.map((cycle) => (
+        <View key={cycle.id} className="mb-4">
           <Text className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: COMMUNITY_THEME.inkMuted }}>
             {cycle.label}
           </Text>

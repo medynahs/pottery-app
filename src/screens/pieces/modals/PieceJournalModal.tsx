@@ -80,6 +80,15 @@ export function PieceJournalModal({
   const { openPickSheet } = usePhotoPicker({ aspect: [4, 3] });
   const { requestAccess, PaywallGate } = usePremiumGate();
   const showToast = useAppStore((state) => state.showToast);
+  const hasCreatedPost = useAppStore((state) => state.hasCreatedPost);
+  const pieceShareHintShown = useAppStore((state) => state.communityPieceShareHintShown);
+  const markPieceShareHintShown = useAppStore((state) => state.markCommunityPieceShareHintShown);
+
+  const maybePromptPieceShare = React.useCallback((isReplacing: boolean) => {
+    if (isReplacing || hasCreatedPost || pieceShareHintShown) return;
+    markPieceShareHintShown();
+    showToast('Like this shot? Share it to the community from your piece menu', 'success');
+  }, [hasCreatedPost, pieceShareHintShown, markPieceShareHintShown, showToast]);
 
   const notifyLocalOnlyPhoto = React.useCallback((updatedPiece: Piece, isReplacing: boolean) => {
     if (canBackupPiecePhotoToCloud(updatedPiece, isReplacing)) return;
@@ -154,10 +163,11 @@ export function PieceJournalModal({
         const updated = { ...piece, photo: uri };
         onUpdatePiece(updated);
         notifyLocalOnlyPhoto(updated, isReplacing);
+        maybePromptPieceShare(isReplacing);
       },
       heroImage ? () => onUpdatePiece({ ...piece, photo: undefined, imgUrl: undefined }) : undefined,
     );
-  }, [piece, onUpdatePiece, openPickSheet, requestAccess, notifyLocalOnlyPhoto]);
+  }, [piece, onUpdatePiece, openPickSheet, requestAccess, notifyLocalOnlyPhoto, maybePromptPieceShare]);
 
   const handleUpdateDescription = React.useCallback((description: string) => {
     if (!piece) return;
@@ -179,6 +189,7 @@ export function PieceJournalModal({
         currentPhotos[photoIndex] = uri;
         onUpdateEntry(piece.id, entryIndex, { photos: currentPhotos });
         notifyLocalOnlyPhoto(piece, isReplacing);
+        maybePromptPieceShare(isReplacing);
       },
       existingUri ? () => {
         deletePhotoAt(entryIndex, photoIndex);
@@ -186,7 +197,7 @@ export function PieceJournalModal({
         onUpdateEntry(piece.id, entryIndex, { photos: currentPhotos });
       } : undefined,
     );
-  }, [piece, updatePhotoAt, deletePhotoAt, drafts, onUpdateEntry, openPickSheet, requestAccess, notifyLocalOnlyPhoto]);
+  }, [piece, updatePhotoAt, deletePhotoAt, drafts, onUpdateEntry, openPickSheet, requestAccess, notifyLocalOnlyPhoto, maybePromptPieceShare]);
 
   const goToPage = React.useCallback((index: number) => {
     const clamped = Math.max(0, Math.min(index, spreads.length - 1));

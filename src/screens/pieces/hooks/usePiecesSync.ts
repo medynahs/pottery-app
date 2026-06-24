@@ -14,6 +14,10 @@ import { useIsFetching, useMutation, useQuery, useQueryClient } from '@tanstack/
 import { useCallback, useEffect, useRef } from 'react';
 import { canSyncPiecePhotoToCloud } from '@/src/utils/cloudStorage';
 import {
+  hydrateAllPieceAssetsFromCloud,
+  scheduleAllPendingPiecePhotoSync,
+} from '@/src/utils/pieceAssetSync';
+import {
   API_TO_LOCAL_STAGE,
   LOCAL_STAGE_TO_API,
   apiDeletePiece,
@@ -299,6 +303,8 @@ export async function flushPiecesSync(): Promise<boolean> {
 
     setLastSyncedAt(new Date().toISOString());
 
+    scheduleAllPendingPiecePhotoSync();
+
     if (__DEV__) {
       console.log(
         `[pieces:sync] ok, ${backendLinked.length} PUT, ${needsBulkSync.length} bulk`,
@@ -359,6 +365,11 @@ export function usePiecesSync() {
     if (__DEV__) console.log(`[pieces:sync] fetched ${query.data.length} piece(s) from backend`);
     const { pieces } = useAppStore.getState();
     mergePiecesIntoStore(query.data, pieces);
+
+    void (async () => {
+      await hydrateAllPieceAssetsFromCloud();
+      scheduleAllPendingPiecePhotoSync();
+    })();
 
     if (!initialPullMerged) {
       initialPullMerged = true;

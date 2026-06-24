@@ -31,18 +31,6 @@ export type Stage =
 /** Firing result when a piece was glazed with a linked studio glaze batch. */
 export type GlazeOutcome = 'success' | 'crawling' | 'underfired' | 'crack';
 
-// Condition or disposition, separate from physical stage
-export type PieceStatus =
-  | 'cracked'
-  | 'warped'
-  | 'available'
-  | 'not-for-sale'
-  | 'sold'
-  | 'gifted'
-  | 'trade'
-  | 'exhibition'
-  | 'archived';
-
 export type Piece = {
   id: number;
   /** UUID assigned by the backend after the piece is first synced. */
@@ -53,13 +41,17 @@ export type Piece = {
   syncDirty?: boolean;
   name: string;
   stage: string;          // physical state (Stage)
-  status?: string;        // outcome / condition (PieceStatus)
+  status?: string;        // outcome / condition (e.g. sold, gifted)
   createdAt: string;
   description?: string;
   timeline: TimelineEntry[];
   clay: string;
   photo?: string;
   imgUrl?: string;
+  /** Backend asset UUID for the cover photo (when synced to cloud). */
+  coverAssetId?: string;
+  /** Maps photo URI (local or remote) → backend asset UUID for timeline photos. */
+  photoAssetIds?: Record<string, string>;
   location?: string;
   formingMethod?: string;
   form?: string;

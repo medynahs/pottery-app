@@ -1,142 +1,63 @@
 // src/screens/community/tabs/ForYouFeed.tsx
-import { EmptyState } from '@/src/components/EmptyState';
 import { InlineErrorCard } from '@/src/components/InlineErrorCard';
 import { SkeletonFeedPost } from '@/src/components/Skeleton';
-import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
-import { useAppStore } from '@/src/store';
-import { Users } from 'lucide-react-native';
+import { CommunityPollCard } from '@/src/screens/community/components/CommunityPollCard';
+import { CommunitySeedTipCard } from '@/src/screens/community/components/CommunitySeedTipCard';
+import { CommunityWelcomeHub } from '@/src/screens/community/components/CommunityWelcomeHub';
+import { POTTERY_NOOK_SEED_TIPS } from '@/src/screens/community/data/communitySeedContent';
+import { useCommunityPolls } from '@/src/screens/community/hooks/useCommunityPolls';
+import { useAppStore, useVisiblePieces } from '@/src/store';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import {
+  apiGetDiscoverFeed,
   apiGetFeed,
-  apiGetPolls,
   apiListMyPosts,
-  apiVotePoll,
   type BackendFeedPost,
-  type BackendPoll,
 } from '../../../services/community';
-import { mergeCommunityFeedPosts } from '@/src/utils/communityFeedMerge';
+import {
+  isSparseCommunityFeed,
+  mergeForYouFeedPosts,
+} from '@/src/utils/communityFeedMerge';
 import { FeedPostCard } from '../components/FeedPostCard';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  /** Increment to trigger a refresh from the parent ScrollView. */
   refreshKey: number;
   onRefreshingChange: (refreshing: boolean) => void;
+  onJoinChallenge: () => void;
+  onSharePiece: () => void;
+  onAskCommunity: () => void;
+  onBrowseDiscover: () => void;
+  onCreatePost: () => void;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-// ─── Poll card ────────────────────────────────────────────────────────────────
-
-function PollCard({
-  poll,
-  sessionToken,
-  onVoted,
-}: {
-  poll: BackendPoll;
-  sessionToken: string;
-  onVoted: (updated: BackendPoll) => void;
-}) {
-  const [voting, setVoting] = useState<string | null>(null);
-  const hasVoted = poll.voted_option_id !== null;
-  const total = poll.total_votes || 1; // avoid /0
-
-  const handleVote = async (optionId: string) => {
-    if (hasVoted || voting) return;
-    setVoting(optionId);
-    try {
-      const updated = await apiVotePoll(sessionToken, poll.id, optionId);
-      onVoted(updated);
-    } catch {
-      // silently ignore, optimistic update not applied on error
-    } finally {
-      setVoting(null);
-    }
-  };
-
-  return (
-    <Card className="p-4">
-      <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-        Community Poll
-      </Text>
-      <Text className="text-sm font-bold text-foreground mb-3">{poll.question}</Text>
-      <View className="gap-2">
-        {poll.options.map((opt) => {
-          const pct = Math.round((opt.votes / total) * 100);
-          const isVoted = poll.voted_option_id === opt.id;
-          const isVoting = voting === opt.id;
-          return (
-            <TouchableOpacity
-              key={opt.id}
-              onPress={() => handleVote(opt.id)}
-              disabled={hasVoted || voting !== null}
-              activeOpacity={hasVoted ? 1 : 0.75}
-            >
-              <View className="rounded-xl overflow-hidden border border-border">
-                {/* filled bar background */}
-                {hasVoted && (
-                  <View
-                    className="absolute inset-0 rounded-xl"
-                    style={{
-                      width: `${pct}%`,
-                      backgroundColor: isVoted
-                        ? 'hsl(39 57% 51% / 0.15)'
-                        : 'hsl(0 0% 0% / 0.04)',
-                    }}
-                  />
-                )}
-                <View className="flex-row items-center justify-between px-3 py-2.5">
-                  <View className="flex-row items-center gap-2 flex-1">
-                    {isVoting && <ActivityIndicator size="small" color="#8B6A2A" />}
-                    <Text
-                      className="text-sm flex-1"
-                      style={{
-                        fontWeight: isVoted ? '700' : '400',
-                        color: isVoted ? 'hsl(39 57% 45%)' : undefined,
-                      }}
-                    >
-                      {opt.label}
-                    </Text>
-                  </View>
-                  {hasVoted && (
-                    <Text className="text-xs font-semibold text-muted-foreground ml-2">
-                      {pct}%
-                    </Text>
-                  )}
-                </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      {hasVoted && (
-        <Text className="text-xs text-muted-foreground mt-2">
-          {poll.total_votes} vote{poll.total_votes !== 1 ? 's' : ''}
-        </Text>
-      )}
-    </Card>
-  );
-}
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
-export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
+export function ForYouFeed({
+  refreshKey,
+  onRefreshingChange,
+  onJoinChallenge,
+  onSharePiece,
+  onAskCommunity,
+  onBrowseDiscover,
+  onCreatePost,
+}: Props) {
   const sessionToken = useAppStore((s) => s.sessionToken);
   const backendUserId = useAppStore((s) => s.backendUserId);
   const communityFeedRevision = useAppStore((s) => s.communityFeedRevision);
+  const pieces = useVisiblePieces();
+  const hasPieces = pieces.length > 0;
 
   const [posts, setPosts] = useState<BackendFeedPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [discoverAvailable, setDiscoverAvailable] = useState(false);
 
-  const [polls, setPolls] = useState<BackendPoll[]>([]);
+  const { polls, vote: votePoll, reload: reloadPolls } = useCommunityPolls(sessionToken);
 
-  // Track whether the current fetch is a pull-to-refresh.
   const isRefreshRef = useRef(false);
 
   const fetchFeed = useCallback(
@@ -162,13 +83,14 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
 
         let merged = friendsPosts;
         if (isFirstPage) {
-          try {
-            const myPage = await apiListMyPosts(sessionToken, { limit: 20 });
-            const myPosts = myPage.items ?? myPage.posts ?? [];
-            merged = mergeCommunityFeedPosts(myPosts, friendsPosts);
-          } catch {
-            merged = friendsPosts;
-          }
+          const [myPage, discoverPage] = await Promise.all([
+            apiListMyPosts(sessionToken, { limit: 20 }).catch(() => null),
+            apiGetDiscoverFeed(sessionToken, { limit: 20 }),
+          ]);
+          const myPosts = myPage?.items ?? myPage?.posts ?? [];
+          const discoverPosts = discoverPage?.items ?? discoverPage?.posts ?? [];
+          setDiscoverAvailable(discoverPosts.length > 0);
+          merged = mergeForYouFeedPosts(myPosts, discoverPosts, friendsPosts);
         }
 
         if (isFirstPage) {
@@ -200,22 +122,17 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
     [sessionToken, onRefreshingChange],
   );
 
-  // Initial load, feed + polls in parallel.
   useEffect(() => {
     fetchFeed();
-    if (sessionToken) {
-      apiGetPolls(sessionToken)
-        .then((data) => setPolls(data ?? []))
-        .catch(() => {}); // polls are non-critical
-    }
+    void reloadPolls();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionToken]);
 
-  // Refresh triggered by parent (pull-to-refresh) or global post creation.
   useEffect(() => {
     if (refreshKey === 0) return;
     isRefreshRef.current = true;
     fetchFeed();
+    void reloadPolls();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
 
@@ -223,13 +140,18 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
     if (communityFeedRevision === 0) return;
     isRefreshRef.current = true;
     fetchFeed();
+    void reloadPolls();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [communityFeedRevision]);
 
+  const showSeedContent = !isLoading && !error && isSparseCommunityFeed(posts);
+  const othersPosts = posts.filter((p) => !backendUserId || p.user_id !== backendUserId);
+  const hasOwnPosts = posts.some((p) => backendUserId && p.user_id === backendUserId);
+  const showCommunityFeedLabel =
+    discoverAvailable && othersPosts.length > 0 && !hasOwnPosts;
+
   return (
     <>
-      {/* ── Feed posts ─────────────────────────────────────────────────────── */}
-
       {isLoading && (
         <>
           <SkeletonFeedPost />
@@ -242,23 +164,50 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
         <InlineErrorCard message={error} onRetry={() => fetchFeed()} />
       )}
 
-      {!isLoading && !error && posts.length === 0 && (
-        <EmptyState
-          icon={Users}
-          title="Nothing here yet"
-          description="Your posts appear here once shared. Follow other potters to see their work too."
-        />
-      )}
-
-      {!isLoading && !error && posts.some((p) => backendUserId && p.user_id === backendUserId) ? (
-        <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-1">
-          Includes your posts
-        </Text>
+      {!isLoading && !error && polls.length > 0 ? (
+        <>
+          {polls.map((poll) => (
+            <CommunityPollCard
+              key={poll.id}
+              question={poll.question}
+              options={poll.options}
+              votedOptionId={poll.votedOptionId}
+              totalVotes={poll.totalVotes}
+              isDemo={poll.isDemo}
+              onVote={(optionId) => votePoll(poll, optionId)}
+            />
+          ))}
+        </>
       ) : null}
 
-      {posts.map((post) => (
-        <FeedPostCard key={post.id} post={post} sessionToken={sessionToken!} />
-      ))}
+      {!isLoading && !error && showSeedContent ? (
+        <>
+          <CommunityWelcomeHub
+            hasPieces={hasPieces}
+            onSharePiece={onSharePiece}
+            onAskCommunity={onAskCommunity}
+            onJoinChallenge={onJoinChallenge}
+            onBrowseDiscover={onBrowseDiscover}
+            onCreatePost={onCreatePost}
+          />
+          {POTTERY_NOOK_SEED_TIPS.map((tip) => (
+            <CommunitySeedTipCard key={tip.id} tip={tip} />
+          ))}
+        </>
+      ) : null}
+
+      {!isLoading && !error && posts.length > 0 ? (
+        <>
+          {showCommunityFeedLabel ? (
+            <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-1">
+              From the community
+            </Text>
+          ) : null}
+          {posts.map((post) => (
+            <FeedPostCard key={post.id} post={post} sessionToken={sessionToken!} />
+          ))}
+        </>
+      ) : null}
 
       {!isLoading && !error && nextCursor && (
         <TouchableOpacity
@@ -273,21 +222,6 @@ export function ForYouFeed({ refreshKey, onRefreshingChange }: Props) {
           }
         </TouchableOpacity>
       )}
-
-      {/* ── Discovery widgets ───────────────────────────────────────────────── */}
-
-      {/* Active polls */}
-      {polls.map((poll) => (
-        <PollCard
-          key={poll.id}
-          poll={poll}
-          sessionToken={sessionToken!}
-          onVoted={(updated) =>
-            setPolls((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-          }
-        />
-      ))}
-
     </>
   );
 }

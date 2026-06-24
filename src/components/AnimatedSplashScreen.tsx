@@ -199,11 +199,6 @@ export function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
   );
 }
 
-/** @deprecated Use StudioOrnamentBackdrop */
-export function SplashBackgroundOrnaments() {
-  return <StudioOrnamentBackdrop animated opacity={0.88} />;
-}
-
 const styles = StyleSheet.create({
   centerStage: {
     alignItems: 'center',

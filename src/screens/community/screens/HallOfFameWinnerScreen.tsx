@@ -2,6 +2,7 @@ import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
 import { findMockWinner } from '@/src/screens/community/mock/challengeMockData';
+import { mockWinnerToDisplay } from '@/src/screens/community/utils/challengeWinners';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,7 +15,8 @@ export default function HallOfFameWinnerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const winner = id ? findMockWinner(id) : null;
+  const rawWinner = id ? findMockWinner(id) : null;
+  const winner = rawWinner ? mockWinnerToDisplay(rawWinner) : null;
 
   if (!winner) {
     return (

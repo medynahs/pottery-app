@@ -1,11 +1,6 @@
 import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
 import { formatDateShort, todayDateIso } from '@/src/utils/dates';
-import { COLOR_FAMILY_HEX } from './constants';
 import type { GlazeDraft, TestDraft } from './types';
-
-export function getGlazeColor(colorFamily: string): string {
-  return COLOR_FAMILY_HEX[colorFamily?.toLowerCase()] ?? '#C4B48C';
-}
 
 export function glazeCardColor(colorFamily: string): string {
   const n = colorFamily.trim().toLowerCase();

@@ -1,4 +1,3 @@
-import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { useAppStore } from '@/src/store/appStore';
 import React from 'react';
 import type { Piece, PieceForm } from '../../../types/pieces';
@@ -66,8 +65,6 @@ export function useAddPieceForm(
   initialPiece?: Piece,
   onEdit?: (piece: Piece) => void,
 ) {
-  const { openPickSheet } = usePhotoPicker({ aspect: [1, 1] });
-
   const clayBodies = useAppStore((s) => s.clayBodies);
   const defaultClayBodyId = useAppStore((s) => s.defaultClayBodyId);
   const defaultNewPieceStage = useAppStore((s) => s.defaultNewPieceStage);
@@ -111,10 +108,6 @@ export function useAddPieceForm(
     setForm(buildEmptyForm());
     onClose();
   }, [buildEmptyForm, onClose]);
-
-  const pickImage = React.useCallback(() => {
-    openPickSheet((uri) => setForm((previous) => ({ ...previous, photo: uri })));
-  }, [openPickSheet]);
 
   const buildPricingSnapshot = React.useCallback(() => {
     const heightCm = parseNumericInput(form.heightCm);
@@ -272,5 +265,5 @@ export function useAddPieceForm(
     setForm(buildEmptyForm());
   }, [buildEmptyForm, buildSavedPiece, form, initialPiece, onEdit]);
 
-  return { form, set, handleClose, pickImage, handleAdd, handleEdit };
+  return { form, set, handleClose, handleAdd, handleEdit };
 }

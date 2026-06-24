@@ -9,6 +9,3 @@ export function useShareProfile() {
     requireAuth: true,
   });
 }
-
-export { copyProfileLink, shareProfileLink } from './profileShareActions';
-export { buildProfileWebUrl } from './profileLinks';

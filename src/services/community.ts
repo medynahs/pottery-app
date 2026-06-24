@@ -31,6 +31,37 @@ export interface FeedPage {
   next_cursor: string | null;
 }
 
+export interface CommunityApiErrorResponse {
+  error?: string;
+  details?: string | null;
+}
+
+export class CommunityApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly endpoint: string,
+    readonly details: string | null = null,
+  ) {
+    super(`${endpoint} → ${status}${details ? `: ${details}` : ''}`);
+    this.name = 'CommunityApiError';
+  }
+}
+
+async function parseCommunityError(res: Response, endpoint: string): Promise<never> {
+  let details: string | null = null;
+  try {
+    const body = (await res.json()) as CommunityApiErrorResponse;
+    details = body.details ?? body.error ?? null;
+  } catch {
+    try {
+      details = (await res.text()) || null;
+    } catch {
+      // ignore
+    }
+  }
+  throw new CommunityApiError(res.status, endpoint, details);
+}
+
 // ─── Request payloads ────────────────────────────────────────────────────────
 
 export interface CreatePostPayload {
@@ -58,6 +89,35 @@ function authedFetch(
 }
 
 // ─── API functions ────────────────────────────────────────────────────────────
+
+/**
+ * GET /feed
+ * Public discover feed — recent posts from opted-in public profiles.
+ * Returns null when the endpoint is not deployed yet (404/501).
+ *
+ * Backend contract (v1):
+ * - Paginated like FeedPage (`items`, `next_cursor`)
+ * - Only posts from users with `profile_public = true`
+ * - Sorted by `created_at` desc
+ * - Exclude posts the viewer already sees via friends feed (optional dedupe server-side)
+ */
+export async function apiGetDiscoverFeed(
+  sessionToken: string,
+  opts?: { limit?: number; cursor?: string },
+): Promise<FeedPage | null> {
+  const params = new URLSearchParams();
+  if (opts?.limit !== undefined) params.set('limit', String(opts.limit));
+  if (opts?.cursor) params.set('cursor', opts.cursor);
+  const qs = params.size > 0 ? `?${params.toString()}` : '';
+  try {
+    const res = await authedFetch(sessionToken, `${API_BASE}/feed${qs}`);
+    if (res.status === 404 || res.status === 501) return null;
+    if (!res.ok) return null;
+    return res.json() as Promise<FeedPage>;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * GET /users/me/feed
@@ -90,7 +150,7 @@ export async function apiListMyPosts(
   if (opts?.cursor) params.set('cursor', opts.cursor);
   const qs = params.size > 0 ? `?${params.toString()}` : '';
   const res = await authedFetch(sessionToken, `${API_BASE}/users/me/posts${qs}`);
-  if (!res.ok) throw new Error(`GET /users/me/posts → ${res.status}`);
+  if (!res.ok) await parseCommunityError(res, 'GET /users/me/posts');
   return res.json() as Promise<FeedPage>;
 }
 
@@ -146,27 +206,64 @@ export async function apiRemoveReaction(
   }
 }
 
-// ─── Hall of Fame ─────────────────────────────────────────────────────────────
+// ─── Hall of Fame (challenge winner archive) ───────────────────────────────────
 
-export interface BackendHallOfFameEntry {
+export interface BackendHallOfFameWinner {
+  id: string;
+  track_id: string;
+  track_title: string;
+  artist_name: string;
+  studio_name?: string | null;
+  piece_title: string;
+  process_note?: string | null;
+  image_url: string;
+  hero_image_url?: string | null;
+  vote_count: number;
+  won_at: string;
+}
+
+export interface BackendHallOfFameCycle {
+  challenge_id: string;
+  title: string;
+  label?: string | null;
+  emoji?: string | null;
+  closed_at: string;
+  winners: BackendHallOfFameWinner[];
+}
+
+export interface BackendHallOfFameResponse {
+  cycles: BackendHallOfFameCycle[];
+}
+
+/** Legacy leaderboard row — kept for backwards compatibility with older API shapes. */
+export interface BackendHallOfFameLeaderboardEntry {
   id: string;
   name: string;
   avatar_url: string | null;
   piece_count: number;
   challenge_wins: number;
-  survival_rate: number; // 0–100, server-computed
+  survival_rate: number;
 }
 
 /**
  * GET /hall-of-fame
- * Returns top potters sorted by challenge wins. Updated daily server-side.
+ * Winner archive: `{ cycles: [{ challenge_id, title, winners[] }] }`.
+ * Returns null when the endpoint is missing or returns an unsupported shape.
  */
-export async function apiGetHallOfFame(
+export async function apiGetHallOfFameArchive(
   sessionToken: string,
-): Promise<BackendHallOfFameEntry[]> {
+): Promise<BackendHallOfFameResponse | null> {
   const res = await authedFetch(sessionToken, `${API_BASE}/hall-of-fame`);
-  if (!res.ok) throw new Error(`GET /hall-of-fame → ${res.status}`);
-  return res.json() as Promise<BackendHallOfFameEntry[]>;
+  if (!res.ok) return null;
+
+  const data = await res.json().catch(() => null);
+  if (!data || typeof data !== 'object') return null;
+
+  if (Array.isArray((data as BackendHallOfFameResponse).cycles)) {
+    return data as BackendHallOfFameResponse;
+  }
+
+  return null;
 }
 
 // ─── Polls ────────────────────────────────────────────────────────────────────

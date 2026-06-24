@@ -1,5 +1,5 @@
 // src/screens/community/data.ts
-import type { Creator, Festival, FestivalTrack, FilterTab, MonthlyChallenge, PollOption, WallOfFameEntry } from './types';
+import type { Festival, FestivalTrack, FilterTab, MonthlyChallenge } from './types';
 
 export const FILTERS: FilterTab[] = ['For You', 'Challenges', 'Hall of Fame'];
 
@@ -14,20 +14,6 @@ export const ACTIVE_CHALLENGE: MonthlyChallenge = {
   bgColor: 'hsl(100 25% 96%)',
   borderColor: 'hsl(100 20% 85%)',
 };
-
-export const POLL_OPTIONS: PollOption[] = [
-  { label: "Yuki's Soda Matte", votes: 48 },
-  { label: "Tariq's Iron Red", votes: 35 },
-  { label: "Susan's Speckled Cream", votes: 61 },
-];
-export const POLL_TOTAL = 144;
-
-export const FOLLOW_CREATORS: Creator[] = [
-  { name: 'Tariq B.', avatar: 'T', specialty: 'Iron Red', color: 'hsl(39 57% 51%)' },
-  { name: 'Yuki R.', avatar: 'Y', specialty: 'Soda Firing', color: 'hsl(213 80% 55%)' },
-  { name: 'Mara L.', avatar: 'M', specialty: 'Sculptural', color: 'hsl(340 75% 50%)' },
-  { name: 'Adele K.', avatar: 'A', specialty: 'Handbuilding', color: 'hsl(270 60% 55%)' },
-];
 
 export const FESTIVAL_TRACKS: FestivalTrack[] = [
   { id: 'beginner', title: 'Beginner Track', summary: 'Wheel fundamentals and form consistency with guided prompts.', participants: 86 },
@@ -54,9 +40,3 @@ export const ACTIVE_FESTIVAL: Festival = {
   ],
   tracks: FESTIVAL_TRACKS,
 };
-
-export const WALL_OF_FAME: WallOfFameEntry[] = [
-  { name: 'Mara L.', title: 'Best Surface Story', piece: 'Ash-run Vessel', badge: 'Festival Winner' },
-  { name: 'Chen W.', title: 'Most Improved Form', piece: 'Nest Bowl Set', badge: 'Mission Streak' },
-  { name: 'Yuki R.', title: 'Community Favorite', piece: 'Moon Teapot', badge: 'Top Vote' },
-];

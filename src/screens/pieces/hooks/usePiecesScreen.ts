@@ -16,6 +16,7 @@ import { pieceMatchesFilters } from '../utils/pieceFilterUtils';
 import { FINISHED_STAGE_ID, CEMETERY_STAGE_ID, getAdvanceOrder, getConfiguredNextStage, isExpectedStageAdvance } from '../utils/stageFlow';
 import { STAGE_ICONS, resolveStageIcon } from '../utils/stageIconUtils';
 import { schedulePiecesSync, usePiecesSyncStatus } from './usePiecesSync';
+import { schedulePiecePhotoSync } from '@/src/utils/pieceAssetSync';
 
 function getSetName(name: string) {
   return name.replace(/\s+\d+$/, '');
@@ -181,6 +182,9 @@ export function usePiecesScreen() {
     addPieces(newPieces);
     setAddOpen(false);
     schedulePiecesSync();
+    for (const piece of newPieces) {
+      schedulePiecePhotoSync(piece.id);
+    }
   };
 
   const handleUpdatePiece = React.useCallback((updated: Piece) => {
@@ -188,6 +192,7 @@ export function usePiecesScreen() {
     setJournalPiece((current) => (current?.id === updated.id ? updated : current));
     setActionSheetPiece((current) => (current?.id === updated.id ? updated : current));
     schedulePiecesSync();
+    schedulePiecePhotoSync(updated.id);
   }, [updatePiece]);
 
   const handleEditPiece = React.useCallback((updated: Piece) => {
@@ -233,6 +238,7 @@ export function usePiecesScreen() {
             }
           : prev
       );
+      schedulePiecePhotoSync(pieceId);
     },
     [updateJournalEntry]
   );
@@ -390,6 +396,10 @@ export function usePiecesScreen() {
     }
 
     schedulePiecesSync();
+
+    for (const pieceId of pieceIds) {
+      schedulePiecePhotoSync(pieceId);
+    }
 
     onAdvanced?.({
       fromStage,

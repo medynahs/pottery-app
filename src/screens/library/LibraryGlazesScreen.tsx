@@ -9,7 +9,7 @@ import { Droplets, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
 import { deriveCustomCollectionNames } from './atlas/collections';
-import { CreateCollectionModal } from './atlas/CollectionsGrid';
+import { CreateCollectionModal } from './atlas/CreateCollectionModal';
 import { GlazeFilterSheet } from './atlas/GlazeFilterSheet';
 import {
   buildActiveGlazeFilterTags,

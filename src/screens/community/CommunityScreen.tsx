@@ -1,22 +1,25 @@
 // src/screens/community/CommunityScreen.tsx
 import { UnauthenticatedGate } from '@/src/components/UnauthenticatedGate';
+import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { StudioTabScreen } from '@/src/components/StudioTabScreen';
 import {
   TAB_FLOATING_ACTION_BOTTOM,
   TAB_SCROLL_BOTTOM_PADDING_WITH_FAB,
 } from '@/src/constants/tabScreenLayout';
-import { Text } from '@/src/components/ui/text';
-import { useAppStore } from '@/src/store';
+import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
+import { buildPieceSharePreset } from '@/src/screens/pieces/utils/sharePieceToCommunity';
+import { useAppStore, useVisiblePieces } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Bell, Pencil, Users } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
 import { MainTabHeader } from '../../components/MainTabHeader';
+import { ACTIVE_CHALLENGE } from './data';
 import { CreatePostSheet } from './components/CreatePostSheet';
 import { FilterBar } from './components/FilterBar';
 import { ChallengesTab } from './tabs/FestivalsTab';
-import { ForYouFeed } from './tabs/ForYouFeed';
 import { HallOfFameTab } from './tabs/HallOfFameTab';
+import { ForYouFeed } from './tabs/ForYouFeed';
 import type { FilterTab } from './types';
 
 function CommunityUnauthenticatedGate() {
@@ -32,17 +35,21 @@ function CommunityUnauthenticatedGate() {
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
-
 export default function CommunityScreen() {
   const sessionToken = useAppStore((s) => s.sessionToken);
   const composerPreset = useAppStore((s) => s.communityPostComposerPreset);
   const clearComposerPreset = useAppStore((s) => s.clearCommunityPostComposerPreset);
+  const hasCreatedPost = useAppStore((s) => s.hasCreatedPost);
+  const hasOpenedCommunityTab = useAppStore((s) => s.hasOpenedCommunityTab);
+  const markCommunityTabOpened = useAppStore((s) => s.markCommunityTabOpened);
+  const pieces = useVisiblePieces();
+  const openComposer = useCommunityComposer();
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<FilterTab>('For You');
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
   const [feedRefreshing, setFeedRefreshing] = useState(false);
   const [createPostVisible, setCreatePostVisible] = useState(false);
+  const [entryCeremony, setEntryCeremony] = useState<{ emoji: string; challengeName: string } | null>(null);
 
   useEffect(() => {
     if (composerPreset) {
@@ -50,9 +57,44 @@ export default function CommunityScreen() {
     }
   }, [composerPreset]);
 
+  useEffect(() => {
+    if (!sessionToken || hasOpenedCommunityTab) return;
+    if (!hasCreatedPost) {
+      setActiveFilter('Challenges');
+    }
+    markCommunityTabOpened();
+  }, [sessionToken, hasOpenedCommunityTab, hasCreatedPost, markCommunityTabOpened]);
+
   const handleRefresh = useCallback(() => {
     setFeedRefreshKey((k) => k + 1);
   }, []);
+
+  const handleShareFirstPiece = useCallback(() => {
+    const piece = pieces[0];
+    if (piece) {
+      openComposer(buildPieceSharePreset(piece));
+      return;
+    }
+    setCreatePostVisible(true);
+  }, [openComposer, pieces]);
+
+  const handleAskCommunity = useCallback(() => {
+    openComposer({ kind: 'ask_community', askTopic: 'glaze' });
+    setCreatePostVisible(true);
+  }, [openComposer]);
+
+  const handleBrowseDiscover = useCallback(() => {
+    router.push('/(tabs)/library?tab=discover' as never);
+  }, [router]);
+
+  const handleShareChallengePost = useCallback(() => {
+    openComposer({
+      kind: 'update',
+      includeChallengeTag: true,
+      challengeTitle: ACTIVE_CHALLENGE.title,
+    });
+    setCreatePostVisible(true);
+  }, [openComposer]);
 
   if (!sessionToken) return <CommunityUnauthenticatedGate />;
 
@@ -68,13 +110,26 @@ export default function CommunityScreen() {
 
   const renderTab = () => {
     switch (activeFilter) {
-      case 'Challenges':   return <ChallengesTab />;
-      case 'Hall of Fame': return <HallOfFameTab />;
+      case 'Challenges':
+        return (
+          <ChallengesTab
+            onBrowseHallOfFame={() => setActiveFilter('Hall of Fame')}
+            onEntrySubmitted={setEntryCeremony}
+            onShareChallengePost={handleShareChallengePost}
+          />
+        );
+      case 'Hall of Fame':
+        return <HallOfFameTab />;
       default:
         return (
           <ForYouFeed
             refreshKey={feedRefreshKey}
             onRefreshingChange={setFeedRefreshing}
+            onJoinChallenge={() => setActiveFilter('Challenges')}
+            onSharePiece={handleShareFirstPiece}
+            onAskCommunity={handleAskCommunity}
+            onBrowseDiscover={handleBrowseDiscover}
+            onCreatePost={() => setCreatePostVisible(true)}
           />
         );
     }
@@ -103,7 +158,6 @@ export default function CommunityScreen() {
         </View>
       </ScrollView>
 
-      {/* FAB */}
       <TouchableOpacity
         onPress={() => setCreatePostVisible(true)}
         activeOpacity={0.85}
@@ -142,10 +196,21 @@ export default function CommunityScreen() {
           }}
         />
       ) : null}
+
+      <CeremonyOverlay
+        visible={entryCeremony !== null}
+        emoji={entryCeremony?.emoji ?? '🏆'}
+        title="Piece submitted!"
+        subtitle={
+          entryCeremony
+            ? `Your entry for ${entryCeremony.challengeName} is in.`
+            : undefined
+        }
+        footnote="The community votes once submissions close. Good luck!"
+        tint="rgba(42, 107, 124, 1)"
+        durationMs={3000}
+        onDismiss={() => setEntryCeremony(null)}
+      />
     </StudioTabScreen>
   );
 }
-
-
-
-

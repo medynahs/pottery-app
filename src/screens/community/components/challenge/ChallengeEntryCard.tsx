@@ -1,15 +1,14 @@
 import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
-import type { MockChallengeEntry } from '@/src/screens/community/mock/challengeMockTypes';
-import { trackTitle } from '@/src/screens/community/mock/challengeMockData';
+import type { ChallengeEntryDisplay } from '@/src/screens/community/types';
 import { Image } from 'expo-image';
 import { Heart, Trophy } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 
 type Props = {
-  entry: MockChallengeEntry;
+  entry: ChallengeEntryDisplay;
   voteCount: number;
   voted: boolean;
   canVote: boolean;
@@ -51,12 +50,12 @@ export function ChallengeEntryCard({
               <View className="flex-row items-center gap-1.5 mb-1">
                 {entry.rank === 1 ? <Trophy size={12} color={COMMUNITY_THEME.accent} /> : null}
                 <Text className="text-[10px] font-bold uppercase tracking-widest" style={{ color: COMMUNITY_THEME.inkMuted }}>
-                  #{entry.rank} · {trackTitle(entry.trackId)}
+                  #{entry.rank} · {entry.trackTitle}
                 </Text>
               </View>
             ) : (
               <Text className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: COMMUNITY_THEME.inkMuted }}>
-                {trackTitle(entry.trackId)}
+                {entry.trackTitle}
               </Text>
             )}
             <Text className="text-base font-bold" style={{ color: COMMUNITY_THEME.ink }}>
@@ -77,15 +76,19 @@ export function ChallengeEntryCard({
             <Text className="text-xs font-bold" style={{ color: COMMUNITY_THEME.ink }}>
               {entry.artistName}
             </Text>
-            <Text className="text-[11px]" style={{ color: COMMUNITY_THEME.inkMuted }}>
-              {entry.studioName}
-            </Text>
+            {entry.studioName ? (
+              <Text className="text-[11px]" style={{ color: COMMUNITY_THEME.inkMuted }}>
+                {entry.studioName}
+              </Text>
+            ) : null}
           </View>
         </View>
 
-        <Text className="text-xs leading-relaxed mb-3" style={{ color: COMMUNITY_THEME.inkSoft }} numberOfLines={3}>
-          {entry.processNote}
-        </Text>
+        {entry.processNote ? (
+          <Text className="text-xs leading-relaxed mb-3" style={{ color: COMMUNITY_THEME.inkSoft }} numberOfLines={3}>
+            {entry.processNote}
+          </Text>
+        ) : null}
 
         {canVote ? (
           <TouchableOpacity

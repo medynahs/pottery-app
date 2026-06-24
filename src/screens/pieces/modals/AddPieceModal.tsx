@@ -27,7 +27,7 @@ export function AddPieceModal({ visible, onClose, onAdd, editPiece, onEdit }: Ad
   const sheetHeight = useModalSheetHeight();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
-  const { form, set, handleClose, pickImage, handleAdd, handleEdit } = useAddPieceForm(onClose, onAdd, editPiece, onEdit);
+  const { form, set, handleClose, handleAdd, handleEdit } = useAddPieceForm(onClose, onAdd, editPiece, onEdit);
   const isEditing = !!editPiece;
 
   return (
@@ -42,7 +42,6 @@ export function AddPieceModal({ visible, onClose, onAdd, editPiece, onEdit }: Ad
         <AddPieceForm
           form={form}
           set={set}
-          onPickImage={pickImage}
           colors={colors}
           isEditing={isEditing}
           fillHeight

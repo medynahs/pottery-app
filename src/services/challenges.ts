@@ -3,23 +3,68 @@
 
 import { API_BASE_URL as API_BASE } from './index';
 
+export type ChallengeStatus = 'open' | 'voting' | 'closed';
+
+export interface BackendChallengeTrack {
+  id: string;
+  title: string;
+  summary?: string;
+  participant_count?: number;
+}
+
+export interface BackendChallengeWinner {
+  id: string;
+  track_id: string;
+  track_title: string;
+  user_id?: string;
+  artist_name: string;
+  studio_name?: string | null;
+  piece_title: string;
+  process_note?: string | null;
+  image_url: string;
+  hero_image_url?: string | null;
+  vote_count: number;
+  won_at: string;
+}
+
 export interface BackendChallenge {
   id: string;
   title: string;
   description: string;
+  status?: ChallengeStatus | null;
   starts_at?: string | null;
   ends_at?: string | null;
+  submission_deadline?: string | null;
+  voting_ends_at?: string | null;
+  winners_display_until?: string | null;
+  next_challenge_starts_at?: string | null;
   created_at?: string;
   updated_at?: string | null;
   participant_count?: number;
+  tracks?: BackendChallengeTrack[];
+  winners?: BackendChallengeWinner[];
+  /** Join state — returned on challenge detail or list when authenticated. */
+  is_joined?: boolean;
+  track_id?: string | null;
+  my_entry_id?: string | null;
+  has_submitted?: boolean;
 }
 
 export interface BackendChallengeEntry {
   id: string;
   challenge_id: string;
+  track_id?: string | null;
   user_id?: string;
+  artist_name?: string | null;
+  studio_name?: string | null;
+  piece_title?: string | null;
+  process_note?: string | null;
+  image_url?: string | null;
   piece_id?: string | null;
   note?: string | null;
+  vote_count?: number;
+  rank?: number;
+  my_vote?: boolean;
   created_at?: string;
 }
 
@@ -32,8 +77,14 @@ export interface BackendChallengeLeaderboardEntry {
 }
 
 export interface SubmitChallengeEntryPayload {
+  track_id?: string;
   piece_id?: string;
   note?: string;
+  post_id?: string;
+}
+
+export interface VoteChallengePayload {
+  entry_id: string;
 }
 
 function authedFetch(
@@ -67,7 +118,22 @@ export async function apiListChallenges(
   if (!res.ok) {
     throw new Error(`GET /challenges -> ${res.status}`);
   }
-  return res.json() as Promise<BackendChallenge[]>;
+  const data = await toJsonOrNull<BackendChallenge[] | { items?: BackendChallenge[] }>(res);
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  return data.items ?? [];
+}
+
+/** GET /challenges/{id} */
+export async function apiGetChallenge(
+  sessionToken: string,
+  challengeId: string,
+): Promise<BackendChallenge> {
+  const res = await authedFetch(sessionToken, `${API_BASE}/challenges/${challengeId}`);
+  if (!res.ok) {
+    throw new Error(`GET /challenges/${challengeId} -> ${res.status}`);
+  }
+  return res.json() as Promise<BackendChallenge>;
 }
 
 /** POST /challenges/{id}/entries */
@@ -100,6 +166,43 @@ export async function apiWithdrawChallengeEntry(
   );
   if (!res.ok) {
     throw new Error(`DELETE /challenges/${challengeId}/entries/${entryId} -> ${res.status}`);
+  }
+}
+
+/** GET /challenges/{id}/entries */
+export async function apiGetChallengeEntries(
+  sessionToken: string,
+  challengeId: string,
+  trackId?: string,
+): Promise<BackendChallengeEntry[]> {
+  const query = trackId ? `?track_id=${encodeURIComponent(trackId)}` : '';
+  const res = await authedFetch(
+    sessionToken,
+    `${API_BASE}/challenges/${challengeId}/entries${query}`,
+  );
+  if (!res.ok) {
+    throw new Error(`GET /challenges/${challengeId}/entries -> ${res.status}`);
+  }
+
+  const data = await toJsonOrNull<BackendChallengeEntry[] | { items?: BackendChallengeEntry[]; entries?: BackendChallengeEntry[] }>(res);
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  return data.items ?? data.entries ?? [];
+}
+
+/** POST /challenges/{id}/votes */
+export async function apiVoteChallengeEntry(
+  sessionToken: string,
+  challengeId: string,
+  entryId: string,
+): Promise<void> {
+  const res = await authedFetch(sessionToken, `${API_BASE}/challenges/${challengeId}/votes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entry_id: entryId } satisfies VoteChallengePayload),
+  });
+  if (!res.ok) {
+    throw new Error(`POST /challenges/${challengeId}/votes -> ${res.status}`);
   }
 }
 

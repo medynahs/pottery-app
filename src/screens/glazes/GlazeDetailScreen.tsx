@@ -19,7 +19,7 @@ import {
   resolveGlazeStatus,
 } from '@/src/screens/library/atlas/glazeListUtils';
 import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
-import { GlazeThumbnail } from '@/src/screens/library/atlas/MediaSlot';
+import { GlazeThumbnail } from '@/src/screens/library/atlas/GlazeThumbnail';
 import type { GlazeDraft, TestDraft } from '@/src/screens/library/atlas/types';
 import { sanitizeCustomCollections, deriveCustomCollectionNames } from '@/src/screens/library/atlas/collections';
 import { hasValidRecipeIngredients } from '@/src/screens/library/atlas/GlazeRecipeBuilder';
