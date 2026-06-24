@@ -102,8 +102,10 @@ export function FeedPostCard({ post, sessionToken }: Props) {
   }, [post.content, postMeta]);
   const kilnPieceChips = postMeta?.kilnFiring?.pieceIds ?? [];
   const firstAsset = post.assets?.[0];
-  const initial = post.user_id.slice(0, 1).toUpperCase();
   const isOwnPost = Boolean(backendUserId && backendUserId === post.user_id);
+  const initial = isOwnPost
+    ? (user.avatarInitial?.trim() || user.name?.trim()?.[0]?.toUpperCase() || post.user_id.slice(0, 1).toUpperCase())
+    : (post.user_name?.trim()?.[0]?.toUpperCase() || post.user_id.slice(0, 1).toUpperCase());
   const savedFromPost = isCommunityGlazePostSaved(post.id, glazes.map((g) => g.id));
   const canSaveRecipe = isSavableGlazeRecipePayload(recipePayload) && !savedFromPost;
   const collections = React.useMemo(
@@ -111,12 +113,14 @@ export function FeedPostCard({ post, sessionToken }: Props) {
     [glazes, glazeCollectionNames],
   );
   const authorLabel = isOwnPost
-    ? (user.studioName?.trim() || user.name?.trim() || 'You')
+    ? (user.studioName?.trim() || user.name?.trim() || post.user_name?.trim() || 'You')
     : (post.user_name?.trim() || 'Community Member');
   const authorStudioForProvenance = isOwnPost
-    ? (user.studioName?.trim() || user.name?.trim() || 'Your studio')
+    ? (user.studioName?.trim() || user.name?.trim() || post.user_name?.trim() || 'Your studio')
     : authorLabel;
-  const authorAvatarUri = isOwnPost ? null : (post.user_avatar_url ?? null);
+  const authorAvatarUri = isOwnPost
+    ? (user.avatarImageUri ?? post.user_avatar_url ?? null)
+    : (post.user_avatar_url ?? null);
   const saveCount = Math.max(post.save_count ?? 0, communityPostSaveCounts[post.id] ?? 0);
   const isGlazeRecipePost = isSavableGlazeRecipePayload(recipePayload);
   const canSendFriendRequest = Boolean(backendUserId && backendUserId !== post.user_id);
