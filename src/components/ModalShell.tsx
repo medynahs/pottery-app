@@ -182,6 +182,8 @@ export interface ModalCardProps {
   radius?: number;
   /** When false, omit the top drag handle (use ModalSheetHeader instead). */
   withHandle?: boolean;
+  /** Override the sheet shell background (e.g. themed headers that bleed to the top edge). */
+  backgroundColor?: string;
 }
 
 function ModalDragHandle() {
@@ -240,6 +242,7 @@ export function ModalCard({
   height,
   radius,
   withHandle = true,
+  backgroundColor,
 }: ModalCardProps) {
   const topRadius = radius ?? (variant === 'pottery' ? 28 : MODAL_SHEET_RADIUS);
   const shellStyle = {
@@ -248,6 +251,7 @@ export function ModalCard({
     flexDirection: 'column' as const,
     flexShrink: 1,
     minHeight: 0,
+    overflow: 'hidden' as const,
   };
 
   if (variant === 'pottery') {
@@ -270,10 +274,11 @@ export function ModalCard({
 
   return (
     <View
-      className="bg-background"
+      className={backgroundColor ? undefined : 'bg-background'}
       style={{
         borderTopLeftRadius: topRadius,
         borderTopRightRadius: topRadius,
+        backgroundColor: backgroundColor ?? undefined,
         ...shellStyle,
       }}
     >

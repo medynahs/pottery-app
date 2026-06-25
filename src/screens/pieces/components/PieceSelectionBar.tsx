@@ -1,5 +1,14 @@
 import { Text } from '@/src/components/ui/text';
 import { BrandColors } from '@/src/constants/theme';
+import {
+  CEMETERY_ACCENT,
+  CEMETERY_BORDER_SUBTLE,
+  CEMETERY_PILL_ACTIVE,
+  CEMETERY_SURFACE,
+  CEMETERY_TEXT,
+  CEMETERY_TEXT_MUTED,
+  CEMETERY_TEXT_SUBTLE,
+} from '@/src/screens/pieces/cemeteryTheme';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -15,6 +24,7 @@ type PieceSelectionBarProps = {
   hint?: string;
   onCancel: () => void;
   onAdvance: () => void;
+  variant?: 'default' | 'cemetery';
 };
 
 export function PieceSelectionBar({
@@ -24,19 +34,26 @@ export function PieceSelectionBar({
   hint,
   onCancel,
   onAdvance,
+  variant = 'default',
 }: PieceSelectionBarProps) {
+  const isCemetery = variant === 'cemetery';
+
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, isCemetery && styles.barCemetery]}>
       <View style={styles.row}>
         <View style={styles.meta}>
-          <Text className="text-xs font-serif font-bold text-foreground" numberOfLines={1}>
+          <Text
+            className={`text-xs font-serif font-bold ${isCemetery ? '' : 'text-foreground'}`}
+            style={isCemetery ? { color: CEMETERY_TEXT } : undefined}
+            numberOfLines={1}
+          >
             {selectedCount} selected
           </Text>
           {hint ? (
             <Text
-              className="text-[10px] text-muted-foreground mt-0.5"
+              className={`text-[10px] mt-0.5 ${isCemetery ? '' : 'text-muted-foreground'}`}
+              style={[styles.hint, isCemetery ? { color: CEMETERY_TEXT_MUTED } : undefined]}
               numberOfLines={2}
-              style={styles.hint}
             >
               {hint}
             </Text>
@@ -49,9 +66,14 @@ export function PieceSelectionBar({
             activeOpacity={0.85}
             accessibilityRole="button"
             accessibilityLabel="Cancel selection"
-            style={styles.cancelButton}
+            style={[styles.cancelButton, isCemetery && styles.cancelButtonCemetery]}
           >
-            <Text className="text-xs font-body-medium text-foreground">Cancel</Text>
+            <Text
+              className={`text-xs font-body-medium ${isCemetery ? '' : 'text-foreground'}`}
+              style={isCemetery ? { color: CEMETERY_TEXT_SUBTLE } : undefined}
+            >
+              Cancel
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={onAdvance}
@@ -61,12 +83,26 @@ export function PieceSelectionBar({
             accessibilityLabel={advanceLabel}
             style={[
               styles.advanceButton,
-              canAdvance ? styles.advanceButtonActive : styles.advanceButtonDisabled,
+              isCemetery
+                ? canAdvance
+                  ? styles.advanceButtonCemeteryActive
+                  : styles.advanceButtonCemeteryDisabled
+                : canAdvance
+                  ? styles.advanceButtonActive
+                  : styles.advanceButtonDisabled,
             ]}
           >
             <Text
               className="text-xs font-body-medium"
-              style={{ color: canAdvance ? '#FFFFFF' : 'hsl(24 20% 40%)' }}
+              style={{
+                color: canAdvance
+                  ? isCemetery
+                    ? CEMETERY_ACCENT
+                    : '#FFFFFF'
+                  : isCemetery
+                    ? CEMETERY_TEXT_SUBTLE
+                    : 'hsl(24 20% 40%)',
+              }}
               numberOfLines={1}
             >
               {advanceLabel}
@@ -96,6 +132,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 12,
   },
+  barCemetery: {
+    backgroundColor: CEMETERY_SURFACE,
+    borderTopColor: CEMETERY_BORDER_SUBTLE,
+    shadowColor: '#0A0604',
+    shadowOpacity: 0.28,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -124,6 +166,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  cancelButtonCemetery: {
+    backgroundColor: 'rgba(42, 28, 22, 0.85)',
+    borderColor: CEMETERY_BORDER_SUBTLE,
+  },
   advanceButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -135,9 +181,19 @@ const styles = StyleSheet.create({
   advanceButtonActive: {
     backgroundColor: BrandColors.primary,
   },
+  advanceButtonCemeteryActive: {
+    backgroundColor: CEMETERY_PILL_ACTIVE,
+    borderWidth: 1,
+    borderColor: CEMETERY_BORDER_SUBTLE,
+  },
   advanceButtonDisabled: {
     backgroundColor: STUDIO_CREAM_MUTED,
     borderWidth: 1,
     borderColor: STUDIO_CREAM_BORDER,
+  },
+  advanceButtonCemeteryDisabled: {
+    backgroundColor: 'rgba(42, 28, 22, 0.85)',
+    borderWidth: 1,
+    borderColor: CEMETERY_BORDER_SUBTLE,
   },
 });

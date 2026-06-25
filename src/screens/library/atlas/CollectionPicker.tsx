@@ -1,7 +1,8 @@
+import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { Check, FolderPlus } from 'lucide-react-native';
 import React from 'react';
-import { TextInput, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { FAVORITES_COLLECTION, MY_GLAZES_COLLECTION, sanitizeCustomCollections } from './collections';
 
 export function CollectionPicker({
@@ -89,12 +90,11 @@ export function CollectionPicker({
 
       {showNewInput ? (
         <View className="flex-row gap-2 items-center mt-3">
-          <TextInput
+          <Input
             value={newInput}
             onChangeText={setNewInput}
             placeholder="Collection name…"
-            placeholderTextColor="hsl(24 20% 65%)"
-            className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground"
+            className="flex-1"
             autoFocus
             maxLength={32}
             returnKeyType="done"
