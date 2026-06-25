@@ -9,10 +9,11 @@ interface ToggleRowProps {
     label: string;
     value: boolean;
     onToggle: () => void;
+    disabled?: boolean;
     isLast?: boolean;
 }
 
-export const ToggleRow = React.memo(function ToggleRow({ icon: Icon, iconColor, iconBg, label, value, onToggle, isLast = false, }: ToggleRowProps) {
+export const ToggleRow = React.memo(function ToggleRow({ icon: Icon, iconColor, iconBg, label, value, onToggle, disabled = false, isLast = false, }: ToggleRowProps) {
     return (
         <View className={`flex-row items-center gap-3 py-3 ${!isLast ? 'border-b border-border' : ''}`}>
             <View className={`w-9 h-9 rounded-xl items-center justify-center ${iconBg}`}>
@@ -22,6 +23,7 @@ export const ToggleRow = React.memo(function ToggleRow({ icon: Icon, iconColor, 
             <Switch
                 value={value}
                 onValueChange={onToggle}
+                disabled={disabled}
                 trackColor={{ false: 'hsl(34 25% 82%)', true: '#8B6A2A' }}
                 thumbColor="white"
             />

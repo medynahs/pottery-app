@@ -88,6 +88,13 @@ export interface VoteChallengePayload {
   entry_id: string;
 }
 
+/** Display name for UI (API field is `name`, not legacy `title`). */
+export function challengeDisplayName(
+  challenge: Pick<BackendChallenge, 'name'>,
+): string {
+  return challenge.name?.trim() || 'Community Challenge';
+}
+
 function authedFetch(
   sessionToken: string,
   url: string,

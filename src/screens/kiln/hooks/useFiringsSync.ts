@@ -4,11 +4,13 @@
  */
 
 import {
-    apiCreateFiring,
-    apiDeleteFiring,
-    apiListFirings,
-    apiUpdateFiring,
-    type BackendFiring,
+  apiCreateFiring,
+  apiDeleteFiring,
+  apiListFirings,
+  apiUpdateFiring,
+  firingLogFieldsForApi,
+  type BackendFiring,
+  type CreateFiringPayload,
 } from '@/src/services/firings';
 import { useAppStore } from '@/src/store';
 import type { Firing } from '@/src/types/kiln';
@@ -19,6 +21,13 @@ export const FIRINGS_QUERY_KEY = ['firings'] as const;
 export const firingsQueryKey = (userId: string) => [...FIRINGS_QUERY_KEY, userId] as const;
 
 function toLocalFiring(backend: BackendFiring, existing?: Firing): Firing {
+  const firedDate = backend.fired_date ?? backend.scheduled_date ?? existing?.firedDate;
+  const hasLogData =
+    backend.peak_temp_c != null
+    || backend.hold_time_minutes != null
+    || Boolean(backend.photo_uri);
+  const logSource = existing?.logSource ?? (hasLogData ? 'manual' : undefined);
+
   return {
     ...(existing ?? {
       id: `firing-${backend.id}`,
@@ -43,16 +52,36 @@ function toLocalFiring(backend: BackendFiring, existing?: Firing): Firing {
     scheduledDate: backend.scheduled_date ?? existing?.scheduledDate,
     startedAt: backend.started_at ?? existing?.startedAt,
     completedAt: backend.completed_at ?? existing?.completedAt,
-    firedDate: existing?.firedDate,
-    peakTempC: existing?.peakTempC,
-    holdTimeMinutes: existing?.holdTimeMinutes,
-    photoUri: existing?.photoUri,
-    logSource: existing?.logSource,
+    firedDate,
+    peakTempC: backend.peak_temp_c ?? existing?.peakTempC,
+    holdTimeMinutes: backend.hold_time_minutes ?? existing?.holdTimeMinutes,
+    photoUri: backend.photo_uri ?? existing?.photoUri,
+    logSource,
     statusOverride: existing?.statusOverride,
     result: existing?.result,
     resultNotes: existing?.resultNotes,
     pieceIds: existing?.pieceIds ?? [],
     createdAt: backend.created_at ?? existing?.createdAt ?? new Date().toISOString(),
+  };
+}
+
+function firingToApiPayload(firing: Firing): CreateFiringPayload {
+  const logFields = firingLogFieldsForApi(firing);
+  return {
+    kiln_id: firing.kilnId || undefined,
+    studio_id: firing.studioId,
+    name: firing.name,
+    type: firing.type,
+    cone: firing.cone,
+    state: firing.state,
+    notes: firing.notes || firing.resultNotes,
+    scheduled_date: firing.firedDate ?? firing.submissionDate ?? firing.scheduledDate,
+    started_at: firing.startedAt,
+    completed_at: firing.completedAt,
+    fired_date: logFields.fired_date,
+    peak_temp_c: logFields.peak_temp_c ?? undefined,
+    hold_time_minutes: logFields.hold_time_minutes ?? undefined,
+    photo_uri: logFields.photo_uri ?? undefined,
   };
 }
 
@@ -105,16 +134,7 @@ export function useCreateFiringMutation() {
   return useMutation({
     mutationFn: async (firing: Firing) => {
       if (!sessionToken) return null;
-      const backend = await apiCreateFiring(sessionToken, {
-        kiln_id: firing.kilnId || undefined,
-        studio_id: firing.studioId,
-        name: firing.name,
-        type: firing.type,
-        cone: firing.cone,
-        state: firing.state,
-        notes: firing.notes || firing.resultNotes,
-        scheduled_date: firing.firedDate ?? firing.submissionDate ?? firing.scheduledDate,
-      });
+      const backend = await apiCreateFiring(sessionToken, firingToApiPayload(firing));
       return { firing, backend };
     },
     onSuccess: (result) => {
@@ -134,18 +154,7 @@ export function useUpdateFiringMutation() {
   return useMutation({
     mutationFn: async (firing: Firing) => {
       if (!sessionToken || !firing.backendId) return;
-      await apiUpdateFiring(sessionToken, firing.backendId, {
-        kiln_id: firing.kilnId || undefined,
-        studio_id: firing.studioId,
-        name: firing.name,
-        type: firing.type,
-        cone: firing.cone,
-        state: firing.state,
-        notes: firing.notes,
-        scheduled_date: firing.submissionDate ?? firing.scheduledDate,
-        started_at: firing.startedAt,
-        completed_at: firing.completedAt,
-      });
+      await apiUpdateFiring(sessionToken, firing.backendId, firingToApiPayload(firing));
     },
     onError: () => {
       useAppStore.getState().showToast('Could not update firing', 'error');

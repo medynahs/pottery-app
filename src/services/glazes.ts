@@ -55,6 +55,33 @@ export interface BackendGlaze {
   conesTested: string[];
   lastTestedAt?: string;
   createdAt: string;
+  ingredientsText?: string;
+  batchId?: string;
+  dateMixed?: string;
+  status?: GlazeLibraryItem['status'];
+  bestClayType?: GlazeLibraryItem['bestClayType'];
+  bestFiringTempC?: number;
+  atmosphere?: GlazeLibraryItem['atmosphere'];
+}
+
+type RawBackendGlaze = BackendGlaze & {
+  batch_id?: string;
+  date_mixed?: string;
+  ingredients_text?: string;
+  best_clay_type?: GlazeLibraryItem['bestClayType'];
+  best_firing_temp_c?: number;
+};
+
+/** Accept camelCase or snake_case glaze rows from list/sync responses. */
+export function normalizeBackendGlaze(raw: RawBackendGlaze): BackendGlaze {
+  return {
+    ...raw,
+    ingredientsText: raw.ingredientsText ?? raw.ingredients_text,
+    batchId: raw.batchId ?? raw.batch_id,
+    dateMixed: raw.dateMixed ?? raw.date_mixed,
+    bestClayType: raw.bestClayType ?? raw.best_clay_type,
+    bestFiringTempC: raw.bestFiringTempC ?? raw.best_firing_temp_c,
+  };
 }
 
 export interface BackendGlazeTest {
@@ -219,6 +246,13 @@ export function backendGlazeToLocal(b: BackendGlaze, existing?: GlazeLibraryItem
     conesTested: b.conesTested ?? [],
     lastTestedAt: b.lastTestedAt,
     createdAt: b.createdAt,
+    ingredientsText: b.ingredientsText,
+    batchId: b.batchId,
+    dateMixed: b.dateMixed,
+    status: b.status,
+    bestClayType: b.bestClayType,
+    bestFiringTempC: b.bestFiringTempC,
+    atmosphere: b.atmosphere,
   });
 }
 
@@ -334,7 +368,8 @@ async function authedFetch(sessionToken: string, url: string, init?: RequestInit
 export async function apiListGlazes(sessionToken: string): Promise<BackendGlaze[]> {
   const res = await authedFetch(sessionToken, `${API_BASE_URL}/users/me/glazes`);
   if (!res.ok) throw new Error(`listGlazes failed (${res.status})`);
-  return res.json() as Promise<BackendGlaze[]>;
+  const rows = (await res.json()) as RawBackendGlaze[];
+  return rows.map(normalizeBackendGlaze);
 }
 
 /** GET /users/me/glazes/tests, list live test tiles across all glazes. */
@@ -358,7 +393,11 @@ export async function apiSyncGlazes(
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`syncGlazes failed (${res.status})`);
-  return res.json() as Promise<SyncGlazesResponse>;
+  const data = (await res.json()) as SyncGlazesResponse;
+  return {
+    ...data,
+    glazes: data.glazes.map((g) => normalizeBackendGlaze(g as RawBackendGlaze)),
+  };
 }
 
 /** POST /users/me/glazes/:glaze_id/images, upload an image under a gallery type. */

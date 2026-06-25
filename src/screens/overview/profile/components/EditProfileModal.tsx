@@ -14,7 +14,7 @@ import { NotesInput } from '@/src/components/NotesInput';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
-import { useUploadAvatar, useUploadCover } from '@/src/hooks/useCurrentUser';
+import { useUploadAvatar, useUploadCover, useUpdateProfile } from '@/src/hooks/useCurrentUser';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useAppStore } from '@/src/store/appStore';
@@ -40,6 +40,7 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const sessionToken = useAppStore((s) => s.sessionToken);
   const uploadAvatar = useUploadAvatar();
   const uploadCover = useUploadCover();
+  const saveProfile = useUpdateProfile();
   const avatarPicker = usePhotoPicker({ aspect: [1, 1], quality: 0.85 });
   const coverPicker = usePhotoPicker({ aspect: [16, 9], quality: 0.85 });
   const { requestAccess, PaywallGate } = usePremiumGate();
@@ -100,37 +101,58 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
 
   const handleSave = async () => {
     const trimmedName = name.trim();
-    setUser({
-      name: trimmedName || user.name,
-      avatarInitial: (trimmedName || user.name).charAt(0).toUpperCase(),
-      studioName: studioName.trim() || undefined,
-      location: location.trim() || undefined,
-      bio: bio.trim() || undefined,
-      avatarImageUri,
-      coverImageUri,
-    });
+    if (!trimmedName) return;
 
     const shouldUploadAvatar = avatarChanged.current && !!avatarImageUri;
     const shouldUploadCover = coverChanged.current && !!coverImageUri;
+    const shouldSaveText = Boolean(sessionToken);
 
-    if (sessionToken && (shouldUploadAvatar || shouldUploadCover)) {
-      setIsSaving(true);
-      setUploadError(null);
-      try {
-        if (shouldUploadAvatar) await uploadAvatar(avatarImageUri!, avatarMimeType);
-        if (shouldUploadCover) await uploadCover(coverImageUri!, 'image/jpeg');
-        setUploadSuccess(true);
-        setTimeout(onClose, 800);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Photo upload failed';
-        if (__DEV__) console.warn('[uploadProfilePhotos]', msg);
-        setUploadError(msg);
-        setIsSaving(false);
-      }
+    if (!shouldSaveText && !shouldUploadAvatar && !shouldUploadCover) {
+      onClose();
       return;
     }
 
-    onClose();
+    setIsSaving(true);
+    setUploadError(null);
+    setUploadSuccess(false);
+
+    try {
+      if (shouldSaveText) {
+        await saveProfile({
+          name: trimmedName,
+          studio_name: studioName.trim(),
+          location: location.trim(),
+          bio: bio.trim(),
+        });
+      } else {
+        setUser({
+          name: trimmedName,
+          avatarInitial: trimmedName.charAt(0).toUpperCase(),
+          studioName: studioName.trim() || undefined,
+          location: location.trim() || undefined,
+          bio: bio.trim() || undefined,
+          avatarImageUri,
+          coverImageUri,
+        });
+      }
+
+      if (shouldUploadAvatar) await uploadAvatar(avatarImageUri!, avatarMimeType);
+      if (shouldUploadCover) await uploadCover(coverImageUri!, 'image/jpeg');
+
+      if (shouldUploadAvatar || shouldUploadCover) {
+        setUploadSuccess(true);
+        setTimeout(onClose, 800);
+        return;
+      }
+
+      onClose();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not save profile';
+      if (__DEV__) console.warn('[EditProfileModal]', msg);
+      setUploadError(msg);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const avatarInitial = ((name.trim() || user.name || 'U')[0] ?? 'U').toUpperCase();

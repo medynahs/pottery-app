@@ -27,6 +27,9 @@ import {
   apiUpdatePiece,
   apiUpdatePieceAsset,
   apiUploadPieceAsset,
+  pieceGlazeFieldsForApi,
+  pieceGlazeFieldsSynced,
+  resolveLocalGlazeIdFromBackend,
   type ApiPieceStatus,
   type BackendPiece,
   type PieceSyncSnapshot,
@@ -63,10 +66,12 @@ function apiStatusMatchesLocalStage(localStage: string, apiStatus: ApiPieceStatu
 }
 
 function pieceToSnapshot(piece: Piece): PieceSyncSnapshot {
+  const glazes = useAppStore.getState().glazes;
   const snapshot: PieceSyncSnapshot = {
     client_ref: String(piece.id),
     name: piece.name,
     status: localStageToApiStatus(piece.stage),
+    ...pieceGlazeFieldsForApi(piece, glazes),
   };
   if (piece.description) snapshot.description = piece.description;
   if (piece.deleted) snapshot.deleted = true;
@@ -111,6 +116,7 @@ export function hasPendingPiecesSync(): boolean {
 }
 
 function backendToLocalPatch(bp: BackendPiece, existing?: Piece): Piece {
+  const glazes = useAppStore.getState().glazes;
   const stage = API_TO_LOCAL_STAGE[bp.status] ?? bp.status;
   const parsedId = bp.client_ref ? Number(bp.client_ref) : NaN;
   const localId = existing?.id ?? (!Number.isNaN(parsedId) ? parsedId : Date.now() + Math.floor(Math.random() * 1_000));
@@ -125,6 +131,15 @@ function backendToLocalPatch(bp: BackendPiece, existing?: Piece): Piece {
     clay: '',
   };
 
+  const glazeId =
+    bp.glaze_id !== undefined
+      ? resolveLocalGlazeIdFromBackend(bp.glaze_id, glazes)
+      : existing?.glazeId;
+  const glazeOutcome =
+    bp.glaze_outcome !== undefined
+      ? (bp.glaze_outcome ?? undefined)
+      : existing?.glazeOutcome;
+
   return {
     ...base,
     backendId: bp.id,
@@ -132,6 +147,8 @@ function backendToLocalPatch(bp: BackendPiece, existing?: Piece): Piece {
     stage,
     description: bp.description ?? undefined,
     updatedAt: bp.updated_at,
+    glazeId,
+    glazeOutcome,
   };
 }
 
@@ -200,7 +217,11 @@ function applySyncResponse(localPieces: Piece[], response: SyncPiecesResponse): 
     const backendPiece = backendById.get(piece.backendId);
     if (!backendPiece) return piece;
 
-    if (apiStatusMatchesLocalStage(piece.stage, backendPiece.status)) {
+    const glazes = useAppStore.getState().glazes;
+    const stageSynced = apiStatusMatchesLocalStage(piece.stage, backendPiece.status);
+    const glazeSynced = pieceGlazeFieldsSynced(piece, backendPiece, glazes);
+
+    if (stageSynced && glazeSynced) {
       return {
         ...piece,
         syncDirty: false,
@@ -208,30 +229,42 @@ function applySyncResponse(localPieces: Piece[], response: SyncPiecesResponse): 
       };
     }
 
-    // Server response still reflects an older stage, keep local advance and retry sync.
+    // Server response still reflects older data, keep local edits and retry sync.
     return piece;
   });
 }
 
 function applyBackendAckToLocalPiece(localId: number, backendPiece: BackendPiece): void {
+  const glazes = useAppStore.getState().glazes;
   setPiecesIfChanged(
     useAppStore.getState().pieces.map((piece) => {
       if (piece.id !== localId) return piece;
 
-      if (apiStatusMatchesLocalStage(piece.stage, backendPiece.status)) {
-        return {
-          ...piece,
-          backendId: backendPiece.id,
-          syncDirty: false,
-          updatedAt: backendPiece.updated_at,
-        };
-      }
+      const glazeId =
+        backendPiece.glaze_id !== undefined
+          ? resolveLocalGlazeIdFromBackend(backendPiece.glaze_id, glazes)
+          : piece.glazeId;
+      const glazeOutcome =
+        backendPiece.glaze_outcome !== undefined
+          ? (backendPiece.glaze_outcome ?? undefined)
+          : piece.glazeOutcome;
 
-      return {
+      const next = {
         ...piece,
         backendId: backendPiece.id,
         updatedAt: backendPiece.updated_at,
+        glazeId,
+        glazeOutcome,
       };
+
+      if (
+        apiStatusMatchesLocalStage(piece.stage, backendPiece.status)
+        && pieceGlazeFieldsSynced(piece, backendPiece, glazes)
+      ) {
+        return { ...next, syncDirty: false };
+      }
+
+      return next;
     }),
   );
 }
@@ -253,6 +286,7 @@ async function pushDirtyBackendPiece(
       name: piece.name,
       status: localStageToApiStatus(piece.stage),
       description: piece.description,
+      ...pieceGlazeFieldsForApi(piece, useAppStore.getState().glazes),
     });
     applyBackendAckToLocalPiece(piece.id, backendPiece);
     return 'updated';

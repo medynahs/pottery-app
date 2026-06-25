@@ -1,21 +1,21 @@
-import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
-import { PracticeTypePickerSheet } from '@/src/components/PracticeTypePickerSheet';
 import { ConfirmSheet } from '@/src/components/AppSheets';
 import { NotificationDebugPanel } from '@/src/components/dev/NotificationDebugPanel';
 import { KilnkinCompanionPickerSheet } from '@/src/components/KilnkinCompanionPickerSheet';
+import { PracticeTypePickerSheet } from '@/src/components/PracticeTypePickerSheet';
 import { SectionLabel } from '@/src/components/SectionLabel';
+import { SettingsHubShell } from '@/src/components/settings/SettingsHubShell';
 import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { SettingsRow } from '@/src/components/SettingsRow';
-import { SettingsHubShell } from '@/src/components/settings/SettingsHubShell';
 import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
+import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
 import { ME_QUERY_KEY } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { PremiumFeature } from '@/src/utils/premiumGate';
 import { deleteAccount } from '@/src/services/api';
 import { oryLogout } from '@/src/services/auth';
 import { ensureNotificationPermission } from '@/src/services/notifications';
 import { useAppStore } from '@/src/store';
+import { PremiumFeature } from '@/src/utils/premiumGate';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import {
@@ -23,16 +23,14 @@ import {
   Clock,
   Crown,
   Flame,
-  Globe,
-  Lock,
   Hammer,
+  Lock,
   LogOut,
   Mail,
-  Map,
   PawPrint,
   Shield,
   Skull,
-  Trophy,
+  Trophy
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { View } from 'react-native';
@@ -186,15 +184,7 @@ export default function AccountSettingsScreen() {
               }
             }}
           />
-          <SettingsRow
-            icon={Map}
-            iconColor="hsl(200 45% 42%)"
-            iconBg="bg-blue-50"
-            label="Your Journey"
-            value="Stats, milestones & achievements"
-            isLast
-            onPress={() => router.push('/profile/journey' as never)}
-          />
+
         </SettingsGroup>
 
         <SectionLabel title="Account" />
@@ -207,7 +197,7 @@ export default function AccountSettingsScreen() {
                 <SettingsRow icon={Mail} iconColor="hsl(100 40% 45%)" iconBg="bg-green-50" label="E-Mail" value={oryEmail} />
               ) : null}
               <SettingsRow icon={Lock}   iconColor="hsl(38 80% 50%)"  iconBg="bg-amber-50"  label="Change Password" onPress={() => router.push('/change-password')} />
-              <SettingsRow icon={Globe}  iconColor="hsl(24 30% 45%)"  iconBg="bg-stone-100" label="Language" value="English" />
+              {/* <SettingsRow icon={Globe}  iconColor="hsl(24 30% 45%)"  iconBg="bg-stone-100" label="Language" value="English" /> */}
               <SettingsRow icon={Shield} iconColor="hsl(213 80% 55%)" iconBg="bg-blue-50"   label="Privacy Settings" isLast onPress={() => router.push('/privacy-settings')} />
             </SettingsGroup>
           </>

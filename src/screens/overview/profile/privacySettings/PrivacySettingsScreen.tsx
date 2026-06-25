@@ -2,6 +2,7 @@ import { SectionLabel } from '@/src/components/SectionLabel';
 import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
+import { useUpdatePrivacy } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useAppStore } from '@/src/store';
 import { buildStudioExportPayload, shareStudioExport } from '@/src/utils/exportStudioData';
@@ -19,6 +20,7 @@ import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-nat
 
 export default function PrivacySettingsScreen() {
   const router = useRouter();
+  const sessionToken = useAppStore((s) => s.sessionToken);
   const privacyPrefs = useAppStore((s) => s.privacyPrefs);
   const setPrivacyPref = useAppStore((s) => s.setPrivacyPref);
   const pieces = useAppStore((s) => s.pieces);
@@ -29,7 +31,33 @@ export default function PrivacySettingsScreen() {
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const showToast = useAppStore((s) => s.showToast);
   const { requestAccess, PaywallGate } = usePremiumGate();
+  const savePrivacy = useUpdatePrivacy();
   const [exporting, setExporting] = React.useState(false);
+  const [syncingKey, setSyncingKey] = React.useState<'profilePublic' | 'piecesPublic' | null>(null);
+
+  const syncCommunityVisibility = async (
+    key: 'profilePublic' | 'piecesPublic',
+    nextValue: boolean,
+  ) => {
+    const previousValue = privacyPrefs[key];
+    const nextPrefs = { ...privacyPrefs, [key]: nextValue };
+    setPrivacyPref(key, nextValue);
+
+    if (!sessionToken) return;
+
+    setSyncingKey(key);
+    try {
+      await savePrivacy({
+        profile_public: nextPrefs.profilePublic,
+        pieces_public: nextPrefs.piecesPublic,
+      });
+    } catch {
+      setPrivacyPref(key, previousValue);
+      showToast('Could not save privacy settings. Try again.', 'error');
+    } finally {
+      setSyncingKey(null);
+    }
+  };
 
   const handleExport = async () => {
     if (!requestAccess(PremiumFeature.Export)) return;
@@ -104,7 +132,8 @@ export default function PrivacySettingsScreen() {
             iconBg="bg-amber-50"
             label="Public Profile"
             value={privacyPrefs.profilePublic}
-            onToggle={() => setPrivacyPref('profilePublic', !privacyPrefs.profilePublic)}
+            disabled={syncingKey === 'profilePublic'}
+            onToggle={() => void syncCommunityVisibility('profilePublic', !privacyPrefs.profilePublic)}
           />
           <ToggleRow
             icon={Image}
@@ -112,14 +141,15 @@ export default function PrivacySettingsScreen() {
             iconBg="bg-primary/10"
             label="Show Pieces Publicly"
             value={privacyPrefs.piecesPublic}
-            onToggle={() => setPrivacyPref('piecesPublic', !privacyPrefs.piecesPublic)}
+            disabled={syncingKey === 'piecesPublic'}
+            onToggle={() => void syncCommunityVisibility('piecesPublic', !privacyPrefs.piecesPublic)}
             isLast
           />
         </View>
 
         <View className="mx-6 mb-5 rounded-2xl border border-border bg-muted/40 px-4 py-3">
           <Text className="text-xs text-muted-foreground leading-5">
-            A public profile is discoverable in the Community tab. Turning off piece visibility hides your work from other potters while keeping your profile visible.
+            A public profile is discoverable via your share link. Turning off piece visibility hides your posts from your public grid while keeping your profile visible.
           </Text>
         </View>
 

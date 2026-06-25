@@ -10,6 +10,7 @@
  */
 
 import type { GlazeLibraryItem, GlazeTestTile } from '@/src/screens/glazes/types';
+import { flushPiecesSync } from '@/src/screens/pieces/hooks/usePiecesSync';
 import { canUploadGlazeMedia } from '@/src/utils/cloudStorage';
 import {
   apiDeleteGlazeImage,
@@ -239,6 +240,8 @@ export async function flushGlazesSync(): Promise<boolean> {
 
     const response = await apiSyncGlazes(sessionToken, { glazes, tests });
     applyGlazeSyncResponse(response);
+    // Pieces may be waiting on glaze backend IDs before glaze_id can push.
+    void flushPiecesSync();
     // Fire-and-forget: glazes now have backendIds, so any local photos can upload.
     void reconcileGlazeImages();
     return true;

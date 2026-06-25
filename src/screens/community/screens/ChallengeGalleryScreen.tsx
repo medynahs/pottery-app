@@ -19,6 +19,7 @@ import {
   apiGetChallenge,
   apiGetChallengeEntries,
   apiVoteChallengeEntry,
+  challengeDisplayName,
 } from '@/src/services/challenges';
 import { useAppStore } from '@/src/store';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -85,7 +86,7 @@ export default function ChallengeGalleryScreen() {
     setError(null);
     try {
       const challenge = await apiGetChallenge(sessionToken, challengeId);
-      setApiTitle(challenge.title);
+      setApiTitle(challengeDisplayName(challenge));
       setApiPhase(resolveChallengePhase(challenge));
 
       const rawEntries = await apiGetChallengeEntries(sessionToken, challengeId, activeTrackId);

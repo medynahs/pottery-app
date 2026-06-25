@@ -29,7 +29,7 @@ import {
 } from '@/src/screens/community/utils/communityPostPayload';
 import { cacheProfilePost } from '@/src/screens/overview/profile/utils/profilePostCache';
 import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
-import { apiListChallenges, apiSubmitChallengeEntry, type BackendChallenge } from '@/src/services/challenges';
+import { apiListChallenges, apiSubmitChallengeEntry, challengeDisplayName, type BackendChallenge } from '@/src/services/challenges';
 import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAppStore, useVisiblePieces } from '@/src/store';
 import { useCanPostStudioNotice } from '@/src/hooks/useCanPostStudioNotice';
@@ -79,8 +79,8 @@ function pickLinkablePieces(pieces: Piece[]): Piece[] {
 function resolveActiveChallenge(challenges: BackendChallenge[]): BackendChallenge | null {
   const now = Date.now();
   const active = challenges.find((challenge) => {
-    const start = challenge.starts_at ? new Date(challenge.starts_at).getTime() : 0;
-    const end = challenge.ends_at ? new Date(challenge.ends_at).getTime() : Number.POSITIVE_INFINITY;
+    const start = challenge.start_date ? new Date(challenge.start_date).getTime() : 0;
+    const end = challenge.end_date ? new Date(challenge.end_date).getTime() : Number.POSITIVE_INFINITY;
     return now >= start && now <= end;
   });
   return active ?? challenges[0] ?? null;
@@ -139,7 +139,7 @@ export function CreatePostSheet({
     [linkedPieceIds, pieces],
   );
 
-  const challengeTitle = preset?.challengeTitle ?? activeChallenge?.title ?? null;
+  const challengeTitle = preset?.challengeTitle ?? (activeChallenge ? challengeDisplayName(activeChallenge) : null);
   const challengeId = preset?.challengeId ?? activeChallenge?.id;
 
   const activeKindMeta = availablePostKinds.find((k) => k.id === postKind)
@@ -523,7 +523,7 @@ export function CreatePostSheet({
               <View className="rounded-2xl border border-border bg-muted/20 px-3 py-3 mb-5 flex-row items-center justify-between gap-3">
                 <View className="flex-1 min-w-0">
                   <Text className="text-xs font-semibold text-foreground" numberOfLines={1}>
-                    {activeChallenge?.title ?? challengeTitle}
+                    {activeChallenge ? challengeDisplayName(activeChallenge) : challengeTitle}
                   </Text>
                   <Text className="text-[11px] text-primary mt-0.5">{challengeTag}</Text>
                 </View>

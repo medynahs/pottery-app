@@ -16,9 +16,8 @@ import {
     type PricingTier,
     type PricingUserType,
 } from '@/src/types/pricing';
-import { getPricingCopy } from '@/src/utils/roleBasedUx';
 import { useRouter } from 'expo-router';
-import { Calculator, ChevronDown, ChevronUp, Copy, Plus, RotateCcw, Trash2 } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Copy, Plus, RotateCcw, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 
@@ -54,7 +53,7 @@ type PricingDraft = {
   bisqueGlazeTiers: TierDraft[];
 };
 
-type SectionId = 'studio' | 'pricing-model' | 'costs' | 'bisque' | 'bisque-glaze' | 'checks';
+type SectionId = 'studio' | 'costs' | 'bisque' | 'bisque-glaze';
 
 const CONFIDENCE_CHECKS: Array<{
   label: string;
@@ -210,8 +209,6 @@ function CompactField({
 
 export default function PricingRulesScreen() {
   const router = useRouter();
-  const userType = useAppStore((state) => state.onboardingProfile.userType);
-  const pricingCopy = getPricingCopy(userType);
   const pricingSettingsState = useAppStore((state) => state.pricingSettings);
   const pricingTemplates = useAppStore((state) => state.pricingTemplates);
   const activePricingTemplateId = useAppStore((state) => state.activePricingTemplateId);
@@ -224,7 +221,8 @@ export default function PricingRulesScreen() {
   const deletePricingTemplate = useAppStore((state) => state.deletePricingTemplate);
 
   const [draft, setDraft] = React.useState<PricingDraft>(() => toDraft(pricingSettings));
-  const [openSection, setOpenSection] = React.useState<SectionId>('studio');
+  const [showAdvanced, setShowAdvanced] = React.useState(false);
+  const [advancedSection, setAdvancedSection] = React.useState<SectionId | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = React.useState(false);
   const [deleteTemplateOpen, setDeleteTemplateOpen] = React.useState(false);
   const [newTemplateName, setNewTemplateName] = React.useState('');
@@ -327,6 +325,13 @@ export default function PricingRulesScreen() {
     setResetConfirmOpen(true);
   };
 
+  const toggleAdvancedSection = (section: SectionId) => {
+    setAdvancedSection((current) => (current === section ? null : section));
+  };
+
+  const sampleMug = confidenceChecks[0];
+  const symbol = previewSettings.currencySymbol;
+
   return (
     <>
       <ConfirmSheet
@@ -349,442 +354,446 @@ export default function PricingRulesScreen() {
       />
       <CustomizationSettingsShell
         eyebrow="Studio pricing"
-        title="Pricing rules"
-        subtitle={pricingCopy.screenSubtitle}
+        title="Your pricing defaults"
+        subtitle="Set these once. When you add a piece, the app estimates cost and suggested price from weight, size, and these numbers."
         onBack={() => router.back()}
         onSave={handleSave}
-        saveLabel="Save preferences"
+        saveLabel="Save pricing"
       >
-        <View className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-4 flex-row items-start gap-3 -mt-2">
-          <Calculator size={16} color="hsl(38 80% 50%)" className="mt-0.5" />
-          <Text className="text-xs text-amber-700 flex-1 leading-relaxed">
-            Price from real costs, not gut feel. Clay can estimate from weight and your clay bag cost. Glaze scales from piece size unless you override it on a piece.
+        <View className="bg-card rounded-2xl border border-border px-4 py-4 mb-4 -mt-2">
+          <Text className="text-sm font-semibold text-foreground">What this screen does</Text>
+          <Text className="text-sm text-muted-foreground mt-2 leading-6">
+            1. Pick the profile that matches how you sell.{'\n'}
+            2. Enter what you actually pay for clay and time.{'\n'}
+            3. Check the sample price below feels right — then save.
           </Text>
+        </View>
+
+        <View className="bg-primary/5 rounded-2xl border border-primary/20 px-4 py-4 mb-4">
+          <Text className="text-[11px] font-semibold uppercase tracking-wide text-primary mb-1">
+            Sample estimate
+          </Text>
+          <Text className="text-xs text-muted-foreground leading-5">
+            A small cup ({sampleMug.heightCm} × {sampleMug.widthCm} cm, {sampleMug.weightGrams} g) with your current settings:
+          </Text>
+          <View className="flex-row items-end justify-between mt-3">
+            <View>
+              <Text className="text-xs text-muted-foreground">Suggested price</Text>
+              <Text className="text-2xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
+                {formatMoney(symbol, sampleMug.snapshot.suggestedPrice)}
+              </Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-xs text-muted-foreground">Your cost</Text>
+              <Text className="text-sm font-semibold text-foreground">
+                {formatMoney(symbol, sampleMug.snapshot.totalCost)}
+              </Text>
+            </View>
+          </View>
         </View>
 
         <View className="bg-card rounded-2xl border border-border px-4 py-4 mb-4">
-          <Text className="text-sm font-semibold text-foreground">Pricing templates</Text>
-          <Text className="text-xs text-muted-foreground mt-1 mb-3 leading-5">
-            Switch between saved pricing setups for markets, wholesale, teaching, and more.
+          <Text className="text-sm font-semibold text-foreground">Essentials</Text>
+          <Text className="text-xs text-muted-foreground mt-1 mb-4 leading-5">
+            Most potters only need these. Everything else is optional.
           </Text>
-          <SelectChipGroup>
-            {pricingTemplates.map((template) => (
+
+          <Text className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            How do you sell?
+          </Text>
+          <SelectChipGroup className="mb-4">
+            {(['hobby', 'side-business', 'full-time'] as PricingUserType[]).map((option) => (
               <SelectChip
-                key={template.id}
-                label={template.name}
-                selected={template.id === activeTemplateId}
-                onPress={() => handleSelectTemplate(template.id)}
+                key={option}
+                label={PRICING_USER_TYPE_LABELS[option].replace(' / Cost Recovery', '')}
+                selected={draft.pricingUserType === option}
+                onPress={() => applyUserType(option)}
+                className="flex-1 justify-center"
               />
             ))}
           </SelectChipGroup>
-          <View className="flex-row gap-2 mt-3">
-            <View className="flex-1">
-              <Input
-                placeholder="New template name"
-                value={newTemplateName}
-                onChangeText={setNewTemplateName}
-              />
-            </View>
-            <TouchableOpacity
-              onPress={handleSaveAsNewTemplate}
-              className="px-3 py-2 rounded-xl border border-border bg-background items-center justify-center"
-              activeOpacity={0.75}
-            >
-              <Plus size={16} color="hsl(24 25% 15%)" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleDuplicateTemplate}
-              className="px-3 py-2 rounded-xl border border-border bg-background items-center justify-center"
-              activeOpacity={0.75}
-            >
-              <Copy size={16} color="hsl(24 25% 15%)" />
-            </TouchableOpacity>
-            {pricingTemplates.length > 1 ? (
-              <TouchableOpacity
-                onPress={() => setDeleteTemplateOpen(true)}
-                className="px-3 py-2 rounded-xl border border-border bg-background items-center justify-center"
-                activeOpacity={0.75}
-              >
-                <Trash2 size={16} color="hsl(0 55% 45%)" />
-              </TouchableOpacity>
-            ) : null}
+
+          <View className="flex-row gap-3">
+            <CompactField
+              label="Currency"
+              value={draft.currencySymbol}
+              onChangeText={(value) => setDraft((previous) => ({ ...previous, currencySymbol: value }))}
+            />
+            <CompactField
+              label="Clay per 10 kg bag"
+              value={draft.clayPricePer10kg}
+              onChangeText={(value) => setDraft((previous) => ({ ...previous, clayPricePer10kg: value }))}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <View className="flex-row gap-3 mt-3">
+            <CompactField
+              label="Your labor rate / hr"
+              value={draft.hourlyLaborRate}
+              onChangeText={(value) => setDraft((previous) => ({ ...previous, hourlyLaborRate: value }))}
+              keyboardType="decimal-pad"
+            />
+            <CompactField
+              label="Hours per piece (avg)"
+              value={draft.defaultWorkHours}
+              onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultWorkHours: value }))}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <View className="flex-row gap-3 mt-3">
+            <CompactField
+              label="Profit margin %"
+              value={draft.defaultMarkupPct}
+              onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultMarkupPct: value }))}
+              keyboardType="decimal-pad"
+            />
+            <CompactField
+              label="Tax %"
+              value={draft.taxPct}
+              onChangeText={(value) => setDraft((previous) => ({ ...previous, taxPct: value }))}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <View className="mt-3">
+            <CompactField
+              label="Selling fees % (Etsy, markets, etc.)"
+              value={draft.sellingFeePct}
+              onChangeText={(value) => setDraft((previous) => ({ ...previous, sellingFeePct: value }))}
+              keyboardType="decimal-pad"
+            />
           </View>
         </View>
 
-        <SectionCard
-          title="Studio Defaults"
-          summary={`${draft.studioLabel || 'Studio Default'} · ${draft.currencySymbol || '€'} · shape factor ${draft.shapeFactor || '1'}`}
-          open={openSection === 'studio'}
-          onToggle={() => setOpenSection(openSection === 'studio' ? 'checks' : 'studio')}
+        <TouchableOpacity
+          onPress={() => setShowAdvanced((value) => !value)}
+          activeOpacity={0.8}
+          className="bg-card rounded-2xl border border-border px-4 py-4 mb-4 flex-row items-center justify-between"
         >
-          <View className="pt-4">
-            <CompactField
-              label="Studio label"
-              value={draft.studioLabel}
-              onChangeText={(value) => setDraft((previous) => ({ ...previous, studioLabel: value }))}
-            />
-            <View className="flex-row gap-3 mt-3">
-              <CompactField
-                label="Currency"
-                value={draft.currencySymbol}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, currencySymbol: value }))}
-              />
-              <CompactField
-                label="Shape factor"
-                value={draft.shapeFactor}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, shapeFactor: value }))}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <Text className="text-[11px] text-muted-foreground mt-3">
-              Shape factor scales the cylinder estimate. Use 1 for a straight volume estimate, lower for open forms.
-            </Text>
-
-            <Text className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mt-4 mb-2">Default firing mode</Text>
-            <View className="flex-row gap-2">
-              {([
-                { value: 'bisque', label: 'Bisque' },
-                { value: 'bisque-glaze', label: 'Bisque + Glaze' },
-              ] as const).map((option) => {
-                const selected = draft.defaultMode === option.value;
-                return (
-                  <TouchableOpacity
-                    key={option.value}
-                    onPress={() => setDraft((previous) => ({ ...previous, defaultMode: option.value }))}
-                    className={`flex-1 px-3 py-2 rounded-full border items-center ${
-                      selected ? 'bg-foreground border-foreground' : 'bg-card border-border'
-                    }`}
-                    activeOpacity={0.75}
-                  >
-                    <Text className={`text-xs font-medium ${selected ? 'text-background' : 'text-muted-foreground'}`}>
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        </SectionCard>
-
-        <SectionCard
-          title="Pricing Profile"
-          summary={`${PRICING_USER_TYPE_LABELS[draft.pricingUserType]} · Labor ${formatMoney(previewSettings.currencySymbol, previewSettings.hourlyLaborRate)}/hr · Admin ${formatMoney(previewSettings.currencySymbol, previewSettings.adminHourlyRate)}/hr`}
-          open={openSection === 'pricing-model'}
-          onToggle={() => setOpenSection(openSection === 'pricing-model' ? 'checks' : 'pricing-model')}
-        >
-          <View className="pt-4">
-            <Text className="text-[11px] text-muted-foreground mb-3">
-              Pick the closest business stage, then tune the numbers. The goal is sustainable pricing whether you are recovering hobby costs or building a full-time studio.
-            </Text>
-            <View className="flex-row gap-2 mb-4">
-              {(['hobby', 'side-business', 'full-time'] as PricingUserType[]).map((option) => {
-                const selected = draft.pricingUserType === option;
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    onPress={() => applyUserType(option)}
-                    className={`flex-1 px-3 py-2 rounded-2xl border ${
-                      selected ? 'bg-foreground border-foreground' : 'bg-card border-border'
-                    }`}
-                    activeOpacity={0.75}
-                  >
-                    <Text className={`text-[11px] font-semibold text-center ${selected ? 'text-background' : 'text-muted-foreground'}`}>
-                      {PRICING_USER_TYPE_LABELS[option]}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <View className="flex-row gap-3">
-              <CompactField
-                label="Labor / hr"
-                value={draft.hourlyLaborRate}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, hourlyLaborRate: value }))}
-                keyboardType="decimal-pad"
-              />
-              <CompactField
-                label="Admin / hr"
-                value={draft.adminHourlyRate}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, adminHourlyRate: value }))}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View className="flex-row gap-3 mt-3">
-              <CompactField
-                label="Making hrs"
-                value={draft.defaultWorkHours}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultWorkHours: value }))}
-                keyboardType="decimal-pad"
-              />
-              <CompactField
-                label="Admin hrs"
-                value={draft.defaultAdminHours}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultAdminHours: value }))}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View className="flex-row gap-3 mt-3">
-              <CompactField
-                label="Fees %"
-                value={draft.sellingFeePct}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, sellingFeePct: value }))}
-                keyboardType="decimal-pad"
-              />
-              <CompactField
-                label="Tax %"
-                value={draft.taxPct}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, taxPct: value }))}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View className="flex-row gap-3 mt-3">
-              <CompactField
-                label="Profit %"
-                value={draft.defaultMarkupPct}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultMarkupPct: value }))}
-                keyboardType="decimal-pad"
-              />
-              <CompactField
-                label="Wholesale % off"
-                value={draft.wholesaleDiscountPct}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, wholesaleDiscountPct: value }))}
-                keyboardType="decimal-pad"
-              />
-            </View>
-          </View>
-        </SectionCard>
-
-        <SectionCard
-          title="Cost Defaults"
-          summary={`Clay ${formatMoney(previewSettings.currencySymbol, previewSettings.clayPricePer10kg)}/10kg · Glaze ${formatMoney(previewSettings.currencySymbol, previewSettings.defaultGlazeCost)} base · Overhead ${formatMoney(previewSettings.currencySymbol, previewSettings.recurringOverheadCost)}`}
-          open={openSection === 'costs'}
-          onToggle={() => setOpenSection(openSection === 'costs' ? 'checks' : 'costs')}
-        >
-          <View className="pt-4">
-            <View className="flex-row gap-3">
-              <CompactField
-                label="Clay / 10kg"
-                value={draft.clayPricePer10kg}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, clayPricePer10kg: value }))}
-                keyboardType="decimal-pad"
-              />
-              <CompactField
-                label="Clay fallback"
-                value={draft.defaultClayCost}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultClayCost: value }))}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View className="flex-row gap-3 mt-3">
-              <CompactField
-                label="Glaze base"
-                value={draft.defaultGlazeCost}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultGlazeCost: value }))}
-                keyboardType="decimal-pad"
-              />
-              <CompactField
-                label="Extra kiln energy"
-                value={draft.defaultEnergyCost}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultEnergyCost: value }))}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View className="flex-row gap-3 mt-3">
-              <CompactField
-                label="Other extras"
-                value={draft.defaultOtherCost}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultOtherCost: value }))}
-                keyboardType="decimal-pad"
-              />
-              <CompactField
-                label="Overhead / piece"
-                value={draft.recurringOverheadCost}
-                onChangeText={(value) => setDraft((previous) => ({ ...previous, recurringOverheadCost: value }))}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <Text className="text-[11px] text-muted-foreground mt-3">
-              Clay estimates use the piece weight and your 10 kg bag cost. Clay fallback is only used when weight is missing. Keep extra kiln energy at 0 if your firing formula already covers it.
+          <View className="flex-1 pr-3">
+            <Text className="text-sm font-semibold text-foreground">Advanced settings</Text>
+            <Text className="text-xs text-muted-foreground mt-1 leading-5">
+              Firing fee tables, extra material costs, saved pricing setups, and studio tweaks.
             </Text>
           </View>
-        </SectionCard>
+          {showAdvanced ? (
+            <ChevronUp size={18} color="hsl(24 20% 45%)" />
+          ) : (
+            <ChevronDown size={18} color="hsl(24 20% 45%)" />
+          )}
+        </TouchableOpacity>
 
-        <SectionCard
-          title="Bisque Formula"
-          summary={`${draft.bisqueTiers.length} tiers · ${draft.bisqueTiers.map((tier) => formatTierRange(tier)).join(' · ')}`}
-          open={openSection === 'bisque'}
-          onToggle={() => setOpenSection(openSection === 'bisque' ? 'checks' : 'bisque')}
-        >
-          <View className="pt-4">
-            {draft.bisqueTiers.map((tier, index) => (
-              <View key={`bisque-${index}`} className="rounded-2xl border border-border bg-background p-3 mb-3">
-                <View className="flex-row items-center justify-between mb-3">
-                  <View>
-                    <Text className="text-sm font-semibold text-foreground">Tier {index + 1}</Text>
-                    <Text className="text-xs text-muted-foreground mt-0.5">{formatTierRange(tier)}</Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => updateTier('bisque', index, { quoteOnly: !tier.quoteOnly })}
-                    className={`px-3 py-1.5 rounded-full border ${tier.quoteOnly ? 'bg-primary/10 border-primary/30' : 'bg-card border-border'}`}
-                    activeOpacity={0.75}
-                  >
-                    <Text className={`text-[11px] font-semibold ${tier.quoteOnly ? 'text-primary' : 'text-muted-foreground'}`}>
-                      {tier.quoteOnly ? 'N.O.T.K' : 'Formula'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <View className="flex-row gap-3">
-                  <CompactField
-                    label="Min cm³"
-                    value={tier.minVolumeCm3}
-                    onChangeText={(value) => updateTier('bisque', index, { minVolumeCm3: value })}
-                    keyboardType="decimal-pad"
+        {showAdvanced ? (
+          <>
+            <View className="bg-card rounded-2xl border border-border px-4 py-4 mb-4">
+              <Text className="text-sm font-semibold text-foreground">Saved pricing setups</Text>
+              <Text className="text-xs text-muted-foreground mt-1 mb-3 leading-5">
+                Use different setups for market vs wholesale pricing. The selected one is used for new piece estimates.
+              </Text>
+              <SelectChipGroup>
+                {pricingTemplates.map((template) => (
+                  <SelectChip
+                    key={template.id}
+                    label={template.name}
+                    selected={template.id === activeTemplateId}
+                    onPress={() => handleSelectTemplate(template.id)}
                   />
-                  <CompactField
-                    label="Max cm³"
-                    value={tier.maxVolumeCm3}
-                    onChangeText={(value) => updateTier('bisque', index, { maxVolumeCm3: value })}
-                    keyboardType="decimal-pad"
+                ))}
+              </SelectChipGroup>
+              <View className="flex-row gap-2 mt-3">
+                <View className="flex-1">
+                  <Input
+                    placeholder="Name for new setup"
+                    value={newTemplateName}
+                    onChangeText={setNewTemplateName}
                   />
                 </View>
-                {!tier.quoteOnly ? (
-                  <View className="flex-row gap-3 mt-3">
-                    <CompactField
-                      label="Rate / cm³"
-                      value={tier.ratePerCm3}
-                      onChangeText={(value) => updateTier('bisque', index, { ratePerCm3: value })}
-                      keyboardType="decimal-pad"
-                    />
-                    <CompactField
-                      label="Base fee"
-                      value={tier.baseFee}
-                      onChangeText={(value) => updateTier('bisque', index, { baseFee: value })}
-                      keyboardType="decimal-pad"
-                    />
-                  </View>
-                ) : (
-                  <Text className="text-xs text-muted-foreground mt-3">Quote-only tier. Rate and base fee are ignored.</Text>
-                )}
+                <TouchableOpacity
+                  onPress={handleSaveAsNewTemplate}
+                  className="px-3 py-2 rounded-xl border border-border bg-background items-center justify-center"
+                  activeOpacity={0.75}
+                >
+                  <Plus size={16} color="hsl(24 25% 15%)" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDuplicateTemplate}
+                  className="px-3 py-2 rounded-xl border border-border bg-background items-center justify-center"
+                  activeOpacity={0.75}
+                >
+                  <Copy size={16} color="hsl(24 25% 15%)" />
+                </TouchableOpacity>
+                {pricingTemplates.length > 1 ? (
+                  <TouchableOpacity
+                    onPress={() => setDeleteTemplateOpen(true)}
+                    className="px-3 py-2 rounded-xl border border-border bg-background items-center justify-center"
+                    activeOpacity={0.75}
+                  >
+                    <Trash2 size={16} color="hsl(0 55% 45%)" />
+                  </TouchableOpacity>
+                ) : null}
               </View>
-            ))}
-          </View>
-        </SectionCard>
+            </View>
 
-        <SectionCard
-          title="Bisque + Glaze Formula"
-          summary={`${draft.bisqueGlazeTiers.length} tiers · ${draft.bisqueGlazeTiers.map((tier) => formatTierRange(tier)).join(' · ')}`}
-          open={openSection === 'bisque-glaze'}
-          onToggle={() => setOpenSection(openSection === 'bisque-glaze' ? 'checks' : 'bisque-glaze')}
-        >
-          <View className="pt-4">
-            {draft.bisqueGlazeTiers.map((tier, index) => (
-              <View key={`bisque-glaze-${index}`} className="rounded-2xl border border-border bg-background p-3 mb-3">
-                <View className="flex-row items-center justify-between mb-3">
-                  <View>
-                    <Text className="text-sm font-semibold text-foreground">Tier {index + 1}</Text>
-                    <Text className="text-xs text-muted-foreground mt-0.5">{formatTierRange(tier)}</Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => updateTier('bisque-glaze', index, { quoteOnly: !tier.quoteOnly })}
-                    className={`px-3 py-1.5 rounded-full border ${tier.quoteOnly ? 'bg-primary/10 border-primary/30' : 'bg-card border-border'}`}
-                    activeOpacity={0.75}
-                  >
-                    <Text className={`text-[11px] font-semibold ${tier.quoteOnly ? 'text-primary' : 'text-muted-foreground'}`}>
-                      {tier.quoteOnly ? 'N.O.T.K' : 'Formula'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <View className="flex-row gap-3">
+            <SectionCard
+              title="Studio tweaks"
+              summary={`${draft.studioLabel || 'Studio Default'} · shape factor ${draft.shapeFactor || '1'}`}
+              open={advancedSection === 'studio'}
+              onToggle={() => toggleAdvancedSection('studio')}
+            >
+              <View className="pt-4">
+                <CompactField
+                  label="Studio name (label only)"
+                  value={draft.studioLabel}
+                  onChangeText={(value) => setDraft((previous) => ({ ...previous, studioLabel: value }))}
+                />
+                <View className="flex-row gap-3 mt-3">
                   <CompactField
-                    label="Min cm³"
-                    value={tier.minVolumeCm3}
-                    onChangeText={(value) => updateTier('bisque-glaze', index, { minVolumeCm3: value })}
+                    label="Shape factor"
+                    value={draft.shapeFactor}
+                    onChangeText={(value) => setDraft((previous) => ({ ...previous, shapeFactor: value }))}
                     keyboardType="decimal-pad"
                   />
-                  <CompactField
-                    label="Max cm³"
-                    value={tier.maxVolumeCm3}
-                    onChangeText={(value) => updateTier('bisque-glaze', index, { maxVolumeCm3: value })}
-                    keyboardType="decimal-pad"
-                  />
-                </View>
-                {!tier.quoteOnly ? (
-                  <View className="flex-row gap-3 mt-3">
-                    <CompactField
-                      label="Rate / cm³"
-                      value={tier.ratePerCm3}
-                      onChangeText={(value) => updateTier('bisque-glaze', index, { ratePerCm3: value })}
-                      keyboardType="decimal-pad"
-                    />
-                    <CompactField
-                      label="Base fee"
-                      value={tier.baseFee}
-                      onChangeText={(value) => updateTier('bisque-glaze', index, { baseFee: value })}
-                      keyboardType="decimal-pad"
-                    />
-                  </View>
-                ) : (
-                  <Text className="text-xs text-muted-foreground mt-3">Quote-only tier. Rate and base fee are ignored.</Text>
-                )}
-              </View>
-            ))}
-          </View>
-        </SectionCard>
-
-        <SectionCard
-          title="Confidence Check"
-          summary="Three sample pieces to sanity-check firing, clay, true cost, retail, and wholesale"
-          open={openSection === 'checks'}
-          onToggle={() => setOpenSection(openSection === 'checks' ? 'studio' : 'checks')}
-        >
-          <View className="pt-4">
-            <Text className="text-xs text-muted-foreground mb-3">
-              These previews use your live defaults for clay, glaze, labor hours, overhead, fees, and tax.
-            </Text>
-            {confidenceChecks.map((check) => (
-              <View key={`${check.label}-${check.mode}`} className="rounded-2xl border border-border bg-background p-3 mb-3">
-                <View className="flex-row items-start justify-between gap-3">
                   <View className="flex-1">
-                    <Text className="text-sm font-semibold text-foreground">{check.label}</Text>
-                    <Text className="text-xs text-muted-foreground mt-0.5">
-                      {check.heightCm}h × {check.widthCm}w cm · {check.weightGrams} g · {check.mode === 'bisque' ? 'Bisque' : 'Bisque + Glaze'}
+                    <Text className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                      Default firing
                     </Text>
+                    <SelectChipGroup>
+                      {([
+                        { value: 'bisque', label: 'Bisque' },
+                        { value: 'bisque-glaze', label: 'Bisque + Glaze' },
+                      ] as const).map((option) => (
+                        <SelectChip
+                          key={option.value}
+                          label={option.label}
+                          selected={draft.defaultMode === option.value}
+                          onPress={() => setDraft((previous) => ({ ...previous, defaultMode: option.value }))}
+                          className="flex-1 justify-center"
+                        />
+                      ))}
+                    </SelectChipGroup>
                   </View>
-                  <Text className="text-sm font-semibold text-primary">
-                    {check.snapshot.quoteRequired
-                      ? 'N.O.T.K'
-                      : formatMoney(previewSettings.currencySymbol, check.snapshot.firingFee ?? 0)}
-                  </Text>
                 </View>
-                <View className="flex-row items-center justify-between mt-3">
-                  <Text className="text-xs text-muted-foreground">Clay estimate</Text>
-                  <Text className="text-xs font-medium text-foreground">
-                    {formatMoney(previewSettings.currencySymbol, check.snapshot.clayCost)}
-                  </Text>
+                <Text className="text-[11px] text-muted-foreground mt-3 leading-5">
+                  Shape factor adjusts volume estimates for open forms. Use 1 for mugs and bowls, lower for plates and trays.
+                </Text>
+              </View>
+            </SectionCard>
+
+            <SectionCard
+              title="Extra material costs"
+              summary={`Glaze ${formatMoney(symbol, previewSettings.defaultGlazeCost)} · Overhead ${formatMoney(symbol, previewSettings.recurringOverheadCost)} / piece`}
+              open={advancedSection === 'costs'}
+              onToggle={() => toggleAdvancedSection('costs')}
+            >
+              <View className="pt-4">
+                <View className="flex-row gap-3">
+                  <CompactField
+                    label="Admin rate / hr"
+                    value={draft.adminHourlyRate}
+                    onChangeText={(value) => setDraft((previous) => ({ ...previous, adminHourlyRate: value }))}
+                    keyboardType="decimal-pad"
+                  />
+                  <CompactField
+                    label="Admin hours / piece"
+                    value={draft.defaultAdminHours}
+                    onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultAdminHours: value }))}
+                    keyboardType="decimal-pad"
+                  />
                 </View>
-                <View className="flex-row items-center justify-between mt-2">
-                  <Text className="text-xs text-muted-foreground">True cost</Text>
-                  <Text className="text-xs font-medium text-foreground">
-                    {formatMoney(previewSettings.currencySymbol, check.snapshot.totalCost)}
-                  </Text>
+                <View className="flex-row gap-3 mt-3">
+                  <CompactField
+                    label="Glaze cost (base)"
+                    value={draft.defaultGlazeCost}
+                    onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultGlazeCost: value }))}
+                    keyboardType="decimal-pad"
+                  />
+                  <CompactField
+                    label="Overhead / piece"
+                    value={draft.recurringOverheadCost}
+                    onChangeText={(value) => setDraft((previous) => ({ ...previous, recurringOverheadCost: value }))}
+                    keyboardType="decimal-pad"
+                  />
                 </View>
-                <View className="flex-row items-center justify-between mt-2">
-                  <Text className="text-xs text-muted-foreground">Suggested retail</Text>
-                  <Text className="text-xs font-medium text-primary">
-                    {formatMoney(previewSettings.currencySymbol, check.snapshot.suggestedPrice)}
-                  </Text>
+                <View className="flex-row gap-3 mt-3">
+                  <CompactField
+                    label="Packaging & extras"
+                    value={draft.defaultOtherCost}
+                    onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultOtherCost: value }))}
+                    keyboardType="decimal-pad"
+                  />
+                  <CompactField
+                    label="Wholesale discount %"
+                    value={draft.wholesaleDiscountPct}
+                    onChangeText={(value) => setDraft((previous) => ({ ...previous, wholesaleDiscountPct: value }))}
+                    keyboardType="decimal-pad"
+                  />
                 </View>
-                <View className="flex-row items-center justify-between mt-2">
-                  <Text className="text-xs text-muted-foreground">Wholesale floor</Text>
-                  <Text className="text-xs font-medium text-foreground">
-                    {formatMoney(previewSettings.currencySymbol, check.snapshot.wholesalePrice)}
-                  </Text>
+                <View className="flex-row gap-3 mt-3">
+                  <CompactField
+                    label="Clay fallback (no weight)"
+                    value={draft.defaultClayCost}
+                    onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultClayCost: value }))}
+                    keyboardType="decimal-pad"
+                  />
+                  <CompactField
+                    label="Extra kiln energy"
+                    value={draft.defaultEnergyCost}
+                    onChangeText={(value) => setDraft((previous) => ({ ...previous, defaultEnergyCost: value }))}
+                    keyboardType="decimal-pad"
+                  />
                 </View>
               </View>
-            ))}
-          </View>
-        </SectionCard>
+            </SectionCard>
+
+            <SectionCard
+              title="Bisque firing fees"
+              summary="What you pay (or charge) for bisque-only firings by piece size"
+              open={advancedSection === 'bisque'}
+              onToggle={() => toggleAdvancedSection('bisque')}
+            >
+              <View className="pt-4">
+                <Text className="text-xs text-muted-foreground mb-3 leading-5">
+                  Match these tiers to your studio&apos;s bisque firing price list. Large pieces can be quote-only (N.O.T.K).
+                </Text>
+                {draft.bisqueTiers.map((tier, index) => (
+                  <View key={`bisque-${index}`} className="rounded-2xl border border-border bg-background p-3 mb-3">
+                    <View className="flex-row items-center justify-between mb-3">
+                      <View>
+                        <Text className="text-sm font-semibold text-foreground">Tier {index + 1}</Text>
+                        <Text className="text-xs text-muted-foreground mt-0.5">{formatTierRange(tier)}</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => updateTier('bisque', index, { quoteOnly: !tier.quoteOnly })}
+                        className={`px-3 py-1.5 rounded-full border ${tier.quoteOnly ? 'bg-primary/10 border-primary/30' : 'bg-card border-border'}`}
+                        activeOpacity={0.75}
+                      >
+                        <Text className={`text-[11px] font-semibold ${tier.quoteOnly ? 'text-primary' : 'text-muted-foreground'}`}>
+                          {tier.quoteOnly ? 'Quote only' : 'Formula'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View className="flex-row gap-3">
+                      <CompactField
+                        label="Min cm³"
+                        value={tier.minVolumeCm3}
+                        onChangeText={(value) => updateTier('bisque', index, { minVolumeCm3: value })}
+                        keyboardType="decimal-pad"
+                      />
+                      <CompactField
+                        label="Max cm³"
+                        value={tier.maxVolumeCm3}
+                        onChangeText={(value) => updateTier('bisque', index, { maxVolumeCm3: value })}
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+                    {!tier.quoteOnly ? (
+                      <View className="flex-row gap-3 mt-3">
+                        <CompactField
+                          label="Rate / cm³"
+                          value={tier.ratePerCm3}
+                          onChangeText={(value) => updateTier('bisque', index, { ratePerCm3: value })}
+                          keyboardType="decimal-pad"
+                        />
+                        <CompactField
+                          label="Base fee"
+                          value={tier.baseFee}
+                          onChangeText={(value) => updateTier('bisque', index, { baseFee: value })}
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            </SectionCard>
+
+            <SectionCard
+              title="Glaze firing fees"
+              summary="Bisque + glaze firing fees by piece size"
+              open={advancedSection === 'bisque-glaze'}
+              onToggle={() => toggleAdvancedSection('bisque-glaze')}
+            >
+              <View className="pt-4">
+                {draft.bisqueGlazeTiers.map((tier, index) => (
+                  <View key={`bisque-glaze-${index}`} className="rounded-2xl border border-border bg-background p-3 mb-3">
+                    <View className="flex-row items-center justify-between mb-3">
+                      <View>
+                        <Text className="text-sm font-semibold text-foreground">Tier {index + 1}</Text>
+                        <Text className="text-xs text-muted-foreground mt-0.5">{formatTierRange(tier)}</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => updateTier('bisque-glaze', index, { quoteOnly: !tier.quoteOnly })}
+                        className={`px-3 py-1.5 rounded-full border ${tier.quoteOnly ? 'bg-primary/10 border-primary/30' : 'bg-card border-border'}`}
+                        activeOpacity={0.75}
+                      >
+                        <Text className={`text-[11px] font-semibold ${tier.quoteOnly ? 'text-primary' : 'text-muted-foreground'}`}>
+                          {tier.quoteOnly ? 'Quote only' : 'Formula'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View className="flex-row gap-3">
+                      <CompactField
+                        label="Min cm³"
+                        value={tier.minVolumeCm3}
+                        onChangeText={(value) => updateTier('bisque-glaze', index, { minVolumeCm3: value })}
+                        keyboardType="decimal-pad"
+                      />
+                      <CompactField
+                        label="Max cm³"
+                        value={tier.maxVolumeCm3}
+                        onChangeText={(value) => updateTier('bisque-glaze', index, { maxVolumeCm3: value })}
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+                    {!tier.quoteOnly ? (
+                      <View className="flex-row gap-3 mt-3">
+                        <CompactField
+                          label="Rate / cm³"
+                          value={tier.ratePerCm3}
+                          onChangeText={(value) => updateTier('bisque-glaze', index, { ratePerCm3: value })}
+                          keyboardType="decimal-pad"
+                        />
+                        <CompactField
+                          label="Base fee"
+                          value={tier.baseFee}
+                          onChangeText={(value) => updateTier('bisque-glaze', index, { baseFee: value })}
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            </SectionCard>
+          </>
+        ) : null}
+
+        <View className="bg-card rounded-2xl border border-border px-4 py-4 mb-4">
+          <Text className="text-sm font-semibold text-foreground">More sample prices</Text>
+          <Text className="text-xs text-muted-foreground mt-1 mb-3 leading-5">
+            Sanity-check that retail and wholesale feel right before you save.
+          </Text>
+          {confidenceChecks.map((check) => (
+            <View key={`${check.label}-${check.mode}`} className="rounded-2xl border border-border bg-background p-3 mb-3 last:mb-0">
+              <View className="flex-row items-start justify-between gap-3">
+                <View className="flex-1">
+                  <Text className="text-sm font-semibold text-foreground">{check.label}</Text>
+                  <Text className="text-xs text-muted-foreground mt-0.5">
+                    {check.heightCm}h × {check.widthCm}w cm · {check.weightGrams} g
+                  </Text>
+                </View>
+                <Text className="text-sm font-semibold text-primary">
+                  {formatMoney(symbol, check.snapshot.suggestedPrice)}
+                </Text>
+              </View>
+              <View className="flex-row items-center justify-between mt-2">
+                <Text className="text-xs text-muted-foreground">Cost · Wholesale floor</Text>
+                <Text className="text-xs font-medium text-foreground">
+                  {formatMoney(symbol, check.snapshot.totalCost)} · {formatMoney(symbol, check.snapshot.wholesalePrice)}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
 
         <TouchableOpacity
           onPress={handleResetDraft}
@@ -792,7 +801,7 @@ export default function PricingRulesScreen() {
           className="flex-row items-center justify-center gap-2 mt-2 mb-2 py-3.5 rounded-2xl border border-border bg-card"
         >
           <RotateCcw size={15} color="hsl(0 55% 50%)" />
-          <Text className="text-sm font-medium text-destructive">Reset Pricing Defaults</Text>
+          <Text className="text-sm font-medium text-destructive">Reset to app defaults</Text>
         </TouchableOpacity>
       </CustomizationSettingsShell>
     </>

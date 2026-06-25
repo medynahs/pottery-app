@@ -14,14 +14,74 @@ export interface BackendProfile {
   ory_id: string;
   email: string;
   name: string | null;
+  studio_name?: string | null;
+  location?: string | null;
+  bio?: string | null;
   avatar_url: string | null;
   cover_url: string | null;
-  studio_name: string | null;
-  location: string | null;
-  bio: string | null;
   role: string;
+  profile_public?: boolean;
+  pieces_public?: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface UpdateProfilePayload {
+  name?: string;
+  studio_name?: string;
+  location?: string;
+  bio?: string;
+}
+
+/** @deprecated Use UpdateProfilePayload */
+export type UpdateMePayload = UpdateProfilePayload;
+
+export interface UpdatePrivacyPayload {
+  profile_public?: boolean;
+  pieces_public?: boolean;
+}
+
+type UserStorePatch = {
+  name?: string;
+  avatarInitial?: string;
+  studioName?: string;
+  location?: string;
+  bio?: string;
+  avatarImageUri?: string;
+  coverImageUri?: string;
+};
+
+/** Map GET/PUT /users/me response fields into local Zustand user shape. */
+export function userPatchFromBackendProfile(
+  profile: BackendProfile,
+  emailFallback?: string,
+): UserStorePatch {
+  const patch: UserStorePatch = {};
+  if (profile.name !== undefined && profile.name !== null) {
+    const displayName = profile.name.trim();
+    if (displayName) {
+      patch.name = displayName;
+      patch.avatarInitial = displayName[0].toUpperCase();
+    }
+  } else if (emailFallback) {
+    patch.avatarInitial = emailFallback[0].toUpperCase();
+  }
+  if (profile.studio_name !== undefined) {
+    patch.studioName = profile.studio_name?.trim() || undefined;
+  }
+  if (profile.location !== undefined) {
+    patch.location = profile.location?.trim() || undefined;
+  }
+  if (profile.bio !== undefined) {
+    patch.bio = profile.bio?.trim() || undefined;
+  }
+  if (profile.avatar_url !== undefined && profile.avatar_url !== null) {
+    patch.avatarImageUri = profile.avatar_url;
+  }
+  if (profile.cover_url !== undefined && profile.cover_url !== null) {
+    patch.coverImageUri = profile.cover_url;
+  }
+  return patch;
 }
 
 /** Returns the avatar URL suitable for <Image source={{ uri }} /> */
@@ -29,12 +89,68 @@ export function avatarDataUri(profile: BackendProfile): string | null {
   return profile.avatar_url ?? null;
 }
 
-export async function fetchMe(sessionToken: string): Promise<BackendProfile> {
-  const res = await fetch(`${API_BASE}/users/me`, {
+function authedJson(
+  sessionToken: string,
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
+  return fetch(`${API_BASE}${path}`, {
+    ...init,
     credentials: 'omit',
-    headers: { 'X-Session-Token': sessionToken },
+    headers: {
+      Accept: 'application/json',
+      'X-Session-Token': sessionToken,
+      ...(init?.headers ?? {}),
+    },
   });
+}
+
+export async function fetchMe(sessionToken: string): Promise<BackendProfile> {
+  const res = await authedJson(sessionToken, '/users/me');
   if (!res.ok) throw new ApiError(`fetchMe failed (${res.status})`, res.status);
+  return res.json() as Promise<BackendProfile>;
+}
+
+/** PUT /users/me — partial update of name, studio, location, bio. */
+export async function updateProfile(
+  sessionToken: string,
+  payload: UpdateProfilePayload,
+): Promise<BackendProfile> {
+  const res = await authedJson(sessionToken, '/users/me', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new ApiError(
+      body ? `updateProfile failed (${res.status}): ${body}` : `updateProfile failed (${res.status})`,
+      res.status,
+    );
+  }
+  return res.json() as Promise<BackendProfile>;
+}
+
+/** @deprecated Use updateProfile */
+export const updateMe = updateProfile;
+
+/** PUT /users/me/privacy — profile_public and pieces_public enforcement on share. */
+export async function updatePrivacy(
+  sessionToken: string,
+  payload: UpdatePrivacyPayload,
+): Promise<BackendProfile> {
+  const res = await authedJson(sessionToken, '/users/me/privacy', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new ApiError(
+      body ? `updatePrivacy failed (${res.status}): ${body}` : `updatePrivacy failed (${res.status})`,
+      res.status,
+    );
+  }
   return res.json() as Promise<BackendProfile>;
 }
 
@@ -99,46 +215,6 @@ export async function uploadCover(
   return uploadUserImage('cover', sessionToken, imageUri, mimeType);
 }
 
-export interface UpdateMePayload {
-  name?: string;
-  studio_name?: string;
-  location?: string;
-  bio?: string;
-}
-
-export async function updateMe(
-  sessionToken: string,
-  payload: UpdateMePayload,
-): Promise<BackendProfile> {
-  const res = await fetch(`${API_BASE}/users/me`, {
-    method: 'PUT',
-    credentials: 'omit',
-    headers: { 'X-Session-Token': sessionToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new ApiError(`updateMe failed (${res.status})`, res.status);
-  return res.json() as Promise<BackendProfile>;
-}
-
-export interface UpdatePrivacyPayload {
-  profile_public?: boolean;
-  pieces_public?: boolean;
-}
-
-export async function updatePrivacy(
-  sessionToken: string,
-  payload: UpdatePrivacyPayload,
-): Promise<BackendProfile> {
-  const res = await fetch(`${API_BASE}/users/me/privacy`, {
-    method: 'PUT',
-    credentials: 'omit',
-    headers: { 'X-Session-Token': sessionToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new ApiError(`updatePrivacy failed (${res.status})`, res.status);
-  return res.json() as Promise<BackendProfile>;
-}
-
 export async function registerPushToken(
   sessionToken: string,
   token: string,
@@ -161,5 +237,3 @@ export async function reviveAccount(sessionToken: string): Promise<void> {
   });
   if (!res.ok) throw new ApiError(`reviveAccount failed (${res.status})`, res.status);
 }
-
-

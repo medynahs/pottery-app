@@ -32,7 +32,7 @@ import {
   embedGlazePayloadInContent,
 } from '@/src/screens/glazes/shareGlazeRecipe/glazePostPayload';
 import { ShareGlazeFeedPreview } from '@/src/screens/glazes/shareGlazeRecipe/ShareGlazeFeedPreview';
-import { apiSubmitChallengeEntry, apiListChallenges, type BackendChallenge } from '@/src/services/challenges';
+import { apiSubmitChallengeEntry, apiListChallenges, challengeDisplayName, type BackendChallenge } from '@/src/services/challenges';
 import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
 import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAnalytics } from '@/src/hooks/useAnalytics';
@@ -415,7 +415,7 @@ export function ShareGlazeRecipeSheet({
                 {activeChallenge ? (
                   <FormSectionCard
                     title="Monthly challenge"
-                    subtitle={`Enter "${activeChallenge.title}" with this post.`}
+                    subtitle={`Enter "${challengeDisplayName(activeChallenge)}" with this post.`}
                   >
                     <FormField label="Challenge entry" nested first last>
                     <ToggleChip

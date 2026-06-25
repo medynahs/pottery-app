@@ -21,8 +21,12 @@ export interface BackendFiring {
   state: BackendFiringState;
   notes?: string | null;
   scheduled_date?: string | null;
+  fired_date?: string | null;
   started_at?: string | null;
   completed_at?: string | null;
+  peak_temp_c?: number | null;
+  hold_time_minutes?: number | null;
+  photo_uri?: string | null;
   created_at: string;
   updated_at?: string | null;
 }
@@ -36,6 +40,12 @@ export interface CreateFiringPayload {
   state?: BackendFiringState;
   notes?: string;
   scheduled_date?: string;
+  fired_date?: string;
+  started_at?: string;
+  completed_at?: string;
+  peak_temp_c?: number;
+  hold_time_minutes?: number;
+  photo_uri?: string;
 }
 
 export interface UpdateFiringPayload {
@@ -47,8 +57,38 @@ export interface UpdateFiringPayload {
   state?: BackendFiringState;
   notes?: string;
   scheduled_date?: string;
+  fired_date?: string;
   started_at?: string;
   completed_at?: string;
+  peak_temp_c?: number | null;
+  hold_time_minutes?: number | null;
+  photo_uri?: string | null;
+}
+
+/** Map local firing log journal fields to API snake_case payload. */
+export function firingLogFieldsForApi(firing: {
+  firedDate?: string;
+  submissionDate?: string;
+  scheduledDate?: string;
+  peakTempC?: number;
+  holdTimeMinutes?: number;
+  photoUri?: string;
+}): Pick<
+  UpdateFiringPayload,
+  'fired_date' | 'peak_temp_c' | 'hold_time_minutes' | 'photo_uri' | 'scheduled_date'
+> {
+  const payload: Pick<
+    UpdateFiringPayload,
+    'fired_date' | 'peak_temp_c' | 'hold_time_minutes' | 'photo_uri' | 'scheduled_date'
+  > = {};
+
+  const firedDate = firing.firedDate ?? firing.submissionDate ?? firing.scheduledDate;
+  if (firedDate) payload.fired_date = firedDate;
+  if (firing.peakTempC != null) payload.peak_temp_c = firing.peakTempC;
+  if (firing.holdTimeMinutes != null) payload.hold_time_minutes = firing.holdTimeMinutes;
+  if (firing.photoUri) payload.photo_uri = firing.photoUri;
+
+  return payload;
 }
 
 function authedFetch(

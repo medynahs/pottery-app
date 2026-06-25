@@ -1,6 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { ApiError, avatarDataUri, fetchMe, uploadAvatar, uploadCover } from '../services/api';
+import {
+  ApiError,
+  fetchMe,
+  updateProfile,
+  updatePrivacy,
+  uploadAvatar,
+  uploadCover,
+  userPatchFromBackendProfile,
+  type BackendProfile,
+  type UpdatePrivacyPayload,
+  type UpdateProfilePayload,
+} from '../services/api';
 import { useAppStore } from '../store/appStore';
 
 export const ME_QUERY_KEY = ['me'] as const;
@@ -9,18 +20,32 @@ function isSessionExpired(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401;
 }
 
+function mergeMeCache(prev: BackendProfile | undefined, next: BackendProfile): BackendProfile {
+  return prev ? { ...prev, ...next } : next;
+}
+
+function applyProfileToStore(profile: Parameters<typeof userPatchFromBackendProfile>[0]) {
+  const { setUser, setPrivacyPref } = useAppStore.getState();
+  setUser(userPatchFromBackendProfile(profile, profile.email));
+  if (profile.profile_public !== undefined) {
+    setPrivacyPref('profilePublic', profile.profile_public);
+  }
+  if (profile.pieces_public !== undefined) {
+    setPrivacyPref('piecesPublic', profile.pieces_public);
+  }
+}
+
 export function useCurrentUser() {
-  const sessionToken    = useAppStore((s) => s.sessionToken);
-  const setUser         = useAppStore((s) => s.setUser);
+  const sessionToken = useAppStore((s) => s.sessionToken);
   const setBackendUserId = useAppStore((s) => s.setBackendUserId);
-  const clearSession    = useAppStore((s) => s.clearSession);
-  const showToast       = useAppStore((s) => s.showToast);
+  const clearSession = useAppStore((s) => s.clearSession);
+  const showToast = useAppStore((s) => s.showToast);
 
   const query = useQuery({
     queryKey: ME_QUERY_KEY,
     queryFn: () => fetchMe(sessionToken!),
     enabled: !!sessionToken,
-    staleTime: 5 * 60 * 1000, // re-use cached data for 5 min
+    staleTime: 5 * 60 * 1000,
     retry: (failureCount, error) => !isSessionExpired(error) && failureCount < 2,
   });
 
@@ -29,44 +54,71 @@ export function useCurrentUser() {
       clearSession();
       showToast('Your session has expired. Please sign in again.', 'error');
     }
-  }, [query.error, sessionToken]);
+  }, [query.error, sessionToken, clearSession, showToast]);
 
   useEffect(() => {
     if (!query.data) return;
-    const p = query.data;
-    setBackendUserId(p.id);
-    const patch: Parameters<typeof setUser>[0] = {};
-    if (p.name) {
-      patch.name = p.name;
-      patch.avatarInitial = p.name[0].toUpperCase();
-    } else if (p.email) {
-      patch.avatarInitial = p.email[0].toUpperCase();
-    }
-   
-    const avatarUrl = avatarDataUri(p);
-    if (avatarUrl) patch.avatarImageUri = avatarUrl;
-    if (p.cover_url) patch.coverImageUri = p.cover_url;
-    setUser(patch);
-  }, [query.data]);
+    setBackendUserId(query.data.id);
+    applyProfileToStore(query.data);
+  }, [query.data, setBackendUserId]);
 
   return query;
 }
 
 /**
+ * Persist profile text fields via PUT /users/me and refresh the me cache + store.
+ */
+export function useUpdateProfile() {
+  const sessionToken = useAppStore((s) => s.sessionToken);
+  const queryClient = useQueryClient();
+
+  return async (payload: UpdateProfilePayload): Promise<void> => {
+    if (!sessionToken) throw new Error('Not signed in');
+    const updatedProfile = await updateProfile(sessionToken, payload);
+    queryClient.setQueryData(ME_QUERY_KEY, (prev) =>
+      mergeMeCache(prev as BackendProfile | undefined, updatedProfile),
+    );
+    applyProfileToStore(updatedProfile);
+  };
+}
+
+/**
+ * Persist community visibility toggles via PUT /users/me/privacy.
+ */
+export function useUpdatePrivacy() {
+  const sessionToken = useAppStore((s) => s.sessionToken);
+  const queryClient = useQueryClient();
+
+  return async (payload: UpdatePrivacyPayload): Promise<void> => {
+    if (!sessionToken) throw new Error('Not signed in');
+    const updatedProfile = await updatePrivacy(sessionToken, payload);
+    queryClient.setQueryData(ME_QUERY_KEY, (prev) =>
+      mergeMeCache(prev as BackendProfile | undefined, updatedProfile),
+    );
+    applyProfileToStore(updatedProfile);
+  };
+}
+
+/**
  * One-shot helper to upload an avatar and immediately update the cache + store.
- * Use inside EditProfileModal after the user picks an image.
  */
 export function useUploadAvatar() {
   const sessionToken = useAppStore((s) => s.sessionToken);
-  const setUser        = useAppStore((s) => s.setUser);
-  const queryClient    = useQueryClient();
+  const queryClient = useQueryClient();
 
   return async (imageUri: string, mimeType?: string): Promise<void> => {
     if (!sessionToken) throw new Error('Not signed in');
     const updatedProfile = await uploadAvatar(sessionToken, imageUri, mimeType);
-    queryClient.setQueryData(ME_QUERY_KEY, updatedProfile);
-    const avatarUrl = avatarDataUri(updatedProfile) ?? imageUri;
-    setUser({ avatarImageUri: avatarUrl });
+    queryClient.setQueryData(ME_QUERY_KEY, (prev) =>
+      mergeMeCache(prev as BackendProfile | undefined, {
+        ...updatedProfile,
+        avatar_url: updatedProfile.avatar_url ?? imageUri,
+      }),
+    );
+    applyProfileToStore({
+      ...updatedProfile,
+      avatar_url: updatedProfile.avatar_url ?? imageUri,
+    });
   };
 }
 
@@ -75,13 +127,11 @@ export function useUploadAvatar() {
  */
 export function useUploadCover() {
   const sessionToken = useAppStore((s) => s.sessionToken);
-  const setUser        = useAppStore((s) => s.setUser);
-  const queryClient    = useQueryClient();
+  const queryClient = useQueryClient();
 
   return async (imageUri: string, mimeType?: string): Promise<void> => {
     if (!sessionToken) throw new Error('Not signed in');
     let updatedProfile = await uploadCover(sessionToken, imageUri, mimeType);
-    // POST /users/me/cover may persist the asset without returning cover_url yet.
     if (!updatedProfile.cover_url) {
       try {
         updatedProfile = await fetchMe(sessionToken);
@@ -89,7 +139,15 @@ export function useUploadCover() {
         // Keep the upload response; fall back to the local picker URI below.
       }
     }
-    queryClient.setQueryData(ME_QUERY_KEY, updatedProfile);
-    setUser({ coverImageUri: updatedProfile.cover_url ?? imageUri });
+    queryClient.setQueryData(ME_QUERY_KEY, (prev) =>
+      mergeMeCache(prev as BackendProfile | undefined, {
+        ...updatedProfile,
+        cover_url: updatedProfile.cover_url ?? imageUri,
+      }),
+    );
+    applyProfileToStore({
+      ...updatedProfile,
+      cover_url: updatedProfile.cover_url ?? imageUri,
+    });
   };
 }

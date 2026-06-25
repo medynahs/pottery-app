@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { useEffect, useMemo, useRef } from 'react';
 import { generateStudioRhythmSuggestions } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import { getTodayMissionKey } from '../screens/overview/utils/missionDate';
-import { apiListChallenges } from '../services/challenges';
+import { apiListChallenges, challengeDisplayName, type BackendChallenge } from '../services/challenges';
 import {
     cancelScheduledNotificationsByKind,
     scheduleKilnkinNotification,
@@ -325,7 +325,8 @@ export function useNotificationTriggers() {
 
         const now = Date.now();
         for (const challenge of challenges) {
-          if (!challenge.ends_at) continue;
+          const deadline = challenge.end_date ?? challenge.submission_deadline;
+          if (!deadline) continue;
 
           const challengeId = challenge.id;
           if (challengeReminderIds.current.has(challengeId)) continue;
@@ -334,7 +335,7 @@ export function useNotificationTriggers() {
           const maybeMyEntryId = (challenge as unknown as { my_entry_id?: string | null }).my_entry_id;
           if (!maybeMyEntryId) continue;
 
-          const endsAt = new Date(challenge.ends_at).getTime();
+          const endsAt = new Date(deadline).getTime();
           if (Number.isNaN(endsAt)) continue;
 
           const remindAtMs = endsAt - UPCOMING_CHALLENGE_WINDOW_HOURS * 60 * 60 * 1000;
@@ -346,7 +347,7 @@ export function useNotificationTriggers() {
             companion: kilnkinCompanion,
             kind: 'challenge-deadline',
             payload: {
-              challengeTitle: challenge.title,
+              challengeTitle: challengeDisplayName(challenge),
               hoursLeft,
             },
             trigger: {

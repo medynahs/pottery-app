@@ -16,6 +16,8 @@ export type ApiPieceStatus =
   | 'done'
   | 'cemetery';
 
+export type ApiGlazeOutcome = 'success' | 'crawling' | 'underfired' | 'crack';
+
 export interface BackendPiece {
   id: string;           // UUID
   user_id: string;
@@ -26,6 +28,8 @@ export interface BackendPiece {
   updated_at: string;
   client_ref?: string;
   is_deleted?: boolean;
+  glaze_id?: string | null;
+  glaze_outcome?: ApiGlazeOutcome | null;
 }
 
 /** Snapshot sent to POST /users/me/pieces/sync, identity is client_ref only. */
@@ -35,6 +39,8 @@ export interface PieceSyncSnapshot {
   status?: ApiPieceStatus;
   description?: string;
   deleted?: boolean;
+  glaze_id?: string | null;
+  glaze_outcome?: ApiGlazeOutcome | null;
 }
 
 export interface SyncPiecesRequest {
@@ -68,6 +74,8 @@ export interface UpdatePiecePayload {
   name?: string;
   description?: string;
   status?: ApiPieceStatus;
+  glaze_id?: string | null;
+  glaze_outcome?: ApiGlazeOutcome | null;
 }
 
 export interface UpdateAssetPayload {
@@ -77,7 +85,64 @@ export interface UpdateAssetPayload {
   file?: { uri: string; name: string; type: string };
 }
 
-// ─── Stage mapping ────────────────────────────────────────────────────────────
+/** Maps a local glaze atlas id to the backend UUID for piece sync payloads. */
+export function resolvePieceGlazeBackendId(
+  localGlazeId: string | undefined,
+  glazes: ReadonlyArray<{ id: string; backendId?: string }>,
+): string | null | undefined {
+  if (!localGlazeId?.trim()) return null;
+  return glazes.find((g) => g.id === localGlazeId)?.backendId;
+}
+
+/** Build glaze link fields for piece sync / PUT payloads. */
+export function pieceGlazeFieldsForApi(
+  piece: { glazeId?: string; glazeOutcome?: ApiGlazeOutcome },
+  glazes: ReadonlyArray<{ id: string; backendId?: string }>,
+): Pick<UpdatePiecePayload, 'glaze_id' | 'glaze_outcome'> {
+  if (!piece.glazeId?.trim()) {
+    return {
+      glaze_id: null,
+      glaze_outcome: piece.glazeOutcome ?? null,
+    };
+  }
+  const backendGlazeId = resolvePieceGlazeBackendId(piece.glazeId, glazes);
+  if (!backendGlazeId) return {};
+  return {
+    glaze_id: backendGlazeId,
+    glaze_outcome: piece.glazeOutcome ?? null,
+  };
+}
+
+/** True when the server piece row reflects the local glaze link we intended to push. */
+export function pieceGlazeFieldsSynced(
+  piece: { glazeId?: string; glazeOutcome?: ApiGlazeOutcome },
+  backendPiece: BackendPiece,
+  glazes: ReadonlyArray<{ id: string; backendId?: string }>,
+): boolean {
+  const expected = pieceGlazeFieldsForApi(piece, glazes);
+  if (piece.glazeId?.trim() && expected.glaze_id === undefined) {
+    return false;
+  }
+  if (expected.glaze_id !== undefined) {
+    return (
+      expected.glaze_id === (backendPiece.glaze_id ?? null)
+      && (expected.glaze_outcome ?? null) === (backendPiece.glaze_outcome ?? null)
+    );
+  }
+  if (!piece.glazeId?.trim()) {
+    return backendPiece.glaze_id == null;
+  }
+  return true;
+}
+
+/** Resolve backend glaze UUID to local atlas id when merging server pieces. */
+export function resolveLocalGlazeIdFromBackend(
+  backendGlazeId: string | null | undefined,
+  glazes: ReadonlyArray<{ id: string; backendId?: string }>,
+): string | undefined {
+  if (!backendGlazeId) return undefined;
+  return glazes.find((g) => g.backendId === backendGlazeId)?.id;
+}
 
 /**
  * Maps local stage IDs (which can be more granular) to the backend's status
