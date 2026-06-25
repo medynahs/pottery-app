@@ -8,6 +8,7 @@ node_modules/
 dist/
 web-build/
 .expo-tmp-web/
+.expo-tmp-export-test/
 expo-env.d.ts
 
 # Native

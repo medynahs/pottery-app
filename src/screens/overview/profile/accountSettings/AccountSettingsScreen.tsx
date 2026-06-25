@@ -191,7 +191,7 @@ export default function AccountSettingsScreen() {
             iconColor="hsl(200 45% 42%)"
             iconBg="bg-blue-50"
             label="Your Journey"
-            value="Badges & milestones"
+            value="Stats, milestones & achievements"
             isLast
             onPress={() => router.push('/profile/journey' as never)}
           />

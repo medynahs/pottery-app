@@ -3,17 +3,15 @@ import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { apiListFriends } from '@/src/services/friends';
 import { apiListMemberStudios, apiListOwnedStudios } from '@/src/services/studios';
-import { useAppStore, useVisiblePieces } from '@/src/store/appStore';
+import { useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Edit3, Palette, Settings, Share2, Zap } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Image, Modal, Pressable, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { buildBadgeContext } from '../constants/badgeRegistry';
 import { useProfileLevel } from '../hooks/useProfileLevel';
 import { useShareProfile } from '../utils/shareProfile';
 import { EditProfileModal } from './EditProfileModal';
-import { JourneyHero } from './JourneyHero';
 
 export function ProfileHeader({
   postCount,
@@ -31,12 +29,7 @@ export function ProfileHeader({
   const router = useRouter();
   const user = useAppStore((s) => s.user);
   const sessionToken = useAppStore((s) => s.sessionToken);
-  const pieces = useVisiblePieces();
-  const firings = useAppStore((s) => s.firings);
-  const glazes = useAppStore((s) => s.glazes);
-  const pieceCount = useAppStore((s) => s.pieces.length);
-  void pieceCount;
-  const { progress, title, nextTitle, earnedCount, totalBadges, badgesUntilNext } = useProfileLevel();
+  const { progress, title } = useProfileLevel();
   const {
     shareMenuVisible,
     shareMenuOptions,
@@ -44,30 +37,9 @@ export function ProfileHeader({
     closeShareMenu,
   } = useShareProfile();
   const [editVisible, setEditVisible] = useState(false);
-  const [xpTooltip, setXpTooltip] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(false);
   const [friendCount, setFriendCount] = useState<number | null>(null);
   const [studioCount, setStudioCount] = useState<number | null>(null);
-
-  const badgeCtx = useMemo(
-    () => buildBadgeContext(pieces, firings, glazes),
-    [pieces, firings, glazes],
-  );
-
-  const survivalRate = useMemo(() => {
-    if (badgeCtx.totalPieces === 0) return 0;
-    const survived = Math.max(0, badgeCtx.totalPieces - badgeCtx.failedPieces);
-    return Math.round((survived / badgeCtx.totalPieces) * 100);
-  }, [badgeCtx.failedPieces, badgeCtx.totalPieces]);
-
-  const finishRate = useMemo(() => {
-    if (badgeCtx.totalPieces === 0) return 0;
-    return Math.round((badgeCtx.finishedPieces / badgeCtx.totalPieces) * 100);
-  }, [badgeCtx.finishedPieces, badgeCtx.totalPieces]);
-
-  const badgeProgressPct = totalBadges > 0
-    ? Math.round((earnedCount / totalBadges) * 100)
-    : 0;
 
   const loadStats = useCallback(async () => {
     if (!sessionToken) return;
@@ -121,42 +93,42 @@ export function ProfileHeader({
       <View className="px-6 mb-5" style={{ marginTop: -44 }}>
         <View className="flex-row items-end justify-between mb-3">
           {/* Avatar with XP ring */}
-          <TouchableOpacity
-            activeOpacity={user.avatarImageUri ? 0.8 : 1}
-            onPress={() => user.avatarImageUri && setAvatarPreview(true)}
-            style={{ width: 96, height: 104 }}>
-            {/* SVG progress ring */}
-            <Svg width={96} height={96} style={{ position: 'absolute', top: 0, left: 0 }}>
-              {/* Track */}
-              <Circle cx={48} cy={48} r={44} stroke="hsl(34 30% 85%)" strokeWidth={4} fill="none" />
-              {/* Progress, starts at top (rotate -90°) */}
-              <Circle
-                cx={48} cy={48} r={44}
-                stroke="hsl(38 80% 50%)"
-                strokeWidth={4}
-                fill="none"
-                strokeDasharray={`${2 * Math.PI * 44}`}
-                strokeDashoffset={`${2 * Math.PI * 44 * (1 - progress)}`}
-                strokeLinecap="round"
-                rotation="-90"
-                origin="48,48"
-              />
-            </Svg>
-            {/* Avatar circle inset inside the ring */}
-            <View style={{ position: 'absolute', top: 6, left: 6 }}>
-              <UserAvatar
-                name={user.name}
-                initial={user.avatarInitial}
-                imageUri={user.avatarImageUri}
-                size={84}
-                serif
-              />
-            </View>
-            {/* Title badge, sits on the bottom of the ring */}
+          <View style={{ width: 96, height: 104 }}>
+            <TouchableOpacity
+              activeOpacity={user.avatarImageUri ? 0.8 : 1}
+              onPress={() => user.avatarImageUri && setAvatarPreview(true)}
+              style={{ width: 96, height: 96 }}
+            >
+              <Svg width={96} height={96} style={{ position: 'absolute', top: 0, left: 0 }}>
+                <Circle cx={48} cy={48} r={44} stroke="hsl(34 30% 85%)" strokeWidth={4} fill="none" />
+                <Circle
+                  cx={48} cy={48} r={44}
+                  stroke="hsl(38 80% 50%)"
+                  strokeWidth={4}
+                  fill="none"
+                  strokeDasharray={`${2 * Math.PI * 44}`}
+                  strokeDashoffset={`${2 * Math.PI * 44 * (1 - progress)}`}
+                  strokeLinecap="round"
+                  rotation="-90"
+                  origin="48,48"
+                />
+              </Svg>
+              <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                <UserAvatar
+                  name={user.name}
+                  initial={user.avatarInitial}
+                  imageUri={user.avatarImageUri}
+                  size={84}
+                  serif
+                />
+              </View>
+            </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={0.75}
-              onPress={() => setXpTooltip(v => !v)}
+              onPress={onOpenJourney}
               style={{ position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center' }}
+              accessibilityRole="button"
+              accessibilityLabel={`Potter rank ${title}, open journey`}
             >
               <View style={{
                 backgroundColor: 'hsl(38 80% 50%)',
@@ -168,7 +140,7 @@ export function ProfileHeader({
                 <Text style={{ fontSize: 10, fontWeight: '700', color: 'white' }}>{title}</Text>
               </View>
             </TouchableOpacity>
-          </TouchableOpacity>
+          </View>
 
           <View className="flex-row gap-2 mb-1">
             <TouchableOpacity
@@ -208,33 +180,6 @@ export function ProfileHeader({
           <Text className="text-2xl font-serif font-bold text-foreground">{user.name}</Text>
         </View>
 
-        {/* Rank card — tap badge on avatar to toggle */}
-        {xpTooltip ? (
-          <View className="mb-3">
-            <JourneyHero
-              embedded
-              title={title}
-              nextTitle={nextTitle}
-              badgesUntilNext={badgesUntilNext}
-              earnedCount={earnedCount}
-              totalBadges={totalBadges}
-              badgeProgress={badgeProgressPct}
-              survivalRate={survivalRate}
-              finishRate={finishRate}
-              totalPieces={badgeCtx.totalPieces}
-            />
-            <TouchableOpacity
-              onPress={() => {
-                setXpTooltip(false);
-                onOpenJourney();
-              }}
-              activeOpacity={0.8}
-              className="self-start"
-            >
-              <Text className="text-xs font-bold text-primary">See full journey →</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
         {studioLine ? (
           <Text className="text-sm font-medium text-primary mb-1">{studioLine}</Text>
         ) : null}

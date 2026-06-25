@@ -1,7 +1,7 @@
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { Stack, usePathname, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
@@ -103,26 +103,6 @@ function useAuthInitialization(hydrated: boolean) {
   return authReady;
 }
 
-/** Inner component so hooks run inside providers. */
-function AppOnboardingGuard() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const generalOnboardingCompleted = useAppStore((state) => state.generalOnboardingCompleted);
-
-  useEffect(() => {
-    if (!generalOnboardingCompleted && pathname !== '/onboarding') {
-      router.replace('/onboarding');
-      return;
-    }
-
-    if (generalOnboardingCompleted && pathname === '/onboarding') {
-      router.replace('/overview' as never);
-    }
-  }, [pathname, generalOnboardingCompleted, router]);
-
-  return null;
-}
-
 function AppShell() {
   useOfflineSync();
   usePiecesSync();
@@ -146,7 +126,6 @@ function AppShell() {
 
   return (
     <>
-      <AppOnboardingGuard />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'fullScreenModal' }} />

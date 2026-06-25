@@ -4,7 +4,6 @@ import { ChevronRight, Sparkles } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import type { BadgeState } from '../constants/badgeRegistry';
-import { CollectionRing } from './trophyShelf/CollectionRing';
 
 function BadgeIconStack({ badges }: { badges: BadgeState[] }) {
   const preview = useMemo(() => {
@@ -54,6 +53,7 @@ function BadgeIconStack({ badges }: { badges: BadgeState[] }) {
   );
 }
 
+/** @deprecated Prefer AchievementsPreview — kept for legacy call sites. */
 export function ViewAllBadgesCard({
   badges,
   onPress,
@@ -62,14 +62,13 @@ export function ViewAllBadgesCard({
   onPress: () => void;
 }) {
   const earnedCount = badges.filter((badge) => badge.unlocked).length;
-  const remaining = badges.length - earnedCount;
 
   return (
     <TouchableOpacity
       activeOpacity={0.9}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Open badge collection, ${earnedCount} of ${badges.length} earned`}
+      accessibilityLabel={`View achievements, ${earnedCount} of ${badges.length} earned`}
       className="mb-4"
     >
       <Card className="rounded-2xl p-4 border-primary/20 bg-primary/5">
@@ -82,24 +81,20 @@ export function ViewAllBadgesCard({
             <View className="flex-row items-center gap-1.5 mb-1">
               <Sparkles size={13} color="hsl(39 57% 51%)" />
               <Text className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                Badge collection
+                Achievements
               </Text>
             </View>
 
             <Text className="font-serif text-[20px] leading-7 text-foreground">
-              Open your trophy shelf
+              {earnedCount} of {badges.length} earned
             </Text>
 
             <Text className="text-[11px] mt-1 leading-4 pr-2 text-muted-foreground">
-              {earnedCount > 0
-                ? `${earnedCount} earned${remaining > 0 ? ` · ${remaining} still waiting` : ' · full set complete'}`
-                : `${badges.length} milestones ready to chase`}
+              Tap to browse all badges and track progress
             </Text>
 
             <BadgeIconStack badges={badges} />
           </View>
-
-          <CollectionRing earned={earnedCount} total={badges.length} tone="light" />
         </View>
       </Card>
     </TouchableOpacity>
