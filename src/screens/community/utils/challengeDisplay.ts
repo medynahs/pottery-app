@@ -20,7 +20,7 @@ export type ChallengeDisplay = {
 };
 
 function challengeLabel(challenge: BackendChallenge): string {
-  const start = challenge.starts_at ? new Date(challenge.starts_at) : null;
+  const start = challenge.start_date ? new Date(challenge.start_date) : null;
   if (start && !Number.isNaN(start.getTime())) {
     return `${start.toLocaleDateString(undefined, { month: 'long' })} Challenge`;
   }
@@ -68,15 +68,16 @@ export function pickPrimaryChallenge(challenges: BackendChallenge[]): BackendCha
 export function toChallengeDisplay(challenge: BackendChallenge): ChallengeDisplay {
   return {
     id: challenge.id,
-    title: challenge.title?.trim() || 'Community Challenge',
+    title: challenge.name?.trim() || 'Community Challenge',
     description:
       challenge.description?.trim() ||
       'Make something on theme, share it on the feed, and join fellow potters in the studio.',
     participantCount: challenge.participant_count ?? 0,
-    daysLeft: daysUntil(challenge.ends_at),
+    daysLeft: daysUntil(challenge.end_date),
     label: challengeLabel(challenge),
     isActive: isChallengeActive(challenge),
-    endsAt: challenge.ends_at ? new Date(challenge.ends_at) : null,
+    endsAt: challenge.end_date ? new Date(challenge.end_date) : null,
+    heroImage: challenge.hero_image_url ? { uri: challenge.hero_image_url } : undefined,
   };
 }
 
