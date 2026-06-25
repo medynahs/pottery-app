@@ -758,13 +758,13 @@ Aligns with [Recommended implementation order](#recommended-implementation-order
 |--------|------|----------|-----------|
 | DELETE | `/users/me` | ✅ P0-5 | Account settings — soft-delete + grace |
 | POST | `/users/me/revive` | ✅ P0-5 | Restore during grace (handle 403 `account_deleted`) |
-| GET | `/users/me` | P1-2 | `fetchMe()` — extend with studio/location/bio |
+| GET | `/users/me` | ✅ P1-2 | `fetchMe()` — extend with studio/location/bio |
 | PUT | `/users/me` | ✅ P1-2 | Identity edit shipped; FE not wired yet — `EditProfileModal` local only (#91) |
 | POST | `/users/me/cover` | ✅ P1-2b | `uploadCover()` |
 | POST | `/users/me/avatar` | ✅ P1-2b | `uploadAvatar()` |
 | PUT | `/users/me/privacy` | ✅ P1-3 | Not wired (#14) — toggles local only |
 | GET | `/users/me/friends` | ✅ P0-1 | `apiListFriends()` — 500 fixed |
-| POST | `/users/me/friends/requests` | P1 | `apiSendFriendRequest()` |
+| POST | `/users/me/friends/requests` | ✅ P1 | `apiSendFriendRequest()` |
 | GET | `/users/:userId/profile` | ✅ P0-2 | `apiGetPublicProfile()` |
 | GET | `/user/:id` | ✅ P1-17 | Share / OG preview — server-rendered HTML (web, not JSON API) |
 | GET | `/.well-known/apple-app-site-association` · `/.well-known/assetlinks.json` | ✅ P2-1 | Universal Links / App Links (set env vars in prod) |
@@ -782,7 +782,7 @@ Aligns with [Recommended implementation order](#recommended-implementation-order
 | GET | `/news` | P1-7 | News cards |
 | POST | `/webhooks/revenuecat` | ✅ P1-13 | Secret-verified, rate-limited 10/min |
 | POST | `/users/me/push-tokens` | ✅ P1-14 | `{token, platform}` → 204; upsert dedupe/rotation. FE not wired (#86) |
-| GET/POST | `/users/me/glazes/sync` | P0-10/11 | `src/services/glazes.ts` |
+| GET/POST | `/users/me/glazes/sync` | ✅ P0-10/11 | `src/services/glazes.ts` |
 
 ---
 
