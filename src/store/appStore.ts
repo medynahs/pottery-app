@@ -48,10 +48,16 @@ import type { GlazeOutcome, Piece, TimelineEntry } from '../types/pieces';
 import {
     applyPricingUserTypePreset,
     buildDefaultPricingSettings,
+    createPricingTemplate,
+    normalizePricingSettings,
+    parseWeightToForm,
     type PricingFiringMode,
     type PricingSettings,
+    type PricingTemplate,
     type PricingTier,
     type PricingUserType,
+    weightFormToGrams,
+    weightFormToString,
 } from '../types/pricing';
 import type { AppNotification, Studio, StudioMember } from '../types/studio';
 import { oryGetSession, OryHttpError } from '../services/auth';
@@ -117,6 +123,12 @@ export interface OnboardingProfile {
   textScale?: TextScale;
 }
 
+const INITIAL_PRICING_TEMPLATE = createPricingTemplate(
+  'Studio Default',
+  buildDefaultPricingSettings(),
+  true,
+);
+
 export interface StageConfig {
   id: string;
   label: string;
@@ -129,13 +141,15 @@ export interface StageConfig {
 export interface ClayBody {
   id: string;
   name: string;
+  /** Typical linear shrinkage from bone-dry to fired (percent). */
+  shrinkagePct?: number;
 }
 
 export const DEFAULT_CLAY_BODIES: ClayBody[] = [
-  { id: 'bmix',         name: 'B-Mix' },
-  { id: 'porcelain',    name: 'Porcelain' },
-  { id: 'stoneware',    name: 'Stoneware' },
-  { id: 'speckled-buff', name: 'Speckled Buff' },
+  { id: 'bmix',         name: 'B-Mix', shrinkagePct: 11 },
+  { id: 'porcelain',    name: 'Porcelain', shrinkagePct: 14 },
+  { id: 'stoneware',    name: 'Stoneware', shrinkagePct: 10 },
+  { id: 'speckled-buff', name: 'Speckled Buff', shrinkagePct: 11 },
 ];
 
 export interface FormingMethod {
@@ -506,6 +520,7 @@ interface AppState {
   removeClayBody: (id: string) => void;
   renameClayBody: (id: string, name: string) => void;
   setDefaultClayBody: (id: string | null) => void;
+  setClayBodyShrinkage: (id: string, shrinkagePct: number | null) => void;
 
   // ── Forming Methods ───────────────────────────────────────────
   formingMethods: FormingMethod[];
@@ -563,12 +578,19 @@ interface AppState {
 
   // ── Pricing Rules ───────────────────────────────────────────
   pricingSettings: PricingSettings;
+  pricingTemplates: PricingTemplate[];
+  activePricingTemplateId: string | null;
   pricingOnboardingCompleted: boolean;
   setPricingSettings: (patch: Partial<PricingSettings>) => void;
   completePricingOnboarding: (userType: PricingUserType) => void;
   reopenPricingOnboarding: () => void;
   setPricingTier: (mode: PricingFiringMode, index: number, patch: Partial<PricingTier>) => void;
   resetPricingSettings: () => void;
+  setActivePricingTemplate: (id: string) => void;
+  addPricingTemplate: (name: string, settings?: PricingSettings) => string;
+  updatePricingTemplate: (id: string, patch: Partial<Pick<PricingTemplate, 'name' | 'settings'>>) => void;
+  duplicatePricingTemplate: (id: string) => string;
+  deletePricingTemplate: (id: string) => void;
 
   // ── Glaze Atlas ─────────────────────────────────────────────
   glazes: GlazeLibraryItem[];
@@ -1270,6 +1292,19 @@ export const useAppStore = create<AppState>()(
     }));
   },
   setDefaultClayBody: (id) => set({ defaultClayBodyId: id }),
+  setClayBodyShrinkage: (id, shrinkagePct) =>
+    set((state) => ({
+      clayBodies: state.clayBodies.map((clay) =>
+        clay.id === id
+          ? {
+              ...clay,
+              shrinkagePct: shrinkagePct == null || !Number.isFinite(shrinkagePct)
+                ? undefined
+                : Math.min(30, Math.max(0, shrinkagePct)),
+            }
+          : clay,
+      ),
+    })),
 
   // ── Forming Methods ───────────────────────────────────────────
   formingMethods: DEFAULT_FORMING_METHODS,
@@ -1368,19 +1403,69 @@ export const useAppStore = create<AppState>()(
 
   // ── Pricing Rules ───────────────────────────────────────────
   pricingSettings: buildDefaultPricingSettings(),
+  pricingTemplates: [INITIAL_PRICING_TEMPLATE],
+  activePricingTemplateId: INITIAL_PRICING_TEMPLATE.id,
   pricingOnboardingCompleted: false,
   setPricingSettings: (patch) =>
-    set((state) => ({
-      pricingSettings: {
+    set((state) => {
+      const nextSettings = {
         ...state.pricingSettings,
         ...patch,
-      },
-    })),
+      };
+      const activeId = state.activePricingTemplateId
+        ?? state.pricingTemplates.find((template) => template.isDefault)?.id
+        ?? state.pricingTemplates[0]?.id
+        ?? null;
+
+      if (!activeId) {
+        return { pricingSettings: nextSettings };
+      }
+
+      return {
+        pricingSettings: nextSettings,
+        pricingTemplates: state.pricingTemplates.map((template) =>
+          template.id === activeId
+            ? { ...template, settings: normalizePricingSettings(nextSettings) }
+            : template,
+        ),
+        activePricingTemplateId: activeId,
+      };
+    }),
   completePricingOnboarding: (userType) =>
-    set((state) => ({
-      pricingSettings: applyPricingUserTypePreset(state.pricingSettings, userType),
-      pricingOnboardingCompleted: true,
-    })),
+    set((state) => {
+      const nextSettings = applyPricingUserTypePreset(state.pricingSettings, userType);
+      const templateName = nextSettings.studioLabel?.trim()
+        || ({
+          hobby: 'Hobby / Cost Recovery',
+          'side-business': 'Side Business',
+          'full-time': 'Full-Time Studio',
+        }[userType]);
+
+      const activeId = state.activePricingTemplateId
+        ?? state.pricingTemplates.find((template) => template.isDefault)?.id
+        ?? state.pricingTemplates[0]?.id
+        ?? null;
+
+      const pricingTemplates = activeId
+        ? state.pricingTemplates.map((template) =>
+            template.id === activeId
+              ? {
+                  ...template,
+                  name: template.name === 'Studio Default' ? templateName : template.name,
+                  settings: normalizePricingSettings(nextSettings),
+                  isDefault: true,
+                }
+              : { ...template, isDefault: false },
+          )
+        : [createPricingTemplate(templateName, nextSettings, true)];
+
+      return {
+        pricingSettings: nextSettings,
+        pricingTemplates,
+        activePricingTemplateId: activeId ?? pricingTemplates[0]?.id ?? null,
+        pricingOnboardingCompleted: true,
+      };
+    }),
   reopenPricingOnboarding: () => set({ pricingOnboardingCompleted: false }),
   setPricingTier: (mode, index, patch) =>
     set((state) => {
@@ -1392,14 +1477,130 @@ export const useAppStore = create<AppState>()(
         tierIndex === index ? { ...tier, ...patch } : tier
       );
 
+      const nextSettings = {
+        ...state.pricingSettings,
+        [tierKey]: nextTiers,
+      };
+
+      const activeId = state.activePricingTemplateId
+        ?? state.pricingTemplates.find((template) => template.isDefault)?.id
+        ?? state.pricingTemplates[0]?.id
+        ?? null;
+
       return {
-        pricingSettings: {
-          ...state.pricingSettings,
-          [tierKey]: nextTiers,
-        },
+        pricingSettings: nextSettings,
+        pricingTemplates: activeId
+          ? state.pricingTemplates.map((template) =>
+              template.id === activeId
+                ? { ...template, settings: normalizePricingSettings(nextSettings) }
+                : template,
+            )
+          : state.pricingTemplates,
       };
     }),
-  resetPricingSettings: () => set({ pricingSettings: buildDefaultPricingSettings() }),
+  resetPricingSettings: () => {
+    const defaults = buildDefaultPricingSettings();
+    const template = createPricingTemplate('Studio Default', defaults, true);
+    set({
+      pricingSettings: defaults,
+      pricingTemplates: [template],
+      activePricingTemplateId: template.id,
+    });
+  },
+  setActivePricingTemplate: (id) =>
+    set((state) => {
+      const template = state.pricingTemplates.find((item) => item.id === id);
+      if (!template) return state;
+
+      return {
+        activePricingTemplateId: id,
+        pricingSettings: normalizePricingSettings(template.settings),
+        pricingTemplates: state.pricingTemplates.map((item) => ({
+          ...item,
+          isDefault: item.id === id,
+        })),
+      };
+    }),
+  addPricingTemplate: (name, settings) => {
+    const sourceSettings = normalizePricingSettings(
+      settings ?? useAppStore.getState().pricingSettings,
+    );
+    const template = createPricingTemplate(name, sourceSettings, false);
+    set((state) => ({
+      pricingTemplates: [...state.pricingTemplates, template],
+    }));
+    return template.id;
+  },
+  updatePricingTemplate: (id, patch) =>
+    set((state) => {
+      const pricingTemplates = state.pricingTemplates.map((template) =>
+        template.id === id
+          ? {
+              ...template,
+              ...patch,
+              settings: patch.settings
+                ? normalizePricingSettings(patch.settings)
+                : template.settings,
+            }
+          : template,
+      );
+
+      const isActive = state.activePricingTemplateId === id
+        || pricingTemplates.find((template) => template.id === id)?.isDefault;
+
+      if (!isActive) {
+        return { pricingTemplates };
+      }
+
+      const active = pricingTemplates.find((template) => template.id === id);
+      return {
+        pricingTemplates,
+        pricingSettings: active
+          ? normalizePricingSettings(active.settings)
+          : state.pricingSettings,
+      };
+    }),
+  duplicatePricingTemplate: (id) => {
+    const state = useAppStore.getState();
+    const source = state.pricingTemplates.find((template) => template.id === id);
+    if (!source) return id;
+
+    const template = createPricingTemplate(
+      `${source.name} Copy`,
+      source.settings,
+      false,
+    );
+    set((current) => ({
+      pricingTemplates: [...current.pricingTemplates, template],
+    }));
+    return template.id;
+  },
+  deletePricingTemplate: (id) =>
+    set((state) => {
+      if (state.pricingTemplates.length <= 1) return state;
+
+      const pricingTemplates = state.pricingTemplates.filter((template) => template.id !== id);
+      if (pricingTemplates.length === 0) return state;
+
+      const wasActive = state.activePricingTemplateId === id
+        || state.pricingTemplates.find((template) => template.id === id)?.isDefault;
+
+      if (!wasActive) {
+        return { pricingTemplates };
+      }
+
+      const fallback = pricingTemplates[0];
+      const nextTemplates = pricingTemplates.map((template, index) => ({
+        ...template,
+        isDefault: index === 0,
+      }));
+
+      return {
+        pricingTemplates: nextTemplates,
+        activePricingTemplateId: fallback.id,
+        pricingSettings: normalizePricingSettings(fallback.settings),
+      };
+    }),
 
   // ── Glaze Atlas ─────────────────────────────────────────────
   // Glazes/tests sync to the backend like pieces (see useGlazesSync): syncDirty
@@ -1881,7 +2082,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'pottery-life-store',
-      version: 8,
+      version: 9,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
@@ -1946,6 +2147,30 @@ export const useAppStore = create<AppState>()(
           };
         }
 
+        let pricingSettings = state.pricingSettings;
+        let pricingTemplates = state.pricingTemplates;
+        let activePricingTemplateId = state.activePricingTemplateId ?? null;
+
+        if (version < 9) {
+          const normalizedSettings = normalizePricingSettings(
+            pricingSettings ?? buildDefaultPricingSettings(),
+          );
+          if (!pricingTemplates || pricingTemplates.length === 0) {
+            const template = createPricingTemplate(
+              normalizedSettings.studioLabel?.trim() || 'Studio Default',
+              normalizedSettings,
+              true,
+            );
+            pricingTemplates = [template];
+            activePricingTemplateId = template.id;
+          } else if (!activePricingTemplateId) {
+            activePricingTemplateId = pricingTemplates.find((template) => template.isDefault)?.id
+              ?? pricingTemplates[0]?.id
+              ?? null;
+          }
+          pricingSettings = normalizedSettings;
+        }
+
         const migratedEnabledModules = normalizeModuleList(state.enabledModules);
         return {
           ...state,
@@ -1958,6 +2183,9 @@ export const useAppStore = create<AppState>()(
           kilns,
           firings,
           studioRhythm,
+          pricingSettings,
+          pricingTemplates,
+          activePricingTemplateId,
         };
       },
       merge: (persistedState, currentState) => {
@@ -1975,6 +2203,10 @@ export const useAppStore = create<AppState>()(
           enabledModules: enabledModules.length > 0 ? enabledModules : onboardingProfile.activeModules,
           notificationPrefs,
           kilns: (state.kilns ?? currentState.kilns).map(normalizeKiln),
+          pricingTemplates: state.pricingTemplates?.length
+            ? state.pricingTemplates
+            : currentState.pricingTemplates,
+          activePricingTemplateId: state.activePricingTemplateId ?? currentState.activePricingTemplateId,
           setupProgress: {
             ...DEFAULT_SETUP_PROGRESS,
             ...(state.setupProgress ?? {}),
@@ -2012,6 +2244,8 @@ export const useAppStore = create<AppState>()(
         firings: state.firings,
         kilnChecklist: state.kilnChecklist,
         pricingSettings: state.pricingSettings,
+        pricingTemplates: state.pricingTemplates,
+        activePricingTemplateId: state.activePricingTemplateId,
         pricingOnboardingCompleted: state.pricingOnboardingCompleted,
         glazes: state.glazes,
         glazeTests: state.glazeTests,

@@ -1,12 +1,22 @@
 import { useAppStore } from '@/src/store/appStore';
+import {
+  getDefaultPieceDetailLevel,
+  nextDetailLevel,
+  prevDetailLevel,
+  type PieceDetailLevel,
+} from '@/src/utils/roleBasedUx';
 import React from 'react';
 import type { Piece, PieceForm } from '../../../types/pieces';
 import {
-    calculatePiecePricingSnapshot,
-    normalizePricingSettings,
-    parseNumericInput,
-    parseWeightToGrams,
-    type PricingFiringMode,
+  calculatePiecePricingSnapshot,
+  getActivePricingSettings,
+  normalizePricingSettings,
+  parseNumericInput,
+  parseWeightToForm,
+  parseWeightToGrams,
+  type PricingFiringMode,
+  weightFormToGrams,
+  weightFormToString,
 } from '../../../types/pricing';
 import { EMPTY_FORM } from '../utils/constants';
 import { isGlazeOutcome } from '@/src/screens/glazes/glazePieceLink';
@@ -21,6 +31,7 @@ function pieceToForm(piece: Piece): PieceForm {
   const salePriceMode = piece.salePriceMode ?? 'retail';
   const legacyRetailPrice = piece.retailPriceTarget ?? parseNumericInput(piece.price) ?? piece.suggestedPrice ?? undefined;
   const legacyWholesalePrice = piece.wholesalePriceTarget ?? piece.wholesalePrice ?? undefined;
+  const weightParts = parseWeightToForm(piece.weight, piece.weightGrams);
 
   return {
     name: piece.name,
@@ -32,6 +43,8 @@ function pieceToForm(piece: Piece): PieceForm {
     formingMethod: piece.formingMethod ?? '',
     form: piece.form ?? '',
     weight: piece.weight ?? (piece.weightGrams != null ? `${formatInputNumber(piece.weightGrams)} g` : ''),
+    weightValue: weightParts.weightValue,
+    weightUnit: weightParts.weightUnit,
     dimensions: piece.dimensions ?? '',
     heightCm: piece.heightCm != null ? String(piece.heightCm) : '',
     widthCm: piece.widthCm != null ? String(piece.widthCm) : '',
@@ -69,7 +82,12 @@ export function useAddPieceForm(
   const defaultClayBodyId = useAppStore((s) => s.defaultClayBodyId);
   const defaultNewPieceStage = useAppStore((s) => s.defaultNewPieceStage);
   const pricingSettingsState = useAppStore((s) => s.pricingSettings);
-  const pricingSettings = React.useMemo(() => normalizePricingSettings(pricingSettingsState), [pricingSettingsState]);
+  const pricingTemplates = useAppStore((s) => s.pricingTemplates);
+  const userType = useAppStore((s) => s.onboardingProfile.userType);
+  const pricingSettings = React.useMemo(
+    () => getActivePricingSettings(pricingTemplates, normalizePricingSettings(pricingSettingsState)),
+    [pricingSettingsState, pricingTemplates],
+  );
 
   const buildEmptyForm = React.useCallback((): PieceForm => {
     const defaultClay = defaultClayBodyId
@@ -90,29 +108,58 @@ export function useAddPieceForm(
   }, [clayBodies, defaultClayBodyId, defaultNewPieceStage, pricingSettings]);
 
   const [form, setForm] = React.useState<PieceForm>(initialPiece ? pieceToForm(initialPiece) : buildEmptyForm());
+  const [detailLevel, setDetailLevel] = React.useState<PieceDetailLevel>(
+    initialPiece ? 'full' : getDefaultPieceDetailLevel(userType),
+  );
 
   const editingPieceId = initialPiece?.id;
 
   React.useEffect(() => {
     if (initialPiece) {
       setForm(pieceToForm(initialPiece));
+      setDetailLevel('full');
       return;
     }
     setForm(buildEmptyForm());
-  }, [buildEmptyForm, editingPieceId]);
+    setDetailLevel(getDefaultPieceDetailLevel(userType));
+  }, [buildEmptyForm, editingPieceId, userType]);
 
-  const set = <K extends keyof PieceForm>(key: K, value: PieceForm[K]) =>
-    setForm((previous) => ({ ...previous, [key]: value }));
+  const set = React.useCallback(<K extends keyof PieceForm>(key: K, value: PieceForm[K]) => {
+    setForm((previous) => {
+      const next = { ...previous, [key]: value };
+      if (key === 'weightValue' || key === 'weightUnit') {
+        next.weight = weightFormToString(
+          key === 'weightValue' ? String(value) : previous.weightValue,
+          key === 'weightUnit' ? (value as PieceForm['weightUnit']) : previous.weightUnit,
+        );
+      }
+      return next;
+    });
+  }, []);
 
   const handleClose = React.useCallback(() => {
     setForm(buildEmptyForm());
+    setDetailLevel(getDefaultPieceDetailLevel(userType));
     onClose();
-  }, [buildEmptyForm, onClose]);
+  }, [buildEmptyForm, onClose, userType]);
+
+  const expandDetailLevel = React.useCallback(() => {
+    setDetailLevel((current) => nextDetailLevel(current));
+  }, []);
+
+  const collapseDetailLevel = React.useCallback(() => {
+    setDetailLevel((current) => prevDetailLevel(current));
+  }, []);
+
+  const resolveWeightGrams = React.useCallback(() => {
+    return weightFormToGrams(form.weightValue, form.weightUnit)
+      ?? parseWeightToGrams(form.weight);
+  }, [form.weight, form.weightUnit, form.weightValue]);
 
   const buildPricingSnapshot = React.useCallback(() => {
     const heightCm = parseNumericInput(form.heightCm);
     const widthCm = parseNumericInput(form.widthCm);
-    const weightGrams = parseWeightToGrams(form.weight);
+    const weightGrams = resolveWeightGrams();
     const firingFeeMode: PricingFiringMode = form.firingFeeMode === 'bisque' ? 'bisque' : 'bisque-glaze';
     const clayCostOverride = parseNumericInput(form.costClayOverride);
     const glazeCostOverride = parseNumericInput(form.costGlazeOverride);
@@ -151,7 +198,7 @@ export function useAddPieceForm(
       markupPct,
       pricingSnapshot,
     };
-  }, [form, pricingSettings]);
+  }, [form, pricingSettings, resolveWeightGrams]);
 
   const buildSavedPiece = React.useCallback((basePiece: Piece): Piece => {
     const {
@@ -169,6 +216,7 @@ export function useAddPieceForm(
       pricingSnapshot,
     } = buildPricingSnapshot();
 
+    const weightLabel = weightFormToString(form.weightValue, form.weightUnit);
     const autoDimensions =
       form.dimensions.trim() ||
       (heightCm && widthCm ? `${heightCm} × ${widthCm} cm` : '');
@@ -186,7 +234,7 @@ export function useAddPieceForm(
       location: form.location.trim() || undefined,
       formingMethod: form.formingMethod || undefined,
       form: form.form || undefined,
-      weight: form.weight.trim() || undefined,
+      weight: weightLabel.trim() || undefined,
       weightGrams: weightGrams ?? undefined,
       dimensions: autoDimensions || undefined,
       heightCm: heightCm ?? undefined,
@@ -256,14 +304,28 @@ export function useAddPieceForm(
 
     onAdd(pieces);
     setForm(buildEmptyForm());
-  }, [buildEmptyForm, buildSavedPiece, form, onAdd]);
+    setDetailLevel(getDefaultPieceDetailLevel(userType));
+  }, [buildEmptyForm, buildSavedPiece, form, onAdd, userType]);
 
   const handleEdit = React.useCallback(() => {
     if (!form.name.trim() || !form.clay.trim() || !initialPiece || !onEdit) return;
 
     onEdit(buildSavedPiece(initialPiece));
     setForm(buildEmptyForm());
-  }, [buildEmptyForm, buildSavedPiece, form, initialPiece, onEdit]);
+    setDetailLevel(getDefaultPieceDetailLevel(userType));
+  }, [buildEmptyForm, buildSavedPiece, form, initialPiece, onEdit, userType]);
 
-  return { form, set, handleClose, handleAdd, handleEdit };
+  return {
+    form,
+    set,
+    detailLevel,
+    setDetailLevel,
+    expandDetailLevel,
+    collapseDetailLevel,
+    buildPricingSnapshot,
+    pricingSettings,
+    handleClose,
+    handleAdd,
+    handleEdit,
+  };
 }

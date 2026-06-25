@@ -124,6 +124,8 @@ export type PieceForm = {
   formingMethod: string;
   form: string;
   weight: string;
+  weightValue: string;
+  weightUnit: 'g' | 'kg';
   dimensions: string;
   heightCm: string;
   widthCm: string;

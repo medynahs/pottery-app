@@ -2,6 +2,13 @@ export type PricingFiringMode = 'bisque' | 'bisque-glaze';
 export type PricingSaleMode = 'retail' | 'wholesale';
 
 export type PricingUserType = 'hobby' | 'side-business' | 'full-time';
+
+export interface PricingTemplate {
+  id: string;
+  name: string;
+  settings: PricingSettings;
+  isDefault?: boolean;
+}
 export interface PricingTier {
   minVolumeCm3: number;
   maxVolumeCm3: number | null;
@@ -407,4 +414,88 @@ export function calculatePiecePricingSnapshot(args: {
     wholesalePrice,
     suggestedPrice,
   };
+}
+
+export function createPricingTemplate(
+  name: string,
+  settings: PricingSettings,
+  isDefault = false,
+): PricingTemplate {
+  return {
+    id: `pricing-template-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: name.trim() || 'My Template',
+    settings: normalizePricingSettings(settings),
+    isDefault,
+  };
+}
+
+export function getActivePricingTemplate(templates: PricingTemplate[]): PricingTemplate | null {
+  if (templates.length === 0) return null;
+  return templates.find((template) => template.isDefault) ?? templates[0];
+}
+
+export function getActivePricingSettings(
+  templates: PricingTemplate[],
+  fallback: PricingSettings,
+): PricingSettings {
+  const active = getActivePricingTemplate(templates);
+  return active ? normalizePricingSettings(active.settings) : normalizePricingSettings(fallback);
+}
+
+export type WeightUnit = 'g' | 'kg';
+
+export function parseWeightToForm(
+  weight?: string,
+  weightGrams?: number | null,
+): { weightValue: string; weightUnit: WeightUnit } {
+  if (weightGrams != null && weightGrams > 0) {
+    if (weightGrams >= 1000) {
+      const kg = weightGrams / 1000;
+      const rounded = Math.round((kg + Number.EPSILON) * 100) / 100;
+      return { weightValue: `${rounded}`.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1'), weightUnit: 'kg' };
+    }
+    return { weightValue: String(Math.round(weightGrams)), weightUnit: 'g' };
+  }
+
+  if (!weight?.trim()) {
+    return { weightValue: '', weightUnit: 'g' };
+  }
+
+  const normalized = weight.trim().toLowerCase();
+  const parsed = parseNumericInput(normalized);
+  if (parsed == null || parsed <= 0) {
+    return { weightValue: '', weightUnit: 'g' };
+  }
+
+  if (normalized.includes('kg') || normalized.includes('kilo')) {
+    return { weightValue: String(parsed), weightUnit: 'kg' };
+  }
+
+  return { weightValue: String(parsed), weightUnit: 'g' };
+}
+
+export function weightFormToGrams(value: string, unit: WeightUnit): number | null {
+  const parsed = parseNumericInput(value);
+  if (parsed == null || parsed <= 0) return null;
+  return unit === 'kg' ? roundToTwo(parsed * 1000) : roundToTwo(parsed);
+}
+
+export function weightFormToString(value: string, unit: WeightUnit): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  return unit === 'kg' ? `${trimmed} kg` : `${trimmed} g`;
+}
+
+export function calcFiredSize(greenSizeCm: number, shrinkagePct: number): number {
+  if (!Number.isFinite(greenSizeCm) || greenSizeCm <= 0) return 0;
+  const pct = Math.min(30, Math.max(0, shrinkagePct));
+  return roundToTwo(greenSizeCm * (1 - pct / 100));
+}
+
+export function calcGreenSize(firedSizeCm: number, shrinkagePct: number): number {
+  if (!Number.isFinite(firedSizeCm) || firedSizeCm <= 0) return 0;
+  const pct = Math.min(30, Math.max(0, shrinkagePct));
+  const factor = 1 - pct / 100;
+  if (factor <= 0) return 0;
+  return roundToTwo(firedSizeCm / factor);
 }

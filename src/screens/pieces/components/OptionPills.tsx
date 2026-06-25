@@ -1,39 +1,28 @@
-import { Pressable } from '@/src/components/ui/pressable';
-import { Text } from '@/src/components/ui/text';
+import { SelectChip, SelectChipGroup } from '@/src/components/ui/SelectChip';
 import React from 'react';
-import { View } from 'react-native';
 
 interface OptionPillsProps {
   options: string[];
   value: string;
   onChange: (v: string) => void;
+  allowDeselect?: boolean;
 }
 
-export function OptionPills({ options, value, onChange }: OptionPillsProps) {
+export function OptionPills({ options, value, onChange, allowDeselect = true }: OptionPillsProps) {
   return (
-    <View className="flex-row flex-wrap gap-2">
-      {options.map(opt => {
+    <SelectChipGroup>
+      {options.map((opt) => {
         const isActive = value === opt;
         return (
-          <Pressable
+          <SelectChip
             key={opt}
+            label={opt}
+            selected={isActive}
+            allowDeselect={allowDeselect}
             onPress={() => onChange(isActive ? '' : opt)}
-            accessibilityRole="button"
-            accessibilityState={{ selected: isActive }}
-            className={`px-3 py-1.5 rounded-full border ${
-              isActive ? 'bg-foreground border-foreground' : 'bg-card border-border'
-            }`}
-          >
-            <Text
-              className={`text-xs font-medium ${
-                isActive ? 'text-background' : 'text-muted-foreground'
-              }`}
-            >
-              {opt}
-            </Text>
-          </Pressable>
+          />
         );
       })}
-    </View>
+    </SelectChipGroup>
   );
 }

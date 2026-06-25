@@ -30,6 +30,7 @@ interface JournalBookProps {
   pickCoverPhoto: () => void;
   handleUpdateNotes: (index: number, notes: string) => void;
   handleUpdateDescription: (description: string) => void;
+  onUpdatePiece?: (piece: Piece) => void;
   onPageChange: (index: number) => void;
   canAddMorePhotos: boolean;
 }
@@ -47,6 +48,7 @@ export const JournalBook = React.forwardRef<JournalBookHandle, JournalBookProps>
     pickCoverPhoto,
     handleUpdateNotes,
     handleUpdateDescription,
+    onUpdatePiece,
     onPageChange,
     canAddMorePhotos,
   },
@@ -93,6 +95,7 @@ export const JournalBook = React.forwardRef<JournalBookHandle, JournalBookProps>
             pickCoverPhoto={pickCoverPhoto}
             handleUpdateNotes={handleUpdateNotes}
             handleUpdateDescription={handleUpdateDescription}
+            onUpdatePiece={onUpdatePiece}
             onPageChange={onPageChange}
             canAddMorePhotos={canAddMorePhotos}
           />
@@ -118,6 +121,7 @@ const JournalBookPager = React.forwardRef<
     pickCoverPhoto: () => void;
     handleUpdateNotes: (index: number, notes: string) => void;
     handleUpdateDescription: (description: string) => void;
+    onUpdatePiece?: (piece: Piece) => void;
     onPageChange: (index: number) => void;
     canAddMorePhotos: boolean;
   }
@@ -136,6 +140,7 @@ const JournalBookPager = React.forwardRef<
     pickCoverPhoto,
     handleUpdateNotes,
     handleUpdateDescription,
+    onUpdatePiece,
     onPageChange,
     canAddMorePhotos,
   },
@@ -261,6 +266,7 @@ const JournalBookPager = React.forwardRef<
                   onChangeSaleMode={handleChangeSaleMode}
                   onPickPhoto={pickCoverPhoto}
                   onUpdateDescription={handleUpdateDescription}
+                  onUpdatePiece={onUpdatePiece}
                 />
               ) : (
                 <EntrySpread

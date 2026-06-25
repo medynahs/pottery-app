@@ -67,6 +67,7 @@ export function CoverSpread({
   onChangeSaleMode,
   onPickPhoto,
   onUpdateDescription,
+  onUpdatePiece,
 }: {
   piece: Piece;
   totalMs: number;
@@ -76,6 +77,7 @@ export function CoverSpread({
   onChangeSaleMode: (mode: PricingSaleMode) => void;
   onPickPhoto: () => void;
   onUpdateDescription: (description: string) => void;
+  onUpdatePiece?: (piece: Piece) => void;
 }) {
   const [description, setDescription] = React.useState(piece.description || '');
   const descDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -224,6 +226,7 @@ export function CoverSpread({
             compact={compact}
             currencySymbol={currencySymbol}
             onChangeSaleMode={onChangeSaleMode}
+            onUpdatePiece={onUpdatePiece}
           />
         ) : null}
       </View>

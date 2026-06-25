@@ -1,4 +1,4 @@
-import { ConfirmSheet } from '@/src/components/AppSheets';
+import { ShrinkageCalculatorSheet } from '@/src/screens/pieces/modals/ShrinkageCalculatorSheet';
 import { CustomizationSettingsShell } from '@/src/components/settings/CustomizationSettingsShell';
 import { Text } from '@/src/components/ui/text';
 import { DEFAULT_CLAY_BODIES, useAppStore, type ClayBody } from '@/src/store/appStore';
@@ -26,6 +26,7 @@ function ClayBodyRow({
   onRename,
   onRemove,
   onSetDefault,
+  onSetShrinkage,
 }: {
   clay: ClayBody;
   isDefault: boolean;
@@ -33,9 +34,13 @@ function ClayBodyRow({
   onRename: (name: string) => void;
   onRemove: () => void;
   onSetDefault: () => void;
+  onSetShrinkage: (shrinkagePct: number | null) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(clay.name);
+  const [shrinkageDraft, setShrinkageDraft] = useState(
+    clay.shrinkagePct != null ? String(clay.shrinkagePct) : '',
+  );
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   function commitRename() {
@@ -47,6 +52,15 @@ function ClayBodyRow({
       setDraft(clay.name);
     }
     setEditing(false);
+  }
+
+  function commitShrinkage() {
+    const parsed = Number(shrinkageDraft.replace(',', '.'));
+    onSetShrinkage(
+      shrinkageDraft.trim() === '' || !Number.isFinite(parsed)
+        ? null
+        : Math.min(30, Math.max(0, parsed)),
+    );
   }
 
   return (
@@ -89,6 +103,20 @@ function ClayBodyRow({
               )}
             </View>
           )}
+          <View className="flex-row items-center gap-2 mt-1">
+            <Text className="text-[11px] text-muted-foreground">Shrinkage %</Text>
+            <TextInput
+              value={shrinkageDraft}
+              onChangeText={setShrinkageDraft}
+              onBlur={commitShrinkage}
+              onSubmitEditing={commitShrinkage}
+              keyboardType="decimal-pad"
+              placeholder="12"
+              className="min-w-[44px] text-[11px] text-foreground border-b border-border py-0.5"
+              style={{ fontFamily: 'DMSans_500Medium' }}
+              placeholderTextColor="hsl(24 20% 65%)"
+            />
+          </View>
         </View>
 
         {/* Set default star */}
@@ -199,8 +227,10 @@ export default function ClayBodiesScreen() {
   const removeClayBody = useAppStore((s) => s.removeClayBody);
   const renameClayBody = useAppStore((s) => s.renameClayBody);
   const setDefaultClayBody = useAppStore((s) => s.setDefaultClayBody);
+  const setClayBodyShrinkage = useAppStore((s) => s.setClayBodyShrinkage);
 
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [shrinkageOpen, setShrinkageOpen] = useState(false);
 
   function handleReset() {
     setResetConfirmOpen(true);
@@ -216,10 +246,11 @@ export default function ClayBodiesScreen() {
   }
 
   return (
+    <>
     <CustomizationSettingsShell
       eyebrow="Studio materials"
       title="Set your clay bodies"
-      subtitle="Manage the clay bodies you work with. Your list appears as quick-pick options when adding a piece. Star one to make it the default selection."
+      subtitle="Manage the clay bodies you work with. Set shrinkage % for the size calculator. Star one to make it the default selection."
       headerNote={`${clayBodies.length} saved · tap ★ to set default`}
       onBack={() => router.back()}
       onSave={handleSave}
@@ -234,6 +265,14 @@ export default function ClayBodiesScreen() {
         onCancel={() => setResetConfirmOpen(false)}
       />
 
+      <TouchableOpacity
+        onPress={() => setShrinkageOpen(true)}
+        activeOpacity={0.75}
+        className="mb-4 self-start"
+      >
+        <Text className="text-sm font-semibold text-primary">Open shrinkage calculator</Text>
+      </TouchableOpacity>
+
       <View className="mt-1 bg-card rounded-2xl border border-border overflow-hidden">
           {clayBodies.map((clay, idx) => (
             <ClayBodyRow
@@ -244,6 +283,7 @@ export default function ClayBodiesScreen() {
               onRename={(name) => renameClayBody(clay.id, name)}
               onRemove={() => removeClayBody(clay.id)}
               onSetDefault={() => setDefaultClayBody(defaultClayBodyId === clay.id ? null : clay.id)}
+              onSetShrinkage={(shrinkagePct) => setClayBodyShrinkage(clay.id, shrinkagePct)}
             />
           ))}
           {clayBodies.length === 0 && (
@@ -268,5 +308,11 @@ export default function ClayBodiesScreen() {
           <Text className="text-sm font-medium text-destructive">Restore Defaults</Text>
         </TouchableOpacity>
     </CustomizationSettingsShell>
+    <ShrinkageCalculatorSheet
+      visible={shrinkageOpen}
+      onClose={() => setShrinkageOpen(false)}
+      clayBodyName={clayBodies.find((clay) => clay.id === defaultClayBodyId)?.name}
+    />
+    </>
   );
 }

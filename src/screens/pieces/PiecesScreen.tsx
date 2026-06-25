@@ -852,6 +852,11 @@ export default function PiecesScreen() {
         }
         stageLookup={stageLookup}
         linkedGlazeNames={advanceLinkedGlazeNames}
+        clayBodyName={
+          advanceRequest
+            ? pieces.find((piece) => piece.id === advanceRequest.pieceIds[0])?.clay
+            : undefined
+        }
         defaultBisqueTemp={defaultBisqueTemp}
         defaultGlazeTemp={defaultGlazeTemp}
         onClose={dismissAdvanceRequest}

@@ -182,6 +182,8 @@ export const EMPTY_FORM = {
   formingMethod: '',
   form: '',
   weight: '',
+  weightValue: '',
+  weightUnit: 'g' as const,
   dimensions: '',
   heightCm: '',
   widthCm: '',

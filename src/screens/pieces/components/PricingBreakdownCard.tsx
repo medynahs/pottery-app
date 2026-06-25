@@ -1,3 +1,4 @@
+import { SelectChip, SelectChipGroup } from '@/src/components/ui/SelectChip';
 import { Text } from '@/src/components/ui/text';
 import React from 'react';
 import {
@@ -6,6 +7,7 @@ import {
 } from 'react-native';
 import type { Piece } from '../../../types/pieces';
 import { PRICING_USER_TYPE_LABELS, parseNumericInput, type PricingSaleMode } from '../../../types/pricing';
+import { PiecePricingAdjustSheet } from '../modals/PiecePricingAdjustSheet';
 
 export function PricingBreakdownCard({
     piece,
@@ -13,13 +15,16 @@ export function PricingBreakdownCard({
     compact,
     currencySymbol,
     onChangeSaleMode,
+    onUpdatePiece,
 }: {
     piece: Piece;
     accent: string;
     compact: boolean;
     currencySymbol: string;
     onChangeSaleMode: (mode: PricingSaleMode) => void;
+    onUpdatePiece?: (piece: Piece) => void;
 }) {
+    const [adjustOpen, setAdjustOpen] = React.useState(false);
     const saleMode = piece.salePriceMode ?? 'retail';
     const retailTarget = piece.retailPriceTarget ?? parseNumericInput(piece.price) ?? piece.suggestedPrice ?? 0;
     const wholesaleTarget = piece.wholesalePriceTarget ?? piece.wholesalePrice ?? 0;
@@ -58,26 +63,20 @@ export function PricingBreakdownCard({
                 {piece.pricingUserType ? PRICING_USER_TYPE_LABELS[piece.pricingUserType] : 'Custom pricing profile'}
             </Text>
 
-            <View className="flex-row gap-2 mb-3">
+            <SelectChipGroup className="mb-3">
                 {([
                     { value: 'retail', label: 'Retail' },
                     { value: 'wholesale', label: 'Wholesale' },
-                ] as const).map((option) => {
-                    const active = saleMode === option.value;
-                    return (
-                        <TouchableOpacity
-                            key={option.value}
-                            onPress={() => onChangeSaleMode(option.value)}
-                            activeOpacity={0.78}
-                            className={`flex-1 px-3 py-2 rounded-full border items-center ${active ? 'bg-foreground border-foreground' : 'bg-card border-border'}`}
-                        >
-                            <Text className={`text-xs font-medium ${active ? 'text-background' : 'text-muted-foreground'}`}>
-                                {option.label}
-                            </Text>
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
+                ] as const).map((option) => (
+                    <SelectChip
+                        key={option.value}
+                        label={option.label}
+                        selected={saleMode === option.value}
+                        onPress={() => onChangeSaleMode(option.value)}
+                        className="flex-1 justify-center"
+                    />
+                ))}
+            </SelectChipGroup>
 
             <View
                 style={{
@@ -105,6 +104,16 @@ export function PricingBreakdownCard({
                 </View>
             </View>
 
+            {onUpdatePiece ? (
+                <TouchableOpacity
+                    onPress={() => setAdjustOpen(true)}
+                    activeOpacity={0.78}
+                    className="mb-3 self-start"
+                >
+                    <Text className="text-xs font-semibold text-primary">Adjust for this piece</Text>
+                </TouchableOpacity>
+            ) : null}
+
             <View style={{ gap: compact ? 7 : 8 }}>
                 {breakdownRows.map((row) => (
                     <View key={row.label} className="flex-row items-center justify-between">
@@ -126,6 +135,15 @@ export function PricingBreakdownCard({
                     <Text className="text-xs font-medium text-foreground">{formatMoney(piece.wholesalePrice)}</Text>
                 </View>
             </View>
+
+            {onUpdatePiece ? (
+                <PiecePricingAdjustSheet
+                    visible={adjustOpen}
+                    piece={piece}
+                    onClose={() => setAdjustOpen(false)}
+                    onSave={onUpdatePiece}
+                />
+            ) : null}
         </View>
     );
 }

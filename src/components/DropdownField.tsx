@@ -276,7 +276,6 @@ export function DropdownField({
                     onChangeText={setQuery}
                     placeholder={searchPlaceholder}
                     className={cn('pl-11', query.length > 0 && 'pr-11')}
-                    autoFocus
                   />
                 </View>
               </View>

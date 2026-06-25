@@ -84,3 +84,52 @@ export function pricingUserTypeForArchetype(userType: OnboardingUserType): Prici
       return 'side-business';
   }
 }
+
+export type PieceDetailLevel = 'quick' | 'standard' | 'full';
+
+export const PIECE_DETAIL_LEVEL_OPTIONS: Array<{
+  value: PieceDetailLevel;
+  label: string;
+  hint: string;
+}> = [
+  { value: 'quick', label: 'Essentials', hint: 'Photo, name, clay, and notes.' },
+  { value: 'standard', label: 'Studio', hint: 'Stage, location, and size.' },
+  { value: 'full', label: 'Full details', hint: 'Pricing, glaze, workshop, and listing.' },
+];
+
+export function getDefaultPieceDetailLevel(userType: OnboardingUserType): PieceDetailLevel {
+  switch (userType) {
+    case 'home-potter':
+    case 'not-sure':
+      return 'quick';
+    case 'studio-potter':
+      return 'standard';
+    case 'business-owner':
+    case 'studio-owner-technician':
+      return 'full';
+    default:
+      return 'quick';
+  }
+}
+
+const DETAIL_LEVEL_RANK: Record<PieceDetailLevel, number> = {
+  quick: 0,
+  standard: 1,
+  full: 2,
+};
+
+export function meetsDetailLevel(current: PieceDetailLevel, required: PieceDetailLevel): boolean {
+  return DETAIL_LEVEL_RANK[current] >= DETAIL_LEVEL_RANK[required];
+}
+
+export function nextDetailLevel(level: PieceDetailLevel): PieceDetailLevel {
+  if (level === 'quick') return 'standard';
+  if (level === 'standard') return 'full';
+  return 'full';
+}
+
+export function prevDetailLevel(level: PieceDetailLevel): PieceDetailLevel {
+  if (level === 'full') return 'standard';
+  if (level === 'standard') return 'quick';
+  return 'quick';
+}

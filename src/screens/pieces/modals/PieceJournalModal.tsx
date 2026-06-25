@@ -306,6 +306,7 @@ export function PieceJournalModal({
               pickCoverPhoto={pickCoverPhoto}
               handleUpdateNotes={handleUpdateNotes}
               handleUpdateDescription={handleUpdateDescription}
+              onUpdatePiece={onUpdatePiece}
               onPageChange={handlePageChange}
               canAddMorePhotos={canAddMorePhotos}
             />

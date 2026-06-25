@@ -16,6 +16,7 @@ import { Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import { OptionPills } from '../components/OptionPills';
+import { ShrinkageCalculatorSheet } from './ShrinkageCalculatorSheet';
 import { BISQUE_TEMPS, GLAZE_OUTCOME_LABELS, GLAZE_OUTCOME_OPTIONS, GLAZE_TEMPS, PIECE_DISPOSITION_STATUSES } from '../utils/constants';
 import { FINISHED_STAGE_ID } from '../utils/stageFlow';
 
@@ -52,6 +53,7 @@ interface StageAdvanceFlowModalProps {
   stageLookup: Record<string, StageVisual>;
   defaultBisqueTemp?: string | null;
   defaultGlazeTemp?: string | null;
+  clayBodyName?: string;
   onConfirm: (capture: StageAdvanceCapture) => void;
   onSkip: () => void;
   onClose: () => void;
@@ -80,6 +82,7 @@ export function StageAdvanceFlowModal({
   stageLookup,
   defaultBisqueTemp,
   defaultGlazeTemp,
+  clayBodyName,
   onConfirm,
   onSkip,
   onClose,
@@ -95,6 +98,7 @@ export function StageAdvanceFlowModal({
   const [status, setStatus] = React.useState('');
   const [soldPriceDraft, setSoldPriceDraft] = React.useState('');
   const [glazeOutcome, setGlazeOutcome] = React.useState('');
+  const [shrinkageOpen, setShrinkageOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!request) {
@@ -175,6 +179,16 @@ export function StageAdvanceFlowModal({
                   </Text>
                 </View>
               </View>
+
+              {request.toStage === 'forming' ? (
+                <TouchableOpacity
+                  onPress={() => setShrinkageOpen(true)}
+                  activeOpacity={0.75}
+                  className="mt-4 self-start"
+                >
+                  <Text className="text-sm font-semibold text-primary">Plan finished size</Text>
+                </TouchableOpacity>
+              ) : null}
 
               {isFinished && (
                   <View className="mt-4 rounded-2xl overflow-hidden border border-border">
@@ -272,6 +286,11 @@ export function StageAdvanceFlowModal({
             </ModalSheetFooter>
       </ModalCard>
     </ModalShell>
+    <ShrinkageCalculatorSheet
+      visible={shrinkageOpen}
+      onClose={() => setShrinkageOpen(false)}
+      clayBodyName={clayBodyName}
+    />
     </>
   );
 }

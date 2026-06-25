@@ -1,6 +1,7 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
 import { CustomizationSettingsShell } from '@/src/components/settings/CustomizationSettingsShell';
 import { Input } from '@/src/components/ui/input';
+import { SelectChip, SelectChipGroup } from '@/src/components/ui/SelectChip';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store/appStore';
 import {
@@ -17,7 +18,7 @@ import {
 } from '@/src/types/pricing';
 import { getPricingCopy } from '@/src/utils/roleBasedUx';
 import { useRouter } from 'expo-router';
-import { Calculator, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react-native';
+import { Calculator, ChevronDown, ChevronUp, Copy, Plus, RotateCcw, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 
@@ -212,12 +213,60 @@ export default function PricingRulesScreen() {
   const userType = useAppStore((state) => state.onboardingProfile.userType);
   const pricingCopy = getPricingCopy(userType);
   const pricingSettingsState = useAppStore((state) => state.pricingSettings);
+  const pricingTemplates = useAppStore((state) => state.pricingTemplates);
+  const activePricingTemplateId = useAppStore((state) => state.activePricingTemplateId);
   const pricingSettings = React.useMemo(() => normalizePricingSettings(pricingSettingsState), [pricingSettingsState]);
   const setPricingSettings = useAppStore((state) => state.setPricingSettings);
+  const setActivePricingTemplate = useAppStore((state) => state.setActivePricingTemplate);
+  const addPricingTemplate = useAppStore((state) => state.addPricingTemplate);
+  const updatePricingTemplate = useAppStore((state) => state.updatePricingTemplate);
+  const duplicatePricingTemplate = useAppStore((state) => state.duplicatePricingTemplate);
+  const deletePricingTemplate = useAppStore((state) => state.deletePricingTemplate);
 
   const [draft, setDraft] = React.useState<PricingDraft>(() => toDraft(pricingSettings));
   const [openSection, setOpenSection] = React.useState<SectionId>('studio');
   const [resetConfirmOpen, setResetConfirmOpen] = React.useState(false);
+  const [deleteTemplateOpen, setDeleteTemplateOpen] = React.useState(false);
+  const [newTemplateName, setNewTemplateName] = React.useState('');
+
+  const activeTemplateId = activePricingTemplateId
+    ?? pricingTemplates.find((template) => template.isDefault)?.id
+    ?? pricingTemplates[0]?.id
+    ?? null;
+
+  const persistDraftToActiveTemplate = React.useCallback(() => {
+    if (!activeTemplateId) return;
+    updatePricingTemplate(activeTemplateId, {
+      settings: buildSettingsFromDraft(draft, pricingSettings),
+    });
+  }, [activeTemplateId, draft, pricingSettings, updatePricingTemplate]);
+
+  const handleSelectTemplate = (templateId: string) => {
+    if (templateId === activeTemplateId) return;
+    persistDraftToActiveTemplate();
+    setActivePricingTemplate(templateId);
+  };
+
+  const handleSaveAsNewTemplate = () => {
+    const settings = buildSettingsFromDraft(draft, pricingSettings);
+    const templateId = addPricingTemplate(newTemplateName.trim() || 'New template', settings);
+    setActivePricingTemplate(templateId);
+    setNewTemplateName('');
+  };
+
+  const handleDuplicateTemplate = () => {
+    if (!activeTemplateId) return;
+    persistDraftToActiveTemplate();
+    const nextId = duplicatePricingTemplate(activeTemplateId);
+    setActivePricingTemplate(nextId);
+  };
+
+  const handleDeleteTemplate = () => {
+    if (!activeTemplateId || pricingTemplates.length <= 1) return;
+    persistDraftToActiveTemplate();
+    deletePricingTemplate(activeTemplateId);
+    setDeleteTemplateOpen(false);
+  };
 
   React.useEffect(() => {
     setDraft(toDraft(pricingSettings));
@@ -266,7 +315,11 @@ export default function PricingRulesScreen() {
   };
 
   const handleSave = () => {
-    setPricingSettings(buildSettingsFromDraft(draft, pricingSettings));
+    const nextSettings = buildSettingsFromDraft(draft, pricingSettings);
+    setPricingSettings(nextSettings);
+    if (activeTemplateId) {
+      updatePricingTemplate(activeTemplateId, { settings: nextSettings });
+    }
     router.back();
   };
 
@@ -276,6 +329,15 @@ export default function PricingRulesScreen() {
 
   return (
     <>
+      <ConfirmSheet
+        visible={deleteTemplateOpen}
+        title="Delete pricing template?"
+        body="This removes the selected template. Your other templates stay intact."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={handleDeleteTemplate}
+        onCancel={() => setDeleteTemplateOpen(false)}
+      />
       <ConfirmSheet
         visible={resetConfirmOpen}
         title="Reset Pricing Rules?"
@@ -298,6 +360,55 @@ export default function PricingRulesScreen() {
           <Text className="text-xs text-amber-700 flex-1 leading-relaxed">
             Price from real costs, not gut feel. Clay can estimate from weight and your clay bag cost. Glaze scales from piece size unless you override it on a piece.
           </Text>
+        </View>
+
+        <View className="bg-card rounded-2xl border border-border px-4 py-4 mb-4">
+          <Text className="text-sm font-semibold text-foreground">Pricing templates</Text>
+          <Text className="text-xs text-muted-foreground mt-1 mb-3 leading-5">
+            Switch between saved pricing setups for markets, wholesale, teaching, and more.
+          </Text>
+          <SelectChipGroup>
+            {pricingTemplates.map((template) => (
+              <SelectChip
+                key={template.id}
+                label={template.name}
+                selected={template.id === activeTemplateId}
+                onPress={() => handleSelectTemplate(template.id)}
+              />
+            ))}
+          </SelectChipGroup>
+          <View className="flex-row gap-2 mt-3">
+            <View className="flex-1">
+              <Input
+                placeholder="New template name"
+                value={newTemplateName}
+                onChangeText={setNewTemplateName}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={handleSaveAsNewTemplate}
+              className="px-3 py-2 rounded-xl border border-border bg-background items-center justify-center"
+              activeOpacity={0.75}
+            >
+              <Plus size={16} color="hsl(24 25% 15%)" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDuplicateTemplate}
+              className="px-3 py-2 rounded-xl border border-border bg-background items-center justify-center"
+              activeOpacity={0.75}
+            >
+              <Copy size={16} color="hsl(24 25% 15%)" />
+            </TouchableOpacity>
+            {pricingTemplates.length > 1 ? (
+              <TouchableOpacity
+                onPress={() => setDeleteTemplateOpen(true)}
+                className="px-3 py-2 rounded-xl border border-border bg-background items-center justify-center"
+                activeOpacity={0.75}
+              >
+                <Trash2 size={16} color="hsl(0 55% 45%)" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
 
         <SectionCard
