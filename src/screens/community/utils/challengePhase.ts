@@ -20,8 +20,8 @@ export function resolveChallengePhase(challenge: BackendChallenge | null): Chall
   const now = Date.now();
   const submissionEnd = challenge.submission_deadline
     ? new Date(challenge.submission_deadline).getTime()
-    : challenge.ends_at
-      ? new Date(challenge.ends_at).getTime()
+    : challenge.end_date
+      ? new Date(challenge.end_date).getTime()
       : null;
   const votingEnd = challenge.voting_ends_at
     ? new Date(challenge.voting_ends_at).getTime()
@@ -40,7 +40,7 @@ export function getPhaseSubtitle(
   phase: ChallengePhase,
 ): string | undefined {
   if (phase === 'open') {
-    const days = daysUntil(challenge?.submission_deadline ?? challenge?.ends_at);
+    const days = daysUntil(challenge?.submission_deadline ?? challenge?.end_date);
     if (days === null) return undefined;
     if (days === 0) return 'Last day';
     return `${days} day${days === 1 ? '' : 's'} left`;

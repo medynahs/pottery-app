@@ -530,7 +530,10 @@ export function ChallengesTab({
 
   const challenge = useMemo(() => {
     if (challengeApi) return toChallengeDisplay(challengeApi);
-    if (__DEV__) return MOCK_UNDERWATER_CHALLENGE;
+    if (__DEV__) {
+      console.warn('[FestivalsTab] No active challenge from API — falling back to mock data');
+      return MOCK_UNDERWATER_CHALLENGE;
+    }
     return buildPreviewChallengeDisplay();
   }, [challengeApi]);
   const isPreviewOnly = !challengeApi && !__DEV__;
@@ -556,7 +559,7 @@ export function ChallengesTab({
     return challengeApi.winners.map((w) =>
       backendWinnerToDisplay(w, {
         id: challengeApi.id,
-        title: challengeApi.title,
+        title: challengeApi.name,
         description: challengeApi.description,
       }),
     );
@@ -596,6 +599,9 @@ export function ChallengesTab({
     try {
       const items = await apiListChallenges(sessionToken);
       const primary = pickPrimaryChallenge(items);
+      if (!primary && items.length > 0) {
+        console.warn('[FestivalsTab] challenges returned but none passed active filter:', items.map((i) => ({ id: i.id, status: i.status })));
+      }
       setChallengeApi(primary);
       setApiEntryId(challengeEntryId(primary));
     } catch (err) {
@@ -717,8 +723,8 @@ export function ChallengesTab({
         postKind: 'update',
         challenge: {
           challengeId: challengeApi.id,
-          title: challengeApi.title,
-          hashtag: challengeHashtag(challengeApi.title),
+          title: challengeApi.name,
+          hashtag: challengeHashtag(challengeApi.name),
         },
       });
       const content = embedCommunityPostMeta(payload.note, meta);
