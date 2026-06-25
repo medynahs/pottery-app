@@ -1,13 +1,14 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { SearchField } from '@/src/components/SearchField';
 import { EmptyState } from '@/src/components/EmptyState';
 import { Text } from '@/src/components/ui/text';
 import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
 import { normalizeCone } from '@/src/screens/library/discover/types';
 import { useAppStore, useVisiblePieces } from '@/src/store';
-import { Droplets, Search, SlidersHorizontal, X } from 'lucide-react-native';
+import { Droplets, SlidersHorizontal, X } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { deriveCustomCollectionNames } from './atlas/collections';
 import { CreateCollectionModal } from './atlas/CreateCollectionModal';
 import { GlazeFilterSheet } from './atlas/GlazeFilterSheet';
@@ -176,36 +177,14 @@ export default function LibraryGlazesScreen({
       >
         <View className="px-6 pt-3 pb-1">
           <View className="flex-row items-center gap-2">
-            <View
-              style={{
-                flex: 1,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 10,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: '#D9C9A8',
-                backgroundColor: '#FFFBF4',
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-              }}
-            >
-              <Search size={15} color="#C4B48C" />
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search glazes…"
-                placeholderTextColor="#C4B48C"
-                accessibilityLabel="Search glazes"
-                accessibilityHint="Search by name, ingredients, cone, or notes"
-                style={{ flex: 1, fontSize: 13, color: '#3A2810', padding: 0 }}
-              />
-              {search.length > 0 ? (
-                <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
-                  <X size={14} color="#A68555" />
-                </TouchableOpacity>
-              ) : null}
-            </View>
+            <SearchField
+              className="flex-1"
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search glazes…"
+              accessibilityLabel="Search glazes"
+              accessibilityHint="Search by name, ingredients, cone, or notes"
+            />
 
             <TouchableOpacity
               onPress={() => setFilterOpen(true)}

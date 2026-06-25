@@ -1,7 +1,8 @@
+import { SearchField } from '@/src/components/SearchField';
 import { Text } from '@/src/components/ui/text';
-import { Search, SlidersHorizontal, X } from 'lucide-react-native';
+import { SlidersHorizontal, X } from 'lucide-react-native';
 import React from 'react';
-import { TextInput, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import {
   COLOR_OPTIONS,
   CONE_OPTIONS,
@@ -91,21 +92,12 @@ export function SearchBar({
 }) {
   return (
     <View className="flex-row gap-2.5 mb-3.5">
-      <View className="flex-1 flex-row items-center gap-2.5 rounded-2xl border border-border bg-card px-3.5 py-2.5">
-        <Search size={15} color="hsl(24 20% 55%)" />
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          placeholder="Search recipes, combos, brands…"
-          placeholderTextColor="hsl(24 10% 65%)"
-          className="flex-1 text-sm text-foreground p-0"
-        />
-        {value.length > 0 ? (
-          <TouchableOpacity onPress={() => onChange('')} activeOpacity={0.7}>
-            <X size={14} color="hsl(24 20% 55%)" />
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <SearchField
+        className="flex-1"
+        value={value}
+        onChangeText={onChange}
+        placeholder="Search recipes, combos, brands…"
+      />
       <TouchableOpacity
         onPress={onToggleFilters}
         activeOpacity={0.8}

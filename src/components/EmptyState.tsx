@@ -1,4 +1,11 @@
 import { Text } from '@/src/components/ui/text';
+import {
+  CEMETERY_ACCENT,
+  CEMETERY_PILL_ACTIVE,
+  CEMETERY_PILL_ACTIVE_BORDER,
+  CEMETERY_TEXT,
+  CEMETERY_TEXT_MUTED,
+} from '@/src/screens/pieces/cemeteryTheme';
 import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
@@ -10,6 +17,7 @@ interface EmptyStateProps {
   ctaLabel?: string;
   ctaIcon?: LucideIcon;
   onCtaPress?: () => void;
+  variant?: 'default' | 'cemetery';
 }
 
 export function EmptyState({
@@ -19,28 +27,60 @@ export function EmptyState({
   ctaLabel,
   ctaIcon: CtaIcon,
   onCtaPress,
+  variant = 'default',
 }: EmptyStateProps) {
+  const isCemetery = variant === 'cemetery';
+
   const content = (
     <>
       {Icon ? (
-        <View className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center mb-1">
-          <Icon size={26} color="hsl(39 57% 51%)" />
+        <View
+          className={isCemetery ? 'w-14 h-14 rounded-full items-center justify-center mb-1' : 'w-14 h-14 rounded-full bg-primary/10 items-center justify-center mb-1'}
+          style={isCemetery ? { backgroundColor: 'rgba(74, 50, 36, 0.55)' } : undefined}
+        >
+          <Icon size={26} color={isCemetery ? CEMETERY_ACCENT : 'hsl(39 57% 51%)'} />
         </View>
       ) : null}
-      <Text className="text-base font-serif font-bold text-foreground text-center">{title}</Text>
+      <Text
+        className={`text-base font-serif font-bold text-center ${isCemetery ? '' : 'text-foreground'}`}
+        style={isCemetery ? { color: CEMETERY_TEXT } : undefined}
+      >
+        {title}
+      </Text>
       {description ? (
-        <Text className="text-sm text-muted-foreground text-center leading-relaxed">{description}</Text>
+        <Text
+          className={`text-sm text-center leading-relaxed ${isCemetery ? '' : 'text-muted-foreground'}`}
+          style={isCemetery ? { color: CEMETERY_TEXT_MUTED } : undefined}
+        >
+          {description}
+        </Text>
       ) : null}
       {ctaLabel && onCtaPress ? (
         <TouchableOpacity
           onPress={onCtaPress}
-          className="flex-row items-center gap-2 px-5 py-3 mt-3 rounded-2xl bg-primary"
+          className={isCemetery ? 'flex-row items-center gap-2 px-5 py-3 mt-3 rounded-2xl' : 'flex-row items-center gap-2 px-5 py-3 mt-3 rounded-2xl bg-primary'}
+          style={
+            isCemetery
+              ? {
+                  backgroundColor: CEMETERY_PILL_ACTIVE,
+                  borderWidth: 1,
+                  borderColor: CEMETERY_PILL_ACTIVE_BORDER,
+                }
+              : undefined
+          }
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel={ctaLabel}
         >
-          {CtaIcon ? <CtaIcon size={16} color="white" /> : null}
-          <Text className="text-sm font-bold text-white">{ctaLabel}</Text>
+          {CtaIcon ? (
+            <CtaIcon size={16} color={isCemetery ? CEMETERY_ACCENT : 'white'} />
+          ) : null}
+          <Text
+            className={`text-sm font-bold ${isCemetery ? '' : 'text-white'}`}
+            style={isCemetery ? { color: CEMETERY_ACCENT } : undefined}
+          >
+            {ctaLabel}
+          </Text>
         </TouchableOpacity>
       ) : null}
     </>

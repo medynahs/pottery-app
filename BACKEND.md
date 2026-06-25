@@ -58,11 +58,11 @@ The API repo completed **every P0** (friends, public profile, privacy, pieces/fi
 | Login / register / logout | ✅ | Ory flows — Google + email/password verified on device |
 | Password recovery | ✅ | Verified end-to-end (Google + email) — Ory Recovery V2 |
 | Account delete | 🔶 | `DELETE /users/me` → soft-delete + ~1wk grace + `POST /users/me/revive`; cascade via FK. **403 `account_deleted`** during grace |
-| Current user profile | 🔶 | `GET /users/me`, avatar/cover upload |
+| Current user profile | 🔶 | `GET /users/me`, avatar/cover upload — avatar/cover verified end-to-end (P1-2b ✅ Sprint A) |
 | Profile identity edit | ❌ | `PUT /users/me` — name, studio, location, bio; FE saves locally today → [P1-2](./BACKEND-TASKS.md) (Sprint E, not started) |
-| Privacy settings | 🔶 | `PUT /users/me/privacy` shipped; enforced on public profile (404 when private) |
-| Public profile | 🔶 | `GET /users/:userId/profile` shipped (P0-2); 404 when private/unknown |
-| Friends | 🔶 | **500 fixed** (`cover_url` added to SELECT, P0-1) |
+| Privacy settings | 🔶 | `PUT /users/me/privacy` shipped (P1-3 ✅ Sprint A) + enforced on public profile (404 when private); FE toggles still local only |
+| Public profile | 🔶 | `GET /users/:userId/profile` shipped (P0-2 ✅ Sprint A); 404 when private/unknown |
+| Friends | 🔶 | **500 fixed** (`cover_url` added to SELECT, P0-1 ✅ Sprint A) |
 | Friend requests | 🔶 | FE wired |
 | Studios | 🔶 | Owned/member-of, invites, join requests |
 
@@ -70,7 +70,7 @@ The API repo completed **every P0** (friends, public profile, privacy, pieces/fi
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Pieces CRUD / sync | 🔶 | FE fully wired; offline sync active |
+| Pieces CRUD / sync | 🔶 | `POST /users/me/pieces/sync` verified + deployed (P0-3 ✅ Sprint B); FE fully wired; offline sync active |
 | Kilns CRUD | 🔶 | FE wired |
 | Firings CRUD | 🔶 | FE wired; **log fields** (`peak_temp_c`, `hold_time_minutes`, `photo_uri`) now round-trip in API (P0-4) |
 | Piece ↔ glaze link | 🔶 | `glaze_id` + `glaze_outcome` now in sync payload + DB (P0-10); validated to same user |
@@ -155,7 +155,7 @@ Recipient (app) → GET /users/:userId/profile → grid + Add Clay Friend
 Recipient (no app, V2) → web landing page
 ```
 
-~~Blocked by missing public profile endpoint and broken friends list.~~ Both shipped (P0-1, P0-2) — in-app share grid + Add Clay Friend now have a working API. OG web preview (P1-17) still pending for rich chat unfurls.
+~~Blocked by missing public profile endpoint and broken friends list.~~ Both shipped in Sprint A (P0-1, P0-2) — in-app share grid + Add Clay Friend now have a working API. Remaining FE work: wire privacy toggles (#14); OG web preview (P1-17) still pending for rich chat unfurls.
 
 ---
 

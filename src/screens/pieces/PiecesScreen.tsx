@@ -2,25 +2,42 @@
 import { ConfirmSheet, PickSheet, type PickSheetOption } from '@/src/components/AppSheets';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { EmptyState } from '@/src/components/EmptyState';
+import { SearchField } from '@/src/components/SearchField';
 import { StudioTabScreen } from '@/src/components/StudioTabScreen';
 import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
-import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
 import { useAppStore } from '@/src/store';
 import { countPiecePhotos } from '@/src/utils/premiumGate';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { BookOpen, CheckSquare, ChevronUp, Copy, Edit3, Images, Layers, Plus, Search, Share2, SlidersHorizontal, Tag, Trash2 } from 'lucide-react-native';
+import { StatusBar } from 'expo-status-bar';
+import { BookOpen, CheckSquare, ChevronUp, Copy, Edit3, Images, Layers, Plus, Share2, SlidersHorizontal, Tag, Trash2 } from 'lucide-react-native';
 import React from 'react';
-import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, ScrollView, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { MainTabHeader } from '../../components/MainTabHeader';
 import type { Piece } from '../../types/pieces';
 import { BatchCard } from './components/BatchCard';
-import { CemeteryBanner } from './components/CemeteryBanner';
+import {
+  CemeteryGardenEmpty,
+  CemeteryGardenView,
+  useCemeteryHeadstoneWidth,
+} from './components/CemeteryGardenView';
+import { CemeteryScrollAtmosphere } from './components/CemeteryScrollAtmosphere';
+import { CemeteryPieceCard } from './components/CemeteryPieceCard';
 import { FilterSortSheet } from './components/FilterSortSheet';
 import { PieceCard } from './components/PieceCard';
 import { PieceSelectionBar } from './components/PieceSelectionBar';
+import {
+  CEMETERY_ACCENT,
+  CEMETERY_BORDER_SUBTLE,
+  CEMETERY_ICON,
+  CEMETERY_PILL_ACTIVE,
+  CEMETERY_PILL_ACTIVE_BORDER,
+  CEMETERY_PILL_INACTIVE_BG,
+  CEMETERY_TEXT,
+  CEMETERY_TEXT_SUBTLE,
+} from './cemeteryTheme';
 import { usePiecesScreen } from './hooks/usePiecesScreen';
 import { AddPieceModal } from './modals/AddPieceModal';
 import { CemeterySacrificeModal } from './modals/CemeterySacrificeModal';
@@ -38,6 +55,12 @@ const itemLayout = LinearTransition
 
 export default function PiecesScreen() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
+  const cemeteryColumns = screenWidth >= 430 ? 3 : 2;
+  const cemeteryHeadstoneWidth = useCemeteryHeadstoneWidth(screenWidth, cemeteryColumns);
+  const cemeteryColumnStyle = cemeteryColumns === 3
+    ? { width: '31.5%' as const, marginBottom: 12 }
+    : { width: '48%' as const, marginBottom: 12 };
   const params = useLocalSearchParams<{
     openJournalPieceId?: string | string[];
     openJournalStage?: string | string[];
@@ -387,8 +410,21 @@ export default function PiecesScreen() {
     return options;
   }, [batchActionPieces, getNextStageId, stageLookup, handleAdvanceBatch, handleDuplicateBatch, toggleExpand, enterSelectionWith]);
 
+  const isCemeteryStage = activeStage === 'cemetery';
+  const honoredCount = React.useMemo(
+    () => pieces.filter((p) => p.stage === 'cemetery').length,
+    [pieces],
+  );
+  const cemeteryHeaderDescription = React.useMemo(() => {
+    if (honoredCount === 0) return 'The garden awaits its first resting place';
+    const filterNote =
+      search.trim() || activeFilterCount > 0 ? ` · ${filteredPieces.length} shown` : '';
+    return `${honoredCount} at rest in the garden${filterNote}`;
+  }, [activeFilterCount, filteredPieces.length, honoredCount, search]);
+
   return (
-    <StudioTabScreen>
+    <StudioTabScreen cemeteryMode={isCemeteryStage} ornamentOpacity={isCemeteryStage ? 0.05 : 0.34}>
+      <StatusBar style={isCemeteryStage ? 'light' : 'auto'} />
       <ConfirmSheet
         visible={pendingDeletePieceId != null}
         title="Delete Piece?"
@@ -409,29 +445,47 @@ export default function PiecesScreen() {
         onCancel={() => setPendingAdvanceChoice(null)}
       />
       
-      <MainTabHeader title='My Pieces' description={`${pieces.length} piece${pieces.length !== 1 ? 's' : ''} · ${filteredPieces.length} filtered`} pressIcon={<Plus size={16} color="white" />} onPress={() => setAddOpen(true)}  actionText='Add' />
+      <MainTabHeader
+        variant={isCemeteryStage ? 'cemetery' : 'default'}
+        title={isCemeteryStage ? 'Honored Pieces' : 'My Pieces'}
+        description={
+          isCemeteryStage
+            ? cemeteryHeaderDescription
+            : `${pieces.length} piece${pieces.length !== 1 ? 's' : ''} · ${filteredPieces.length} filtered`
+        }
+        pressIcon={<Plus size={16} color={isCemeteryStage ? CEMETERY_ACCENT : 'white'} />}
+        onPress={() => setAddOpen(true)}
+        actionText="Add"
+      />
 
       <View className="px-6 pt-4 pb-2">
         <View className="flex-row items-center gap-2">
-          <View className="flex-1 relative justify-center">
-            <View className="absolute left-4 z-10">
-              <Search size={16} color="hsl(24 20% 40%)" />
-            </View>
-            <Input
-              placeholder="Search name or notes..."
-              value={search}
-              onChangeText={setSearch}
-              className="pl-11 rounded-2xl bg-card/75 border-border"
-            />
-          </View>
+          <SearchField
+            variant={isCemeteryStage ? 'cemetery' : 'default'}
+            className={`flex-1 ${isCemeteryStage ? 'bg-[#2A1C16]/85 border-[#5A4030]' : 'bg-card/75'}`}
+            value={search}
+            onChangeText={setSearch}
+            placeholder={isCemeteryStage ? 'Search the honored...' : 'Search name or notes...'}
+          />
           <TouchableOpacity
             onPress={() => setFiltersOpen(true)}
-            className={`w-11 h-11 rounded-2xl items-center justify-center border ${activeFilterCount > 0 ? 'bg-primary/10 border-primary/30' : 'bg-card/75 border-border'
-              }`}
+            className={`w-11 h-11 rounded-2xl items-center justify-center border ${
+              activeFilterCount > 0
+                ? 'bg-primary/10 border-primary/30'
+                : isCemeteryStage
+                  ? 'bg-[#2A1C16]/85 border-[#5A4030]'
+                  : 'bg-card/75 border-border'
+            }`}
           >
             <SlidersHorizontal
               size={16}
-              color={activeFilterCount > 0 ? 'hsl(39 57% 51%)' : 'hsl(24 20% 40%)'}
+              color={
+                activeFilterCount > 0
+                  ? 'hsl(39 57% 51%)'
+                  : isCemeteryStage
+                    ? 'rgba(255, 244, 228, 0.65)'
+                    : 'hsl(24 20% 40%)'
+              }
             />
             {activeFilterCount > 0 && (
               <View className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary items-center justify-center">
@@ -442,15 +496,23 @@ export default function PiecesScreen() {
         </View>
       </View>
 
-      <ScrollView
-        ref={scrollRef}
-        className="flex-1"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: TAB_SCROLL_BOTTOM_PADDING }}
-        refreshControl={
-          <RefreshControl refreshing={isSyncing} onRefresh={refetchPieces} />
-        }
-      >
+      <View className="flex-1">
+        <CemeteryScrollAtmosphere active={isCemeteryStage} />
+
+        <ScrollView
+          ref={scrollRef}
+          className="flex-1"
+          style={{ backgroundColor: 'transparent' }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: TAB_SCROLL_BOTTOM_PADDING }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isSyncing}
+              onRefresh={refetchPieces}
+              tintColor={isCemeteryStage ? 'rgba(255, 244, 228, 0.7)' : undefined}
+            />
+          }
+        >
         {/* Stage Filter */}
         <ScrollView
           horizontal
@@ -459,15 +521,55 @@ export default function PiecesScreen() {
         >
           {stageTabs.map(({ id, label, Icon }) => {
             const isActive = activeStage === id;
+            const isCemeteryTab = id === 'cemetery';
+            const cemeteryActive = isCemeteryTab && isActive;
+
+            if (isCemeteryStage) {
+              return (
+                <TouchableOpacity
+                  key={id}
+                  onPress={() => setActiveStage(id)}
+                  className="flex-row items-center gap-1.5 px-4 py-2 rounded-full border"
+                  style={{
+                    backgroundColor: cemeteryActive
+                      ? CEMETERY_PILL_ACTIVE
+                      : CEMETERY_PILL_INACTIVE_BG,
+                    borderColor: cemeteryActive
+                      ? CEMETERY_PILL_ACTIVE_BORDER
+                      : CEMETERY_BORDER_SUBTLE,
+                  }}
+                >
+                  <Icon
+                    size={14}
+                    color={cemeteryActive ? CEMETERY_TEXT : CEMETERY_TEXT_SUBTLE}
+                  />
+                  <Text
+                    className="text-sm font-medium"
+                    style={{ color: cemeteryActive ? CEMETERY_TEXT : CEMETERY_TEXT_SUBTLE }}
+                  >
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }
+
             return (
               <TouchableOpacity
                 key={id}
                 onPress={() => setActiveStage(id)}
-                className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full border ${isActive ? 'bg-foreground border-foreground' : 'bg-card border-border'
-                  }`}
+                className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full border ${
+                  isActive ? 'bg-foreground border-foreground' : 'bg-card border-border'
+                }`}
               >
-                <Icon size={14} color={isActive ? 'hsl(34 35% 92%)' : 'hsl(24 20% 40%)'} />
-                <Text className={`text-sm font-medium ${isActive ? 'text-background' : 'text-muted-foreground'}`}>
+                <Icon
+                  size={14}
+                  color={isActive ? 'hsl(34 35% 92%)' : 'hsl(24 20% 40%)'}
+                />
+                <Text
+                  className={`text-sm font-medium ${
+                    isActive ? 'text-background' : 'text-muted-foreground'
+                  }`}
+                >
                   {label}
                 </Text>
               </TouchableOpacity>
@@ -476,10 +578,40 @@ export default function PiecesScreen() {
         </ScrollView>
 
         <View className="px-6">
-          {activeStage === 'cemetery' && (
-            <CemeteryBanner count={pieces.filter(p => p.stage === 'cemetery').length} />
-          )}
+          {activeStage === 'cemetery' ? (
+            <CemeteryGardenView count={honoredCount}>
+              {filteredPieces.length > 0 ? (
+                <Animated.View layout={itemLayout} className="flex-row flex-wrap justify-between">
+                  {displayItems.map((item) => {
+                    if (item.type === 'set-header' || item.type === 'batch') return null;
 
+                    return (
+                      <Animated.View
+                        key={`piece-${item.piece.id}`}
+                        layout={itemLayout}
+                        entering={FadeInDown.duration(300).easing(Easing.out(Easing.cubic))}
+                        exiting={FadeOutUp.duration(260).easing(Easing.in(Easing.cubic))}
+                        style={cemeteryColumnStyle}
+                      >
+                        <CemeteryPieceCard
+                          piece={item.piece}
+                          headstoneWidth={cemeteryHeadstoneWidth}
+                          selectionMode={selectionMode}
+                          selected={selectedPieceIds.has(item.piece.id)}
+                          onPress={() => openJournal(item.piece)}
+                          onToggleSelect={() => togglePieceSelection(item.piece.id)}
+                          onLongPress={() => setActionSheetPiece(item.piece)}
+                          onMore={() => setActionSheetPiece(item.piece)}
+                        />
+                      </Animated.View>
+                    );
+                  })}
+                </Animated.View>
+              ) : pieces.length > 0 ? (
+                <CemeteryGardenEmpty />
+              ) : null}
+            </CemeteryGardenView>
+          ) : (
           <Animated.View layout={itemLayout} className="flex-row flex-wrap justify-between">
             {displayItems.map((item) => {
               if (item.type === 'set-header') {
@@ -566,31 +698,35 @@ export default function PiecesScreen() {
               );
             })}
           </Animated.View>
+          )}
 
           {filteredPieces.length === 0 && (
             pieces.length === 0 ? (
               <EmptyState
                 icon={Layers}
+                variant={isCemeteryStage ? 'cemetery' : 'default'}
                 title="Your shelf is waiting"
                 description="Every potter starts with a first lump of clay. Log a piece to track it from wet clay to glazed and fired."
                 ctaLabel="Add your first piece"
                 ctaIcon={Plus}
                 onCtaPress={() => setAddOpen(true)}
               />
-            ) : (
+            ) : activeStage !== 'cemetery' ? (
               <EmptyState
                 title="No pieces match"
                 description={search.trim() || activeFilterCount > 0
                   ? 'Try a different search or loosen your filters.'
                   : 'Nothing at this stage right now, your pieces are busy elsewhere in the studio.'}
               />
-            )
+            ) : null
           )}
         </View>
       </ScrollView>
+      </View>
 
       {selectionMode ? (
         <PieceSelectionBar
+          variant={isCemeteryStage ? 'cemetery' : 'default'}
           selectedCount={selectedPieceIds.size}
           advanceLabel={
             selectionAdvanceInfo?.canAdvance

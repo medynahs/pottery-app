@@ -7,6 +7,7 @@ import {
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import { cn } from '@/src/components/ui/utils/cn';
+import { INPUT_ICON_COLOR, INPUT_SINGLE_LINE_CLASS } from '@/src/constants/inputTheme';
 import { Check, ChevronDown, Search, X } from 'lucide-react-native';
 import React from 'react';
 import {
@@ -223,7 +224,7 @@ export function DropdownField({
         className={cn(
           variant === 'card'
             ? 'rounded-2xl border border-border bg-card px-3 py-3'
-            : 'native:h-12 min-h-10 rounded-md border-2 border-input bg-background px-3 justify-center',
+            : cn(INPUT_SINGLE_LINE_CLASS, 'justify-center'),
           (disabled || options.length === 0) && 'opacity-50',
         )}
       >
@@ -258,7 +259,7 @@ export function DropdownField({
               <View className="px-5 pt-4 pb-2">
                 <View className="relative justify-center">
                   <View className="absolute left-4 z-10">
-                    <Search size={16} color="hsl(24 20% 40%)" />
+                    <Search size={16} color={INPUT_ICON_COLOR} />
                   </View>
                   {query.length > 0 ? (
                     <TouchableOpacity
@@ -267,14 +268,14 @@ export function DropdownField({
                       activeOpacity={0.7}
                       className="absolute right-4 z-10"
                     >
-                      <X size={16} color="hsl(24 20% 40%)" />
+                      <X size={16} color={INPUT_ICON_COLOR} />
                     </TouchableOpacity>
                   ) : null}
                   <Input
                     value={query}
                     onChangeText={setQuery}
                     placeholder={searchPlaceholder}
-                    className={cn('pl-11 rounded-2xl bg-card border-border', query.length > 0 && 'pr-11')}
+                    className={cn('pl-11', query.length > 0 && 'pr-11')}
                     autoFocus
                   />
                 </View>

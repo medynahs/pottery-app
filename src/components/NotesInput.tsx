@@ -4,6 +4,13 @@ import {
   FORM_SECTION_GAP,
   FORM_SECTION_TOP_GAP,
 } from '@/src/components/form/FormSectionCard';
+import {
+  INPUT_LINE_HEIGHT,
+  INPUT_PLACEHOLDER_COLOR,
+  INPUT_TEXT_COLOR,
+} from '@/src/constants/inputTheme';
+import { scaleFont } from '@/src/constants/typography';
+import { useTextScaleContext } from '@/src/hooks/useTextScale';
 import { JournalTheme } from '@/src/screens/pieces/utils/journalTheme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollText } from 'lucide-react-native';
@@ -58,6 +65,8 @@ export const NotesInput = React.forwardRef<
   ref,
 ) {
   const useInnerScroll = maxHeight != null || scrollEnabled === true;
+  const textScale = useTextScaleContext();
+  const journalFontSize = scaleFont(16, textScale);
 
   const defaultSpacing: ViewStyle = {
     marginTop: FORM_SECTION_TOP_GAP,
@@ -137,15 +146,15 @@ export const NotesInput = React.forwardRef<
             textAlignVertical="top"
             scrollEnabled={useInnerScroll}
             blurOnSubmit={blurOnSubmit}
-            placeholderTextColor={JournalTheme.placeholder}
+            placeholderTextColor={INPUT_PLACEHOLDER_COLOR}
             style={[
               {
                 minHeight,
                 ...(maxHeight != null ? { maxHeight } : null),
                 fontFamily: 'DMSans_400Regular',
-                fontSize: 13,
-                lineHeight: 22,
-                color: JournalTheme.bodyInk,
+                fontSize: journalFontSize,
+                lineHeight: INPUT_LINE_HEIGHT,
+                color: INPUT_TEXT_COLOR,
                 padding: 0,
               },
               style,
