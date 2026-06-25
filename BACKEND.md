@@ -8,9 +8,9 @@
 
 ---
 
-## ⚠️ Backend status — all P0 blockers shipped (Jun 25)
+## ⚠️ Backend status — all P0 + nearly all P1/P2 shipped (Jun 25)
 
-The API repo completed **every P0** (friends, public profile, privacy, pieces/firings/glaze sync, posts/feed/media, reactions, challenges, voting, Hall of Fame) plus **account delete**. Remaining backend work is P1/P2 (RevenueCat webhook, validation/rate-limit, upload hardening, editable identity `PUT /users/me`, OG share page, push tokens). Status below is **🔶 backend-done** until each is re-verified in-app.
+The API repo completed **every P0** (friends, public profile, privacy, pieces/firings/glaze sync, posts/feed/media, reactions, challenges, voting, Hall of Fame) plus **account delete**, and has now shipped the remaining V1 backend work: **editable identity `PUT /users/me`** (P1-2), **RevenueCat webhook** (P1-13), **validation + rate limiting** (P1-15), **upload hardening** (P1-16), **OG share page** (P1-17), and **Universal Links / App Links** (P2-1). **Push token storage (P1-14) is now shipped too** — every V1-relevant backend item is built; remaining gaps are FE wiring + later-phase glaze depth (P1-8–P1-12) and P2 ops. Status below is **🔶 backend-done** until each is re-verified in-app.
 
 **Routes that changed during implementation — FE must adopt:**
 
@@ -59,7 +59,7 @@ The API repo completed **every P0** (friends, public profile, privacy, pieces/fi
 | Password recovery | ✅ | Verified end-to-end (Google + email) — Ory Recovery V2 |
 | Account delete | 🔶 | `DELETE /users/me` → soft-delete + ~1wk grace + `POST /users/me/revive`; cascade via FK. **403 `account_deleted`** during grace |
 | Current user profile | 🔶 | `GET /users/me`, avatar/cover upload — avatar/cover verified end-to-end (P1-2b ✅ Sprint A) |
-| Profile identity edit | ❌ | `PUT /users/me` — name, studio, location, bio; FE saves locally today → [P1-2](./BACKEND-TASKS.md) (Sprint E, not started) |
+| Profile identity edit | 🔶 | `PUT /users/me` shipped (P1-2) — name (1–80), studio_name/location/bio (empty string → null, max 120/120/500). Returns full updated user. **FE still saves locally → wire `updateProfile()` (#91)** |
 | Privacy settings | 🔶 | `PUT /users/me/privacy` shipped (P1-3 ✅ Sprint A) + enforced on public profile (404 when private); FE toggles still local only |
 | Public profile | 🔶 | `GET /users/:userId/profile` shipped (P0-2 ✅ Sprint A); 404 when private/unknown |
 | Friends | 🔶 | **500 fixed** (`cover_url` added to SELECT, P0-1 ✅ Sprint A) |
@@ -102,11 +102,11 @@ The API repo completed **every P0** (friends, public profile, privacy, pieces/fi
 
 | Area | Status | Notes |
 |------|--------|-------|
-| RevenueCat webhook | 🔶 | Entitlement sync on server |
-| Push tokens | ❌ | FE not sending tokens yet |
-| Challenge deadline push | 🔶 | Server cron + Expo Push |
-| Input validation / rate limits | 🔶 | P1-15 |
-| Upload security | 🔶 | P1-16 |
+| RevenueCat webhook | 🔶 | `POST /webhooks/revenuecat` shipped (P1-13), secret-verified + rate-limited 10/min |
+| Push tokens | 🔶 | `POST /users/me/push-tokens` shipped (P1-14) — `{token, platform}` → 204, upsert dedupe/rotation. **FE not sending tokens (#86)** |
+| Challenge deadline push | ❌ | Depends on push tokens (P2-6) |
+| Input validation / rate limits | 🔶 | Shipped (P1-15): global 1000/min limiter + per-route limits; identity/upload input validated |
+| Upload security | 🔶 | Shipped (P1-16): auth-only, type whitelist + byte-sniff, 10MB cap, UUID keys |
 
 ---
 
@@ -155,7 +155,7 @@ Recipient (app) → GET /users/:userId/profile → grid + Add Clay Friend
 Recipient (no app, V2) → web landing page
 ```
 
-~~Blocked by missing public profile endpoint and broken friends list.~~ Both shipped in Sprint A (P0-1, P0-2) — in-app share grid + Add Clay Friend now have a working API. Remaining FE work: wire privacy toggles (#14); OG web preview (P1-17) still pending for rich chat unfurls.
+~~Blocked by missing public profile endpoint and broken friends list.~~ Both shipped in Sprint A (P0-1, P0-2) — in-app share grid + Add Clay Friend now have a working API. **OG web preview (P1-17) shipped** — `GET /user/:userId` serves server-rendered HTML with OG/Twitter tags for rich chat unfurls. **Universal Links (P2-1) shipped** — `/.well-known/apple-app-site-association` + `/assetlinks.json` served (set `APPLE_APP_ID` / `ANDROID_SHA256_FINGERPRINT` env before tap-to-open works). Remaining FE work: wire privacy toggles (#14); verify cold-start deep link in `app/user/[id].tsx`.
 
 ---
 
