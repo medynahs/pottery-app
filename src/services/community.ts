@@ -69,8 +69,74 @@ async function parseCommunityError(res: Response, endpoint: string): Promise<nev
 
 export interface CreatePostPayload {
   content: string;
-  /** UUIDs of pre-uploaded assets to attach to the post. */
+  /** UUIDs returned by POST /uploads before creating the post. */
   asset_ids?: string[];
+}
+
+function normalizePostAsset(raw: unknown): BackendPostAsset | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const record = raw as Record<string, unknown>;
+  const id =
+    typeof record.id === 'string'
+      ? record.id
+      : typeof record.asset_id === 'string'
+        ? record.asset_id
+        : null;
+  const url =
+    typeof record.url === 'string'
+      ? record.url
+      : typeof record.public_url === 'string'
+        ? record.public_url
+        : null;
+  if (!id || !url) return null;
+  return {
+    id,
+    url,
+    created_at:
+      typeof record.created_at === 'string' ? record.created_at : new Date().toISOString(),
+  };
+}
+
+/** Normalize feed post assets so UI always receives `{ id, url }`. */
+export function normalizeFeedPost(post: BackendFeedPost): BackendFeedPost {
+  const rawAssets = Array.isArray(post.assets) ? post.assets : [];
+  const assets = rawAssets
+    .map((asset) => normalizePostAsset(asset))
+    .filter((asset): asset is BackendPostAsset => asset != null);
+
+  return {
+    ...post,
+    assets: assets.length > 0 ? assets : post.assets,
+    asset_ids: Array.isArray(post.asset_ids) ? post.asset_ids : [],
+  };
+}
+
+function normalizeFeedPage(page: FeedPage): FeedPage {
+  const items = (page.items ?? page.posts ?? []).map(normalizeFeedPost);
+  return { ...page, items, posts: items };
+}
+
+/** Merge create-post response with a just-uploaded asset when the API omits assets[]. */
+export function hydrateCreatedPost(
+  post: BackendFeedPost,
+  uploaded: { assetId: string; publicUrl?: string } | null,
+  assetIds: string[],
+): BackendFeedPost {
+  const normalized = normalizeFeedPost(post);
+  if (normalized.assets?.length) return normalized;
+  if (!uploaded?.publicUrl) return normalized;
+
+  return {
+    ...normalized,
+    assets: [
+      {
+        id: uploaded.assetId,
+        url: uploaded.publicUrl,
+        created_at: normalized.created_at,
+      },
+    ],
+    asset_ids: normalized.asset_ids.length > 0 ? normalized.asset_ids : assetIds,
+  };
 }
 
 // ─── Internal helper ─────────────────────────────────────────────────────────
@@ -116,7 +182,8 @@ export async function apiGetDiscoverFeed(
     const res = await authedFetch(sessionToken, `${API_BASE}/feed${qs}`);
     if (res.status === 404 || res.status === 501) return null;
     if (!res.ok) return null;
-    return res.json() as Promise<FeedPage>;
+    const page = (await res.json()) as FeedPage;
+    return normalizeFeedPage(page);
   } catch {
     return null;
   }
@@ -137,7 +204,8 @@ export async function apiGetFeed(
   const qs = params.size > 0 ? `?${params.toString()}` : '';
   const res = await authedFetch(sessionToken, `${API_BASE}/users/me/feed${qs}`);
   if (!res.ok) throw new Error(`GET /users/me/feed → ${res.status}`);
-  return res.json() as Promise<FeedPage>;
+  const page = (await res.json()) as FeedPage;
+  return normalizeFeedPage(page);
 }
 
 /**
@@ -154,13 +222,13 @@ export async function apiListMyPosts(
   const qs = params.size > 0 ? `?${params.toString()}` : '';
   const res = await authedFetch(sessionToken, `${API_BASE}/users/me/posts${qs}`);
   if (!res.ok) await parseCommunityError(res, 'GET /users/me/posts');
-  return res.json() as Promise<FeedPage>;
+  const page = (await res.json()) as FeedPage;
+  return normalizeFeedPage(page);
 }
 
 /**
  * POST /users/me/posts
- * Creates a new social post. `asset_ids` should reference UUIDs returned by
- * the presigned-upload endpoint before calling this.
+ * Creates a new social post. Upload photos first via POST /uploads, then pass asset_ids.
  */
 export async function apiCreatePost(
   sessionToken: string,
@@ -171,8 +239,9 @@ export async function apiCreatePost(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`POST /users/me/posts → ${res.status}`);
-  return res.json() as Promise<BackendFeedPost>;
+  if (!res.ok) await parseCommunityError(res, 'POST /users/me/posts');
+  const post = (await res.json()) as BackendFeedPost;
+  return normalizeFeedPost(post);
 }
 
 /**

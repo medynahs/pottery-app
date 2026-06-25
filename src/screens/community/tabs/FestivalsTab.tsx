@@ -45,8 +45,8 @@ import {
   apiWithdrawChallengeEntry,
   type BackendChallenge,
 } from '@/src/services/challenges';
-import { apiCreatePost } from '@/src/services/community';
-import { uploadPostPhotoAsset } from '@/src/services/communityUpload';
+import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
+import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAppStore } from '@/src/store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -710,10 +710,6 @@ export function ChallengesTab({
       let postId: string | undefined;
 
       const uploaded = await uploadPostPhotoAsset(sessionToken, payload.photoUri);
-      if (!uploaded?.assetId) {
-        showToast('Photo upload failed — try again', 'error');
-        return;
-      }
 
       const meta = buildCommunityPostMeta({
         postKind: 'update',
@@ -730,19 +726,7 @@ export function ChallengesTab({
       });
       postId = post.id;
 
-      cacheProfilePost({
-        ...post,
-        assets: post.assets?.length
-          ? post.assets
-          : uploaded.publicUrl
-            ? [{
-                id: uploaded.assetId,
-                url: uploaded.publicUrl,
-                created_at: post.created_at,
-              }]
-            : post.assets,
-        asset_ids: post.asset_ids?.length ? post.asset_ids : [uploaded.assetId],
-      });
+      cacheProfilePost(hydrateCreatedPost(post, uploaded, [uploaded.assetId]));
       markPostCreated();
 
       const entry = await apiSubmitChallengeEntry(sessionToken, challengeApi.id, {
@@ -755,7 +739,10 @@ export function ChallengesTab({
       onEntrySubmitted?.({ emoji: challenge.emoji ?? '🏆', challengeName: challenge.title });
       void load();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Could not submit entry';
+      const message =
+        err instanceof CommunityUploadError || err instanceof Error
+          ? err.message
+          : 'Could not submit entry';
       showToast(message, 'error');
     } finally {
       setSubmitting(false);

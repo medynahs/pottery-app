@@ -28,9 +28,9 @@ import {
   embedCommunityPostMeta,
 } from '@/src/screens/community/utils/communityPostPayload';
 import { cacheProfilePost } from '@/src/screens/overview/profile/utils/profilePostCache';
-import { apiCreatePost } from '@/src/services/community';
+import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
 import { apiListChallenges, apiSubmitChallengeEntry, type BackendChallenge } from '@/src/services/challenges';
-import { uploadPostPhotoAsset } from '@/src/services/communityUpload';
+import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAppStore, useVisiblePieces } from '@/src/store';
 import { useCanPostStudioNotice } from '@/src/hooks/useCanPostStudioNotice';
 import {
@@ -330,24 +330,8 @@ export function CreatePostSheet({
       let uploadedPhoto: { assetId: string; publicUrl?: string } | null = null;
 
       if (photoUri) {
-        try {
-          const uploaded = await uploadPostPhotoAsset(sessionToken, photoUri);
-          if (uploaded?.assetId) {
-            assetIds.push(uploaded.assetId);
-            uploadedPhoto = uploaded;
-          } else if (!finalContent) {
-            showToast('Photo upload unavailable, add a caption or try again', 'error');
-            return;
-          } else {
-            showToast('Photo upload unavailable, posting text only', 'success');
-          }
-        } catch {
-          if (!finalContent) {
-            showToast('Photo upload failed, try again or add a caption', 'error');
-            return;
-          }
-          showToast('Photo upload failed, posting text only', 'success');
-        }
+        uploadedPhoto = await uploadPostPhotoAsset(sessionToken, photoUri);
+        assetIds.push(uploadedPhoto.assetId);
       }
 
       const created = await apiCreatePost(sessionToken, {
@@ -355,19 +339,9 @@ export function CreatePostSheet({
         asset_ids: assetIds.length > 0 ? assetIds : undefined,
       });
 
-      cacheProfilePost({
-        ...created,
-        assets: created.assets?.length
-          ? created.assets
-          : uploadedPhoto?.publicUrl
-            ? [{
-                id: uploadedPhoto.assetId,
-                url: uploadedPhoto.publicUrl,
-                created_at: created.created_at,
-              }]
-            : created.assets,
-        asset_ids: created.asset_ids?.length ? created.asset_ids : assetIds,
-      });
+      cacheProfilePost(
+        hydrateCreatedPost(created, uploadedPhoto, assetIds),
+      );
 
       if (meta.challenge && challengeId) {
         const entryPieceId =
@@ -396,7 +370,11 @@ export function CreatePostSheet({
       onClose();
     } catch (e) {
       console.error('[CreatePost] error:', e);
-      showToast('Failed to post, please try again', 'error');
+      const message =
+        e instanceof CommunityUploadError
+          ? e.message
+          : 'Failed to post, please try again';
+      showToast(message, 'error');
     } finally {
       setPosting(false);
     }

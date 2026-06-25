@@ -33,8 +33,8 @@ import {
 } from '@/src/screens/glazes/shareGlazeRecipe/glazePostPayload';
 import { ShareGlazeFeedPreview } from '@/src/screens/glazes/shareGlazeRecipe/ShareGlazeFeedPreview';
 import { apiSubmitChallengeEntry, apiListChallenges, type BackendChallenge } from '@/src/services/challenges';
-import { apiCreatePost } from '@/src/services/community';
-import { uploadPostPhotoAsset } from '@/src/services/communityUpload';
+import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
+import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAnalytics } from '@/src/hooks/useAnalytics';
 import { useAppStore } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
@@ -171,23 +171,20 @@ export function ShareGlazeRecipeSheet({
     setPosting(true);
     try {
       const assetIds: string[] = [];
+      let uploadedPhoto: { assetId: string; publicUrl?: string } | null = null;
       if (draft.attachPhoto && previewPhotoUri) {
-        try {
-          const uploaded = await uploadPostPhotoAsset(sessionToken, previewPhotoUri);
-          if (uploaded?.assetId) {
-            assetIds.push(uploaded.assetId);
-          } else if (draft.attachPhoto) {
-            showToast('Photo upload unavailable, posting text only', 'success');
-          }
-        } catch {
-          showToast('Photo upload failed, posting text only', 'success');
-        }
+        uploadedPhoto = await uploadPostPhotoAsset(sessionToken, previewPhotoUri);
+        assetIds.push(uploadedPhoto.assetId);
       }
 
-      const created = await apiCreatePost(sessionToken, {
-        content: postContent,
-        asset_ids: assetIds.length > 0 ? assetIds : undefined,
-      });
+      const created = hydrateCreatedPost(
+        await apiCreatePost(sessionToken, {
+          content: postContent,
+          asset_ids: assetIds.length > 0 ? assetIds : undefined,
+        }),
+        uploadedPhoto,
+        assetIds,
+      );
 
       if (draft.challengeId) {
         const linkedPiece = draft.linkedPieceId
@@ -216,8 +213,12 @@ export function ShareGlazeRecipeSheet({
       if (__DEV__ && created?.id) {
         console.debug('[ShareGlaze] post created', created.id);
       }
-    } catch {
-      showToast('Could not share, check your connection', 'error');
+    } catch (err) {
+      const message =
+        err instanceof CommunityUploadError
+          ? err.message
+          : 'Could not share, check your connection';
+      showToast(message, 'error');
     } finally {
       setPosting(false);
     }
