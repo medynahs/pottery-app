@@ -2,9 +2,27 @@
 
 **Purpose:** How the Pottery Life mobile app talks to the server — patterns, deployment status, and where to find detailed work.
 
-**Last updated:** June 24, 2026  
+**Last updated:** June 25, 2026  
 **Task backlog:** [`BACKEND-TASKS.md`](./BACKEND-TASKS.md) (prioritized P0 → P2)  
 **Frontend companion:** [`FRONTEND.md`](./FRONTEND.md)
+
+---
+
+## ⚠️ Backend status — all P0 blockers shipped (Jun 25)
+
+The API repo completed **every P0** (friends, public profile, privacy, pieces/firings/glaze sync, posts/feed/media, reactions, challenges, voting, Hall of Fame) plus **account delete**. Remaining backend work is P1/P2 (RevenueCat webhook, validation/rate-limit, upload hardening, editable identity `PUT /users/me`, OG share page, push tokens). Status below is **🔶 backend-done** until each is re-verified in-app.
+
+**Routes that changed during implementation — FE must adopt:**
+
+| FE doc / client expects | Actual shipped route | Notes |
+|-------------------------|----------------------|-------|
+| `GET /feed` | `GET /users/me/feed` | Public `/feed` not implemented; FE already treats 404 as empty |
+| `POST /posts` | `POST /users/me/posts` | |
+| `DELETE /posts/:id` | `DELETE /posts/:id` | Unchanged; own-post-only |
+| `POST /uploads/presigned` → presigned S3 PUT | `POST /uploads` (server-side multipart) → `{ asset_id, public_url }` | **No presign infra.** FE POSTs the file directly to the API |
+| Challenge `status` field + phase cron | `status` **derived from dates** in API response | open/voting/closed computed from `submission_deadline`/`end_date`; no cron |
+
+**Account delete is soft-delete, not immediate:** `DELETE /users/me` → 204, sets `is_deleted`. ~1-week grace period. During grace, all endpoints return **403 `account_deleted`** except `POST /users/me/revive` (restores account, 200). Deleted users are hidden from others' feeds/friends/leaderboards; deleted challenge winners show as `user_deleted: true`. Hard-purge cron is deferred.
 
 ---
 
@@ -39,12 +57,12 @@
 |------|--------|-------|
 | Login / register / logout | ✅ | Ory flows — Google + email/password verified on device |
 | Password recovery | ✅ | Verified end-to-end (Google + email) — Ory Recovery V2 |
-| Account delete | 🟡 | FE calls `DELETE /users/me`; cascade TBD |
+| Account delete | 🔶 | `DELETE /users/me` → soft-delete + ~1wk grace + `POST /users/me/revive`; cascade via FK. **403 `account_deleted`** during grace |
 | Current user profile | 🔶 | `GET /users/me`, avatar/cover upload |
-| Profile identity edit | ❌ | `PUT /users/me` — name, studio, location, bio; FE saves locally today → [P1-2](./BACKEND-TASKS.md) |
-| Privacy settings | ❌ | `PUT /users/me/privacy` — FE toggles local only |
-| Public profile | ❌ | **Blocks share links** — see BACKEND-TASKS P0-2 |
-| Friends | ❌ | **500 on list** — `cover_url` bug, P0-1 |
+| Profile identity edit | ❌ | `PUT /users/me` — name, studio, location, bio; FE saves locally today → [P1-2](./BACKEND-TASKS.md) (Sprint E, not started) |
+| Privacy settings | 🔶 | `PUT /users/me/privacy` shipped; enforced on public profile (404 when private) |
+| Public profile | 🔶 | `GET /users/:userId/profile` shipped (P0-2); 404 when private/unknown |
+| Friends | 🔶 | **500 fixed** (`cover_url` added to SELECT, P0-1) |
 | Friend requests | 🔶 | FE wired |
 | Studios | 🔶 | Owned/member-of, invites, join requests |
 
@@ -54,14 +72,14 @@
 |------|--------|-------|
 | Pieces CRUD / sync | 🔶 | FE fully wired; offline sync active |
 | Kilns CRUD | 🔶 | FE wired |
-| Firings CRUD | 🔶 | FE wired; **log fields** (peak temp, hold, photo) not in API yet |
-| Piece ↔ glaze link | ❌ | Local only until glaze P0-10 |
+| Firings CRUD | 🔶 | FE wired; **log fields** (`peak_temp_c`, `hold_time_minutes`, `photo_uri`) now round-trip in API (P0-4) |
+| Piece ↔ glaze link | 🔶 | `glaze_id` + `glaze_outcome` now in sync payload + DB (P0-10); validated to same user |
 
 ### Glaze library
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Glaze list / sync push | 🔶 | Many batch/version fields sent but may be ignored server-side |
+| Glaze list / sync push | 🔶 | Batch metadata now persisted server-side (P0-11): `batch_id`, `date_mixed`, `status`, `best_clay_type`, `best_firing_temp_c`, `atmosphere`, `ingredients_text`. Version chain (P1-8) still TBD |
 | Test tiles sync | 🔶 | Partial |
 | Glaze image upload | 🔶 | Endpoint exists; round-trip TBD |
 | Community recipe posts | ❌ | FE embeds HTML comment in caption today |
@@ -71,14 +89,14 @@
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Feed + posts | 🔶 | Text posts work; image upload partial on FE |
-| Reactions | 🔶 | FE wired |
+| Feed + posts | 🔶 | Routes are `GET /users/me/feed`, `POST /users/me/posts`. Image posts work end-to-end via `post_assets` → `assets[]` with public URLs |
+| Reactions | 🔶 | DB-unique `(post_id, user_id)`; count in feed payload (P0-7) |
 | Polls | 🔶 | FE wired |
 | Challenges (basic) | 🔶 | Join/submit/withdraw FE wired |
-| Challenge (tracks + voting) | ❌ | FE uses mock store — see BACKEND-TASKS P0-8/9 |
-| Hall of Fame | ❌ | Needs winner-archive redesign (P1-6) |
-| News | ❌ | Not started |
-| Presigned upload | 🔶 | Required for photo posts |
+| Challenge (tracks + voting) | 🔶 | Shipped (P0-8/9): tracks, idempotent join, submit/withdraw, voting w/ revote + self-vote reject. **Replace FE mock store** |
+| Hall of Fame | 🔶 | Winner-archive shipped (P1-6): `GET /hall-of-fame` cycles + `/hall-of-fame/winners/:id`. Deleted winners → `user_deleted: true` |
+| News | ❌ | Not started (P1-7) |
+| Image upload | 🔶 | **`POST /uploads` (server-side multipart)** → `{ asset_id, public_url }`. No presigned flow |
 
 ### Premium & ops
 
@@ -99,19 +117,19 @@
 1. Local create/update sets `syncDirty`
 2. `useOfflineSync` / `usePiecesSync` pushes snapshots to server
 3. Login reconciliation: push locals without `backendId`, pull missing server rows
-4. **Gap:** `glazeId`, `glazeOutcome` not in payload — see BACKEND-TASKS P0-10
+4. ~~Gap: `glazeId`, `glazeOutcome` not in payload~~ — **resolved (P0-10)**: both now in sync payload + DB, validated to same user
 
 ### Glazes
 
 1. `POST /users/me/glazes/sync` batches glaze + test snapshots
 2. Client refs link tests → glazes across devices
-3. **Gap:** batch metadata, version chain, images may not persist server-side
+3. **Gap (narrowed):** batch metadata now persists (P0-11); version chain (P1-8), images (P1-10) still TBD
 
 ### Kilns & firings
 
 1. Local-first CRUD in `appStore`
 2. `useKilnsSync`, `useFiringsSync` push/pull
-3. **Gap:** firing log fields (`peakTempC`, `holdTimeMinutes`, `firedDate`, `photoUri`, `statusOverride`) local only
+3. **Gap (narrowed):** `peakTempC`, `holdTimeMinutes`, `photoUri` now round-trip (P0-4). `firedDate`/`statusOverride`/`pieceIds` mapping still to confirm on FE
 
 ---
 
@@ -137,7 +155,7 @@ Recipient (app) → GET /users/:userId/profile → grid + Add Clay Friend
 Recipient (no app, V2) → web landing page
 ```
 
-Blocked today by missing public profile endpoint and broken friends list.
+~~Blocked by missing public profile endpoint and broken friends list.~~ Both shipped (P0-1, P0-2) — in-app share grid + Add Clay Friend now have a working API. OG web preview (P1-17) still pending for rich chat unfurls.
 
 ---
 
