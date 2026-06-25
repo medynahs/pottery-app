@@ -1,4 +1,5 @@
 import { Text } from '@/src/components/ui/text';
+import { MODAL_SHEET_BORDER, MODAL_SHEET_SURFACE } from '@/src/components/ModalShell';
 import { Check, FolderPlus } from 'lucide-react-native';
 import React from 'react';
 import {
@@ -67,10 +68,35 @@ export function SaveCollectionSheet({
           activeOpacity={1}
           onPress={onClose}
         />
-        <View className="bg-background rounded-t-3xl">
-          <View className="w-10 h-1 rounded-full bg-border self-center mt-3.5 mb-2.5" />
+        <View
+          style={{
+            backgroundColor: MODAL_SHEET_SURFACE,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            borderTopWidth: 1,
+            borderColor: MODAL_SHEET_BORDER,
+          }}
+        >
+          <View
+            style={{
+              width: 40,
+              height: 4,
+              borderRadius: 999,
+              backgroundColor: MODAL_SHEET_BORDER,
+              alignSelf: 'center',
+              marginTop: 14,
+              marginBottom: 10,
+            }}
+          />
 
-          <View className="px-6 pb-3.5 border-b border-border">
+          <View
+            style={{
+              paddingHorizontal: 24,
+              paddingBottom: 14,
+              borderBottomWidth: 1,
+              borderBottomColor: MODAL_SHEET_BORDER,
+            }}
+          >
             <Text className="text-xl text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
               Save to collection
             </Text>

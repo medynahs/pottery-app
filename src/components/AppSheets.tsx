@@ -98,8 +98,11 @@ export { MODAL_FORM_FOOTER_OFFSET, MODAL_SHEET_FOOTER_HEIGHT, ModalFormScrollVie
 export type { ModalFormScrollViewProps } from '@/src/components/ModalFormScrollView';
 export {
   MODAL_BACKDROP_COLOR,
+  MODAL_SHEET_BORDER,
   MODAL_SHEET_HEIGHT_RATIO,
-  MODAL_SHEET_RADIUS, ModalCard, ModalSheetFooter,
+  MODAL_SHEET_RADIUS,
+  MODAL_SHEET_SURFACE,
+  ModalCard, ModalSheetFooter,
   ModalSheetHeader, ModalShell, useModalSheetHeight
 } from '@/src/components/ModalShell';
 export type { ModalCardProps, ModalShellProps } from '@/src/components/ModalShell';

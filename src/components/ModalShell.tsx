@@ -18,6 +18,9 @@ import {
 export const MODAL_BACKDROP_COLOR = 'rgba(22,14,10,0.52)';
 export const MODAL_SHEET_RADIUS = 32;
 export const MODAL_SHEET_HEIGHT_RATIO = 0.92;
+/** Opaque sheet surface — NativeWind `bg-background` does not paint inside RN Modal. */
+export const MODAL_SHEET_SURFACE = '#FFFBF2';
+export const MODAL_SHEET_BORDER = '#E8D9BE';
 
 export function useModalSheetHeight(ratio = MODAL_SHEET_HEIGHT_RATIO) {
   const { height } = useWindowDimensions();
@@ -203,7 +206,15 @@ export function ModalSheetHeader({ children }: { children: React.ReactNode }) {
   const pan = React.useContext(ModalSheetPanContext);
 
   return (
-    <View className="border-b border-border shrink-0" {...(pan?.panHandlers ?? {})}>
+    <View
+      style={{
+        borderBottomWidth: 1,
+        borderBottomColor: MODAL_SHEET_BORDER,
+        backgroundColor: MODAL_SHEET_SURFACE,
+        flexShrink: 0,
+      }}
+      {...(pan?.panHandlers ?? {})}
+    >
       <View style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 4 }}>
         <View className="w-10 h-1.5 bg-muted rounded-full" />
       </View>
@@ -228,7 +239,17 @@ export function ModalSheetHeader({ children }: { children: React.ReactNode }) {
 export function ModalSheetFooter({ children }: { children: React.ReactNode }) {
   return (
     <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
-      <View className="px-6 pt-4 pb-8 border-t border-border shrink-0 bg-background">
+      <View
+        style={{
+          paddingHorizontal: 24,
+          paddingTop: 16,
+          paddingBottom: 32,
+          borderTopWidth: 1,
+          borderTopColor: MODAL_SHEET_BORDER,
+          backgroundColor: MODAL_SHEET_SURFACE,
+          flexShrink: 0,
+        }}
+      >
         {children}
       </View>
     </KeyboardStickyView>
@@ -245,6 +266,7 @@ export function ModalCard({
   backgroundColor,
 }: ModalCardProps) {
   const topRadius = radius ?? (variant === 'pottery' ? 28 : MODAL_SHEET_RADIUS);
+  const surfaceColor = backgroundColor ?? MODAL_SHEET_SURFACE;
   const shellStyle = {
     maxHeight,
     height,
@@ -254,31 +276,14 @@ export function ModalCard({
     overflow: 'hidden' as const,
   };
 
-  if (variant === 'pottery') {
-    return (
-      <View
-        style={{
-          borderTopLeftRadius: topRadius,
-          borderTopRightRadius: topRadius,
-          backgroundColor: '#FFFBF2',
-          borderTopWidth: 1,
-          borderColor: '#E8D9BE',
-          ...shellStyle,
-        }}
-      >
-        {withHandle ? <ModalDragHandle /> : null}
-        {children}
-      </View>
-    );
-  }
-
   return (
     <View
-      className={backgroundColor ? undefined : 'bg-background'}
       style={{
         borderTopLeftRadius: topRadius,
         borderTopRightRadius: topRadius,
-        backgroundColor: backgroundColor ?? undefined,
+        backgroundColor: surfaceColor,
+        borderTopWidth: 1,
+        borderColor: MODAL_SHEET_BORDER,
         ...shellStyle,
       }}
     >

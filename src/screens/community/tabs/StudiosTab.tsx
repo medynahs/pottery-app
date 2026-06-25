@@ -1,6 +1,7 @@
 // src/screens/community/tabs/StudiosTab.tsx
 import { EmptyState } from '@/src/components/EmptyState';
 import { InlineErrorCard } from '@/src/components/InlineErrorCard';
+import { MODAL_SHEET_BORDER, MODAL_SHEET_SURFACE } from '@/src/components/ModalShell';
 import { CollapsibleSection } from '@/src/components/SectionHeader';
 import { SkeletonStudioCard } from '@/src/components/Skeleton';
 import { Card } from '@/src/components/ui/card';
@@ -344,7 +345,19 @@ function CreateStudioModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-black/40">
-        <View className="bg-background rounded-t-3xl px-6 pt-5 pb-10 gap-4">
+        <View
+          style={{
+            backgroundColor: MODAL_SHEET_SURFACE,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            borderTopWidth: 1,
+            borderColor: MODAL_SHEET_BORDER,
+            paddingHorizontal: 24,
+            paddingTop: 20,
+            paddingBottom: 40,
+            gap: 16,
+          }}
+        >
           <View className="flex-row items-center justify-between mb-1">
             <Text className="text-lg font-bold text-foreground">New studio</Text>
             <TouchableOpacity onPress={onClose} className="w-8 h-8 items-center justify-center" activeOpacity={0.7}>
