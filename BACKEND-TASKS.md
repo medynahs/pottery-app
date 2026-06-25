@@ -9,7 +9,7 @@
 
 ---
 
-## ✅ Done on backend (Jun 25) — all P0 + account delete
+## ✅ Done on backend (Jun 25) — all P0 + nearly all P1/P2
 
 | Task | Status |
 |------|--------|
@@ -17,7 +17,7 @@
 | P0-3 Pieces sync · P0-4 Firing log fields · P0-10 Piece↔glaze · P0-11 Glaze batch | ✅ shipped |
 | P0-6 Post/feed/media · P0-7 Reactions · P0-8 Challenge lifecycle · P0-9 Voting · P1-6 Hall of Fame | ✅ shipped |
 | P0-5 Account delete (soft-delete + grace + revive) | ✅ shipped |
-| P1-2 Editable identity · P1-13 RevenueCat · P1-15 Validation · P1-16 Upload hardening · P1-17 OG page · P1-14 Push tokens | ❌ remaining |
+| P1-2 Editable identity · P1-13 RevenueCat · P1-15 Validation · P1-16 Upload hardening · P1-17 OG page · P2-1 Universal Links · P1-14 Push tokens | ✅ shipped |
 
 **FE must adopt these route changes** (shipped differently than this doc originally specified):
 
@@ -55,7 +55,7 @@ Ship soon after first beta if the feature is visible in the UI.
 |------|-------------|----|----|
 | Pieces / kiln / glaze basic sync | Reinstall or second device loses studio data | P0-3, P0-4 (basic fields) | Wired |
 | Friends list 500 | Clay Friends always empty | ✅ **P0-1** done | — |
-| Profile text fields (name, studio, location, bio) | Edits lost on reinstall | **P1-2** | #91 wire `PUT /users/me` |
+| Profile text fields (name, studio, location, bio) | Edits lost on reinstall | ✅ **P1-2** done | #91 wire `PUT /users/me` |
 | Image post upload | Community feels broken | P0-6 presigned | #24 upload flow |
 | Firing log fields | Kiln journal incomplete cross-device | **P0-4** log fields | Kiln tab phase 7 |
 | Piece ↔ glaze link | Glaze outcomes lost on new device | **P0-10** | — |
@@ -74,21 +74,21 @@ Do not submit until these pass. App Review or marketing accuracy will fail other
 | Privacy toggles enforced server-side | `profile_public` must gate public profile (404 when private) | ✅ **P1-3** done (FE wiring #14 pending) | #14 |
 | Real community OR hide mock UI | V1 decision: real UGC backend; mock gallery/voting is misleading | **P0-8, P0-9, P1-6** | Remove `src/screens/community/mock/` |
 | Cross-device core sync | Auth landing promises "Cloud backup" / "Sync across devices" | P0-3, P0-4, P0-10, P0-11 | Wired |
-| Premium purchase + entitlement | IAP must unlock paid features reliably | **P1-13** webhook | #61–64 gates |
-| Profile identity on server | Name/studio/bio on shared public profile | **P1-2** | #91 |
+| Premium purchase + entitlement | IAP must unlock paid features reliably | ✅ **P1-13** webhook done (entitlement still read from device SDK) | #61–64 gates |
+| Profile identity on server | Name/studio/bio on shared public profile | ✅ **P1-2** done | #91 |
 | Friends list + friend requests | Social features advertised on auth gate | ✅ **P0-1** done, friend APIs | — |
 
 ### App Store — should fix (polish / conversion)
 
 | Item | Why | BE | FE |
 |------|-----|----|----|
-| OG share preview page | WhatsApp/iMessage shares look broken without unfurl | **P1-17** | Optional env only |
-| Universal Links | Tap shared link opens app when installed | P2-1 | Deep link verify |
+| OG share preview page | WhatsApp/iMessage shares look broken without unfurl | ✅ **P1-17** done | Optional env only |
+| Universal Links | Tap shared link opens app when installed | ✅ **P2-1** done (set env + Expo config) | Deep link verify |
 | Glaze version chain + images + test tiles | Full atlas fidelity across devices | P1-8, P1-9, P1-10 | — |
 | Structured glaze recipe posts | Feed stops parsing HTML comment blocks | P1-11 | — |
-| Push token storage + challenge deadline push | Notification permission with no delivery | P1-14, P2-6 | #86 |
-| RevenueCat webhook + server glaze count | Free-tier enforcement can't rely on client only | P1-13, P2-5 | #65 |
-| Input validation + upload hardening | Production security baseline | P1-15, P1-16 | — |
+| Push token storage + challenge deadline push | Notification permission with no delivery | ✅ **P1-14** storage done (deadline push P2-6 pending) | #86 |
+| RevenueCat webhook + server glaze count | Free-tier enforcement can't rely on client only | ✅ **P1-13** webhook done (server glaze count P2-5 pending) | #65 |
+| Input validation + upload hardening | Production security baseline | ✅ **P1-15, P1-16** done | — |
 | PostHog / no PII in logs | Ops + compliance | — | #47–48, #78 |
 
 ### App Store — explicitly deferrable (V1.1+)
@@ -297,7 +297,9 @@ Recovery flow on submit. Email sent. Session invalidated on success.
 
 ---
 
-### P1-2 · Profile — Editable identity (name, studio, location, bio)
+### P1-2 · Profile — Editable identity (name, studio, location, bio) — ✅ DONE (BE)
+
+**Shipped:** `PUT /users/me` (`UpdateMe`) — partial update, omitted fields unchanged. Validation matches the contract below: `name` trimmed 1–80 (reject empty/oversize), `studio_name`/`location` max 120, `bio` max 500, empty string clears to null. Returns the full updated user. Migration added `studio_name`/`location`/`bio`; `GET /users/me` and public profile (P0-2) return them. **FE gap:** wire `updateProfile()` from `EditProfileModal` (#91) — still local-only today.
 
 **FE today:** `EditProfileModal` saves `name`, `studioName`, `location`, and `bio` to **local Zustand only**. Avatar/cover upload calls BE; text fields do not. `useCurrentUser` pulls `name` from `GET /users/me` but not studio/location/bio.
 
@@ -472,33 +474,35 @@ Optional `source_discover_recipe_id` for Discover saves.
 
 ---
 
-### P1-13 · Premium — RevenueCat webhook
+### P1-13 · Premium — RevenueCat webhook — ✅ DONE
 
-`POST /webhooks/revenuecat` — INITIAL_PURCHASE, RENEWAL, CANCELLATION, EXPIRATION. Updates `users.isPremium`, `premiumExpiresAt`.
-
----
-
-### P1-14 · Notifications — Push token storage
-
-`POST /users/me/push-tokens` — multiple devices, platform, dedupe, rotation.
-
-**FE gap:** #86 in FRONTEND.md
+`POST /webhooks/revenuecat` shipped — secret-verified (`REVENUECAT_WEBHOOK_SECRET`), rate-limited 10/min. Records subscription events server-side. Note: the `subscriptions` table is write-only — premium entitlement is still read from the RevenueCat SDK on device; no API exposes the active tier.
 
 ---
 
-### P1-15 · Security — Validation & rate limiting
+### P1-14 · Notifications — Push token storage — ✅ DONE (BE)
 
-Zod (or equivalent) on all endpoints. Body size limits on POST. Auth endpoints rate-limited (~10/min/IP).
+`POST /users/me/push-tokens` shipped → `{ token, platform }` (platform `ios`|`android`), returns 204. Token is globally unique; re-register upserts (`ON CONFLICT (token)`) and reassigns to the current user — covers dedupe + rotation. A user may register multiple device tokens. Cascade-deletes with the user.
 
----
-
-### P1-16 · Security — Media upload hardening
-
-Authenticated only; type whitelist; 10MB server-side; UUID filenames; no public-write bucket.
+**FE gap:** #86 in FRONTEND.md — not sending tokens yet.
 
 ---
 
-### P1-17 · Profile — Share link preview (Open Graph web page)
+### P1-15 · Security — Validation & rate limiting — ✅ DONE
+
+Global limiter (1000/min) + tighter per-route limits (e.g. webhook 10/min). Request bodies validated in-handler (typed structs + length/enum checks); image uploads capped at 10MB with byte-sniff validation. Go-side typed enums (`Valid()`) enforce allowed values, not DB CHECK constraints.
+
+---
+
+### P1-16 · Security — Media upload hardening — ✅ DONE
+
+Authenticated only; image type whitelist + byte-sniff validation (`util.ReadImageUpload`); 10MB server-side cap; UUID object keys via `BuildObjectKey`/`SanitizePathSegment`; code sets no bucket ACLs.
+
+---
+
+### P1-17 · Profile — Share link preview (Open Graph web page) — ✅ DONE
+
+**Shipped:** `GET /user/:userId` (`ServeUserOGPage`) serves server-rendered HTML — no auth, 404 on private/missing (same rules as P0-2). Emits `og:title`/`description`/`image`/`url`/`type`/`site_name` + `twitter:*` tags, image falls back cover → avatar → newest post → logo, plus a human body with grid + store CTA. **FE:** no change needed; optional `EXPO_PUBLIC_PROFILE_WEB_URL` override.
 
 **Why:** WhatsApp, iMessage, Slack, etc. only show image + title cards when the shared **https** URL returns Open Graph meta tags. FE already shares one clean link; without this page, shares stay plain text.
 
@@ -550,7 +554,9 @@ Authenticated only; type whitelist; 10MB server-side; UUID filenames; no public-
 
 ## P2 — Phase 2 & polish
 
-### P2-1 · Profile — Universal Links / App Links
+### P2-1 · Profile — Universal Links / App Links — ✅ DONE (BE)
+
+**Shipped:** `GET /.well-known/apple-app-site-association` and `GET /.well-known/assetlinks.json` — public, no redirect, `Content-Type: application/json`. iOS components path `/user/*` with appID from `APPLE_APP_ID` env; Android package `com.ariane.potterylife` with fingerprint from `ANDROID_SHA256_FINGERPRINT` env. **Set both env vars in prod** (placeholders today) and add the Expo `associatedDomains` / `intentFilters` config before tap-to-open resolves.
 
 **Depends on:** P1-17 (same URL `https://potterynook.app/user/:userId`).
 
@@ -723,9 +729,9 @@ Single map of **what the app collects or displays today** vs **what the backend 
 
 | Data | FE location | Status | BE task | Notes |
 |------|-------------|--------|---------|-------|
-| RevenueCat entitlement (device) | `useEntitlements()`, `checkPremium()` | **Local SDK** | P1-13 | Webhook not verified — server `isPremium` may drift |
+| RevenueCat entitlement (device) | `useEntitlements()`, `checkPremium()` | **Local SDK** | P1-13 ✅ | Webhook shipped (records events); entitlement still read from device SDK — no API exposes tier |
 | Photo / analytics / companion swap gates | Various | **FE gap** | P1-13, P2-5 | Gates not wired (#61–64) |
-| Push tokens | Settings toggle | **Local only** | P1-14 | #86 not sending tokens |
+| Push tokens | Settings toggle | **FE gap** | P1-14 ✅ | BE `POST /users/me/push-tokens` shipped; #86 not sending tokens yet |
 | Challenge deadline push | — | **Missing** | P2-6 | Depends on P1-14 |
 | Local kiln/drying/studio-rhythm notifications | `notificationMessages.ts` | **Local only** | — | No server; OK for V1 |
 
@@ -752,15 +758,16 @@ Aligns with [Recommended implementation order](#recommended-implementation-order
 |--------|------|----------|-----------|
 | DELETE | `/users/me` | ✅ P0-5 | Account settings — soft-delete + grace |
 | POST | `/users/me/revive` | ✅ P0-5 | Restore during grace (handle 403 `account_deleted`) |
-| GET | `/users/me` | P1-2 | `fetchMe()` — extend with studio/location/bio |
-| PUT | `/users/me` | **P1-2 missing** | Not wired — `EditProfileModal` local only |
+| GET | `/users/me` | ✅ P1-2 | `fetchMe()` — extend with studio/location/bio |
+| PUT | `/users/me` | ✅ P1-2 | Identity edit shipped; FE not wired yet — `EditProfileModal` local only (#91) |
 | POST | `/users/me/cover` | ✅ P1-2b | `uploadCover()` |
 | POST | `/users/me/avatar` | ✅ P1-2b | `uploadAvatar()` |
 | PUT | `/users/me/privacy` | ✅ P1-3 | Not wired (#14) — toggles local only |
 | GET | `/users/me/friends` | ✅ P0-1 | `apiListFriends()` — 500 fixed |
-| POST | `/users/me/friends/requests` | P1 | `apiSendFriendRequest()` |
+| POST | `/users/me/friends/requests` | ✅ P1 | `apiSendFriendRequest()` |
 | GET | `/users/:userId/profile` | ✅ P0-2 | `apiGetPublicProfile()` |
-| GET | `https://potterynook.app/user/:id` | **P1-17 missing** | Share / OG preview (web, not JSON API) |
+| GET | `/user/:id` | ✅ P1-17 | Share / OG preview — server-rendered HTML (web, not JSON API) |
+| GET | `/.well-known/apple-app-site-association` · `/.well-known/assetlinks.json` | ✅ P2-1 | Universal Links / App Links (set env vars in prod) |
 | POST | `/users/me/pieces/sync` | ✅ P0-3 | `src/services/pieces.ts` |
 | GET/POST | `/kilns`, `/firings` | ✅ P0-4 | `src/services/kilns.ts` — log fields round-trip |
 | GET | `/users/me/feed` | ✅ P0-6 | Community feed (was `/feed`) |
@@ -773,9 +780,9 @@ Aligns with [Recommended implementation order](#recommended-implementation-order
 | GET | `/hall-of-fame` | ✅ P1-6 | Hall of Fame tab; `/hall-of-fame/winners/:id` for deep links |
 | GET/POST | `/polls` | P1-5 | Poll voting |
 | GET | `/news` | P1-7 | News cards |
-| POST | `/webhooks/revenuecat` | P1-13 | — |
-| POST | `/users/me/push-tokens` | P1-14 | Not wired |
-| GET/POST | `/users/me/glazes/sync` | P0-10/11 | `src/services/glazes.ts` |
+| POST | `/webhooks/revenuecat` | ✅ P1-13 | Secret-verified, rate-limited 10/min |
+| POST | `/users/me/push-tokens` | ✅ P1-14 | `{token, platform}` → 204; upsert dedupe/rotation. FE not wired (#86) |
+| GET/POST | `/users/me/glazes/sync` | ✅ P0-10/11 | `src/services/glazes.ts` |
 
 ---
 
