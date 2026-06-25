@@ -5,6 +5,8 @@
 **Last updated:** June 24, 2026  
 **Companion docs:** [`BACKEND.md`](./BACKEND.md) (overview + API surface) · [`FRONTEND.md`](./FRONTEND.md) (FE tickets + roadmaps)
 
+**✅ Sprint A complete (BE):** P0-1 (friends `cover_url`), P0-2 (public profile), P1-2b (avatar/cover media), P1-3 (privacy toggles + enforcement). FE wiring for privacy toggles (#14) still pending.
+
 ---
 
 ## Release readiness — TestFlight vs App Store
@@ -21,7 +23,7 @@ Fix before sending builds to testers.
 | Core tab crashes (Overview, Pieces, Kiln, Glaze Atlas) | Instant uninstall | — | Stability pass |
 | Production EAS build + OTA channel | Can't distribute | Deploy pipeline | `eas update` verified |
 | Account delete call doesn't hard-crash | Apple expects deletion path even in beta | P0-5 (cascade can be incomplete if 204 returned) | #5 wired |
-| Graceful API failure | Broken endpoints shouldn't white-screen tabs | P0-1 friends 500 | #89 shows 0 friends on failure |
+| Graceful API failure | Broken endpoints shouldn't white-screen tabs | ✅ P0-1 friends 500 fixed | #89 shows 0 friends on failure |
 
 **Not TestFlight blockers (release builds):** `reopenGeneralOnboarding()` in `app/index.tsx` runs only under `__DEV__` — production/TestFlight builds are unaffected (#1 in FRONTEND.md).
 
@@ -32,7 +34,7 @@ Ship soon after first beta if the feature is visible in the UI.
 | Item | User impact | BE | FE |
 |------|-------------|----|----|
 | Pieces / kiln / glaze basic sync | Reinstall or second device loses studio data | P0-3, P0-4 (basic fields) | Wired |
-| Friends list 500 | Clay Friends always empty | **P0-1** | — |
+| Friends list 500 | Clay Friends always empty | ✅ **P0-1** done | — |
 | Profile text fields (name, studio, location, bio) | Edits lost on reinstall | **P1-2** | #91 wire `PUT /users/me` |
 | Image post upload | Community feels broken | P0-6 presigned | #24 upload flow |
 | Firing log fields | Kiln journal incomplete cross-device | **P0-4** log fields | Kiln tab phase 7 |
@@ -48,13 +50,13 @@ Do not submit until these pass. App Review or marketing accuracy will fail other
 | Account deletion end-to-end | Required by Apple; must cascade user data | **P0-5** + P2-8 | #5 |
 | Privacy policy URL live | App Store Connect + in-app link | — | #42 |
 | Password recovery | Expected for email/password accounts | ✅ **P1-1** verified (Google + email) | #4 |
-| Public profile API | Share button copies `potterynook.app/user/{id}` — must resolve | **P0-2** | Route exists |
-| Privacy toggles enforced server-side | `profile_public` must gate public profile (404 when private) | **P1-3** | #14 |
+| Public profile API | Share button copies `potterynook.app/user/{id}` — must resolve | ✅ **P0-2** done | Route exists |
+| Privacy toggles enforced server-side | `profile_public` must gate public profile (404 when private) | ✅ **P1-3** done (FE wiring #14 pending) | #14 |
 | Real community OR hide mock UI | V1 decision: real UGC backend; mock gallery/voting is misleading | **P0-8, P0-9, P1-6** | Remove `src/screens/community/mock/` |
 | Cross-device core sync | Auth landing promises "Cloud backup" / "Sync across devices" | P0-3, P0-4, P0-10, P0-11 | Wired |
 | Premium purchase + entitlement | IAP must unlock paid features reliably | **P1-13** webhook | #61–64 gates |
 | Profile identity on server | Name/studio/bio on shared public profile | **P1-2** | #91 |
-| Friends list + friend requests | Social features advertised on auth gate | **P0-1**, friend APIs | — |
+| Friends list + friend requests | Social features advertised on auth gate | ✅ **P0-1** done, friend APIs | — |
 
 ### App Store — should fix (polish / conversion)
 
@@ -118,7 +120,7 @@ App Store ready     → everything above + sync survives reinstall + public prof
 
 ## P0 — Blockers & critical path
 
-### P0-1 · Profile — Friends list 500 (`cover_url`)
+### P0-1 · Profile — Friends list 500 (`cover_url`) — ✅ Done (Sprint A)
 
 **Observed:** `GET /users/me/friends` returns 500 — **cannot find field cover_url**.
 
@@ -134,7 +136,7 @@ App Store ready     → everything above + sync survives reinstall + public prof
 
 ---
 
-### P0-2 · Profile — Public profile (`GET /users/:userId/profile`)
+### P0-2 · Profile — Public profile (`GET /users/:userId/profile`) — ✅ Done (Sprint A)
 
 **FE shipped.** Share copies a single web URL: `https://potterynook.app/user/{id}` (see `profileLinks.ts`, `profileShareActions.ts`). In-app route: `app/user/[id].tsx`. Rich chat previews require **P1-17** (OG web page).
 
@@ -160,11 +162,13 @@ Posts accept flat `{ id, image_url, created_at, reaction_count }` or nested `ass
 
 ---
 
-### P0-3 · Core — Pieces REST API
+### P0-3 · Core — Pieces REST API ✅ Sprint B
 
 `GET/POST/PUT/DELETE /pieces` (or `/users/me/pieces/sync`). Authenticated. All fields from `src/types/pieces.ts`.
 
 **FE wired:** `src/services/pieces.ts`, `useOfflineSync`
+
+**Status:** Deployed + verified. `POST /users/me/pieces/sync` returns full `pieces[]` + `client_ref_map`; idempotent upsert keyed on `(user_id, client_ref)`; `deleted:true` soft-deletes (gone from `pieces[]`, kept in map). Payload extend (journal/pricing/glaze link) tracked separately in B3/P0-10.
 
 ---
 
@@ -350,7 +354,7 @@ Add to existing `BackendProfile` contract in `src/services/api.ts`:
 
 ---
 
-### P1-2b · Profile — Media (avatar + cover)
+### P1-2b · Profile — Media (avatar + cover) — ✅ Done (Sprint A)
 
 | Task | Notes |
 |------|-------|
@@ -362,13 +366,13 @@ Add to existing `BackendProfile` contract in `src/services/api.ts`:
 
 ---
 
-### P1-3 · Profile — Privacy sync
+### P1-3 · Profile — Privacy sync — ✅ Done (Sprint A)
 
-`PUT /users/me/privacy` — `profile_public`, `pieces_public`, analytics opt-in.
+`PUT /users/me/privacy` — `profile_public`, `pieces_public`. (Analytics opt-in not persisted server-side yet.)
 
-Enforce on `GET /users/:userId/profile` → 404 when private.
+Enforce on `GET /users/:userId/profile` → 404 when `profile_public=false`; `pieces_public=false` hides the posts array.
 
-**FE gap:** toggles local only (#14 in FRONTEND.md)
+**BE shipped Sprint A.** **FE gap:** toggles still local only — wire `PUT /users/me/privacy` (#14 in FRONTEND.md).
 
 ---
 
@@ -610,13 +614,13 @@ Single map of **what the app collects or displays today** vs **what the backend 
 |------|-------------|--------|---------|-------|
 | `name` | `EditProfileModal`, `useCurrentUser` | **Partial** | P1-2 | `GET /users/me` may return name; **save is Zustand only** — no `PUT /users/me` |
 | `studio_name`, `location`, `bio` | `EditProfileModal`, `appStore.user` | **Local only** | P1-2 | Not on `GET /users/me` response today |
-| `avatar_url` | `uploadAvatar()` | **Synced** | P1-2b | Works when BE deployed |
-| `cover_url` | `uploadCover()` | **Partial** | P1-2b, **P0-1** | Upload may work; **friends list 500** if column missing |
-| `profile_public`, `pieces_public` | `PrivacySettingsScreen`, `privacyPrefs` | **Local only** | P1-3 | Toggles persist locally only (#14) |
+| `avatar_url` | `uploadAvatar()` | **Synced** | P1-2b ✅ | Works when BE deployed |
+| `cover_url` | `uploadCover()` | **Synced** | P1-2b ✅, **P0-1** ✅ | `cover_url` column shipped; friends list 500 fixed |
+| `profile_public`, `pieces_public` | `PrivacySettingsScreen`, `privacyPrefs` | **Local only** | P1-3 ✅ (BE) | BE shipped `PUT /users/me/privacy` + enforcement; FE toggles still local (#14) |
 | `analyticsEnabled`, `personalizedSuggestions` | `PrivacySettingsScreen` | **Local only** | P1-3 (optional) | Not in BE contract yet |
-| Public profile grid (posts, counts) | `PublicUserProfileScreen`, share URLs | **Mock/ blocked** | **P0-2** | Route shipped; API missing → share link empty |
+| Public profile grid (posts, counts) | `PublicUserProfileScreen`, share URLs | **Synced** | **P0-2** ✅ | `GET /users/:userId/profile` shipped Sprint A |
 | OG / web preview | Share to WhatsApp/iMessage | **Missing** | P1-17 | Plain-text shares until HTML page ships |
-| Clay friends list | `friends.ts`, `ProfileHeader` | **Broken** | **P0-1** | 500 on `GET /users/me/friends` |
+| Clay friends list | `friends.ts`, `ProfileHeader` | **Synced** | **P0-1** ✅ | `cover_url` fix shipped; list returns 200 |
 | Friend requests | `friends.ts` | **FE wired** | — | Blocked by friends list / public profile |
 | Studios (owned, member-of, invites) | `studios.ts`, `StudiosTab` | **FE wired** | P1-4 | Deployment not verified from mobile repo |
 
@@ -730,12 +734,12 @@ Aligns with [Recommended implementation order](#recommended-implementation-order
 | DELETE | `/users/me` | P0-5 | Account settings |
 | GET | `/users/me` | P1-2 | `fetchMe()` — extend with studio/location/bio |
 | PUT | `/users/me` | **P1-2 missing** | Not wired — `EditProfileModal` local only |
-| POST | `/users/me/cover` | P1-2b | `uploadCover()` |
-| POST | `/users/me/avatar` | P1-2b | `uploadAvatar()` |
-| PUT | `/users/me/privacy` | P1-3 | Not wired |
-| GET | `/users/me/friends` | **P0-1 bug** | `apiListFriends()` |
+| POST | `/users/me/cover` | ✅ P1-2b | `uploadCover()` |
+| POST | `/users/me/avatar` | ✅ P1-2b | `uploadAvatar()` |
+| PUT | `/users/me/privacy` | ✅ P1-3 (BE) | FE not wired (#14) |
+| GET | `/users/me/friends` | ✅ P0-1 fixed | `apiListFriends()` |
 | POST | `/users/me/friends/requests` | P1 | `apiSendFriendRequest()` |
-| GET | `/users/:userId/profile` | **P0-2 missing** | `apiGetPublicProfile()` |
+| GET | `/users/:userId/profile` | ✅ P0-2 shipped | `apiGetPublicProfile()` |
 | GET | `https://potterynook.app/user/:id` | **P1-17 missing** | Share / OG preview (web, not JSON API) |
 | GET/POST | `/pieces` or sync | P0-3 | `src/services/pieces.ts` |
 | GET/POST | `/kilns`, `/firings` | P0-4 | `src/services/kilns.ts` |
