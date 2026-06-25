@@ -16,6 +16,9 @@ export interface BackendProfile {
   name: string | null;
   avatar_url: string | null;
   cover_url: string | null;
+  studio_name: string | null;
+  location: string | null;
+  bio: string | null;
   role: string;
   created_at: string;
   updated_at: string;
@@ -94,6 +97,69 @@ export async function uploadCover(
   mimeType = 'image/jpeg',
 ): Promise<BackendProfile> {
   return uploadUserImage('cover', sessionToken, imageUri, mimeType);
+}
+
+export interface UpdateMePayload {
+  name?: string;
+  studio_name?: string;
+  location?: string;
+  bio?: string;
+}
+
+export async function updateMe(
+  sessionToken: string,
+  payload: UpdateMePayload,
+): Promise<BackendProfile> {
+  const res = await fetch(`${API_BASE}/users/me`, {
+    method: 'PUT',
+    credentials: 'omit',
+    headers: { 'X-Session-Token': sessionToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new ApiError(`updateMe failed (${res.status})`, res.status);
+  return res.json() as Promise<BackendProfile>;
+}
+
+export interface UpdatePrivacyPayload {
+  profile_public?: boolean;
+  pieces_public?: boolean;
+}
+
+export async function updatePrivacy(
+  sessionToken: string,
+  payload: UpdatePrivacyPayload,
+): Promise<BackendProfile> {
+  const res = await fetch(`${API_BASE}/users/me/privacy`, {
+    method: 'PUT',
+    credentials: 'omit',
+    headers: { 'X-Session-Token': sessionToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new ApiError(`updatePrivacy failed (${res.status})`, res.status);
+  return res.json() as Promise<BackendProfile>;
+}
+
+export async function registerPushToken(
+  sessionToken: string,
+  token: string,
+  platform: 'ios' | 'android',
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/users/me/push-tokens`, {
+    method: 'POST',
+    credentials: 'omit',
+    headers: { 'X-Session-Token': sessionToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, platform }),
+  });
+  if (!res.ok) throw new ApiError(`registerPushToken failed (${res.status})`, res.status);
+}
+
+export async function reviveAccount(sessionToken: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/users/me/revive`, {
+    method: 'POST',
+    credentials: 'omit',
+    headers: { 'X-Session-Token': sessionToken },
+  });
+  if (!res.ok) throw new ApiError(`reviveAccount failed (${res.status})`, res.status);
 }
 
 

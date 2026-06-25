@@ -29,11 +29,11 @@ export interface BackendChallengeWinner {
 
 export interface BackendChallenge {
   id: string;
-  title: string;
+  name: string;
   description: string;
   status?: ChallengeStatus | null;
-  starts_at?: string | null;
-  ends_at?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
   submission_deadline?: string | null;
   voting_ends_at?: string | null;
   winners_display_until?: string | null;
@@ -43,6 +43,7 @@ export interface BackendChallenge {
   participant_count?: number;
   tracks?: BackendChallengeTrack[];
   winners?: BackendChallengeWinner[];
+  hero_image_url?: string | null;
   /** Join state — returned on challenge detail or list when authenticated. */
   is_joined?: boolean;
   track_id?: string | null;
@@ -116,12 +117,19 @@ export async function apiListChallenges(
 ): Promise<BackendChallenge[]> {
   const res = await authedFetch(sessionToken, `${API_BASE}/challenges`);
   if (!res.ok) {
+    console.warn(`[challenges] GET /challenges -> HTTP ${res.status}`);
     throw new Error(`GET /challenges -> ${res.status}`);
   }
   const data = await toJsonOrNull<BackendChallenge[] | { items?: BackendChallenge[] }>(res);
-  if (!data) return [];
-  if (Array.isArray(data)) return data;
-  return data.items ?? [];
+  if (!data) {
+    console.warn('[challenges] GET /challenges -> 200 but response body was empty/unparseable');
+    return [];
+  }
+  const items = Array.isArray(data) ? data : (data.items ?? []);
+  if (items.length === 0) {
+    console.warn('[challenges] GET /challenges -> 200 but list is empty (no active challenges in DB)');
+  }
+  return items;
 }
 
 /** GET /challenges/{id} */
