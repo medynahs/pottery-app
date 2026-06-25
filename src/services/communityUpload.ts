@@ -1,10 +1,9 @@
 import { API_BASE_URL as API_BASE } from './index';
 
-type PresignedUploadResponse = {
+type UploadAssetResponse = {
   asset_id: string;
-  upload_url: string;
-  public_url?: string;
   url?: string;
+  public_url?: string;
 };
 
 function guessMimeType(uri: string): string {
@@ -22,7 +21,7 @@ function fileNameFromUri(uri: string, mime: string): string {
 }
 
 /**
- * Upload a local image for a community post via presigned URL.
+ * Upload a local image for a community post via multipart POST /uploads.
  * Returns null when the upload endpoint is unavailable (text-only fallback).
  */
 export async function uploadPostPhotoAsset(
@@ -34,44 +33,34 @@ export async function uploadPostPhotoAsset(
   }
 
   const contentType = guessMimeType(localUri);
-  const presignRes = await fetch(`${API_BASE}/uploads/presigned`, {
+  const form = new FormData();
+  form.append('file', {
+    uri: localUri,
+    name: fileNameFromUri(localUri, contentType),
+    type: contentType,
+  } as unknown as Blob);
+
+  const res = await fetch(`${API_BASE}/uploads`, {
     method: 'POST',
     credentials: 'omit',
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/json',
       'X-Session-Token': sessionToken,
     },
-    body: JSON.stringify({
-      content_type: contentType,
-      filename: fileNameFromUri(localUri, contentType),
-    }),
+    body: form as unknown as BodyInit_,
   });
 
-  if (!presignRes.ok) {
+  if (!res.ok) {
     return null;
   }
 
-  const presigned = (await presignRes.json()) as PresignedUploadResponse;
-  if (!presigned.asset_id || !presigned.upload_url) {
+  const data = (await res.json()) as UploadAssetResponse;
+  if (!data.asset_id) {
     return null;
-  }
-
-  const fileRes = await fetch(localUri);
-  const blob = await fileRes.blob();
-
-  const uploadRes = await fetch(presigned.upload_url, {
-    method: 'PUT',
-    headers: { 'Content-Type': contentType },
-    body: blob,
-  });
-
-  if (!uploadRes.ok) {
-    throw new Error(`Photo upload failed (${uploadRes.status})`);
   }
 
   return {
-    assetId: presigned.asset_id,
-    publicUrl: presigned.public_url ?? presigned.url,
+    assetId: data.asset_id,
+    publicUrl: data.public_url ?? data.url,
   };
 }

@@ -2,10 +2,30 @@
 
 **Purpose:** Single prioritized backlog for all API, sync, and server-side work. The mobile app repo tracks FE wiring here; deployment is verified separately.
 
-**Last updated:** June 24, 2026  
+**Last updated:** June 25, 2026  
 **Companion docs:** [`BACKEND.md`](./BACKEND.md) (overview + API surface) · [`FRONTEND.md`](./FRONTEND.md) (FE tickets + roadmaps)
 
 **✅ Sprint A complete (BE):** P0-1 (friends `cover_url`), P0-2 (public profile), P1-2b (avatar/cover media), P1-3 (privacy toggles + enforcement). FE wiring for privacy toggles (#14) still pending.
+
+---
+
+## ✅ Done on backend (Jun 25) — all P0 + account delete
+
+| Task | Status |
+|------|--------|
+| P0-1 Friends 500 · P0-2 Public profile · P1-3 Privacy | ✅ shipped |
+| P0-3 Pieces sync · P0-4 Firing log fields · P0-10 Piece↔glaze · P0-11 Glaze batch | ✅ shipped |
+| P0-6 Post/feed/media · P0-7 Reactions · P0-8 Challenge lifecycle · P0-9 Voting · P1-6 Hall of Fame | ✅ shipped |
+| P0-5 Account delete (soft-delete + grace + revive) | ✅ shipped |
+| P1-2 Editable identity · P1-13 RevenueCat · P1-15 Validation · P1-16 Upload hardening · P1-17 OG page · P1-14 Push tokens | ❌ remaining |
+
+**FE must adopt these route changes** (shipped differently than this doc originally specified):
+
+- `GET /feed` → **`GET /users/me/feed`** (no public `/feed`; 404 = empty is fine)
+- `POST /posts` → **`POST /users/me/posts`**
+- `POST /uploads/presigned` (presigned S3) → **`POST /uploads`** server-side multipart → `{ asset_id, public_url }`. FE uploads the file directly to the API; there is no presign step.
+- Challenge `status` is **derived from dates** in the response (no status column, no cron).
+- `DELETE /users/me` is **soft-delete**: 204, ~1wk grace, then 403 `account_deleted` on everything except **`POST /users/me/revive`**. Deleted users vanish from others' feed/friends/leaderboards; deleted challenge winners return `user_deleted: true`.
 
 ---
 
@@ -122,7 +142,9 @@ App Store ready     → everything above + sync survives reinstall + public prof
 
 ### P0-1 · Profile — Friends list 500 (`cover_url`) — ✅ Done (Sprint A)
 
-**Observed:** `GET /users/me/friends` returns 500 — **cannot find field cover_url**.
+**Shipped:** `cover_url` added to the `ListFriends` SELECT; 200 JSON array. Soft-deleted users are filtered out of the list.
+
+**Observed (resolved):** `GET /users/me/friends` returned 500 — **cannot find field cover_url**.
 
 **Impact:** Clay Friends tab, profile friend count, friend-status on public profiles.
 
@@ -137,6 +159,8 @@ App Store ready     → everything above + sync survives reinstall + public prof
 ---
 
 ### P0-2 · Profile — Public profile (`GET /users/:userId/profile`) — ✅ Done (Sprint A)
+
+**Shipped:** handler returns public profile; 404 when `profile_public=false` or unknown user (no existence leak); ≤50 newest posts with images; never leaks `email`/`ory_id`/`is_deleted`. Soft-deleted users → 404.
 
 **FE shipped.** Share copies a single web URL: `https://potterynook.app/user/{id}` (see `profileLinks.ts`, `profileShareActions.ts`). In-app route: `app/user/[id].tsx`. Rich chat previews require **P1-17** (OG web page).
 
@@ -162,9 +186,9 @@ Posts accept flat `{ id, image_url, created_at, reaction_count }` or nested `ass
 
 ---
 
-### P0-3 · Core — Pieces REST API ✅ Sprint B
+### P0-3 · Core — Pieces REST API — ✅ Done (Sprint B, sync path)
 
-`GET/POST/PUT/DELETE /pieces` (or `/users/me/pieces/sync`). Authenticated. All fields from `src/types/pieces.ts`.
+`POST /users/me/pieces/sync` deployed; returns full `pieces` array + `client_ref_map`; idempotent (same item twice → same backend id). Sync payload today: `client_ref`, `name`, `status`, `description?`, `deleted?`, plus `glaze_id`/`glaze_outcome` (P0-10). Rich journal/pricing fields still local-only — extend payload when FE needs them.
 
 **FE wired:** `src/services/pieces.ts`, `useOfflineSync`
 
@@ -172,74 +196,75 @@ Posts accept flat `{ id, image_url, created_at, reaction_count }` or nested `ass
 
 ---
 
-### P0-4 · Core — Kiln & firings REST API
+### P0-4 · Core — Kiln & firings REST API — ✅ DONE (log fields)
 
-`GET/POST/PUT/DELETE /kilns`, `/firings`. Include log fields: `firedDate`, `peakTempC`, `holdTimeMinutes`, `photoUri`, `statusOverride`.
+`/kilns`, `/firings` deployed. Log fields `peak_temp_c`, `hold_time_minutes`, `photo_uri` now round-trip (migration + model + repo INSERT/UPDATE/SELECT). `firedDate`/`statusOverride` already existed; `pieceIds`/`result` on firing still local-only — extend when needed.
 
-**FE wired:** `src/services/kilns.ts`, `src/services/firings.ts` — **log fields not round-tripped yet**
-
----
-
-### P0-5 · Auth — Account deletion
-
-`DELETE /users/me` — soft/hard delete per privacy policy, 204, cascade pieces/firings/glazes/friends.
-
-**FE wired:** `AccountSettingsScreen`
+**FE wired:** `src/services/kilns.ts`, `src/services/firings.ts` — **confirm FE stops stripping log fields on pull**
 
 ---
 
-### P0-6 · Community — Post + feed + media
+### P0-5 · Auth — Account deletion — ✅ DONE
 
-| Task | Endpoint | Notes |
-|------|----------|-------|
-| Create post | `POST /posts` | imageUrl, caption, pieceId?, tags[] |
-| Feed | `GET /feed` | Paginated, 20/page, recency sort |
-| Delete own post | `DELETE /posts/:id` | |
-| Presigned upload | `POST /uploads/presigned` | jpeg/png/webp, 10MB, UUID filenames |
+`DELETE /users/me` → **soft-delete** (`is_deleted=true`), 204, session invalidated. ~1-week grace period; during grace all endpoints return **403 `account_deleted`** except **`POST /users/me/revive`** (restores, 200). Cascade of pieces/firings/glazes/friends/posts handled by DB `ON DELETE CASCADE` on hard delete; soft-deleted users are hidden from others' feeds/friends/leaderboards immediately. Out of scope: push-token removal (no push table yet), hard-purge cron after grace.
 
-**FE wired:** feed, reactions, text posts — **image upload flow incomplete on FE (#24)**
+**FE wired:** `AccountSettingsScreen` — **FE should handle 403 `account_deleted` + offer the revive flow during grace.**
 
 ---
 
-### P0-7 · Community — Reactions
+### P0-6 · Community — Post + feed + media — ✅ DONE (routes changed)
 
-`POST/DELETE /posts/:id/reactions`. Duplicate prevented at DB. Count in feed response.
+| Task | Endpoint (shipped) | Notes |
+|------|--------------------|-------|
+| Create post | **`POST /users/me/posts`** | text + image; image via `post_assets` |
+| Feed | **`GET /users/me/feed`** | Paginated; returns `user_name`/`user_avatar_url` + `reactions[]` + `assets[]` public URLs. No public `/feed` (FE treats 404 as empty) |
+| Delete own post | `DELETE /posts/:id` | own-post-only, else 404 |
+| Upload | **`POST /uploads`** (server-side multipart) | Returns `{ asset_id, public_url }`. **No presigned flow** — FE POSTs the file directly |
+
+**FE action:** repoint to `/users/me/feed`, `/users/me/posts`, and the direct `POST /uploads` (drop presign logic, #24).
+
+---
+
+### P0-7 · Community — Reactions — ✅ DONE
+
+`POST/DELETE /posts/:id/reactions`. DB unique `(post_id, user_id)` prevents duplicates; `DELETE` is own-reaction-only; count returned in feed payload.
 
 **FE wired**
 
 ---
 
-### P0-8 · Community — Challenge lifecycle
+### P0-8 · Community — Challenge lifecycle — ✅ DONE
 
-| Task | Notes |
-|------|-------|
-| `GET /challenges` | `status` (`open`\|`voting`\|`closed`), dates, tracks, hero, join contract |
-| Join contract | `is_joined`, `track_id`, `entry_id`, `has_submitted`, `submission_deadline` (#87) |
-| `POST /challenges/:id/entries` | Body `{ track_id }`; idempotent join |
-| Submit entry | `{ post_id, note?, piece_id? }` → sets `submitted_at` |
-| `DELETE …/entries/:entryId` | Withdraw |
-| `GET /challenges/:id/entries` | Paginated gallery; filter `?track_id=`; sort by votes |
-| Phase transitions | Cron: open→voting→closed at configured dates |
+| Task | Status |
+|------|--------|
+| `GET /challenges` | ✅ `status` **derived from dates** (open/voting/closed via SQL CASE — no column, no cron) |
+| Join contract | ✅ `is_joined`, `track_id`, `has_submitted`, `submission_deadline` exposed (OptionalAuth) |
+| `POST /challenges/:id/entries` | ✅ idempotent (upsert by user+challenge): 201 first join, 200 if already joined |
+| Submit entry | ✅ **`PUT /challenges/:id/entries/:entryId`** → sets `submitted_at` |
+| `DELETE …/entries/:entryId` | ✅ Withdraw |
+| `GET /challenges/:id/entries` | ✅ gallery; `?track_id=`; sort by votes |
+| Phase transitions | ✅ Not needed — derived from `submission_deadline`/`end_date` |
 
-**FE:** Mock preview in `src/screens/community/mock/` — replace with real API.
-
----
-
-### P0-9 · Community — Voting
-
-| Task | Notes |
-|------|-------|
-| `POST /challenges/:id/votes` | `{ entry_id }`; one vote per user per track |
-| `my_vote_by_track` | On gallery or challenge detail |
-| Denormalized `vote_count` | Transactional on vote change |
-
-**Acceptance:** Vote in gallery; revote in same track updates count; self-vote rejected.
+**FE:** **Remove** `src/screens/community/mock/` and wire the real API.
 
 ---
 
-### P0-10 · Glaze — Piece ↔ glaze link sync
+### P0-9 · Community — Voting — ✅ DONE
 
-Piece stores `glazeId` + `glazeOutcome` locally — **not in sync payload today**.
+| Task | Status |
+|------|--------|
+| `POST /challenges/:id/votes` | ✅ `{ entry_id }`; unique `(challenge_id, user_id, track_id)`; revote updates existing row |
+| `my_vote_entry_id` per track | ✅ on `GET /challenges/:id/entries` |
+| Denormalized `vote_count` | ✅ recalculated transactionally on vote change |
+| Self-vote | ✅ rejected |
+
+Note: soft-deleted users' entries drop out of the leaderboard (everyone shifts up).
+
+---
+
+### P0-10 · Glaze — Piece ↔ glaze link sync — ✅ DONE
+
+Shipped: `glaze_id` (FK `ON DELETE SET NULL`) + `glaze_outcome` on pieces; in `SyncPieceItem` + `Piece`; validated to same user (else 400). Outcome enum: success/crawling/underfired/crack.
 
 | Task | Notes |
 |------|-------|
@@ -252,11 +277,9 @@ Piece stores `glazeId` + `glazeOutcome` locally — **not in sync payload today*
 
 ---
 
-### P0-11 · Glaze — Batch metadata persistence
+### P0-11 · Glaze — Batch metadata persistence — ✅ DONE
 
-FE sends batch fields in `GlazeSyncItem`; server may ignore.
-
-Persist: `batch_id`, `date_mixed`, `status`, `best_clay_type`, `best_firing_temp_c`, `atmosphere`, `ingredients_text`.
+Shipped: sync handler maps and persists all batch fields: `batch_id`, `date_mixed`, `status`, `best_clay_type`, `best_firing_temp_c`, `atmosphere`, `ingredients_text`. (Version chain P1-8, images P1-10 still pending.)
 
 **Acceptance:** Create glaze with batch ID on A → pull on B → batch chip matches.
 
@@ -394,17 +417,13 @@ Enforce on `GET /users/:userId/profile` → 404 when `profile_public=false`; `pi
 
 ---
 
-### P1-6 · Community — Hall of Fame (winner archive)
+### P1-6 · Community — Hall of Fame (winner archive) — ✅ DONE
 
-Redesign `GET /hall-of-fame` → `{ cycles: [{ challenge_id, title, winners[] }] }`.
+`GET /hall-of-fame` → `{ cycles: [{ challenge_id, title, winners[] }] }`. Winner row: track, artist, piece, image, vote_count, `won_at`. Archive job on challenge close: max votes per track, tie-break earliest `submitted_at`. `GET /hall-of-fame/winners/:id` for deep links.
 
-Winner row: track, artist, piece, image, vote_count, `won_at`.
+**Deleted-winner behavior:** a winner whose account is deleted is **not** dropped and the runner-up is **not** promoted — the row returns `user_deleted: true` with name/image nulled, so FE should render a "winner account deleted" tombstone rather than treat it as an error.
 
-Job on `voting → closed`: max votes per track; tie-break earliest submit.
-
-`GET /hall-of-fame/winners/:id` for deep links.
-
-**FE gap:** tab uses challenge leaderboard; mock cycles in community mock store.
+**FE gap:** replace mock cycles in community mock store with this API.
 
 ---
 
@@ -678,11 +697,11 @@ Single map of **what the app collects or displays today** vs **what the backend 
 | Reactions | Feed cards | **Synced** | P0-7 | Optimistic + persisted |
 | Polls | Community UI | **Synced** | P1-5 | FE wired |
 | Text post create | `CreatePostSheet` | **Synced** | P0-6 | Works |
-| Photo post create | `CreatePostSheet` + presigned | **Partial** | P0-6 | Upload often fails → text-only fallback (#24) |
+| Photo post create | `CreatePostSheet` | **API ready** | ✅ P0-6 | Repoint to `POST /uploads` (direct multipart) + `POST /users/me/posts`; drop presign fallback (#24) |
 | Glaze recipe in post (HTML comment block) | Share glaze flow | **Local parse** | P1-11 | No structured `post_type` yet |
-| **Challenge tab (Festivals)** | `FestivalsTab.tsx` | **Mock** | **P0-8** | Falls back to `MOCK_UNDERWATER_CHALLENGE` when no API; `useMockChallengeStore` drives join/submit/phase |
-| **Challenge gallery + voting** | `ChallengeGalleryScreen.tsx` | **100% mock** | **P0-9** | Entire screen uses `mockChallengeStore` — no API |
-| **Hall of Fame tab** | `HallOfFameTab.tsx` | **Mock** | **P1-6** | Renders `MOCK_HALL_OF_FAME_CYCLES` from `challengeMockData.ts` |
+| **Challenge tab (Festivals)** | `FestivalsTab.tsx` | **API ready** | ✅ P0-8 | Backend live (`status` derived from dates). **Remove** `MOCK_UNDERWATER_CHALLENGE` / `useMockChallengeStore`; wire `GET /challenges` |
+| **Challenge gallery + voting** | `ChallengeGalleryScreen.tsx` | **API ready** | ✅ P0-9 | Wire `GET /challenges/:id/entries` + `POST …/votes`; drop `mockChallengeStore` |
+| **Hall of Fame tab** | `HallOfFameTab.tsx` | **API ready** | ✅ P1-6 | Wire `GET /hall-of-fame`; handle `user_deleted: true` winner tombstone. Drop `MOCK_HALL_OF_FAME_CYCLES` |
 | Challenge phase dev bar | `FestivalsTab` when `isMock` | **Dev/mock** | P0-8 | Remove when API drives `status` |
 | Dead static seeds | `data.ts` — `WALL_OF_FAME`, `ACTIVE_CHALLENGE`, `POLL_OPTIONS`, `FOLLOW_CREATORS` | **Unused** | — | Safe to delete; superseded by API or mock modules |
 | Drops / Events | `DropsTab.tsx` | **Placeholder** | — | Not V1; static card copy |
@@ -731,26 +750,27 @@ Aligns with [Recommended implementation order](#recommended-implementation-order
 
 | Method | Path | Priority | FE client |
 |--------|------|----------|-----------|
-| DELETE | `/users/me` | P0-5 | Account settings |
+| DELETE | `/users/me` | ✅ P0-5 | Account settings — soft-delete + grace |
+| POST | `/users/me/revive` | ✅ P0-5 | Restore during grace (handle 403 `account_deleted`) |
 | GET | `/users/me` | P1-2 | `fetchMe()` — extend with studio/location/bio |
 | PUT | `/users/me` | **P1-2 missing** | Not wired — `EditProfileModal` local only |
 | POST | `/users/me/cover` | ✅ P1-2b | `uploadCover()` |
 | POST | `/users/me/avatar` | ✅ P1-2b | `uploadAvatar()` |
-| PUT | `/users/me/privacy` | ✅ P1-3 (BE) | FE not wired (#14) |
-| GET | `/users/me/friends` | ✅ P0-1 fixed | `apiListFriends()` |
+| PUT | `/users/me/privacy` | ✅ P1-3 | Not wired (#14) — toggles local only |
+| GET | `/users/me/friends` | ✅ P0-1 | `apiListFriends()` — 500 fixed |
 | POST | `/users/me/friends/requests` | P1 | `apiSendFriendRequest()` |
-| GET | `/users/:userId/profile` | ✅ P0-2 shipped | `apiGetPublicProfile()` |
+| GET | `/users/:userId/profile` | ✅ P0-2 | `apiGetPublicProfile()` |
 | GET | `https://potterynook.app/user/:id` | **P1-17 missing** | Share / OG preview (web, not JSON API) |
-| GET/POST | `/pieces` or sync | P0-3 | `src/services/pieces.ts` |
-| GET/POST | `/kilns`, `/firings` | P0-4 | `src/services/kilns.ts` |
-| GET | `/feed` | P0-6 | Community feed |
-| POST | `/posts` | P0-6 | Post create |
-| POST | `/uploads/presigned` | P0-6 | Image upload |
-| POST/DELETE | `/posts/:id/reactions` | P0-7 | Reactions |
-| GET | `/challenges` | P0-8 | Challenge tab |
-| POST | `/challenges/:id/entries` | P0-8 | Join/submit |
-| POST | `/challenges/:id/votes` | P0-9 | Gallery voting |
-| GET | `/hall-of-fame` | P1-6 | Hall of Fame tab |
+| POST | `/users/me/pieces/sync` | ✅ P0-3 | `src/services/pieces.ts` |
+| GET/POST | `/kilns`, `/firings` | ✅ P0-4 | `src/services/kilns.ts` — log fields round-trip |
+| GET | `/users/me/feed` | ✅ P0-6 | Community feed (was `/feed`) |
+| POST | `/users/me/posts` | ✅ P0-6 | Post create (was `/posts`) |
+| POST | `/uploads` | ✅ P0-6 | Server-side multipart → `{asset_id, public_url}` (no presign) |
+| POST/DELETE | `/posts/:id/reactions` | ✅ P0-7 | Reactions |
+| GET | `/challenges` | ✅ P0-8 | Challenge tab — `status` derived from dates |
+| POST | `/challenges/:id/entries` | ✅ P0-8 | Join (idempotent); submit = `PUT …/entries/:id` |
+| POST | `/challenges/:id/votes` | ✅ P0-9 | Gallery voting |
+| GET | `/hall-of-fame` | ✅ P1-6 | Hall of Fame tab; `/hall-of-fame/winners/:id` for deep links |
 | GET/POST | `/polls` | P1-5 | Poll voting |
 | GET | `/news` | P1-7 | News cards |
 | POST | `/webhooks/revenuecat` | P1-13 | — |
