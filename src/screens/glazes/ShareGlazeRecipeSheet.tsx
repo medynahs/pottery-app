@@ -102,6 +102,7 @@ export function ShareGlazeRecipeSheet({
   const sessionToken = useAppStore((s) => s.sessionToken);
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
+  const markChallengeEntrySubmitted = useAppStore((s) => s.markChallengeEntrySubmitted);
   const { trackCommunityPostCreated } = useAnalytics();
   const [posting, setPosting] = React.useState(false);
   const [draft, setDraft] = React.useState<ShareGlazeDraft | null>(null);
@@ -195,6 +196,7 @@ export function ShareGlazeRecipeSheet({
             note: caption.trim().slice(0, 280),
             piece_id: linkedPiece?.backendId,
           });
+          markChallengeEntrySubmitted();
         } catch {
           showToast('Posted to feed, challenge entry failed', 'error');
         }

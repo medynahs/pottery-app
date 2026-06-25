@@ -44,11 +44,18 @@ export function ProfileHeader({
   const loadStats = useCallback(async () => {
     if (!sessionToken) return;
 
+    const setClayFriendsCount = useAppStore.getState().setClayFriendsCount;
+
     void apiListFriends(sessionToken)
-      .then((friends) => setFriendCount((friends ?? []).length))
+      .then((friends) => {
+        const count = (friends ?? []).length;
+        setFriendCount(count);
+        setClayFriendsCount(count);
+      })
       .catch((err) => {
         console.warn('[ProfileHeader] friends count failed:', err);
         setFriendCount(0);
+        setClayFriendsCount(0);
       });
 
     void Promise.all([

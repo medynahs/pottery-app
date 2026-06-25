@@ -1,20 +1,16 @@
-import { useVisiblePieces, useAppStore } from '@/src/store/appStore';
 import { useMemo } from 'react';
 import {
   BADGE_REGISTRY,
-  buildBadgeContext,
   countEarnedBadges,
   getNextTitle,
   getTitleForBadges,
 } from '../constants/badgeRegistry';
+import { useBadgeContext } from './useBadgeStates';
 
 export function useProfileLevel() {
-  const pieces = useVisiblePieces();
-  const firings = useAppStore((s) => s.firings);
-  const glazes = useAppStore((s) => s.glazes);
+  const ctx = useBadgeContext();
 
   return useMemo(() => {
-    const ctx = buildBadgeContext(pieces, firings, glazes);
     const earnedCount = countEarnedBadges(ctx);
     const totalBadges = BADGE_REGISTRY.length;
     const progress = totalBadges > 0 ? earnedCount / totalBadges : 0;
@@ -29,5 +25,5 @@ export function useProfileLevel() {
       nextTitle: nextTitle?.title ?? null,
       badgesUntilNext: nextTitle ? nextTitle.min - earnedCount : 0,
     };
-  }, [pieces, firings, glazes]);
+  }, [ctx]);
 }

@@ -4,8 +4,7 @@ import { useRouter } from 'expo-router';
 import { BookOpen, Flame, Layers, Star } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { buildBadgeContext } from './constants/badgeRegistry';
-import { useBadgeStates } from './hooks/useBadgeStates';
+import { useBadgeContext, useBadgeStates } from './hooks/useBadgeStates';
 import { useProfileLevel } from './hooks/useProfileLevel';
 import { buildJourneyMilestones } from './utils/buildJourneyMilestones';
 import { getJourneyTagline, getStudioTenure } from './utils/journeyNarrative';
@@ -30,7 +29,6 @@ export default function JourneyScreen({ initialTab = 'overview' }: JourneyScreen
   const router = useRouter();
   const pieces = useVisiblePieces();
   const firings = useAppStore((s) => s.firings);
-  const glazes = useAppStore((s) => s.glazes);
   const level = useProfileLevel();
   const badges = useBadgeStates();
 
@@ -40,7 +38,7 @@ export default function JourneyScreen({ initialTab = 'overview' }: JourneyScreen
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  const ctx = useMemo(() => buildBadgeContext(pieces, firings, glazes), [pieces, firings, glazes]);
+  const ctx = useBadgeContext();
   const timeline = useMemo(() => buildJourneyMilestones(pieces, firings), [pieces, firings]);
   const recentTimeline = useMemo(() => timeline.slice(0, TIMELINE_PREVIEW), [timeline]);
   const tenure = useMemo(() => getStudioTenure(pieces), [pieces]);

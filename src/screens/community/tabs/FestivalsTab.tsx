@@ -515,6 +515,7 @@ export function ChallengesTab({
   const sessionToken = useAppStore((s) => s.sessionToken);
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
+  const markChallengeEntrySubmitted = useAppStore((s) => s.markChallengeEntrySubmitted);
   const router = useRouter();
   const mock = useMockChallengeStore();
 
@@ -640,6 +641,7 @@ export function ChallengesTab({
         note: 'Joined from Pottery Life app',
       });
       setApiEntryId(entry.id);
+      markChallengeEntrySubmitted();
       showToast('You joined the challenge!', 'success');
       void load();
     } catch (err) {
@@ -735,6 +737,7 @@ export function ChallengesTab({
         post_id: postId,
       });
       setApiEntryId(entry.id);
+      markChallengeEntrySubmitted();
       setSubmitOpen(false);
       onEntrySubmitted?.({ emoji: challenge.emoji ?? '🏆', challengeName: challenge.title });
       void load();

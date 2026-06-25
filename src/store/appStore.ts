@@ -531,6 +531,11 @@ interface AppState {
   setupProgress: SetupProgress;
   markSetupProgress: (key: keyof SetupProgress) => void;
   hasCreatedPost: boolean;
+  /** Total community posts created on this device (for achievements). */
+  communityPostsCreated: number;
+  challengeEntriesSubmitted: number;
+  challengeWins: number;
+  clayFriendsCount: number;
   /** First visit defaults Community to Challenges until user has posted. */
   hasOpenedCommunityTab: boolean;
   markCommunityTabOpened: () => void;
@@ -548,6 +553,9 @@ interface AppState {
   /** Local stub for BE-8.5 until server returns save_count. */
   communityPostSaveCounts: Record<string, number>;
   markPostCreated: () => void;
+  markChallengeEntrySubmitted: () => void;
+  markChallengeWin: () => void;
+  setClayFriendsCount: (count: number) => void;
   markPostDeleted: () => void;
   openCommunityPostComposer: (preset: CommunityPostComposerPreset) => void;
   clearCommunityPostComposerPreset: () => void;
@@ -1314,6 +1322,10 @@ export const useAppStore = create<AppState>()(
       setupProgress: { ...state.setupProgress, [key]: true },
     })),
   hasCreatedPost: false,
+  communityPostsCreated: 0,
+  challengeEntriesSubmitted: 0,
+  challengeWins: 0,
+  clayFriendsCount: 0,
   hasOpenedCommunityTab: false,
   markCommunityTabOpened: () => set({ hasOpenedCommunityTab: true }),
   communityKilnShareHintShown: false,
@@ -1328,8 +1340,18 @@ export const useAppStore = create<AppState>()(
   markPostCreated: () =>
     set((state) => ({
       hasCreatedPost: true,
+      communityPostsCreated: state.communityPostsCreated + 1,
       communityFeedRevision: state.communityFeedRevision + 1,
     })),
+  markChallengeEntrySubmitted: () =>
+    set((state) => ({
+      challengeEntriesSubmitted: state.challengeEntriesSubmitted + 1,
+    })),
+  markChallengeWin: () =>
+    set((state) => ({
+      challengeWins: state.challengeWins + 1,
+    })),
+  setClayFriendsCount: (count) => set({ clayFriendsCount: Math.max(0, count) }),
   markPostDeleted: () =>
     set((state) => ({
       communityFeedRevision: state.communityFeedRevision + 1,
@@ -1958,6 +1980,10 @@ export const useAppStore = create<AppState>()(
             ...(state.setupProgress ?? {}),
           },
           studioRhythm: normalizeStudioRhythm(state.studioRhythm ?? currentState.studioRhythm),
+          communityPostsCreated: Math.max(
+            state.communityPostsCreated ?? 0,
+            state.hasCreatedPost ? 1 : 0,
+          ),
         };
       },
       storage: zustandStorage,
@@ -1998,6 +2024,10 @@ export const useAppStore = create<AppState>()(
         defaultNewPieceStage: state.defaultNewPieceStage,
         setupProgress: state.setupProgress,
         hasCreatedPost: state.hasCreatedPost,
+        communityPostsCreated: state.communityPostsCreated,
+        challengeEntriesSubmitted: state.challengeEntriesSubmitted,
+        challengeWins: state.challengeWins,
+        clayFriendsCount: state.clayFriendsCount,
         hasOpenedCommunityTab: state.hasOpenedCommunityTab,
         communityKilnShareHintShown: state.communityKilnShareHintShown,
         communityPieceShareHintShown: state.communityPieceShareHintShown,

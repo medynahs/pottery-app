@@ -10,7 +10,11 @@ const CATEGORY_ACCENTS: Record<BadgeCategory, string> = {
   volume: '#6B8FC4',
   technique: '#B87BB8',
   studio: '#6B9E78',
+  memorial: '#8B7355',
   sales: '#C98352',
+  mastery: '#C9A227',
+  consistency: '#7B6FD6',
+  community: '#E07A5F',
 };
 
 export function BadgeCategorySection({
