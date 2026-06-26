@@ -6,8 +6,10 @@
 // `images[]` into those four fields on the way in. Images are NOT part of the
 // sync snapshot, they upload through the dedicated image endpoints.
 
+import { normalizeGlazeItem } from '../screens/glazes/glazeItemHelpers';
 import type {
   GlazeApplicationMethod,
+  GlazeClayType,
   GlazeFinish,
   GlazeIngredient,
   GlazeKilnType,
@@ -17,7 +19,6 @@ import type {
   GlazeTestTile,
   GlazeThickness,
 } from '../screens/glazes/types';
-import { normalizeGlazeItem } from '../screens/glazes/glazeItemHelpers';
 import { API_BASE_URL } from './index';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
@@ -102,6 +103,7 @@ export interface BackendGlazeTest {
   notes?: string;
   resultRating: GlazeResultRating;
   defects: string[];
+  clayType?: GlazeClayType;
 }
 
 // ─── Sync payloads ──────────────────────────────────────────────────────────
@@ -164,6 +166,7 @@ export interface GlazeTestSyncItem {
   notes?: string;
   resultRating: GlazeResultRating;
   defects: string[];
+  clayType?: GlazeClayType;
   deleted?: boolean;
 }
 
@@ -213,11 +216,11 @@ export function backendGlazeToLocal(b: BackendGlaze, existing?: GlazeLibraryItem
   const id = existing?.id ?? b.clientRef ?? b.id;
   const photos = existing
     ? {
-        bucketPhotoUri: existing.bucketPhotoUri,
-        testTilePhotoUris: existing.testTilePhotoUris,
-        finishedPiecePhotoUris: existing.finishedPiecePhotoUris,
-        accidentPhotoUris: existing.accidentPhotoUris,
-      }
+      bucketPhotoUri: existing.bucketPhotoUri,
+      testTilePhotoUris: existing.testTilePhotoUris,
+      finishedPiecePhotoUris: existing.finishedPiecePhotoUris,
+      accidentPhotoUris: existing.accidentPhotoUris,
+    }
     : imagesToPhotoFields(b.images ?? []);
   return normalizeGlazeItem({
     ...(existing ?? {}),
@@ -316,6 +319,7 @@ export function backendTestToLocal(b: BackendGlazeTest, existing?: GlazeTestTile
     notes: b.notes,
     resultRating: b.resultRating,
     defects: (b.defects ?? []) as GlazeTestTile['defects'],
+    clayType: b.clayType,
   };
 }
 
@@ -344,6 +348,7 @@ export function localTestToSyncItem(
     notes: t.notes,
     resultRating: t.resultRating,
     defects: t.defects ?? [],
+    clayType: t.clayType,
     ...(deleted ? { deleted: true } : {}),
   };
 }
