@@ -203,7 +203,7 @@ Posts accept flat `{ id, image_url, created_at, reaction_count }` or nested `ass
 
 ### P0-4 · Core — Kiln & firings REST API — ✅ DONE (log fields)
 
-`/kilns`, `/firings` deployed. Log fields `peak_temp_c`, `hold_time_minutes`, `photo_uri` now round-trip (migration + model + repo INSERT/UPDATE/SELECT). `firedDate`/`statusOverride` already existed; `pieceIds`/`result` on firing still local-only — extend when needed.
+`/kilns`, `/firings` deployed. Log fields `peak_temp_c`, `hold_time_minutes`, `photo_uri` now round-trip (migration + model + repo INSERT/UPDATE/SELECT). `firedDate`/`statusOverride` already existed; **`pieceIds`/`result`/`resultNotes` also shipped** — `piece_ids[]` ARRAY_AGG in SELECT + `replacePieceLinks`/`ensurePiecesOwned` on write; `result`/`result_notes` round-trip in INSERT/UPDATE/SELECT. FE gap: `useFiringsSync` still strips these on pull — wire them.
 
 **FE wired:** `src/services/kilns.ts`, `src/services/firings.ts` — **confirm FE stops stripping log fields on pull**
 
@@ -690,10 +690,11 @@ Single map of **what the app collects or displays today** vs **what the backend 
 |------|-------------|--------|---------|-------|
 | Kiln profile (name, type, cone, shelves, pricing, delays, max temp) | `useKilnsSync`, `kilns.ts` | **Synced** | P0-4 | Basic kiln fields round-trip |
 | Firing session (name, type, cone, state, dates, notes) | `useFiringsSync`, `firings.ts` | **Partial** | P0-4 | Created/updated on BE |
-| `firedDate`, `peakTempC`, `holdTimeMinutes` | Log Firing modal, `FiringDetailModal` | **Local only** | **P0-4** | `useFiringsSync` preserves local on merge, never sends |
-| `photoUri`, `statusOverride`, `logSource` | Kiln history / log firing | **Local only** | **P0-4** | Same — stripped on pull |
-| `pieceIds` on firing | Firing detail, piece assignment | **Local only** | P0-4 extend | Not in `BackendFiring` |
-| `result`, `resultNotes` | Firing completion | **Local only** | P0-4 extend | |
+| `firedDate`, `peakTempC`, `holdTimeMinutes` | Log Firing modal, `FiringDetailModal` | **API ready** | **P0-4** ✅ | BE round-trips; `useFiringsSync` still strips on pull — wire |
+| `photoUri`, `statusOverride` | Kiln history / log firing | **API ready** | **P0-4** ✅ | BE round-trips; FE must stop stripping |
+| `pieceIds` on firing | Firing detail, piece assignment | **API ready** | P0-4 ✅ | **In `BackendFiring`** (`piece_ids[]` ARRAY_AGG + `replacePieceLinks`); FE wire assignment |
+| `result`, `resultNotes` | Firing completion | **API ready** | P0-4 ✅ | BE round-trips; FE wire completion |
+| `logSource` | Kiln history | **Local only** | P3 | FE-only discriminator (`session` vs `manual`); no BE column by design |
 
 ---
 

@@ -135,7 +135,7 @@
 
 1. Local-first CRUD in `appStore`
 2. `useKilnsSync`, `useFiringsSync` push/pull
-3. **Gap (narrowed):** `peakTempC`, `holdTimeMinutes`, `photoUri` now round-trip (P0-4). `firedDate`/`statusOverride`/`pieceIds` mapping still to confirm on FE
+3. **Shipped:** `peakTempC`, `holdTimeMinutes`, `photoUri`, `firedDate`/`statusOverride`, **and `pieceIds`/`result`/`resultNotes`** all round-trip (P0-4) — `piece_ids[]` ARRAY_AGG + `replacePieceLinks`/`ensurePiecesOwned`; `result`/`result_notes` in INSERT/UPDATE/SELECT. FE gap only: `useFiringsSync` still strips these on pull — wire them
 
 ---
 
@@ -427,10 +427,10 @@ Full detail: [Pieces completeness backlog](#pieces-feature--completeness-backlog
 |-------------|----------|----------|-------|
 | `kilns[]` (profile, pricing per kiln, delays) | ✅ | — | `useKilnsSync` |
 | `firings[]` core session fields | ✅ | — | |
-| `firings[].pieceIds` | ❌ | **P1** | Piece assignment on completed firing |
-| `firings[].statusOverride` | ❌ | P2 | Manual session state override |
-| `firings[].result`, `resultNotes` | ❌ | P2 | Outcome on log firing |
-| `firings[].logSource` | ❌ | P3 | FE discriminator (`session` vs `manual`) |
+| `firings[].pieceIds` | ✅ API ready | **P0-4** ✅ | Piece assignment shipped — `piece_ids[]` ARRAY_AGG + `replacePieceLinks`; FE wire assignment |
+| `firings[].statusOverride` | ✅ API ready | **P0-4** ✅ | Round-trips; FE must stop stripping |
+| `firings[].result`, `resultNotes` | ✅ API ready | **P0-4** ✅ | Outcome round-trips; FE wire completion |
+| `firings[].logSource` | ❌ | P3 | FE-only discriminator (`session` vs `manual`); no BE column by design |
 
 ---
 
