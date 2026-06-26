@@ -2,6 +2,7 @@ import { Banner } from '@/src/components/Banner';
 import { LabeledInput } from '@/src/components/LabeledInput';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
+import { detectAccountDeletionGrace } from '@/src/services/accountGrace';
 import { oryGoogleRegister, oryRegister, OryUserCancelledError } from '@/src/services/auth';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
@@ -32,8 +33,12 @@ export default function RegisterScreen({ onSuccess }: Props) {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError]           = useState<string | null>(null);
 
-  function handleDone(token: string, id: string, mail: string) {
+  async function handleDone(token: string, id: string, mail: string) {
     setSessionToken(token, id, mail);
+    const inGrace = await detectAccountDeletionGrace(token);
+    if (inGrace) {
+      useAppStore.getState().setAccountDeletionGrace(true);
+    }
     if (onSuccess) onSuccess();
     else router.back();
   }

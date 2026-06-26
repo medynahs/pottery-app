@@ -2,7 +2,7 @@
 
 **Purpose:** How the Pottery Life mobile app talks to the server — patterns, deployment status, and where to find detailed work.
 
-**Last updated:** June 25, 2026  
+**Last updated:** June 26, 2026  
 **Task backlog:** [`BACKEND-TASKS.md`](./BACKEND-TASKS.md) (prioritized P0 → P2)  
 **Frontend companion:** [`FRONTEND.md`](./FRONTEND.md)
 
@@ -10,7 +10,7 @@
 
 ## ⚠️ Backend status — all P0 + nearly all P1/P2 shipped (Jun 25)
 
-The API repo completed **every P0** (friends, public profile, privacy, pieces/firings/glaze sync, posts/feed/media, reactions, challenges, voting, Hall of Fame) plus **account delete**, and has now shipped the remaining V1 backend work: **editable identity `PUT /users/me`** (P1-2), **RevenueCat webhook** (P1-13), **validation + rate limiting** (P1-15), **upload hardening** (P1-16), **OG share page** (P1-17), and **Universal Links / App Links** (P2-1). **Push token storage (P1-14) is now shipped too** — every V1-relevant backend item is built; remaining gaps are FE wiring + later-phase glaze depth (P1-8–P1-12) and P2 ops. Status below is **🔶 backend-done** until each is re-verified in-app.
+The API repo completed **every P0** (friends, public profile, privacy, pieces/firings/glaze sync, posts/feed/media, reactions, challenges, voting, Hall of Fame) plus **account delete**, and has now shipped the remaining V1 backend work: **editable identity `PUT /users/me`** (P1-2), **RevenueCat webhook** (P1-13), **validation + rate limiting** (P1-15), **upload hardening** (P1-16), **OG share page** (P1-17), and **Universal Links / App Links** (P2-1). **Push token storage (P1-14) is shipped** — FE registers tokens via `usePushTokenSync` (#86 ✅). Remaining gaps: FE verification in-app, extended pieces/preferences APIs, glaze depth (P1-8–P1-12), and P2 ops.
 
 **Routes that changed during implementation — FE must adopt:**
 
@@ -57,10 +57,10 @@ The API repo completed **every P0** (friends, public profile, privacy, pieces/fi
 |------|--------|-------|
 | Login / register / logout | ✅ | Ory flows — Google + email/password verified on device |
 | Password recovery | ✅ | Verified end-to-end (Google + email) — Ory Recovery V2 |
-| Account delete | 🔶 | `DELETE /users/me` → soft-delete + ~1wk grace + `POST /users/me/revive`; cascade via FK. **403 `account_deleted`** during grace |
+| Account delete | ✅ | Soft-delete + grace; `AccountDeletedGate` + `POST /users/me/revive` |
 | Current user profile | 🔶 | `GET /users/me`, avatar/cover upload — avatar/cover verified end-to-end (P1-2b ✅ Sprint A) |
-| Profile identity edit | 🔶 | `PUT /users/me` shipped (P1-2) — name (1–80), studio_name/location/bio (empty string → null, max 120/120/500). Returns full updated user. **FE still saves locally → wire `updateProfile()` (#91)** |
-| Privacy settings | 🔶 | `PUT /users/me/privacy` shipped (P1-3 ✅ Sprint A) + enforced on public profile (404 when private); FE toggles still local only |
+| Profile identity edit | 🟡 | `PUT /users/me` shipped (P1-2) — FE wired via `useUpdateProfile()` (#91 ✅); verify in-app |
+| Privacy settings | 🟡 | `PUT /users/me/privacy` shipped (P1-3 ✅) + enforced on public profile; FE wired via `useUpdatePrivacy()` (#14 ✅) |
 | Public profile | 🔶 | `GET /users/:userId/profile` shipped (P0-2 ✅ Sprint A); 404 when private/unknown |
 | Friends | 🔶 | **500 fixed** (`cover_url` added to SELECT, P0-1 ✅ Sprint A) |
 | Friend requests | 🔶 | FE wired |
@@ -94,7 +94,7 @@ The API repo completed **every P0** (friends, public profile, privacy, pieces/fi
 | Polls | 🔶 | FE wired |
 | Challenges (basic) | 🔶 | Join/submit/withdraw FE wired |
 | Challenge (tracks + voting) | 🔶 | Shipped (P0-8/9): tracks, idempotent join, submit/withdraw, voting w/ revote + self-vote reject. **Replace FE mock store** |
-| Hall of Fame | 🔶 | Winner-archive shipped (P1-6): `GET /hall-of-fame` cycles + `/hall-of-fame/winners/:id`. Deleted winners → `user_deleted: true` |
+| Hall of Fame | 🟡 | Winner-archive shipped (P1-6): FE wired — `GET /hall-of-fame` + `/hall-of-fame/winners/:id`; `user_deleted` tombstone |
 | News | ❌ | Not started (P1-7) |
 | Image upload | 🔶 | **`POST /uploads` (server-side multipart)** → `{ asset_id, public_url }`. No presigned flow |
 
@@ -103,7 +103,7 @@ The API repo completed **every P0** (friends, public profile, privacy, pieces/fi
 | Area | Status | Notes |
 |------|--------|-------|
 | RevenueCat webhook | 🔶 | `POST /webhooks/revenuecat` shipped (P1-13), secret-verified + rate-limited 10/min |
-| Push tokens | 🔶 | `POST /users/me/push-tokens` shipped (P1-14) — `{token, platform}` → 204, upsert dedupe/rotation. **FE not sending tokens (#86)** |
+| Push tokens | 🟡 | `POST /users/me/push-tokens` shipped (P1-14) — FE wired (#86 ✅): `usePushTokenSync` on launch + token refresh; `AccountSettingsScreen` on toggle enable |
 | Challenge deadline push | ❌ | Depends on push tokens (P2-6) |
 | Input validation / rate limits | 🔶 | Shipped (P1-15): global 1000/min limiter + per-route limits; identity/upload input validated |
 | Upload security | 🔶 | Shipped (P1-16): auth-only, type whitelist + byte-sniff, 10MB cap, UUID keys |
@@ -250,8 +250,8 @@ Assets API exists; FE wires upload/hydrate in `pieceAssetSync.ts`. Remaining BE 
 |----------|------------------|-------------|-----------------|----------------|
 | **Auth** | Session, email | ✅ Ory | — | — |
 | **Onboarding** | Role archetype, kilnkin pick, module choices, units/language | 🟡 `role` on `GET /users/me` | **P2** — `onboarding_profile` JSON or fold into preferences | `generalOnboardingCompleted`, ceremony flags |
-| **Profile & identity** | Name, studio, location, bio, avatar, cover | 🟡 `PUT /users/me` shipped; FE wiring | **P1** — always save via API | — |
-| **Privacy** | Profile/pieces public, analytics opt-in | 🟡 community flags on `PUT /users/me/privacy` | **P1** community flags · **P2** analytics/suggestions prefs | — |
+| **Profile & identity** | Name, studio, location, bio, avatar, cover | ✅ `PUT /users/me` + uploads wired (#91) | **P2** onboarding prefs | — |
+| **Privacy** | Profile/pieces public, analytics opt-in | ✅ community flags wired (#14) | **P2** analytics/suggestions prefs | — |
 | **App customization** | Clay bodies, forming methods, piece forms, cones, stages, pricing rules, modules, text size | ❌ | **P1** — `GET/PUT /users/me/preferences` | UI toggles (compact cards, hidden analytics tabs) |
 | **Overview tab** | Widgets, missions, kilnkin nudges, setup quests, alerts | ❌ (computed from local store) | **P2** rhythm + missions if cloud quests matter | `seenCeremonies`, `setupProgress`, alert **generation** (derive from synced data) |
 | **Pieces** | Journal, metadata, pricing, photos, batches | 🟡 minimal sync + assets API | **P1** — extend pieces sync ([backlog](#pieces-feature--completeness-backlog)) | — |
@@ -259,9 +259,9 @@ Assets API exists; FE wires upload/hydrate in `pieceAssetSync.ts`. Remaining BE 
 | **Glaze / Library** | Atlas recipes, tests, collections, images | 🟡 `POST /users/me/glazes/sync` (verify depth) | **P1–P2** images, version chain, batch scaler ([§ E](#e--glaze-atlas-glazes-glazetests--partial-sync)) | Discover catalog (bundled JSON until P2-2) |
 | **Analytics** | Studio stats, charts, export | ❌ (FE computes from local store) | **P3** optional historical snapshots · entitlement read for gates | Period/tab UI prefs |
 | **Community — feed** | Posts, reactions, images | ✅ `GET /users/me/feed`, posts, uploads | Verify only | Feed scroll/cursor cache |
-| **Community — create** | Text + photo posts | ✅ | **P1** wire upload path consistently (#24) | Composer preset (navigation) |
+| **Community — create** | Text + photo posts | ✅ | Verify `POST /uploads` in prod (#24 ✅) | Composer preset (navigation) |
 | **Community — challenges** | Join, submit, vote, gallery | 🟡 API shipped; FE still uses mock in `__DEV__` | **P1** remove mock store; server is source of truth | Dev phase bar |
-| **Community — Hall of Fame** | Winner archive | 🟡 API shipped; FE mock fallback | **P1** wire `GET /hall-of-fame` | — |
+| **Community — Hall of Fame** | Winner archive | 🟡 API + FE wired (#28) | Verify in prod | — |
 | **Community — polls** | Poll list + votes | ✅ | Verify | Demo poll vote id (offline fallback) |
 | **Community — news** | Admin news cards | ❌ | **P2** `GET /news` (P1-7) when product ships #29 | — |
 | **Community — events/drops** | Events tab | ❌ | Out of scope V1 (tab hidden) | Placeholder UI |
@@ -303,7 +303,7 @@ Assets API exists; FE wires upload/hydrate in `pieceAssetSync.ts`. Remaining BE 
 | Friends + requests | `/users/me/friends` |
 | Public profile | `GET /users/:userId/profile` |
 | Studios (CRUD, invites) | `/users/me/studios` |
-| Push token | `POST /users/me/push-tokens` (FE #86 not sending) |
+| Push token | `POST /users/me/push-tokens` — FE wired (#86 ✅) |
 | Account delete | `DELETE /users/me`, `POST /users/me/revive` |
 | Premium events | `POST /webhooks/revenuecat` |
 
@@ -381,8 +381,8 @@ Assets API exists; FE wires upload/hydrate in `pieceAssetSync.ts`. Remaining BE 
 
 | Zustand key | What it is | BE today | Priority | Notes |
 |-------------|------------|----------|----------|-------|
-| `privacyPrefs.profilePublic` | Profile visible on web/app | 🟡 | P1 | **BE shipped** `PUT /users/me/privacy` — hydrate on login |
-| `privacyPrefs.piecesPublic` | Piece posts on public profile | 🟡 | P1 | Same |
+| `privacyPrefs.profilePublic` | Profile visible on web/app | 🟡 | — | **BE + FE shipped** — hydrate on login, save on toggle (#14) |
+| `privacyPrefs.piecesPublic` | Piece posts on public profile | 🟡 | — | Same |
 | `privacyPrefs.analyticsEnabled` | Product analytics opt-in | ❌ | P2 | Local only; extend P1-3 or preferences blob |
 | `privacyPrefs.personalizedSuggestions` | Personalization opt-in | ❌ | P2 | Local only |
 | `notificationPrefs.*` | Kiln/drying/weekly/challenge toggles | ❌ | P2 | Push delivery needs P1-14 token + prefs for server pushes (P2-6) |
@@ -470,7 +470,7 @@ Full detail: [Pieces completeness backlog](#pieces-feature--completeness-backlog
 
 | Zustand key | BE today | Priority | Notes |
 |-------------|----------|----------|-------|
-| `user.name`, `studioName`, `location`, `bio` | 🟡 | **P1** | `PUT /users/me` shipped; ensure FE always saves via API (#91) |
+| `user.name`, `studioName`, `location`, `bio` | ✅ | — | `PUT /users/me` wired (#91) |
 | `user.linkedStudioCode` | ❌ | P2 | Studios API (P1-4) — invite/join flow |
 | `user.avatarImageUri`, `coverImageUri` | ✅ | — | Intentionally **not** in `partialize`; fetched from `/users/me` |
 
@@ -513,7 +513,8 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 | Create post (text + photo) | `CreatePostSheet` | ✅ | P1 verify `POST /uploads` | |
 | Own posts grid | `useProfilePosts` | ✅ | P1 verify | Fallback: `profilePostCache` (memory) |
 | Challenge join/submit/vote | `FestivalsTab`, `ChallengeGalleryScreen` | 🟡 | **P1** | Remove `mockChallengeStore` / `MOCK_*` in prod |
-| Hall of Fame cycles | `HallOfFameTab` | 🟡 | **P1** | Wire `GET /hall-of-fame`; drop mock cycles |
+| Hall of Fame cycles | `HallOfFameTab` | ✅ | Verify | Dev mock fallback only |
+| Winner detail | `HallOfFameWinnerScreen` | ✅ | `GET /hall-of-fame/winners/:id` | Dev mock fallback only |
 | Polls | `CommunityPollCard` | ✅ | verify | |
 | `communityDemoPollVoteId` | Demo when `GET /polls` empty | ❌ | — | Device fallback |
 | `communityPostSaveCounts` | Save count stub | ❌ | P3 | Use `save_count` on feed payload (BE-8.5) |
@@ -544,7 +545,7 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 | Local kilnkin notifications | `notifications.ts` | ❌ | — | Scheduled on device; OK for V1 |
 | `notifications[]`, read state | In-app notification inbox | ❌ | P3 | Optional inbox API; today not persisted in `partialize` |
 | Overview alerts | `getStudioAlerts.ts` | ❌ | — | **Generated** from kiln/pieces/rhythm — no separate BE row |
-| Push device token | Settings | 🟡 endpoint exists | **P1** FE #86 | |
+| Push device token | Settings | 🟡 | — | `usePushTokenSync` + `syncPushTokenWithBackend` (#86 ✅) |
 
 ---
 
@@ -640,13 +641,13 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 | Step | Work | Features unblocked |
 |------|------|-------------------|
 | 1 | **`GET` / `PUT /users/me/preferences`** — clay lists, stages, pricing, UI, kilnkin, notification prefs | App Customization, onboarding defaults |
-| 2 | **Wire profile + privacy** — `PUT /users/me`, `PUT /users/me/privacy` on every save | Profile, Account, Privacy |
+| 2 | ~~**Wire profile + privacy**~~ — ✅ `PUT /users/me`, `PUT /users/me/privacy` wired (#91, #14) | Profile, Account, Privacy |
 | 3 | **Extend pieces sync** — journal, metadata, pricing JSONB, `local_stage` | Pieces tab |
 | 4 | **Firing `piece_ids`** + verify kiln log round-trip | Kiln tab |
 | 5 | **Glaze verify** — images (P1-10), version chain (P1-8), tests (P1-9) | Library / Glaze |
 | 6 | **Community mock removal** — challenges, gallery, Hall of Fame → live API only | Community |
 | 7 | **`preferences.studio_rhythm`** or dedicated resource | Studio Rhythm, Overview missions |
-| 8 | **Push tokens (#86)** + notification prefs on user | Notifications |
+| 8 | ~~**Push tokens (#86)**~~ ✅ — `usePushTokenSync`; notification prefs on user still P2 | Notifications |
 | 9 | **`GET /users/me/entitlement`** | Premium gates, photo limits |
 | 10 | **Studios member queue** (when product ready) | Studio owners, piece queue |
 | 11 | **`GET /news`**, **`GET /discover`** | Community news, Discover catalog (P2+) |
@@ -712,7 +713,7 @@ Cross-reference by number in [`FRONTEND.md`](./FRONTEND.md):
 | Privacy sync | #14 |
 | RevenueCat webhook | #57 |
 | Friends 500 | #89 |
-| Push tokens + challenge contract | #86, #87, #70 |
+| Push tokens + challenge contract | #86 ✅, #87, #70 |
 | Security | #79, #80 |
 
 ---

@@ -425,7 +425,7 @@ Enforce on `GET /users/:userId/profile` → 404 when `profile_public=false`; `pi
 
 **Deleted-winner behavior:** a winner whose account is deleted is **not** dropped and the runner-up is **not** promoted — the row returns `user_deleted: true` with name/image nulled, so FE should render a "winner account deleted" tombstone rather than treat it as an error.
 
-**FE gap:** replace mock cycles in community mock store with this API.
+**FE:** #28 ✅ — `HallOfFameTab` + `HallOfFameWinnerScreen` use live API in prod; mock data dev-only. Handle `user_deleted: true` tombstone.
 
 ---
 
@@ -484,7 +484,7 @@ Optional `source_discover_recipe_id` for Discover saves.
 
 `POST /users/me/push-tokens` shipped → `{ token, platform }` (platform `ios`|`android`), returns 204. Token is globally unique; re-register upserts (`ON CONFLICT (token)`) and reassigns to the current user — covers dedupe + rotation. A user may register multiple device tokens. Cascade-deletes with the user.
 
-**FE gap:** #86 in FRONTEND.md — not sending tokens yet.
+**FE:** #86 ✅ — `usePushTokenSync` + `syncPushTokenWithBackend` register on launch, pref change, and token rotation.
 
 ---
 
@@ -731,7 +731,7 @@ Single map of **what the app collects or displays today** vs **what the backend 
 |------|-------------|--------|---------|-------|
 | RevenueCat entitlement (device) | `useEntitlements()`, `checkPremium()` | **Local SDK** | P1-13 ✅ | Webhook shipped (records events); entitlement still read from device SDK — no API exposes tier |
 | Photo / analytics / companion swap gates | Various | **FE gap** | P1-13, P2-5 | Gates not wired (#61–64) |
-| Push tokens | Settings toggle | **FE gap** | P1-14 ✅ | BE `POST /users/me/push-tokens` shipped; #86 not sending tokens yet |
+| Push tokens | Settings toggle | ✅ FE wired | P1-14 ✅ | `usePushTokenSync` → `POST /users/me/push-tokens` (#86) |
 | Challenge deadline push | — | **Missing** | P2-6 | Depends on P1-14 |
 | Local kiln/drying/studio-rhythm notifications | `notificationMessages.ts` | **Local only** | — | No server; OK for V1 |
 
@@ -781,7 +781,7 @@ Aligns with [Recommended implementation order](#recommended-implementation-order
 | GET/POST | `/polls` | P1-5 | Poll voting |
 | GET | `/news` | P1-7 | News cards |
 | POST | `/webhooks/revenuecat` | ✅ P1-13 | Secret-verified, rate-limited 10/min |
-| POST | `/users/me/push-tokens` | ✅ P1-14 | `{token, platform}` → 204; upsert dedupe/rotation. FE not wired (#86) |
+| POST | `/users/me/push-tokens` | ✅ P1-14 | `{token, platform}` → 204; FE wired (#86 ✅) |
 | GET/POST | `/users/me/glazes/sync` | ✅ P0-10/11 | `src/services/glazes.ts` |
 
 ---
