@@ -106,6 +106,7 @@
 | Area | Status | Notes |
 |------|--------|-------|
 | RevenueCat webhook | 🔶 | `POST /webhooks/revenuecat` shipped (P1-13), secret-verified + rate-limited 10/min. Writes a `subscriptions` table; server can now read active tier via `GetActiveTier` |
+| Entitlement read | 🔶 | `GET /users/me/entitlement` → `{ tier: "basic"\|"premium", expires_at? }`. Server-authoritative tier for hardening against SDK spoofing. FE can adopt once `premiumGate.ts` is migrated off the RevenueCat device SDK. |
 | Push tokens | 🟡 | `POST /users/me/push-tokens` shipped (P1-14) — FE wired (#86 ✅): `usePushTokenSync` on launch + token refresh; `AccountSettingsScreen` on toggle enable |
 | Challenge push notifications | 🔶 | **Shipped** (P2-6): background job pushes 48h before `submission_deadline` to joined-but-unsubmitted, and to all joined when voting opens (Expo Push API). FE now registers tokens (#86 ✅) |
 | Server-side glaze count | 🔶 | **Shipped** (P2-5): free tier capped at **15** active glazes on `POST /users/me/glazes/sync` → 403 `glaze_limit_reached`; updates/premium pass through. `GET /users/me/glazes/usage` → `{count, limit, is_premium}` |
@@ -275,7 +276,7 @@ Assets API exists; FE wires upload/hydrate in `pieceAssetSync.ts`. Remaining BE 
 | **Profile tab — journey/badges** | XP, badges, milestones | ❌ (computed from local counters + store) | **P3** optional `user_stats` / badge unlocks if achievements must survive reinstall | Badge **definitions** (code registry) |
 | **Friends** | Friends list, requests | ✅ friends API | **P2** stop using local `clayFriendsCount` | — |
 | **Studios** | Owned/member studios, invites | ✅ `/users/me/studios/*` (P1-4) | **P2** `user.linkedStudioCode` invite codes (out of scope) + active studio context; piece queue needs API | `studio` / `studioMembers` runtime cache |
-| **Studio rhythm** | Schedule, drying timers, events, rituals | ❌ | **P2** `preferences.studio_rhythm` JSONB | Ad-hoc `tasks[]` |
+| **Studio rhythm** | Schedule, drying timers, events, rituals | 🔶 | **Shipped:** `PUT /users/me/rythm` — premium gate enforced (sprint/freeform → 403 for free); preferences path routes through same gate. **FE thread:** write rhythm via this route, not the preferences blob | Ad-hoc `tasks[]` |
 | **Notifications** | Toggles + local kilnkin pushes | 🟡 push token endpoint | **P2** prefs on server for **remote** pushes (P2-6) | Local notification schedule + in-app inbox |
 | **Premium** | Entitlement, purchases | 🟡 RC webhook + server reads tier (`GetActiveTier`); gates export/quotas | **P2** optional `GET /users/me/entitlement` for FE-readable tier | `isPremium` from device SDK until a GET exists |
 | **Account settings** | Delete account, change password | ✅ `DELETE /users/me` · Ory password | Verify revive flow | — |
@@ -455,7 +456,7 @@ Full detail: [Pieces completeness backlog](#pieces-feature--completeness-backlog
 
 | Zustand key | What it is | BE today | Priority | Notes |
 |-------------|------------|----------|----------|-------|
-| `studioRhythm` | v2 rhythm (type, stage days, drying timers, events, rituals, sprint) | ❌ | P2 | Large nested object — good `preferences.studio_rhythm` JSONB candidate |
+| `studioRhythm` | v2 rhythm (type, stage days, drying timers, events, rituals, sprint) | 🔶 | P2 | `PUT /users/me/rythm` shipped — sprint/freeform premium-gated; preferences path routes through same gate. **FE:** write via this route, not the preferences blob |
 | `studioRhythmConfig` | Legacy rhythm config + goals | ❌ | P2 | Migrate to v2 or drop |
 | `dailyMissionCompletion` | Per-day mission checkmarks | ❌ | P3 | Gamification; OK device-local unless cloud missions |
 | `tasks` | “Today’s routine” ad-hoc tasks | ❌ | P3 | Ephemeral; device OK |
@@ -584,7 +585,7 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 | Avatar / cover | ✅ | ✅ (counts toward 500 MB) | ✅ |
 | Analytics dashboards | Preview (FE gate) | ❌ not stored | ❌ not stored — still FE-computed |
 | Data export | Blocked (FE gate) | ❌ no export archive | ✅ **`GET /users/me/export`** (premium-gated, P2-8) — glaze + piece-glaze-link archive |
-| Studio Rhythm sprint / freeform | Blocked (FE gate) | ❌ today | **Same `preferences` blob** — tier checked on read/write |
+| Studio Rhythm sprint / freeform | Blocked (FE gate) | **Enforced** via `PUT /users/me/rythm` — sprint/freeform → 403 for free; preferences path routes through same gate | ✅ allowed |
 | Kilnkin companion swap | Onboarding pick only | ❌ today | **Same `preferences.kilnkin`** — swap allowed if premium |
 | Missions | 3/week cap (#15, not built) | Optional counter | Unlimited — server tracks weekly count for free |
 | Yearly wrap | Coming soon | ❌ | **P3:** generated report snapshot |
@@ -606,7 +607,7 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 | **Export** | V1 builds JSON from local + synced data on device; no server archive |
 | **Full pricing** presets | Belongs in `preferences.pricing` for all users; hide advanced fields in FE when free |
 | **Companion swap** | Single `kilnkin` field in preferences; server stores element + name for everyone, validates swap only if `entitlement = premium` |
-| **Studio Rhythm** sprint/freeform | `preferences.studio_rhythm.type` — store for all; reject `type: sprint \| freeform` on PUT if free |
+| **Studio Rhythm** sprint/freeform | `PUT /users/me/rythm` enforces premium — sprint/freeform → 403 for free users; both the old `/rythm` path and the preferences path route through the same gate. FE must write via `/users/me/rythm`, not the preferences blob |
 | **Unlimited missions** | Optional `mission_completions` counter per ISO week — same table, stricter limit column for free |
 
 **BE work for premium (not “premium-only tables”):**
@@ -614,8 +615,9 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 1. **Entitlement read** — ✅ server reads active tier internally via `subscriptions.GetActiveTier` and gates routes with `middleware.RequirePremium()` (used by `/users/me/export`). **No public `GET /users/me/entitlement` yet** — FE still reads `isPremium` from the device SDK; add the GET if FE needs server-authoritative tier.
 2. **Quota checks on upload paths** — ✅ **done (P2-9)**: 500 MB cap + 1-photo-per-piece enforced on piece-asset, glaze-image, avatar, cover uploads (`internal/quota/cloud.go`).
 3. **Glaze sync cap** — ✅ **done (P2-5)**: `POST /users/me/glazes/sync` rejects a free user past 15 non-deleted glazes (`enforceGlazeLimit`); `GET /users/me/glazes/usage` exposes count/limit/tier.
-4. **Mission weekly cap** (when #15 ships) — `GET/POST /users/me/missions` or field on preferences with `completions_this_week` + reset cron.
-5. **Yearly wrap (P3)** — `GET /users/me/wrap/{year}` generating or serving a cached report — premium-only route.
+4. **Studio Rhythm gate** — ✅ **done**: `PUT /users/me/rythm` rejects sprint/freeform for free users (403); preferences path routes through the same gate so neither path can be used to bypass it.
+5. **Mission weekly cap** (when #15 ships) — `GET/POST /users/me/missions` or field on preferences with `completions_this_week` + reset cron.
+6. **Yearly wrap (P3)** — `GET /users/me/wrap/{year}` generating or serving a cached report — premium-only route.
 
 **Free users still need BE persistence for:** identity, privacy, pieces (text), glazes (recipes), kilns, firings, friends, posts, first cloud photo per piece, and preferences — see [Full app map](#full-app--what-should-be-saved-on-the-backend). Premium unlocks **volume of cloud media** and **access to gated preference modes**, not the existence of a server account.
 
@@ -656,7 +658,7 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 | 4 | **Firing `piece_ids`** + verify kiln log round-trip | Kiln tab |
 | 5 | **Glaze verify** — images (P1-10), version chain (P1-8), tests (P1-9) | Library / Glaze |
 | 6 | **Community mock removal** — challenges, gallery, Hall of Fame → live API only | Community |
-| 7 | **`preferences.studio_rhythm`** or dedicated resource | Studio Rhythm, Overview missions |
+| 7 | ~~**`preferences.studio_rhythm`** or dedicated resource~~ **Shipped** as `PUT /users/me/rythm` with premium gate (sprint/freeform blocked for free). **FE thread:** write rhythm via this route, not the preferences blob | Studio Rhythm, Overview missions |
 | 8 | ~~**Push tokens (#86)**~~ ✅ — `usePushTokenSync`; notification prefs on user still P2 | Notifications |
 | 9 | **`GET /users/me/entitlement`** | Premium gates, photo limits |
 | 10 | **Studios member queue** (when product ready) | Studio owners, piece queue |
@@ -666,7 +668,8 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 
 | Method | Path | Holds |
 |--------|------|-------|
-| GET/PUT | `/users/me/preferences` | Sections **A**, **B**, **F** (rhythm), kiln checklist |
+| GET/PUT | `/users/me/preferences` | Sections **A**, **B**, kiln checklist (rhythm moved to its own route) |
+| PUT | `/users/me/rythm` | Studio rhythm — premium-gated (sprint/freeform blocked for free); section **F** |
 | PUT | `/users/me` | Identity (**H**) |
 | PUT | `/users/me/privacy` | Community + analytics opt-in (**B**) |
 | POST | `/users/me/pieces/sync` | Extended **C** |
