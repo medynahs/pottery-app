@@ -12,7 +12,7 @@
 
 **Every P0, P1, and P2 task in the API repo is shipped.** All P0 (friends, public profile, privacy, pieces/firings/glaze sync, posts/feed/media, reactions, challenges, voting, Hall of Fame) + account delete; all P1 (editable identity `PUT /users/me`, RevenueCat webhook, validation + rate limiting, upload hardening, OG share page, push token storage, **Studios API**, **Polls**, **Admin news**, **glaze version chain / test tiles / images / structured recipe posts / save provenance**); and all P2 (Universal Links, **Discover catalog API**, **glaze mix logs**, **batch scaler fields**, **server-side glaze count enforcement**, **challenge deadline/voting push notifications**, **challenge moderation**, **account delete full lifecycle** — storage purge + premium export, and **server-side cloud upload quotas**).
 
-**Remaining backend gaps are FE wiring plus a small deferred backlog** (extended pieces deep-sync, `/users/me/preferences`, public entitlement GET — see [`BACKEND-TASKS.md` → Deferred / post-V1 backend](./BACKEND-TASKS.md)). FE has wired profile (#91 ✅), privacy (#14 ✅), and push tokens (#86 ✅). Status below is **🔶 backend-done** / **🟡 FE-wired** until each is re-verified in-app. Two prod-config TODOs: set `APPLE_APP_ID` / `ANDROID_SHA256_FINGERPRINT` (Universal Links) and `REVENUECAT_WEBHOOK_SECRET`.
+**The deferred backlog is also shipped** — extended pieces deep-sync, `GET/PUT /users/me/preferences`, and public `GET /users/me/entitlement` are all live in the API repo. Remaining backend gaps are **FE wiring only**. FE has wired profile (#91 ✅), privacy (#14 ✅), and push tokens (#86 ✅). Status below is **🔶 backend-done** / **🟡 FE-wired** until each is re-verified in-app. Two prod-config TODOs: set `APPLE_APP_ID` / `ANDROID_SHA256_FINGERPRINT` (Universal Links) and `REVENUECAT_WEBHOOK_SECRET`.
 
 **Routes that changed during implementation — FE must adopt:**
 
@@ -278,7 +278,7 @@ Assets API exists; FE wires upload/hydrate in `pieceAssetSync.ts`. Remaining BE 
 | **Studios** | Owned/member studios, invites | ✅ `/users/me/studios/*` (P1-4) | **P2** `user.linkedStudioCode` invite codes (out of scope) + active studio context; piece queue needs API | `studio` / `studioMembers` runtime cache |
 | **Studio rhythm** | Schedule, drying timers, events, rituals | 🔶 | **Shipped:** `PUT /users/me/rythm` — premium gate enforced (sprint/freeform → 403 for free); preferences path routes through same gate. **FE thread:** write rhythm via this route, not the preferences blob | Ad-hoc `tasks[]` |
 | **Notifications** | Toggles + local kilnkin pushes | 🟡 push token endpoint | **P2** prefs on server for **remote** pushes (P2-6) | Local notification schedule + in-app inbox |
-| **Premium** | Entitlement, purchases | 🟡 RC webhook + server reads tier (`GetActiveTier`); gates export/quotas | **P2** optional `GET /users/me/entitlement` for FE-readable tier | `isPremium` from device SDK until a GET exists |
+| **Premium** | Entitlement, purchases | ✅ RC webhook + `GET /users/me/entitlement` (server-authoritative tier); gates export/quotas | — endpoint shipped; FE adopts when `premiumGate.ts` hardens off the SDK | `isPremium` still read from device SDK in FE today |
 | **Account settings** | Delete account, change password | ✅ `DELETE /users/me` · Ory password | Verify revive flow | — |
 | **Public profile** | Other users’ grid | ✅ `GET /users/:id/profile` | Verify privacy enforcement | — |
 | **Discover** | Recipe / inspiration catalog | ✅ `GET /glazes/discover/recipes` + `/inspirations` (P2-2) | Wire FE off bundled JSON | Bundled JSON OK until FE wired |
@@ -472,7 +472,7 @@ Full detail: [Pieces completeness backlog](#pieces-feature--completeness-backlog
 | `clayFriendsCount` | 🟡 | P2 | Should be `GET /friends` count, not local counter |
 | `communityDemoPollVoteId` | ❌ | — | **Device OK** — demo poll fallback |
 | `communityKilnShareHintShown`, `communityPieceShareHintShown` | ❌ | — | **Device OK** — one-time UI hints |
-| `communityPostSaveCounts` | ❌ | P3 | Local stub until BE exposes save counts |
+| `communityPostSaveCounts` | ✅ BE | P3 | `save_count` on feed payload + `POST/DELETE /posts/:id/save` shipped; drop the local stub |
 | `hasOpenedCommunityTab` | ❌ | — | **Device OK** — first-visit UX |
 
 ---
@@ -528,7 +528,7 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 | Winner detail | `HallOfFameWinnerScreen` | ✅ | `GET /hall-of-fame/winners/:id` | Dev mock fallback only |
 | Polls | `CommunityPollCard` | ✅ | verify | |
 | `communityDemoPollVoteId` | Demo when `GET /polls` empty | ❌ | — | Device fallback |
-| `communityPostSaveCounts` | Save count stub | ❌ | P3 | Use `save_count` on feed payload (BE-8.5) |
+| `communityPostSaveCounts` | Save count stub | ✅ BE | P3 | `save_count` on feed payload + `POST/DELETE /posts/:id/save` shipped — wire FE off the stub |
 | `communityKilnShareHintShown`, `communityPieceShareHintShown` | One-time hints | ❌ | — | Device |
 | Glaze recipe in post caption | HTML comment parse | ✅ BE | P3 | P1-11 shipped — structured `type: "glaze_recipe"` + `glaze_recipe` JSONB (field is `type`, not `post_type`); FE still parses comment block |
 | News cards | Not built (#29) | ✅ BE | P2 | P1-7 shipped — `GET /news`; FE #29 |
@@ -564,7 +564,7 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 
 | Data | Location | BE today | Priority | Notes |
 |------|----------|----------|----------|-------|
-| `isPremium` | `useEntitlements()` → store | 🟡 webhook + server reads tier (`GetActiveTier`) | P2 | Optional `GET /users/me/entitlement` for FE-readable tier |
+| `isPremium` | `useEntitlements()` → store | ✅ webhook + `GET /users/me/entitlement` shipped | — | FE-readable tier endpoint live; FE still reads device SDK until `premiumGate.ts` migrates |
 | RevenueCat customer | Device SDK | ✅ | — | |
 | Photo / storage / export gates | `premiumGate.ts` | ✅ BE enforced | — | Photo+storage quotas (P2-9), glaze count (P2-5), export gated (P2-8) — all server-side now |
 
@@ -587,8 +587,8 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 | Data export | Blocked (FE gate) | ❌ no export archive | ✅ **`GET /users/me/export`** (premium-gated, P2-8) — glaze + piece-glaze-link archive |
 | Studio Rhythm sprint / freeform | Blocked (FE gate) | **Enforced** via `PUT /users/me/rythm` — sprint/freeform → 403 for free; preferences path routes through same gate | ✅ allowed |
 | Kilnkin companion swap | Onboarding pick only | ❌ today | **Same `preferences.kilnkin`** — swap allowed if premium |
-| Missions | 3/week cap (#15, not built) | Optional counter | Unlimited — server tracks weekly count for free |
-| Yearly wrap | Coming soon | ❌ | **P3:** generated report snapshot |
+| Missions | 3/week cap (#15) | ✅ `GET/POST /users/me/missions` — weekly counter | Unlimited — server tracks weekly count for free |
+| Yearly wrap | ✅ shipped | ✅ `GET /users/me/wrap/{year}` (premium-gated) | **P3:** generated/cached report snapshot |
 
 **What should be saved on BE only for Premium users** (quota-enforced uploads — free users must not persist these rows):
 
@@ -612,12 +612,12 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 
 **BE work for premium (not “premium-only tables”):**
 
-1. **Entitlement read** — ✅ server reads active tier internally via `subscriptions.GetActiveTier` and gates routes with `middleware.RequirePremium()` (used by `/users/me/export`). **No public `GET /users/me/entitlement` yet** — FE still reads `isPremium` from the device SDK; add the GET if FE needs server-authoritative tier.
+1. **Entitlement read** — ✅ server reads active tier internally via `subscriptions.GetActiveTier`, gates routes with `middleware.RequirePremium()` (used by `/users/me/export`), AND exposes a public **`GET /users/me/entitlement`** → `{ tier: "basic"|"premium", expires_at? }`. FE still reads `isPremium` from the device SDK; adopt the GET when hardening against SDK spoofing.
 2. **Quota checks on upload paths** — ✅ **done (P2-9)**: 500 MB cap + 1-photo-per-piece enforced on piece-asset, glaze-image, avatar, cover uploads (`internal/quota/cloud.go`).
 3. **Glaze sync cap** — ✅ **done (P2-5)**: `POST /users/me/glazes/sync` rejects a free user past 15 non-deleted glazes (`enforceGlazeLimit`); `GET /users/me/glazes/usage` exposes count/limit/tier.
 4. **Studio Rhythm gate** — ✅ **done**: `PUT /users/me/rythm` rejects sprint/freeform for free users (403); preferences path routes through the same gate so neither path can be used to bypass it.
-5. **Mission weekly cap** (when #15 ships) — `GET/POST /users/me/missions` or field on preferences with `completions_this_week` + reset cron.
-6. **Yearly wrap (P3)** — `GET /users/me/wrap/{year}` generating or serving a cached report — premium-only route.
+5. **Mission weekly cap** — ✅ **done**: `GET/POST /users/me/missions` tracks `completions_this_week` with a free-tier weekly cap (FE wires #15).
+6. **Yearly wrap** — ✅ **done**: `GET /users/me/wrap/{year}` serves a generated/cached report, premium-only route.
 
 **Free users still need BE persistence for:** identity, privacy, pieces (text), glazes (recipes), kilns, firings, friends, posts, first cloud photo per piece, and preferences — see [Full app map](#full-app--what-should-be-saved-on-the-backend). Premium unlocks **volume of cloud media** and **access to gated preference modes**, not the existence of a server account.
 
@@ -660,7 +660,7 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 | 6 | **Community mock removal** — challenges, gallery, Hall of Fame → live API only | Community |
 | 7 | ~~**`preferences.studio_rhythm`** or dedicated resource~~ **Shipped** as `PUT /users/me/rythm` with premium gate (sprint/freeform blocked for free). **FE thread:** write rhythm via this route, not the preferences blob | Studio Rhythm, Overview missions |
 | 8 | ~~**Push tokens (#86)**~~ ✅ — `usePushTokenSync`; notification prefs on user still P2 | Notifications |
-| 9 | **`GET /users/me/entitlement`** | Premium gates, photo limits |
+| 9 | ~~**`GET /users/me/entitlement`**~~ ✅ shipped — `{ tier, expires_at? }` | Premium gates, photo limits |
 | 10 | **Studios member queue** (when product ready) | Studio owners, piece queue |
 | 11 | **`GET /news`**, **`GET /discover`** | Community news, Discover catalog (P2+) |
 

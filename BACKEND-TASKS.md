@@ -485,7 +485,7 @@ Shipped: `source_post_id` (FK `ON DELETE SET NULL`), `source_user_id` (FK `ON DE
 
 ### P1-13 · Premium — RevenueCat webhook — ✅ DONE
 
-`POST /webhooks/revenuecat` shipped — secret-verified (`REVENUECAT_WEBHOOK_SECRET`), rate-limited 10/min. Records subscription events into a `subscriptions` table. Server now **reads** the active tier internally via `GetActiveTier` and gates routes/quotas with `middleware.RequirePremium()` (export P2-8, glaze count P2-5, cloud quotas P2-9). **No public `GET /users/me/entitlement` yet** — FE still reads `isPremium` from the device SDK; add the GET only if the FE needs a server-authoritative tier.
+`POST /webhooks/revenuecat` shipped — secret-verified (`REVENUECAT_WEBHOOK_SECRET`), rate-limited 10/min. Records subscription events into a `subscriptions` table. Server now **reads** the active tier internally via `GetActiveTier` and gates routes/quotas with `middleware.RequirePremium()` (export P2-8, glaze count P2-5, cloud quotas P2-9). Public **`GET /users/me/entitlement`** → `{ tier: "basic"|"premium", expires_at? }` is also shipped; FE still reads `isPremium` from the device SDK and adopts the GET when hardening against SDK spoofing.
 
 ---
 
