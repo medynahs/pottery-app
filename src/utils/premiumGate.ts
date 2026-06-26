@@ -33,6 +33,10 @@ export { FREE_CLOUD_STORAGE_MB } from './cloudStorage';
 /** Free tier: one cloud-backed photo per piece (more can stay on-device). */
 export const FREE_PHOTO_LIMIT = 1;
 
+/** Free tier: glaze library cap enforced server-side on sync. Mirror of the
+ * backend's freeGlazeLimit — keep both in step. */
+export const FREE_GLAZE_LIMIT = 15;
+
 export type PremiumComparisonRow = {
   label: string;
   free: string;
@@ -41,7 +45,8 @@ export type PremiumComparisonRow = {
 
 /** Free vs Premium rows for the upgrade screen comparison table. */
 export const PREMIUM_COMPARISON_ROWS: PremiumComparisonRow[] = [
-  { label: 'Pieces, kiln & glazes', free: 'Unlimited', premium: 'Unlimited' },
+  { label: 'Pieces & kiln logs', free: 'Unlimited', premium: 'Unlimited' },
+  { label: 'Glazes', free: `${FREE_GLAZE_LIMIT}`, premium: 'Unlimited' },
   { label: 'Text sync across devices', free: 'Included', premium: 'Included' },
   { label: 'Cloud photo storage', free: `${FREE_CLOUD_STORAGE_MB} MB`, premium: 'Unlimited' },
   { label: 'Photos backed up per piece', free: '1', premium: 'Unlimited' },
@@ -75,7 +80,7 @@ export const PAYWALL_COMING_SOON_FEATURES: PaywallFeatureItem[] = [
 
 /** Explains the local vs cloud split on upgrade screens. */
 export const PAYWALL_LOCAL_CLOUD_EXPLAINER =
-  'Free: unlimited pieces, kiln logs & glazes on your device, with journal text synced across devices. Cloud photos and media are limited; Premium unlocks full backup.';
+  `Free: unlimited pieces & kiln logs on your device, up to ${FREE_GLAZE_LIMIT} glazes, with journal text synced across devices. Cloud photos and media are limited; Premium unlocks full backup and unlimited glazes.`;
 
 const PREMIUM_CONTEXTUAL_TITLES: Record<PremiumFeature, string> = {
   [PremiumFeature.Analytics]: 'Unlock studio analytics',

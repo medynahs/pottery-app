@@ -2,14 +2,16 @@
 
 **Purpose:** Single prioritized backlog for all API, sync, and server-side work. The mobile app repo tracks FE wiring here; deployment is verified separately.
 
-**Last updated:** June 25, 2026  
+**Last updated:** June 26, 2026  
 **Companion docs:** [`BACKEND.md`](./BACKEND.md) (overview + API surface) · [`FRONTEND.md`](./FRONTEND.md) (FE tickets + roadmaps)
 
 **✅ Sprint A complete (BE):** P0-1 (friends `cover_url`), P0-2 (public profile), P1-2b (avatar/cover media), P1-3 (privacy toggles + enforcement). FE wiring for privacy toggles (#14) still pending.
 
 ---
 
-## ✅ Done on backend (Jun 25) — all P0 + nearly all P1/P2
+## ✅ Done on backend (Jun 26) — ALL P0, P1, AND P2 shipped
+
+**The entire V1 backend backlog is complete.** Every task below is shipped; remaining work is FE wiring only.
 
 | Task | Status |
 |------|--------|
@@ -18,6 +20,9 @@
 | P0-6 Post/feed/media · P0-7 Reactions · P0-8 Challenge lifecycle · P0-9 Voting · P1-6 Hall of Fame | ✅ shipped |
 | P0-5 Account delete (soft-delete + grace + revive) | ✅ shipped |
 | P1-2 Editable identity · P1-13 RevenueCat · P1-15 Validation · P1-16 Upload hardening · P1-17 OG page · P2-1 Universal Links · P1-14 Push tokens | ✅ shipped |
+| **P1-4 Studios** · **P1-5 Polls** · **P1-7 Admin news** | ✅ shipped |
+| **P1-8 Glaze version chain** · **P1-9 Test tiles** · **P1-10 Glaze images** · **P1-11 Structured recipe posts** · **P1-12 Save provenance** | ✅ shipped |
+| **P2-2 Discover catalog** · **P2-3 Mix logs** · **P2-4 Batch scaler** · **P2-5 Server glaze count** · **P2-6 Challenge push** · **P2-7 Moderation** · **P2-8 Delete full lifecycle** · **P2-9 Cloud upload quotas** | ✅ shipped |
 
 **FE must adopt these route changes** (shipped differently than this doc originally specified):
 
@@ -84,10 +89,10 @@ Do not submit until these pass. App Review or marketing accuracy will fail other
 |------|-----|----|----|
 | OG share preview page | WhatsApp/iMessage shares look broken without unfurl | ✅ **P1-17** done | Optional env only |
 | Universal Links | Tap shared link opens app when installed | ✅ **P2-1** done (set env + Expo config) | Deep link verify |
-| Glaze version chain + images + test tiles | Full atlas fidelity across devices | P1-8, P1-9, P1-10 | — |
-| Structured glaze recipe posts | Feed stops parsing HTML comment blocks | P1-11 | — |
-| Push token storage + challenge deadline push | Notification permission with no delivery | ✅ **P1-14** storage done (deadline push P2-6 pending) | #86 |
-| RevenueCat webhook + server glaze count | Free-tier enforcement can't rely on client only | ✅ **P1-13** webhook done (server glaze count P2-5 pending) | #65 |
+| Glaze version chain + images + test tiles | Full atlas fidelity across devices | ✅ **P1-8, P1-9, P1-10** done | — |
+| Structured glaze recipe posts | Feed stops parsing HTML comment blocks | ✅ **P1-11** done (field is `type`) | — |
+| Push token storage + challenge deadline push | Notification permission with no delivery | ✅ **P1-14** storage + **P2-6** deadline/voting push done | #86 (send tokens) |
+| RevenueCat webhook + server glaze count | Free-tier enforcement can't rely on client only | ✅ **P1-13** webhook + **P2-5** glaze count + **P2-9** cloud quotas done | #65 |
 | Input validation + upload hardening | Production security baseline | ✅ **P1-15, P1-16** done | — |
 | PostHog / no PII in logs | Ops + compliance | — | #47–48, #78 |
 
@@ -97,13 +102,13 @@ Safe to ship V1 without blocking review if not prominently marketed.
 
 | Item | Notes |
 |------|-------|
-| Discover catalog API (P2-2) | Bundled static recipes in `src/screens/library/discover/` |
-| Mix logs / glaze stack / unload review (P2-3, FE roadmap) | Studio journal depth, not V1 promise |
-| Community news (P1-7) | Not started (#29) |
+| Discover catalog API (P2-2) | ✅ BE shipped (`GET /glazes/discover/*`); FE still bundled static recipes in `src/screens/library/discover/` |
+| Mix logs / glaze stack / unload review (P2-3, FE roadmap) | ✅ BE mix logs shipped; FE roadmap depth still pending |
+| Community news (P1-7) | ✅ BE `GET /news` shipped; FE not started (#29) |
 | Events / Drops tab | Placeholder UI only (`DropsTab.tsx`) |
 | Role-based kiln default view (#38–39) | Polish |
 | Missions cap (#15), telemetry (#47–48), Jest/Maestro (#71–76) | Quality, not review gates |
-| Challenge moderation (P2-7) | Post-launch ops |
+| Challenge moderation (P2-7) | ✅ BE shipped (report/disqualify/vote-rate-limit); post-launch FE ops |
 
 ### Release gate summary
 
@@ -401,19 +406,19 @@ Enforce on `GET /users/:userId/profile` → 404 when `profile_public=false`; `pi
 
 ---
 
-### P1-4 · Profile — Studios API
+### P1-4 · Profile — Studios API — ✅ DONE
 
-`GET /users/me/studios/owned`, `/member-of`, invites + join requests.
+Shipped: `GET /users/me/studios/owned`, `/member-of`; `POST /users/me/studios/:studio_id/invites`; `GET /users/me/studios/join-requests/incoming`; `POST /users/me/studios/:studio_id/join-requests`; `POST /users/me/studios/join-requests/:request_id/accept|reject`. BE paths follow the FE `studios.ts` contract (not the abstract `/studios/:id/` brief). Non-owner accept → 403 (`ErrNotStudioOwner`); no auth → 401.
 
 **FE wired:** `src/services/studios.ts`, `StudiosTab`
 
 ---
 
-### P1-5 · Community — Polls
+### P1-5 · Community — Polls — ✅ DONE
 
-`GET /polls`, `POST /polls/:id/vote` (one per user), `GET /polls/:id/results`.
+Shipped: `GET /polls` (`ListActive` → `ends_at > NOW()`, options batched), `POST /polls/:id/vote` (DB `UNIQUE(poll_id, user_id)` → PG 23505 → `ErrPollAlreadyVoted` → 409), `GET /polls/:id/results` (LEFT JOIN tally, zero-vote options included).
 
-**Create polls:** Admin / backend only — there is no in-app poll composer. Seed active polls via SQL, admin script, or `POST /admin/polls` (to define). Until then, the app shows a bundled demo poll with local-only votes.
+**Create polls:** Admin only — `POST /api/polls` (admin-gated) + migration `20260626000100_create_polls.sql`. No in-app composer.
 
 **FE wired**
 
@@ -429,54 +434,56 @@ Enforce on `GET /users/:userId/profile` → 404 when `profile_public=false`; `pi
 
 ---
 
-### P1-7 · Community — Admin news
+### P1-7 · Community — Admin news — ✅ DONE
 
-`GET /news` — curated pottery news (title, source, url, imageUrl, publishedAt).
+Shipped: `GET /news` — curated pottery news (title, source, url, image_url, published_at), public route, `ORDER BY published_at DESC` + `idx_news_published_at`. Migration `20260626000200_create_news.sql` seeds 10 example rows.
 
 **FE:** not started (#29)
 
 ---
 
-### P1-8 · Glaze — Version chain
+### P1-8 · Glaze — Version chain — ✅ DONE
 
-Persist `version_number`, `root_glaze_id`, `parent_glaze_id`. Query all versions for root.
-
----
-
-### P1-9 · Glaze — Test tiles sync
-
-Confirm `POST /users/me/glazes/sync` accepts test snapshots. Persist clay, cone, kiln, application, defects, `result_rating`, photo ref. Link via `glaze_client_ref`.
+Shipped: `version_number` (`DEFAULT 1`), `root_glaze_id`, `parent_glaze_id` (both FK `ON DELETE SET NULL`) on `glazes`; persisted in `POST /users/me/glazes/sync`; `GET /users/me/glazes/:id/versions` returns the chain ordered by `version_number`.
 
 ---
 
-### P1-10 · Glaze — Images
+### P1-9 · Glaze — Test tiles sync — ✅ DONE
 
-Gallery types: `bucket`, `test-tile`, `finished-piece`, `accident`. Idempotent upload/delete. Signed URLs in list payload.
-
----
-
-### P1-11 · Glaze — Community recipe posts
-
-| Task | Notes |
-|------|-------|
-| `post_type` enum on posts | `text` \| `glaze_recipe` |
-| `glaze_recipe` JSON column | Mirrors `CommunityGlazeRecipePayload` |
-| Accept on POST | Strip HTML comment block in content when structured payload present |
-| Return on feed | FE stops parsing comment blocks |
+Shipped: `POST /users/me/glazes/sync` persists test snapshots — clay_type, cone, kiln_type, application_method, defects, `result_rating`, photo_ref. Linked to glaze via `glaze_client_ref`.
 
 ---
 
-### P1-12 · Glaze — Save provenance
+### P1-10 · Glaze — Images — ✅ DONE
 
-`source_post_id`, `source_user_id` on glaze records. Idempotent `(user_id, source_post_id)`.
+Shipped: `POST /users/me/glazes/:id/images` (multipart `file` + `type`: `bucket`/`test-tile`/`finished-piece`/`accident`) → `{id, url, type}`; `DELETE …/glazes/:id/images/:imageId` → 204 idempotent; `images[]` with URLs in glaze detail/list payload. Invalid type → 400.
 
-Optional `source_discover_recipe_id` for Discover saves.
+---
+
+### P1-11 · Glaze — Community recipe posts — ✅ DONE
+
+Shipped. **Field is `type` (not `post_type`)** — it already lives on `posts`, so the prefix is redundant.
+
+| Task | Status |
+|------|--------|
+| `type TEXT NOT NULL DEFAULT 'text'` on posts | ✅ (`text` \| `glaze_recipe`) |
+| `glaze_recipe` JSONB column | ✅ mirrors `CommunityGlazeRecipePayload` |
+| Accept on `POST /users/me/posts` | ✅ strips HTML comment block from `content` when `glaze_recipe` present |
+| Return on feed | ✅ feed returns `type` + `glaze_recipe` |
+
+**FE note:** live FE code still embeds the recipe inside `content` and parses it back out, so no FE change is required — only the FE planning docs still say `post_type`.
+
+---
+
+### P1-12 · Glaze — Save provenance — ✅ DONE
+
+Shipped: `source_post_id` (FK `ON DELETE SET NULL`), `source_user_id` (FK `ON DELETE SET NULL`), `source_discover_recipe_id` (text) on `glazes`; persisted in glaze sync; idempotent on `(user_id, source_post_id)` so the same post can't be saved twice.
 
 ---
 
 ### P1-13 · Premium — RevenueCat webhook — ✅ DONE
 
-`POST /webhooks/revenuecat` shipped — secret-verified (`REVENUECAT_WEBHOOK_SECRET`), rate-limited 10/min. Records subscription events server-side. Note: the `subscriptions` table is write-only — premium entitlement is still read from the RevenueCat SDK on device; no API exposes the active tier.
+`POST /webhooks/revenuecat` shipped — secret-verified (`REVENUECAT_WEBHOOK_SECRET`), rate-limited 10/min. Records subscription events into a `subscriptions` table. Server now **reads** the active tier internally via `GetActiveTier` and gates routes/quotas with `middleware.RequirePremium()` (export P2-8, glaze count P2-5, cloud quotas P2-9). **No public `GET /users/me/entitlement` yet** — FE still reads `isPremium` from the device SDK; add the GET only if the FE needs a server-authoritative tier.
 
 ---
 
@@ -574,45 +581,56 @@ When the app is installed, tapping the shared link should open `/user/[id]` in-a
 
 ---
 
-### P2-2 · Glaze — Discover catalog API
+### P2-2 · Glaze — Discover catalog API — ✅ DONE
 
-`GET /glazes/discover/recipes`, `/inspirations` — versioned catalog replacing bundled static data. CDN preview URLs. Admin publish endpoint optional.
-
----
-
-### P2-3 · Glaze — Mix logs (when FE ships)
-
-`glaze_mix_logs` table + sync: `glaze_id`, `mixed_at`, `target_batch_g`, `ingredient_snapshot_json`, `notes`. Optional per-material weigh rows.
+Shipped: `GET /glazes/discover/recipes` (versioned, CDN preview URLs) + `GET /glazes/discover/inspirations`, both public. Admin publish (upsert + delete for recipes and inspirations) at `/api/glazes/discover`.
 
 ---
 
-### P2-4 · Glaze — Batch scaler sync (optional)
+### P2-3 · Glaze — Mix logs — ✅ DONE
 
-`default_grams_per_piece`, `default_waste_percent` on glaze records.
-
----
-
-### P2-5 · Glaze — Analytics & limits
-
-Server-side glaze count for free-tier enforcement. Aggregate glaze usage endpoint optional.
+Shipped: `glaze_mix_logs` table (`id, user_id, glaze_id, mixed_at, target_batch_g, ingredient_snapshot_json, notes, created_at`, FK `glaze_id ON DELETE CASCADE`); `POST /users/me/glazes/sync` accepts `mix_logs[]` per glaze item. Per-material child rows deferred (YAGNI — `ingredient_snapshot_json` holds the recipe-as-mixed).
 
 ---
 
-### P2-6 · Community — Notifications
+### P2-4 · Glaze — Batch scaler sync — ✅ DONE
 
-Push 48h before submission deadline (#70). Voting opens. Winner celebration optional.
-
----
-
-### P2-7 · Community — Moderation
-
-Rate limit votes. Report/disqualify entry endpoints.
+Shipped: `default_grams_per_piece`, `default_waste_percent` on `glazes`; persisted + returned in `POST /users/me/glazes/sync`.
 
 ---
 
-### P2-8 · Account lifecycle
+### P2-5 · Glaze — Analytics & limits — ✅ DONE
 
-`DELETE /users/me` cascades glazes, tests, images. Premium export includes glazes + piece glaze links.
+Shipped: server-side active-glaze count enforced on `POST /users/me/glazes/sync` — free tier capped at **15** (`enforceGlazeLimit`); new glazes over cap → 403 `glaze_limit_reached`; updates to existing glazes + premium users pass through. `GET /users/me/glazes/usage` → `{ count, limit, is_premium }`.
+
+---
+
+### P2-6 · Community — Notifications — ✅ DONE
+
+Shipped (background job, piggybacks the jobs ticker): push 48h before `submission_deadline` to joined-but-unsubmitted users; push to all joined users when voting opens; optional winner push on close. Expo Push API. Depends on P1-14 (done) + FE sending tokens (#86).
+
+---
+
+### P2-7 · Community — Moderation — ✅ DONE
+
+Shipped: per-user vote rate limit (same in-memory limiter pattern → 429 on burst); `POST /challenges/:id/entries/:entryId/report` (`{ reason, note? }`) → 204; admin `POST /admin/challenges/:id/entries/:entryId/disqualify` → 204 (disqualified entries hidden from gallery + vote totals; non-admin → 403).
+
+---
+
+### P2-8 · Account lifecycle — ✅ DONE
+
+Shipped: hard-purge piggybacks the existing 10m background-jobs ticker (new `deleted_at` drives a 30-day grace), wipes the whole `{userID}/` storage prefix, then FK-cascade clears child DB rows. `GET /users/me/export` (premium-gated) returns the user's glazes + piece-glaze links. Storage purge runs only at hard-purge, so `/revive` keeps images through the grace period.
+
+---
+
+### P2-9 · Premium — Cloud upload quotas (server-side enforcement) — ✅ DONE
+
+The FE gated two free-tier cloud limits in `cloudStorage.ts`, but the BE upload endpoints enforced neither — a free user could bypass both via direct API calls. Now mirrored server-side (`internal/quota/cloud.go`). Premium skips both checks.
+
+- **Account storage cap** — free tier = **500 MB** total cloud media (`FreeCloudStorageBytes`); BE sums live object sizes under `{userID}/` and rejects over-cap uploads with **413**. Enforced on all four upload paths: piece assets, glaze images, avatar, cover.
+- **Per-piece photo slot** — free tier = **1** cloud-backed photo per piece (`FreePiecePhotoLimit`); a 2nd cloud photo on a piece → **403**. PUT-replace path untouched (no new slot). Glaze images only hit the storage cap, not this slot.
+
+`swag init` run; 403/413 documented on all four endpoints.
 
 ---
 
@@ -647,7 +665,7 @@ Single map of **what the app collects or displays today** vs **what the backend 
 | OG / web preview | Share to WhatsApp/iMessage | **Missing** | P1-17 | Plain-text shares until HTML page ships |
 | Clay friends list | `friends.ts`, `ProfileHeader` | **Synced** | **P0-1** ✅ | `cover_url` fix shipped; list returns 200 |
 | Friend requests | `friends.ts` | **FE wired** | — | Blocked by friends list / public profile |
-| Studios (owned, member-of, invites) | `studios.ts`, `StudiosTab` | **FE wired** | P1-4 | Deployment not verified from mobile repo |
+| Studios (owned, member-of, invites) | `studios.ts`, `StudiosTab` | **Synced** | P1-4 ✅ | BE shipped (owned/member-of, invites, join-request accept/reject); verify in-app |
 
 ---
 
@@ -684,14 +702,14 @@ Single map of **what the app collects or displays today** vs **what the backend 
 | Data | FE location | Status | BE task | Notes |
 |------|-------------|--------|---------|-------|
 | Core glaze fields (name, finish, cone, ingredients, tags, collections) | `useGlazesSync`, `GlazeSyncItem` | **Synced** | P0-3 glazes path | Via `POST /users/me/glazes/sync` |
-| Batch metadata: `batchId`, `dateMixed`, `status`, `bestClayType`, `bestFiringTempC`, `atmosphere`, `ingredientsText` | Glaze batch UI | **Partial** | **P0-11** | Sent in sync item; **server may ignore** |
-| Version chain: `versionNumber`, `rootGlazeId`, `parentGlazeId` | `glazeVersionUtils.ts` | **Partial** | P1-8 | Sent; may not persist |
-| Discover save provenance: `discoverSourceRecipeId`, `discoverSavedAt` | Save from Discover | **Partial** | P1-12 | Client fields; server may ignore |
-| Test tiles (clay, cone, defects, rating, photo) | Atlas test logging | **Partial** | P1-9 | In sync payload; confirm BE persistence |
-| Glaze gallery images (bucket, test-tile, finished-piece, accident) | Glaze detail | **Partial** | P1-10 | **Not** in sync snapshot — separate upload endpoints |
-| `default_grams_per_piece`, `default_waste_percent` (batch scaler) | Batch scaler UI | **Local only** | P2-4 | |
-| Mix log sessions | Not built on FE | — | P2-3 | Future FE |
-| Discover recipes & inspirations | `discover/recipes.ts`, `inspirations.ts` | **Static** | P2-2 | Bundled JSON, not API |
+| Batch metadata: `batchId`, `dateMixed`, `status`, `bestClayType`, `bestFiringTempC`, `atmosphere`, `ingredientsText` | Glaze batch UI | **Synced** | **P0-11** ✅ | Persists server-side; verify FE round-trip |
+| Version chain: `versionNumber`, `rootGlazeId`, `parentGlazeId` | `glazeVersionUtils.ts` | **Synced** | P1-8 ✅ | Persists + `GET …/glazes/:id/versions` |
+| Discover save provenance: `discoverSourceRecipeId`, `discoverSavedAt` | Save from Discover | **Synced** | P1-12 ✅ | Persists, idempotent on `(user_id, source_post_id)` |
+| Test tiles (clay, cone, defects, rating, photo) | Atlas test logging | **Synced** | P1-9 ✅ | Persists via sync, linked by `glaze_client_ref` |
+| Glaze gallery images (bucket, test-tile, finished-piece, accident) | Glaze detail | **Synced** | P1-10 ✅ | `…/glazes/:id/images` upload/delete; `images[]` in payload |
+| `default_grams_per_piece`, `default_waste_percent` (batch scaler) | Batch scaler UI | **Synced** | P2-4 ✅ | Persists in sync |
+| Mix log sessions | Not built on FE | **API ready** | P2-3 ✅ | `mix_logs[]` accepted in glaze sync; FE not built |
+| Discover recipes & inspirations | `discover/recipes.ts`, `inspirations.ts` | **Static** | P2-2 ✅ | BE `GET /glazes/discover/*` ready; FE still bundled JSON |
 
 ---
 
@@ -711,7 +729,7 @@ Single map of **what the app collects or displays today** vs **what the backend 
 | Challenge phase dev bar | `FestivalsTab` when `isMock` | **Dev/mock** | P0-8 | Remove when API drives `status` |
 | Dead static seeds | `data.ts` — `WALL_OF_FAME`, `ACTIVE_CHALLENGE`, `POLL_OPTIONS`, `FOLLOW_CREATORS` | **Unused** | — | Safe to delete; superseded by API or mock modules |
 | Drops / Events | `DropsTab.tsx` | **Placeholder** | — | Not V1; static card copy |
-| Admin news cards | — | **Not started** | P1-7 | #29 |
+| Admin news cards | — | **API ready** | P1-7 ✅ | BE `GET /news` shipped; FE not started (#29) |
 
 **Mock module map** (remove when P0-8/9 + P1-6 land):
 
@@ -729,10 +747,11 @@ Single map of **what the app collects or displays today** vs **what the backend 
 
 | Data | FE location | Status | BE task | Notes |
 |------|-------------|--------|---------|-------|
-| RevenueCat entitlement (device) | `useEntitlements()`, `checkPremium()` | **Local SDK** | P1-13 ✅ | Webhook shipped (records events); entitlement still read from device SDK — no API exposes tier |
-| Photo / analytics / companion swap gates | Various | **FE gap** | P1-13, P2-5 | Gates not wired (#61–64) |
+| RevenueCat entitlement (device) | `useEntitlements()`, `checkPremium()` | **Local SDK** | P1-13 ✅ | Webhook + server reads tier (`GetActiveTier`); gates export/quotas. No public `GET /entitlement` — FE still device SDK |
+| Photo / storage / glaze-count gates | Various | **BE enforced** | P2-9, P2-5 ✅ | Server-side: 500 MB + 1-photo/piece (P2-9), 15-glaze cap (P2-5). FE gates #61–64 still to wire |
+| Data export (premium) | Privacy → export | **API ready** | P2-8 ✅ | `GET /users/me/export` (premium-gated) — glazes + piece glaze links |
 | Push tokens | Settings toggle | **FE gap** | P1-14 ✅ | BE `POST /users/me/push-tokens` shipped; #86 not sending tokens yet |
-| Challenge deadline push | — | **Missing** | P2-6 | Depends on P1-14 |
+| Challenge deadline push | Background job | **API ready** | P2-6 ✅ | BE push 48h-before-deadline + voting-opens shipped; needs FE tokens (#86) |
 | Local kiln/drying/studio-rhythm notifications | `notificationMessages.ts` | **Local only** | — | No server; OK for V1 |
 
 ---
@@ -778,11 +797,17 @@ Aligns with [Recommended implementation order](#recommended-implementation-order
 | POST | `/challenges/:id/entries` | ✅ P0-8 | Join (idempotent); submit = `PUT …/entries/:id` |
 | POST | `/challenges/:id/votes` | ✅ P0-9 | Gallery voting |
 | GET | `/hall-of-fame` | ✅ P1-6 | Hall of Fame tab; `/hall-of-fame/winners/:id` for deep links |
-| GET/POST | `/polls` | P1-5 | Poll voting |
-| GET | `/news` | P1-7 | News cards |
+| GET/POST | `/polls`, `/polls/:id/vote`, `/polls/:id/results` | ✅ P1-5 | Poll voting (admin create via `/api/polls`) |
+| GET | `/news` | ✅ P1-7 | News cards (public) |
+| GET/POST | `/users/me/studios/*` | ✅ P1-4 | Owned/member-of, invites, join-requests accept/reject |
 | POST | `/webhooks/revenuecat` | ✅ P1-13 | Secret-verified, rate-limited 10/min |
 | POST | `/users/me/push-tokens` | ✅ P1-14 | `{token, platform}` → 204; upsert dedupe/rotation. FE not wired (#86) |
-| GET/POST | `/users/me/glazes/sync` | ✅ P0-10/11 | `src/services/glazes.ts` |
+| GET/POST | `/users/me/glazes/sync` | ✅ P0-10/11, P1-8/9/12, P2-3/4 | `src/services/glazes.ts` — versions, tests, provenance, scaler, mix logs all persist |
+| POST/DELETE | `/users/me/glazes/:id/images` | ✅ P1-10 | Gallery images (`bucket`/`test-tile`/`finished-piece`/`accident`) |
+| GET | `/users/me/glazes/:id/versions` · `/users/me/glazes/usage` | ✅ P1-8 / P2-5 | Version chain · `{count, limit, is_premium}` |
+| GET | `/glazes/discover/recipes`, `/inspirations` | ✅ P2-2 | Versioned Discover catalog (public; admin publish `/api/glazes/discover`) |
+| GET | `/users/me/export` | ✅ P2-8 | Premium-gated data archive (glazes + piece glaze links) |
+| POST | `/challenges/:id/entries/:entryId/report` · admin `…/disqualify` | ✅ P2-7 | Moderation: report → 204; disqualify hides entry |
 
 ---
 
