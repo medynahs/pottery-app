@@ -43,7 +43,8 @@ export function HallOfFameWinnerCard({
             {winner.pieceTitle}
           </Text>
           <Text className="text-xs mt-1" style={{ color: COMMUNITY_THEME.inkSoft }}>
-            {winner.artistName} · {winner.voteCount} votes
+            {winner.artistName}
+            {winner.userDeleted ? ' · archived' : ` · ${winner.voteCount} votes`}
           </Text>
         </View>
       </View>

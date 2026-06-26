@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import {
   ApiError,
   fetchMe,
+  isAccountDeletedError,
   updateProfile,
   updatePrivacy,
   uploadAvatar,
@@ -12,6 +13,7 @@ import {
   type UpdatePrivacyPayload,
   type UpdateProfilePayload,
 } from '../services/api';
+import { profileIndicatesDeletionGrace } from '../services/accountGrace';
 import { useAppStore } from '../store/appStore';
 
 export const ME_QUERY_KEY = ['me'] as const;
@@ -39,6 +41,7 @@ export function useCurrentUser() {
   const sessionToken = useAppStore((s) => s.sessionToken);
   const setBackendUserId = useAppStore((s) => s.setBackendUserId);
   const clearSession = useAppStore((s) => s.clearSession);
+  const setAccountDeletionGrace = useAppStore((s) => s.setAccountDeletionGrace);
   const showToast = useAppStore((s) => s.showToast);
 
   const query = useQuery({
@@ -46,7 +49,8 @@ export function useCurrentUser() {
     queryFn: () => fetchMe(sessionToken!),
     enabled: !!sessionToken,
     staleTime: 5 * 60 * 1000,
-    retry: (failureCount, error) => !isSessionExpired(error) && failureCount < 2,
+    retry: (failureCount, error) =>
+      !isSessionExpired(error) && !isAccountDeletedError(error) && failureCount < 2,
   });
 
   useEffect(() => {
@@ -55,6 +59,24 @@ export function useCurrentUser() {
       showToast('Your session has expired. Please sign in again.', 'error');
     }
   }, [query.error, sessionToken, clearSession, showToast]);
+
+  useEffect(() => {
+    if (!sessionToken) {
+      setAccountDeletionGrace(false);
+      return;
+    }
+    if (isAccountDeletedError(query.error)) {
+      setAccountDeletionGrace(true);
+      return;
+    }
+    if (query.data && profileIndicatesDeletionGrace(query.data)) {
+      setAccountDeletionGrace(true);
+      return;
+    }
+    if (query.data) {
+      setAccountDeletionGrace(false);
+    }
+  }, [query.error, query.data, sessionToken, setAccountDeletionGrace]);
 
   useEffect(() => {
     if (!query.data) return;

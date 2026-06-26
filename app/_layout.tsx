@@ -19,8 +19,12 @@ import { PhotoPickerProvider } from '@/src/components/PhotoPickerProvider';
 import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
 import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
 import { ToastOverlay } from '@/src/components/ui/toast-overlay';
+import { AccountDeletedGate } from '@/src/components/AccountDeletedGate';
 import { configureRevenueCat } from '@/src/hooks/useEntitlements';
+import { useAccountGraceCheck } from '@/src/hooks/useAccountGraceCheck';
+import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { useNotificationTriggers } from '@/src/hooks/useNotificationTriggers';
+import { usePushTokenSync } from '@/src/hooks/usePushTokenSync';
 import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { useGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { usePiecesSync } from '@/src/screens/pieces/hooks/usePiecesSync';
@@ -104,10 +108,13 @@ function useAuthInitialization(hydrated: boolean) {
 }
 
 function AppShell() {
+  useCurrentUser();
+  useAccountGraceCheck();
   useOfflineSync();
   usePiecesSync();
   useGlazesSync();
   useNotificationTriggers();
+  usePushTokenSync();
   const backendUsersStatus = useAppStore((state) => state.backendUsersStatus);
   const loadBackendUsers = useAppStore((state) => state.loadBackendUsers);
 
@@ -171,6 +178,7 @@ function AppShell() {
       </Stack>
       <OfflineBanner />
       <ToastOverlay />
+      <AccountDeletedGate />
       <StatusBar style="auto" />
     </>
   );

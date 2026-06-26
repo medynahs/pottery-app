@@ -98,6 +98,7 @@ export interface GlazeTestTile {
   notes?: string;
   resultRating: GlazeResultRating;
   defects: GlazeDefect[];
+  clayType?: GlazeClayType;
 }
 
 export const GLAZE_FINISH_OPTIONS: GlazeFinish[] = ['glossy', 'matte', 'satin', 'crystalline'];

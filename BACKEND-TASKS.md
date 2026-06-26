@@ -430,7 +430,7 @@ Shipped: `GET /polls` (`ListActive` → `ends_at > NOW()`, options batched), `PO
 
 **Deleted-winner behavior:** a winner whose account is deleted is **not** dropped and the runner-up is **not** promoted — the row returns `user_deleted: true` with name/image nulled, so FE should render a "winner account deleted" tombstone rather than treat it as an error.
 
-**FE gap:** replace mock cycles in community mock store with this API.
+**FE:** #28 ✅ — `HallOfFameTab` + `HallOfFameWinnerScreen` use live API in prod; mock data dev-only. Handle `user_deleted: true` tombstone.
 
 ---
 
@@ -491,7 +491,7 @@ Shipped: `source_post_id` (FK `ON DELETE SET NULL`), `source_user_id` (FK `ON DE
 
 `POST /users/me/push-tokens` shipped → `{ token, platform }` (platform `ios`|`android`), returns 204. Token is globally unique; re-register upserts (`ON CONFLICT (token)`) and reassigns to the current user — covers dedupe + rotation. A user may register multiple device tokens. Cascade-deletes with the user.
 
-**FE gap:** #86 in FRONTEND.md — not sending tokens yet.
+**FE:** #86 ✅ — `usePushTokenSync` + `syncPushTokenWithBackend` register on launch, pref change, and token rotation.
 
 ---
 
@@ -750,7 +750,7 @@ Single map of **what the app collects or displays today** vs **what the backend 
 | RevenueCat entitlement (device) | `useEntitlements()`, `checkPremium()` | **Local SDK** | P1-13 ✅ | Webhook + server reads tier (`GetActiveTier`); gates export/quotas. No public `GET /entitlement` — FE still device SDK |
 | Photo / storage / glaze-count gates | Various | **BE enforced** | P2-9, P2-5 ✅ | Server-side: 500 MB + 1-photo/piece (P2-9), 15-glaze cap (P2-5). FE gates #61–64 still to wire |
 | Data export (premium) | Privacy → export | **API ready** | P2-8 ✅ | `GET /users/me/export` (premium-gated) — glazes + piece glaze links |
-| Push tokens | Settings toggle | **FE gap** | P1-14 ✅ | BE `POST /users/me/push-tokens` shipped; #86 not sending tokens yet |
+| Push tokens | Settings toggle | ✅ FE wired | P1-14 ✅ | `usePushTokenSync` → `POST /users/me/push-tokens` (#86) |
 | Challenge deadline push | Background job | **API ready** | P2-6 ✅ | BE push 48h-before-deadline + voting-opens shipped; needs FE tokens (#86) |
 | Local kiln/drying/studio-rhythm notifications | `notificationMessages.ts` | **Local only** | — | No server; OK for V1 |
 
@@ -801,7 +801,7 @@ Aligns with [Recommended implementation order](#recommended-implementation-order
 | GET | `/news` | ✅ P1-7 | News cards (public) |
 | GET/POST | `/users/me/studios/*` | ✅ P1-4 | Owned/member-of, invites, join-requests accept/reject |
 | POST | `/webhooks/revenuecat` | ✅ P1-13 | Secret-verified, rate-limited 10/min |
-| POST | `/users/me/push-tokens` | ✅ P1-14 | `{token, platform}` → 204; upsert dedupe/rotation. FE not wired (#86) |
+| POST | `/users/me/push-tokens` | ✅ P1-14 | `{token, platform}` → 204; FE wired (#86 ✅) |
 | GET/POST | `/users/me/glazes/sync` | ✅ P0-10/11, P1-8/9/12, P2-3/4 | `src/services/glazes.ts` — versions, tests, provenance, scaler, mix logs all persist |
 | POST/DELETE | `/users/me/glazes/:id/images` | ✅ P1-10 | Gallery images (`bucket`/`test-tile`/`finished-piece`/`accident`) |
 | GET | `/users/me/glazes/:id/versions` · `/users/me/glazes/usage` | ✅ P1-8 / P2-5 | Version chain · `{count, limit, is_premium}` |

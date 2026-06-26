@@ -8,9 +8,8 @@ import {
 } from '@/src/screens/community/components/challenge/HallOfFameWinnerCard';
 import { MOCK_HALL_OF_FAME_CYCLES } from '@/src/screens/community/mock/challengeMockData';
 import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
-import { mockCycleToWinners } from '@/src/screens/community/utils/challengeWinners';
+import { hallOfFameWinnerToDisplay, mockCycleToWinners } from '@/src/screens/community/utils/challengeWinners';
 import { apiGetHallOfFameArchive } from '@/src/services/community';
-import { backendWinnerToDisplay } from '@/src/screens/community/utils/challengeWinners';
 import { useAppStore } from '@/src/store';
 import { Trophy } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -37,34 +36,52 @@ function mockCycles(): ArchiveCycle[] {
 export function HallOfFameTab() {
   const sessionToken = useAppStore((s) => s.sessionToken);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [cycles, setCycles] = useState<ArchiveCycle[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      if (sessionToken) {
-        const archive = await apiGetHallOfFameArchive(sessionToken);
-        if (archive?.cycles?.length) {
-          setCycles(
-            archive.cycles.map((cycle) => ({
-              id: cycle.challenge_id,
-              label: cycle.label?.trim() || 'Past challenge',
-              title: cycle.title,
-              emoji: cycle.emoji?.trim() || '🏆',
-              winners: cycle.winners.map((w) =>
-                backendWinnerToDisplay(w, {
-                  id: cycle.challenge_id,
-                  title: cycle.title,
-                }),
-              ),
-            })),
-          );
-          return;
-        }
+      if (!sessionToken) {
+        setCycles([]);
+        return;
       }
-      setCycles(mockCycles());
+
+      const archive = await apiGetHallOfFameArchive(sessionToken);
+      if (archive?.cycles?.length) {
+        setCycles(
+          archive.cycles.map((cycle) => ({
+            id: cycle.challenge_id,
+            label: cycle.label?.trim() || 'Past challenge',
+            title: cycle.title,
+            emoji: cycle.emoji?.trim() || '🏆',
+            winners: cycle.winners.map((w) =>
+              hallOfFameWinnerToDisplay(w, {
+                challenge_id: cycle.challenge_id,
+                title: cycle.title,
+                label: cycle.label,
+                emoji: cycle.emoji,
+              }),
+            ),
+          })),
+        );
+        return;
+      }
+
+      if (__DEV__) {
+        setCycles(mockCycles());
+        return;
+      }
+
+      setCycles([]);
     } catch {
-      setCycles(mockCycles());
+      if (__DEV__) {
+        setCycles(mockCycles());
+        return;
+      }
+      setError('Could not load Hall of Fame winners.');
+      setCycles([]);
     } finally {
       setLoading(false);
     }
@@ -109,6 +126,10 @@ export function HallOfFameTab() {
         </Text>
       </View>
 
+      {error ? (
+        <InlineErrorCard message={error} onRetry={() => void load()} />
+      ) : null}
+
       {featuredWinner ? <HallOfFameFeaturedHero winner={featuredWinner} /> : null}
 
       {cycles.map((cycle) => (
@@ -125,7 +146,7 @@ export function HallOfFameTab() {
         </View>
       ))}
 
-      {!featuredWinner ? (
+      {!featuredWinner && !error ? (
         <Text className="text-sm text-center py-8" style={{ color: COMMUNITY_THEME.inkMuted }}>
           Winners will appear here after the first challenge closes.
         </Text>

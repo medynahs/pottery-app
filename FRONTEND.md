@@ -1,7 +1,7 @@
 # Frontend — V1 Release & Feature Roadmaps
 
 **Total: 86 tickets** — 63 FE · 21 BE · 2 FE+BE  
-**Last updated:** June 21, 2026  
+**Last updated:** June 26, 2026  
 **Backend work:** [`BACKEND-TASKS.md`](./BACKEND-TASKS.md) · [`BACKEND.md`](./BACKEND.md)
 
 ---
@@ -19,10 +19,10 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Done | 32 |
-| 🟡 Partial | 15 |
-| ❌ Not started | 25 |
-| 🔶 BE only | 16 |
+| ✅ Done | 36 |
+| 🟡 Partial | 12 |
+| ❌ Not started | 23 |
+| 🔶 BE only | 15 |
 
 > BE tickets marked 🔶 are tracked in [`BACKEND-TASKS.md`](./BACKEND-TASKS.md).
 
@@ -31,17 +31,15 @@
 ## Recommended next (FE priority)
 
 1. **#1** — Remove `reopenGeneralOnboarding()` from `app/index.tsx` (still under `__DEV__`)
-2. **#61–65, #85** — Wire premium gates + companion swap UI
-3. **#30, #62** — Analytics nav from Profile + premium gate
-4. **#24, #22** — Full post creation: photo picker → presigned upload → `POST /posts`
-5. **#14** — Sync privacy toggles to `PUT /users/me/privacy`
-6. **#38, #39** — Role-based kiln default view + pricing screen labels
-7. **#28, #20** — Switch Hall of Fame to winner archive API; remove mock/dead data
-8. **#15** — Free-tier missions cap (3/week)
-9. **#47–48** — PostHog telemetry
-10. **#71–72** — Jest setup + utility unit tests
-11. **#86–90** — Notification production backlog
-12. **BE parallel** — Profile P0 (friends 500, public profile) — blocks share links
+2. **#61, #62** — Verify premium gates in UI (photo cloud sync + analytics nav from Profile)
+3. ~~**#28, #20**~~ — Hall of Fame winner detail API; prod mock fallbacks removed
+4. **#38, #39** — Role-based kiln default view + pricing screen labels
+5. **#15** — Free-tier missions cap (3/week)
+6. **#47–48** — PostHog telemetry
+7. **#71–72** — Jest setup + utility unit tests
+8. **#88–90** — Notification lifecycle tests, quiet hours, deep links
+9. ~~**Account revive UX**~~ ✅ — `AccountDeletedGate` + soft-delete copy
+10. **BE parallel** — `GET /users/me/preferences` + extended pieces sync (journal, pricing)
 
 ---
 
@@ -75,9 +73,11 @@
 
 ### Profile (recent — June 2026)
 - Photo grid, posts archive, journey screen, share URLs (`potterynook.app/user/{id}`)
-- Public profile route `app/user/[id].tsx` — **blocked on BE** public profile + friends list fix
+- Public profile route `app/user/[id].tsx` — wired; verify privacy + friends in prod
 - Feed author tap → `/user/{id}`
-- Edit Profile modal: name, studio, location, bio — **local only** until [BACKEND P1-2](./BACKEND-TASKS.md) + FE `PUT /users/me` wire-up
+- Edit Profile modal: name, studio, location, bio — **`PUT /users/me` wired** (`useUpdateProfile`, #91 ✅)
+- Privacy toggles — **`PUT /users/me/privacy` wired** (#14 ✅)
+- Post creation — **multipart `POST /uploads` + `POST /users/me/posts`** (#24 ✅)
 
 ---
 
@@ -97,7 +97,7 @@
 | 3 | ✅ | Password reset screen | `app/forgot-password.tsx` |
 | 4 | 🟡 | Password reset BE (Ory) | FE wired → [BACKEND P1-1](./BACKEND-TASKS.md) |
 | 5 | ✅ | Real account deletion call | `DELETE /users/me` + logout |
-| 6 | 🔶 | DELETE /users/me endpoint | [BACKEND P0-5](./BACKEND-TASKS.md) |
+| 6 | ✅ | DELETE /users/me + revive grace | Soft-delete; `AccountDeletedGate` on 403 `account_deleted` |
 
 ---
 
@@ -118,7 +118,7 @@
 | # | Status | Ticket | Acceptance |
 |---|--------|--------|------------|
 | 12 | ✅ | Compute real stats | Live KEY_STATS from store |
-| 91 | 🟡 | Wire Edit Profile to backend | Save name, studio, location, bio via `PUT /users/me`; hydrate from `GET /users/me` → [BACKEND P1-2](./BACKEND-TASKS.md). **Gap:** `EditProfileModal` writes Zustand only |
+| 91 | ✅ | Wire Edit Profile to backend | `EditProfileModal` → `useUpdateProfile()` → `PUT /users/me`; hydrate from `GET /users/me` |
 | 89 | 🔶 | Friends list 500 | [BACKEND P0-1](./BACKEND-TASKS.md) — FE shows 0 on failure |
 
 ---
@@ -128,7 +128,7 @@
 | # | Status | Ticket | Acceptance |
 |---|--------|--------|------------|
 | 13 | ✅ | Notification toggles | Implemented or hidden — no silent no-ops |
-| 14 | ❌ | Wire privacy toggles | `PUT /users/me/privacy` → [BACKEND P1-3](./BACKEND-TASKS.md) |
+| 14 | ✅ | Wire privacy toggles | `PrivacySettingsScreen` → `useUpdatePrivacy()` → `PUT /users/me/privacy` |
 
 ---
 
@@ -155,7 +155,7 @@ All tracked in [`BACKEND-TASKS.md`](./BACKEND-TASKS.md) P0-6 through P1-7.
 | 19 | 🔶 | Polls API |
 | 20 | 🔶 | Hall of Fame (winner archive: P1-6) |
 | 21 | 🔶 | Admin news API |
-| 22 | 🔶 | Media presigned upload |
+| 22 | 🔶 | Media upload | Server-side `POST /uploads` (multipart) — FE wired |
 
 ---
 
@@ -164,11 +164,11 @@ All tracked in [`BACKEND-TASKS.md`](./BACKEND-TASKS.md) P0-6 through P1-7.
 | # | Status | Ticket | Acceptance |
 |---|--------|--------|------------|
 | 23 | ✅ | Wire feed to real API | Pagination, refresh, skeleton |
-| 24 | 🟡 | Post creation flow | **Gap:** text-only; no image upload |
+| 24 | ✅ | Post creation flow | Text + photo via `uploadPostPhotoAsset` → `POST /uploads` → `asset_ids` on `POST /users/me/posts` |
 | 25 | ✅ | Real reactions | Optimistic + persisted |
 | 26 | ✅ | Challenge join/submit/withdraw | Basic flow wired |
 | 27 | ✅ | Poll voting | |
-| 28 | 🟡 | Hall of Fame real data | **Gap:** mock/leaderboard; remove dead `WALL_OF_FAME` |
+| 28 | 🟡 | Hall of Fame real data | API wired; prod uses live archive; mock fallback dev-only. Winner detail via `GET /hall-of-fame/winners/:id` |
 | 29 | ❌ | Pottery news section | `GET /news` cards in feed |
 
 ---
@@ -208,7 +208,7 @@ Local computation only — no new BE.
 | # | Status | Ticket | Acceptance |
 |---|--------|--------|------------|
 | 84 | ✅ | 4-element companion system | Fire/Earth/Air/Water |
-| 85 | ❌ | Companion swap UI in Profile | Premium-gated picker sheet |
+| 85 | ✅ | Companion swap UI in Profile | Premium-gated picker in Account Settings |
 
 ---
 
@@ -241,12 +241,12 @@ Local computation only — no new BE.
 
 | # | Status | Ticket | Acceptance |
 |---|--------|--------|------------|
-| 66 | 🟡 | Push token registration | Settings toggle only; no token sync |
+| 66 | ✅ | Push token registration | `usePushTokenSync` + toggle sync → `POST /users/me/push-tokens` |
 | 67 | ✅ | Kilnkin-voiced local service | |
 | 68 | ✅ | Kiln + drying triggers | |
 | 69 | ✅ | Studio rhythm + weekly summary | |
 | 70 | 🔶 | Challenge deadline push | [BACKEND P2-6](./BACKEND-TASKS.md) |
-| 86 | ❌ | Push token sync to BE | |
+| 86 | ✅ | Push token sync to BE | `syncPushTokenWithBackend` on launch, pref change, token refresh |
 | 87 | 🔶 | Challenge join contract on API | [BACKEND P0-8](./BACKEND-TASKS.md) |
 | 88 | ❌ | Trigger unit tests | |
 | 89 | ❌ | Lifecycle reschedule guard | |
@@ -305,12 +305,12 @@ Local computation only — no new BE.
 | Area | ✅ | 🟡 | ❌ | 🔶 |
 |------|---|---|---|---|
 | Critical / Auth / Sync | 6 | 2 | 0 | 3 |
-| Profile / Settings / Roles | 4 | 0 | 3 | 1 |
-| Community | 4 | 2 | 1 | 7 |
+| Profile / Settings / Roles | 6 | 0 | 2 | 1 |
+| Community | 5 | 1 | 1 | 7 |
 | Analytics / Onboarding | 8 | 5 | 1 | 0 |
-| Premium / Telemetry | 4 | 1 | 5 | 1 |
-| Notifications / Testing / Security / Perf / App | 5 | 4 | 15 | 3 |
-| **Total** | **31** | **14** | **25** | **15** |
+| Premium / Telemetry | 5 | 1 | 3 | 1 |
+| Notifications / Testing / Security / Perf / App | 6 | 3 | 13 | 3 |
+| **Total** | **36** | **12** | **23** | **15** |
 
 ---
 

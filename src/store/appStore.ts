@@ -1,14 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
-import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
+import type { TextScale } from '../constants/typography';
+import type { CommunityPostComposerPreset } from '../screens/community/types/composerPreset';
 import { normalizeGlazeItem } from '../screens/glazes/glazeItemHelpers';
-import {
-  LEGACY_SEED_GLAZE_IDS,
-  LEGACY_SEED_TEST_IDS,
-  deriveCustomCollectionNames,
-  sanitizeCustomCollections,
-} from '../screens/library/atlas/collections';
+import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
 import { DEFAULT_CHECKLIST, FIRING_SOURCE_STAGE, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
 import {
   applyGlazeOutcomeToPiece,
@@ -19,11 +15,16 @@ import {
   normalizeKiln,
 } from '../screens/kiln/utils/kilnHelpers';
 import {
-    DEFAULT_KILNKIN_COMPANION,
-    type KilnkinCompanion,
+  deriveCustomCollectionNames,
+  LEGACY_SEED_GLAZE_IDS,
+  LEGACY_SEED_TEST_IDS,
+  sanitizeCustomCollections,
+} from '../screens/library/atlas/collections';
+import {
+  DEFAULT_KILNKIN_COMPANION,
+  type KilnkinCompanion,
 } from '../screens/overview/kilnkin/kilnkinCompanion';
 import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
-import type { TextScale } from '../constants/typography';
 import {
   DEFAULT_STUDIO_RHYTHM,
   getDateKey,
@@ -39,30 +40,27 @@ import {
   type StudioRhythmGoal,
 } from '../screens/overview/studioRythm/studioRhythm';
 import { migrateStudioRituals } from '../screens/overview/studioRythm/studioRhythmIcons';
-import type { CommunityPostComposerPreset } from '../screens/community/types/composerPreset';
 import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
 import { fetchUsers, type BackendUser } from '../services';
-import type { Firing, FiringState, Kiln, KilnChecklist, KilnType, LogFiringPayload, FiringStatusOverride } from '../types/kiln';
+import { oryGetSession, OryHttpError } from '../services/auth';
+import type { Firing, FiringState, FiringStatusOverride, Kiln, KilnChecklist, KilnType, LogFiringPayload } from '../types/kiln';
 import type { GlazeOutcome, Piece, TimelineEntry } from '../types/pieces';
 import {
-    applyPricingUserTypePreset,
-    buildDefaultPricingSettings,
-    createPricingTemplate,
-    normalizePricingSettings,
-    parseWeightToForm,
-    type PricingFiringMode,
-    type PricingSettings,
-    type PricingTemplate,
-    type PricingTier,
-    type PricingUserType,
-    weightFormToGrams,
-    weightFormToString,
+  applyPricingUserTypePreset,
+  buildDefaultPricingSettings,
+  createPricingTemplate,
+  normalizePricingSettings,
+  type PricingFiringMode,
+  type PricingSettings,
+  type PricingTemplate,
+  type PricingTier,
+  type PricingUserType
 } from '../types/pricing';
 import type { AppNotification, Studio, StudioMember } from '../types/studio';
-import { oryGetSession, OryHttpError } from '../services/auth';
 import { clearSecureAuth, loadSecureAuth, saveSecureAuth } from './secureStorage';
 import { zustandStorage } from './storage';
+import { resolvePremiumFromEntitlement } from '../utils/forcePremium';
 
 // ── Sync queue ────────────────────────────────────────────────────────────────
 export type SyncOperationType =
@@ -407,13 +405,13 @@ interface AppState {
   oryIdentityId: string | null;
   oryEmail: string | null;
   backendUserId: string | null;
-  /** True when the user has an active premium entitlement (synced from RevenueCat). */
   isPremium: boolean;
+  accountDeletionGrace: boolean;
+  setAccountDeletionGrace: (value: boolean) => void;
   setSessionToken: (token: string, identityId: string, email: string) => void;
   clearSession: () => void;
   setBackendUserId: (id: string | null) => void;
   setIsPremium: (v: boolean) => void;
-  /** Restore sessionToken + oryIdentityId from SecureStore on cold-start. */
   initializeAuth: () => Promise<void>;
 
   // ── User ──────────────────────────────────────────────────────
@@ -774,6 +772,8 @@ export const useAppStore = create<AppState>()(
   oryEmail: null,
   backendUserId: null,
   isPremium: false,
+  accountDeletionGrace: false,
+  setAccountDeletionGrace: (value) => set({ accountDeletionGrace: value }),
   setSessionToken: (token, identityId, email) => {
     set({ sessionToken: token, oryIdentityId: identityId, oryEmail: email });
     void saveSecureAuth(token, identityId, email);
@@ -785,6 +785,7 @@ export const useAppStore = create<AppState>()(
       oryEmail: null,
       backendUserId: null,
       isPremium: false,
+      accountDeletionGrace: false,
       // Reset user-specific fields so the next sign-in starts clean.
       // Without this, the previous user's avatar persists in AsyncStorage
       // and is shown briefly (or permanently) when a different account signs in.
@@ -793,7 +794,7 @@ export const useAppStore = create<AppState>()(
     void clearSecureAuth();
   },
   setBackendUserId: (id) => set({ backendUserId: id }),
-  setIsPremium: (v) => set({ isPremium: v }),
+  setIsPremium: (v) => set({ isPremium: resolvePremiumFromEntitlement(v) }),
   initializeAuth: async () => {
     try {
       const auth = await loadSecureAuth();
@@ -2216,6 +2217,7 @@ export const useAppStore = create<AppState>()(
             state.communityPostsCreated ?? 0,
             state.hasCreatedPost ? 1 : 0,
           ),
+          isPremium: resolvePremiumFromEntitlement(!!(state.isPremium ?? currentState.isPremium)),
         };
       },
       storage: zustandStorage,

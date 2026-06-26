@@ -301,14 +301,24 @@ export interface BackendHallOfFameWinner {
   id: string;
   track_id: string;
   track_title: string;
-  artist_name: string;
+  artist_name?: string | null;
   studio_name?: string | null;
   piece_title: string;
   process_note?: string | null;
-  image_url: string;
+  image_url?: string | null;
   hero_image_url?: string | null;
   vote_count: number;
   won_at: string;
+  user_deleted?: boolean;
+}
+
+export interface BackendHallOfFameWinnerDetail extends BackendHallOfFameWinner {
+  challenge_id: string;
+  challenge_title: string;
+  challenge_description?: string | null;
+  challenge_label?: string | null;
+  challenge_emoji?: string | null;
+  closed_at?: string | null;
 }
 
 export interface BackendHallOfFameCycle {
@@ -353,6 +363,25 @@ export async function apiGetHallOfFameArchive(
   }
 
   return null;
+}
+
+/**
+ * GET /hall-of-fame/winners/:id
+ * Winner detail for deep links from Hall of Fame cards.
+ */
+export async function apiGetHallOfFameWinner(
+  sessionToken: string,
+  winnerId: string,
+): Promise<BackendHallOfFameWinnerDetail | null> {
+  const res = await authedFetch(sessionToken, `${API_BASE}/hall-of-fame/winners/${winnerId}`);
+  if (res.status === 404) return null;
+  if (!res.ok) return null;
+
+  const data = await res.json().catch(() => null);
+  if (!data || typeof data !== 'object' || typeof (data as BackendHallOfFameWinnerDetail).id !== 'string') {
+    return null;
+  }
+  return data as BackendHallOfFameWinnerDetail;
 }
 
 // ─── Polls ────────────────────────────────────────────────────────────────────

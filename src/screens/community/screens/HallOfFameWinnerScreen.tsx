@@ -1,22 +1,94 @@
+import { InlineErrorCard } from '@/src/components/InlineErrorCard';
+import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
 import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
 import { findMockWinner } from '@/src/screens/community/mock/challengeMockData';
-import { mockWinnerToDisplay } from '@/src/screens/community/utils/challengeWinners';
+import {
+  hallOfFameWinnerDetailToDisplay,
+  mockWinnerToDisplay,
+} from '@/src/screens/community/utils/challengeWinners';
+import { apiGetHallOfFameWinner } from '@/src/services/community';
+import { useAppStore } from '@/src/store';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, ChevronLeft, Heart, Trophy } from 'lucide-react-native';
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
 
 export default function HallOfFameWinnerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const sessionToken = useAppStore((s) => s.sessionToken);
   const { id } = useLocalSearchParams<{ id: string }>();
-  const rawWinner = id ? findMockWinner(id) : null;
-  const winner = rawWinner ? mockWinnerToDisplay(rawWinner) : null;
+  const winnerId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : undefined;
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [winner, setWinner] = useState<ChallengeWinnerDisplay | null>(null);
+
+  const load = useCallback(async () => {
+    if (!winnerId) {
+      setWinner(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (sessionToken) {
+        const detail = await apiGetHallOfFameWinner(sessionToken, winnerId);
+        if (detail) {
+          setWinner(hallOfFameWinnerDetailToDisplay(detail));
+          return;
+        }
+      }
+
+      if (__DEV__) {
+        const rawWinner = findMockWinner(winnerId);
+        setWinner(rawWinner ? mockWinnerToDisplay(rawWinner) : null);
+        return;
+      }
+
+      setWinner(null);
+    } catch {
+      if (__DEV__) {
+        const rawWinner = findMockWinner(winnerId);
+        setWinner(rawWinner ? mockWinnerToDisplay(rawWinner) : null);
+        return;
+      }
+      setError('Could not load this winner.');
+      setWinner(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionToken, winnerId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (loading) {
+    return (
+      <View className="flex-1 px-4 pt-4" style={{ backgroundColor: COMMUNITY_THEME.pageBg }}>
+        <SkeletonLeaderboardRow />
+        <SkeletonLeaderboardRow />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 px-4 justify-center" style={{ backgroundColor: COMMUNITY_THEME.pageBg }}>
+        <InlineErrorCard message={error} onRetry={() => void load()} />
+      </View>
+    );
+  }
 
   if (!winner) {
     return (
@@ -76,9 +148,11 @@ export default function HallOfFameWinnerScreen() {
             <Text className="text-2xl font-serif font-bold" style={{ color: COMMUNITY_THEME.heroText }}>
               {winner.challengeTitle}
             </Text>
-            <Text className="text-sm leading-relaxed mt-2" style={{ color: COMMUNITY_THEME.heroMuted }}>
-              {winner.challengeDescription}
-            </Text>
+            {winner.challengeDescription ? (
+              <Text className="text-sm leading-relaxed mt-2" style={{ color: COMMUNITY_THEME.heroMuted }}>
+                {winner.challengeDescription}
+              </Text>
+            ) : null}
           </LinearGradient>
 
           <View className="px-5 pt-5">
@@ -105,9 +179,16 @@ export default function HallOfFameWinnerScreen() {
                 <Text className="text-sm font-bold" style={{ color: COMMUNITY_THEME.ink }}>
                   {winner.artistName}
                 </Text>
-                <Text className="text-xs" style={{ color: COMMUNITY_THEME.inkMuted }}>
-                  {winner.studioName}
-                </Text>
+                {winner.studioName ? (
+                  <Text className="text-xs" style={{ color: COMMUNITY_THEME.inkMuted }}>
+                    {winner.studioName}
+                  </Text>
+                ) : null}
+                {winner.userDeleted ? (
+                  <Text className="text-xs mt-1" style={{ color: COMMUNITY_THEME.inkMuted }}>
+                    Account deleted — piece archived
+                  </Text>
+                ) : null}
               </View>
             </View>
 
@@ -132,15 +213,19 @@ export default function HallOfFameWinnerScreen() {
               </View>
             </View>
 
-            <Text
-              className="text-xs font-bold uppercase tracking-widest mb-2"
-              style={{ color: COMMUNITY_THEME.inkMuted }}
-            >
-              Artist statement
-            </Text>
-            <Text className="text-sm leading-relaxed" style={{ color: COMMUNITY_THEME.inkSoft }}>
-              {winner.processNote}
-            </Text>
+            {winner.processNote ? (
+              <>
+                <Text
+                  className="text-xs font-bold uppercase tracking-widest mb-2"
+                  style={{ color: COMMUNITY_THEME.inkMuted }}
+                >
+                  {winner.userDeleted ? 'Archive note' : 'Artist statement'}
+                </Text>
+                <Text className="text-sm leading-relaxed" style={{ color: COMMUNITY_THEME.inkSoft }}>
+                  {winner.processNote}
+                </Text>
+              </>
+            ) : null}
           </View>
         </ScrollView>
       </View>

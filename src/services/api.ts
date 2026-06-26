@@ -3,10 +3,58 @@ import { API_BASE_URL as API_BASE } from './index';
 /** HTTP error from the app backend, carries the status code so callers can
  *  react to specific failures (e.g. 401 → expired session → sign out). */
 export class ApiError extends Error {
-  constructor(message: string, public readonly status: number) {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code?: string,
+  ) {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+export const ACCOUNT_DELETED_CODE = 'account_deleted';
+
+export function isAccountDeletedError(error: unknown): boolean {
+  if (!(error instanceof ApiError) || error.status !== 403) return false;
+  if (error.code === ACCOUNT_DELETED_CODE) return true;
+  return error.message.includes(ACCOUNT_DELETED_CODE);
+}
+
+async function apiErrorFromResponse(res: Response, prefix: string): Promise<ApiError> {
+  const body = await res.text().catch(() => '');
+  let code: string | undefined;
+
+  if (body) {
+    try {
+      const json = JSON.parse(body) as Record<string, unknown>;
+      const candidates = [json.error, json.code, json.message, json.detail];
+      for (const candidate of candidates) {
+        if (typeof candidate !== 'string') continue;
+        const normalized = candidate.toLowerCase();
+        if (
+          normalized.includes(ACCOUNT_DELETED_CODE)
+          || normalized.includes('account deleted')
+          || normalized.includes('scheduled for deletion')
+        ) {
+          code = ACCOUNT_DELETED_CODE;
+          break;
+        }
+      }
+    } catch {
+      const normalized = body.toLowerCase();
+      if (
+        normalized.includes(ACCOUNT_DELETED_CODE)
+        || normalized.includes('account deleted')
+        || normalized.includes('scheduled for deletion')
+      ) {
+        code = ACCOUNT_DELETED_CODE;
+      }
+    }
+  }
+
+  const message = body ? `${prefix} (${res.status}): ${body}` : `${prefix} (${res.status})`;
+  return new ApiError(message, res.status, code);
 }
 
 export interface BackendProfile {
@@ -24,6 +72,8 @@ export interface BackendProfile {
   pieces_public?: boolean;
   created_at: string;
   updated_at: string;
+  /** Present when account is in soft-delete grace — studio APIs are blocked until revive. */
+  is_deleted?: boolean;
 }
 
 export interface UpdateProfilePayload {
@@ -107,7 +157,7 @@ function authedJson(
 
 export async function fetchMe(sessionToken: string): Promise<BackendProfile> {
   const res = await authedJson(sessionToken, '/users/me');
-  if (!res.ok) throw new ApiError(`fetchMe failed (${res.status})`, res.status);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'fetchMe failed');
   return res.json() as Promise<BackendProfile>;
 }
 
@@ -155,10 +205,9 @@ export async function updatePrivacy(
 }
 
 /**
- * Permanently deletes the signed-in user's account and all associated data.
- * The backend cascades to pieces, firings, glazes and removes the Ory identity.
- * Throws on any non-2xx response, callers must NOT clear the local session
- * unless this succeeds, otherwise deletion silently degrades to a sign-out.
+ * Soft-deletes the signed-in user's account. The backend sets `is_deleted` and
+ * starts a ~1-week grace period. During grace, APIs return 403 `account_deleted`
+ * except `POST /users/me/revive`. The Ory session is invalidated on delete.
  */
 export async function deleteAccount(sessionToken: string): Promise<void> {
   const res = await fetch(`${API_BASE}/users/me`, {
@@ -166,7 +215,7 @@ export async function deleteAccount(sessionToken: string): Promise<void> {
     credentials: 'omit',
     headers: { 'X-Session-Token': sessionToken },
   });
-  if (!res.ok) throw new ApiError(`Account deletion failed (${res.status})`, res.status);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'Account deletion failed');
 }
 
 async function uploadUserImage(

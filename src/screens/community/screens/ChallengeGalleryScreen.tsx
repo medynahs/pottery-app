@@ -36,8 +36,8 @@ export default function ChallengeGalleryScreen() {
   const mock = useMockChallengeStore();
   const { challengeId: challengeIdParam } = useLocalSearchParams<{ challengeId?: string }>();
 
-  const challengeId = challengeIdParam ?? MOCK_UNDERWATER_CHALLENGE.id;
-  const isMock = isMockChallengeId(challengeId);
+  const challengeId = challengeIdParam ?? (__DEV__ ? MOCK_UNDERWATER_CHALLENGE.id : '');
+  const isMock = __DEV__ && Boolean(challengeId) && isMockChallengeId(challengeId);
 
   const [loading, setLoading] = useState(!isMock);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +78,12 @@ export default function ChallengeGalleryScreen() {
 
   const loadApiGallery = useCallback(async () => {
     if (!sessionToken || isMock) {
+      setLoading(false);
+      return;
+    }
+
+    if (!challengeId) {
+      setError('Challenge not found');
       setLoading(false);
       return;
     }

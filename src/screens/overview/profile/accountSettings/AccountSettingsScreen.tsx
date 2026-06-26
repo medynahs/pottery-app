@@ -11,9 +11,10 @@ import { Text } from '@/src/components/ui/text';
 import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
 import { ME_QUERY_KEY } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { deleteAccount } from '@/src/services/api';
+import { deleteAccount, ApiError } from '@/src/services/api';
 import { oryLogout } from '@/src/services/auth';
 import { ensureNotificationPermission } from '@/src/services/notifications';
+import { syncPushTokenWithBackend } from '@/src/services/pushTokens';
 import { useAppStore } from '@/src/store';
 import { PremiumFeature } from '@/src/utils/premiumGate';
 import { useQueryClient } from '@tanstack/react-query';
@@ -77,23 +78,36 @@ export default function AccountSettingsScreen() {
     setBusy(true);
     try {
       await deleteAccount(sessionToken);
-    } catch {
+    } catch (error) {
+      if (__DEV__) {
+        console.error('[AccountSettings] deleteAccount failed', error);
+      }
       setBusy(false);
-      setSheet(null);
-      showToast('Could not delete your account. Please check your connection and try again.', 'error');
+      const message =
+        error instanceof ApiError
+          ? `Could not delete your account (${error.status}). Try again.`
+          : 'Could not delete your account. Please check your connection and try again.';
+      showToast(message, 'error');
       return;
     }
+
+    // Clear local session before logout so /users/me does not race into grace-state UI.
+    queryClient.cancelQueries({ queryKey: ME_QUERY_KEY });
+    queryClient.removeQueries({ queryKey: ME_QUERY_KEY });
+    clearSession();
+
     try {
       await oryLogout(sessionToken);
     } catch {
-      // The identity may already be gone server-side, local cleanup is enough.
+      // Local cleanup already done; Ory session may already be invalidated server-side.
     }
-    clearSession();
-    queryClient.removeQueries({ queryKey: ME_QUERY_KEY });
+
     setBusy(false);
-    setSheet(null);
     router.back();
-    showToast('Your account has been deleted', 'success');
+    showToast(
+      'Your account is scheduled for deletion. Sign back in within about a week to restore it.',
+      'success',
+    );
   }
 
   const toggleNotificationPref = async (key: keyof typeof notificationPrefs) => {
@@ -107,6 +121,13 @@ export default function AccountSettingsScreen() {
     }
 
     setNotificationPref(key, nextValue);
+
+    if (nextValue && sessionToken) {
+      const nextPrefs = { ...notificationPrefs, [key]: nextValue };
+      void syncPushTokenWithBackend(sessionToken, nextPrefs).catch(() => {
+        // Launch hook will retry; local scheduling is unaffected.
+      });
+    }
   };
 
   return (
@@ -127,23 +148,29 @@ export default function AccountSettingsScreen() {
       <ConfirmSheet
         visible={sheet === 'delete1'}
         title="Delete your account?"
-        body="This will permanently erase your pieces, glazes, and all studio data. It cannot be undone."
+        body="Your studio will be hidden immediately and scheduled for permanent deletion after about one week. You can sign back in during that time to restore everything."
         confirmLabel="Yes, continue"
         destructive
-        onConfirm={() => setSheet('delete2')}
+        dismissOnConfirm={() => setSheet('delete2')}
+        onConfirm={() => {}}
         onCancel={() => setSheet(null)}
       />
 
       {/* Delete step 2, final */}
       <ConfirmSheet
         visible={sheet === 'delete2'}
-        title="This is permanent"
-        body="Your entire Pottery Nook account will be deleted forever. There's no way back."
-        confirmLabel="Delete my account forever"
+        title="Confirm deletion"
+        body="After about one week without restoring your account, your pieces, glazes, and studio data will be permanently removed."
+        confirmLabel="Schedule account deletion"
         destructive
         loading={busy}
-        onConfirm={doDeleteAccount}
-        onCancel={() => setSheet(null)}
+        dismissOnConfirm={() => setSheet(null)}
+        onConfirm={() => {
+          void doDeleteAccount();
+        }}
+        onCancel={() => {
+          if (!busy) setSheet(null);
+        }}
       />
       <SettingsHubShell
         title="Account Settings"

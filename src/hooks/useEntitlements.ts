@@ -14,6 +14,7 @@ import Purchases, {
     type PurchasesPackage,
 } from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
+import { isForcePremiumEnabled, resolvePremiumFromEntitlement } from '../utils/forcePremium';
 import { planLabelFromProductId, openPlatformSubscriptionSettings } from '../utils/subscriptionSettings';
 import { useAppStore } from '../store/appStore';
 
@@ -22,6 +23,11 @@ const ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? '';
 const ENTITLEMENT_ID = 'PotteryNook Pro';
 
 let rcConfigured = false;
+
+function applyForcePremium(): void {
+  if (!isForcePremiumEnabled()) return;
+  useAppStore.getState().setIsPremium(true);
+}
 
 export interface SubscriptionDetails {
   planLabel: string | null;
@@ -54,6 +60,7 @@ export async function getSubscriptionDetails(): Promise<SubscriptionDetails | nu
 
 /** Idempotent, safe to call multiple times; configures RC once per process. */
 export function configureRevenueCat(): void {
+  applyForcePremium();
   if (rcConfigured) return;
   // react-native-purchases requires a native development build, skip in Expo Go / web
   if (Platform.OS === 'web') return;
@@ -67,7 +74,7 @@ export function configureRevenueCat(): void {
     // this covers purchases from the native paywall, restores, expirations, etc.
     Purchases.addCustomerInfoUpdateListener((info) => {
       useAppStore.getState().setIsPremium(
-        !!info.entitlements.active[ENTITLEMENT_ID],
+        resolvePremiumFromEntitlement(!!info.entitlements.active[ENTITLEMENT_ID]),
       );
     });
 
@@ -102,7 +109,7 @@ export function useEntitlements() {
       try {
         const { customerInfo } = await Purchases.logIn(backendUserId);
         identifiedRef.current = backendUserId;
-        setIsPremium(!!customerInfo.entitlements.active[ENTITLEMENT_ID]);
+        setIsPremium(resolvePremiumFromEntitlement(!!customerInfo.entitlements.active[ENTITLEMENT_ID]));
       } catch {
         // RC identification failure is non-fatal, entitlements stay unchanged
       }
@@ -128,7 +135,7 @@ export function useEntitlements() {
     if (!rcConfigured) return;
     try {
       const info = await Purchases.getCustomerInfo();
-      setIsPremium(!!info.entitlements.active[ENTITLEMENT_ID]);
+      setIsPremium(resolvePremiumFromEntitlement(!!info.entitlements.active[ENTITLEMENT_ID]));
     } catch {
       // suppress
     }
@@ -141,7 +148,7 @@ export function useEntitlements() {
     setError(null);
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
-      setIsPremium(!!customerInfo.entitlements.active[ENTITLEMENT_ID]);
+      setIsPremium(resolvePremiumFromEntitlement(!!customerInfo.entitlements.active[ENTITLEMENT_ID]));
       return true;
     } catch (e: unknown) {
       const rcError = e as { userCancelled?: boolean };
@@ -161,7 +168,7 @@ export function useEntitlements() {
     setError(null);
     try {
       const customerInfo = await Purchases.restorePurchases();
-      setIsPremium(!!customerInfo.entitlements.active[ENTITLEMENT_ID]);
+      setIsPremium(resolvePremiumFromEntitlement(!!customerInfo.entitlements.active[ENTITLEMENT_ID]));
     } catch {
       setError('Restore failed. Please try again.');
     } finally {
