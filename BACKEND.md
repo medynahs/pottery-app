@@ -8,9 +8,11 @@
 
 ---
 
-## ⚠️ Backend status — all P0 + nearly all P1/P2 shipped (Jun 25)
+## ✅ Backend status — entire V1 backend complete (Jun 26)
 
-The API repo completed **every P0** (friends, public profile, privacy, pieces/firings/glaze sync, posts/feed/media, reactions, challenges, voting, Hall of Fame) plus **account delete**, and has now shipped the remaining V1 backend work: **editable identity `PUT /users/me`** (P1-2), **RevenueCat webhook** (P1-13), **validation + rate limiting** (P1-15), **upload hardening** (P1-16), **OG share page** (P1-17), and **Universal Links / App Links** (P2-1). **Push token storage (P1-14) is shipped** — FE registers tokens via `usePushTokenSync` (#86 ✅). Remaining gaps: FE verification in-app, extended pieces/preferences APIs, glaze depth (P1-8–P1-12), and P2 ops.
+**Every P0, P1, and P2 task in the API repo is shipped.** All P0 (friends, public profile, privacy, pieces/firings/glaze sync, posts/feed/media, reactions, challenges, voting, Hall of Fame) + account delete; all P1 (editable identity `PUT /users/me`, RevenueCat webhook, validation + rate limiting, upload hardening, OG share page, push token storage, **Studios API**, **Polls**, **Admin news**, **glaze version chain / test tiles / images / structured recipe posts / save provenance**); and all P2 (Universal Links, **Discover catalog API**, **glaze mix logs**, **batch scaler fields**, **server-side glaze count enforcement**, **challenge deadline/voting push notifications**, **challenge moderation**, **account delete full lifecycle** — storage purge + premium export, and **server-side cloud upload quotas**).
+
+**Remaining backend gaps are FE wiring plus a small deferred backlog** (extended pieces deep-sync, `/users/me/preferences`, public entitlement GET — see [`BACKEND-TASKS.md` → Deferred / post-V1 backend](./BACKEND-TASKS.md)). FE has wired profile (#91 ✅), privacy (#14 ✅), and push tokens (#86 ✅). Status below is **🔶 backend-done** / **🟡 FE-wired** until each is re-verified in-app. Two prod-config TODOs: set `APPLE_APP_ID` / `ANDROID_SHA256_FINGERPRINT` (Universal Links) and `REVENUECAT_WEBHOOK_SECRET`.
 
 **Routes that changed during implementation — FE must adopt:**
 
@@ -64,7 +66,7 @@ The API repo completed **every P0** (friends, public profile, privacy, pieces/fi
 | Public profile | 🔶 | `GET /users/:userId/profile` shipped (P0-2 ✅ Sprint A); 404 when private/unknown |
 | Friends | 🔶 | **500 fixed** (`cover_url` added to SELECT, P0-1 ✅ Sprint A) |
 | Friend requests | 🔶 | FE wired |
-| Studios | 🔶 | Owned/member-of, invites, join requests |
+| Studios | 🔶 | Shipped (P1-4): owned/member-of lists, invites, join-requests accept/reject. BE paths follow FE `studios.ts` contract |
 
 ### Pieces & kiln
 
@@ -79,11 +81,11 @@ The API repo completed **every P0** (friends, public profile, privacy, pieces/fi
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Glaze list / sync push | 🔶 | Batch metadata now persisted server-side (P0-11): `batch_id`, `date_mixed`, `status`, `best_clay_type`, `best_firing_temp_c`, `atmosphere`, `ingredients_text`. Version chain (P1-8) still TBD |
-| Test tiles sync | 🔶 | Partial |
-| Glaze image upload | 🔶 | Endpoint exists; round-trip TBD |
-| Community recipe posts | ❌ | FE embeds HTML comment in caption today |
-| Discover catalog | ❌ | Bundled static JSON in app |
+| Glaze list / sync push | 🔶 | Batch metadata persisted (P0-11). **Version chain shipped** (P1-8): `version_number`/`root_glaze_id`/`parent_glaze_id` + `GET /users/me/glazes/:id/versions`. **Save provenance** (P1-12) + **batch scaler fields** (P2-4) + **mix logs** (P2-3) all persist in sync |
+| Test tiles sync | 🔶 | **Shipped** (P1-9): clay/cone/kiln/application/defects/rating/photo_ref persist, linked via `glaze_client_ref` |
+| Glaze image upload | 🔶 | **Shipped** (P1-10): `POST/DELETE /users/me/glazes/:id/images` (`bucket`/`test-tile`/`finished-piece`/`accident`); `images[]` with URLs in glaze payload |
+| Community recipe posts | 🔶 | **Shipped** (P1-11): `POST /users/me/posts` accepts `type: "glaze_recipe"` + `glaze_recipe` JSONB; feed returns both. **Field is `type`, not `post_type`** — FE live code still embeds recipe in `content`; no FE change required |
+| Discover catalog | 🔶 | **Shipped** (P2-2): `GET /glazes/discover/recipes` + `/inspirations` (versioned, public) + admin publish at `/api/glazes/discover` |
 
 ### Community
 
@@ -91,20 +93,24 @@ The API repo completed **every P0** (friends, public profile, privacy, pieces/fi
 |------|--------|-------|
 | Feed + posts | 🔶 | Routes are `GET /users/me/feed`, `POST /users/me/posts`. Image posts work end-to-end via `post_assets` → `assets[]` with public URLs |
 | Reactions | 🔶 | DB-unique `(post_id, user_id)`; count in feed payload (P0-7) |
-| Polls | 🔶 | FE wired |
+| Polls | 🔶 | Shipped (P1-5): `GET /polls` (active), `POST /polls/:id/vote` (DB-unique one per user → 409), `GET /polls/:id/results`. Admin-create via `POST /api/polls` |
 | Challenges (basic) | 🔶 | Join/submit/withdraw FE wired |
 | Challenge (tracks + voting) | 🔶 | Shipped (P0-8/9): tracks, idempotent join, submit/withdraw, voting w/ revote + self-vote reject. **Replace FE mock store** |
 | Hall of Fame | 🟡 | Winner-archive shipped (P1-6): FE wired — `GET /hall-of-fame` + `/hall-of-fame/winners/:id`; `user_deleted` tombstone |
-| News | ❌ | Not started (P1-7) |
+| News | 🔶 | **Shipped** (P1-7): `GET /news` (public, newest first) + seeded rows. FE not started (#29) |
+| Challenge moderation | 🔶 | **Shipped** (P2-7): vote rate-limit, `POST …/entries/:entryId/report`, admin `POST /admin/challenges/:id/entries/:entryId/disqualify` (hides entry from gallery + vote totals) |
 | Image upload | 🔶 | **`POST /uploads` (server-side multipart)** → `{ asset_id, public_url }`. No presigned flow |
 
 ### Premium & ops
 
 | Area | Status | Notes |
 |------|--------|-------|
-| RevenueCat webhook | 🔶 | `POST /webhooks/revenuecat` shipped (P1-13), secret-verified + rate-limited 10/min |
+| RevenueCat webhook | 🔶 | `POST /webhooks/revenuecat` shipped (P1-13), secret-verified + rate-limited 10/min. Writes a `subscriptions` table; server can now read active tier via `GetActiveTier` |
 | Push tokens | 🟡 | `POST /users/me/push-tokens` shipped (P1-14) — FE wired (#86 ✅): `usePushTokenSync` on launch + token refresh; `AccountSettingsScreen` on toggle enable |
-| Challenge deadline push | ❌ | Depends on push tokens (P2-6) |
+| Challenge push notifications | 🔶 | **Shipped** (P2-6): background job pushes 48h before `submission_deadline` to joined-but-unsubmitted, and to all joined when voting opens (Expo Push API). FE now registers tokens (#86 ✅) |
+| Server-side glaze count | 🔶 | **Shipped** (P2-5): free tier capped at **15** active glazes on `POST /users/me/glazes/sync` → 403 `glaze_limit_reached`; updates/premium pass through. `GET /users/me/glazes/usage` → `{count, limit, is_premium}` |
+| Cloud upload quotas | 🔶 | **Shipped** (P2-9): free tier = **500 MB** total cloud media (413 over) + **1** cloud photo per piece (403 on 2nd); premium uncapped. Enforced on piece-asset, glaze-image, avatar, cover uploads (`internal/quota/cloud.go`) |
+| Account delete — full lifecycle | 🔶 | **Shipped** (P2-8): hard-purge piggybacks the 10m background-jobs ticker (30-day `deleted_at` grace), wipes whole `{userID}/` storage prefix, then FK-cascades the DB row. **`GET /users/me/export`** (premium-gated) returns glaze + piece-glaze-link archive |
 | Input validation / rate limits | 🔶 | Shipped (P1-15): global 1000/min limiter + per-route limits; identity/upload input validated |
 | Upload security | 🔶 | Shipped (P1-16): auth-only, type whitelist + byte-sniff, 10MB cap, UUID keys |
 
@@ -123,13 +129,13 @@ The API repo completed **every P0** (friends, public profile, privacy, pieces/fi
 
 1. `POST /users/me/glazes/sync` batches glaze + test snapshots
 2. Client refs link tests → glazes across devices
-3. **Gap (narrowed):** batch metadata now persists (P0-11); version chain (P1-8), images (P1-10) still TBD
+3. ~~Gap~~ **closed:** batch metadata (P0-11), version chain (P1-8), test tiles (P1-9), save provenance (P1-12), batch scaler (P2-4), and mix logs (P2-3) all persist. Glaze gallery images (P1-10) ride separate `…/glazes/:id/images` endpoints. Free tier capped at 15 glazes server-side (P2-5)
 
 ### Kilns & firings
 
 1. Local-first CRUD in `appStore`
 2. `useKilnsSync`, `useFiringsSync` push/pull
-3. **Gap (narrowed):** `peakTempC`, `holdTimeMinutes`, `photoUri` now round-trip (P0-4). `firedDate`/`statusOverride`/`pieceIds` mapping still to confirm on FE
+3. **Shipped:** `peakTempC`, `holdTimeMinutes`, `photoUri`, `firedDate`/`statusOverride`, **and `pieceIds`/`result`/`resultNotes`** all round-trip (P0-4) — `piece_ids[]` ARRAY_AGG + `replacePieceLinks`/`ensurePiecesOwned`; `result`/`result_notes` in INSERT/UPDATE/SELECT. FE gap only: `useFiringsSync` still strips these on pull — wire them
 
 ---
 
@@ -190,8 +196,8 @@ Assets API exists; FE wires upload/hydrate in `pieceAssetSync.ts`. Remaining BE 
 | Cover + per-stage photo round-trip | 🔶 shipped, verify | Confirm multipart upload, CDN URLs, delete cascade on piece soft-delete |
 | Map asset → timeline entry | Partial | Today assets use collapsed API `status`; consider `local_stage` on asset row or `client_ref` on asset for multi-photo-per-stage |
 | Asset `description` | Shipped | Wire if journal captions should sync |
-| Premium photo limit (1 cloud photo/piece free) | **FE-only today** | Optional: enforce on `POST …/assets` using webhook entitlement (P1-13 table is write-only — need read path or header) |
-| Global cloud storage cap (500 MB free) | **FE-only today** | Optional: sum user asset bytes server-side before accept |
+| Premium photo limit (1 cloud photo/piece free) | **Enforced server-side** (P2-9) | `POST …/assets` rejects a free user's 2nd cloud photo per piece → 403; PUT-replace untouched. Premium uncapped |
+| Global cloud storage cap (500 MB free) | **Enforced server-side** (P2-9) | Sums live object bytes under `{userID}/` before accept; over cap → 413. Premium uncapped |
 
 #### P1 · Related domains (pieces-adjacent, not on `pieces` row)
 
@@ -216,8 +222,8 @@ Assets API exists; FE wires upload/hydrate in `pieceAssetSync.ts`. Remaining BE 
 3. **`pricing` JSONB** — studio sellers lose economics today.
 4. **Asset `local_stage` or ordering** — multi-photo journal entries survive cross-device merge.
 5. **Firing `piece_ids`** — kiln tab completion; pieces show firing history consistently.
-6. **Server premium enforcement** (optional) — align with FE gates #61; requires entitlement read API.
-7. **Glaze stack / mix logs (P2-3)** — post-V1 studio journal depth.
+6. ~~**Server premium enforcement**~~ — ✅ shipped: photo/storage quotas (P2-9) + glaze count (P2-5) enforced server-side via `GetActiveTier`.
+7. ~~**Glaze stack / mix logs (P2-3)**~~ — ✅ shipped: mix logs persist in glaze sync.
 
 ### FE work when BE lands
 
@@ -256,25 +262,25 @@ Assets API exists; FE wires upload/hydrate in `pieceAssetSync.ts`. Remaining BE 
 | **Overview tab** | Widgets, missions, kilnkin nudges, setup quests, alerts | ❌ (computed from local store) | **P2** rhythm + missions if cloud quests matter | `seenCeremonies`, `setupProgress`, alert **generation** (derive from synced data) |
 | **Pieces** | Journal, metadata, pricing, photos, batches | 🟡 minimal sync + assets API | **P1** — extend pieces sync ([backlog](#pieces-feature--completeness-backlog)) | — |
 | **Kiln** | Kiln profiles, firings, checklist template | 🟡 kilns + firings (partial) | **P1** `piece_ids` on firing · **P2** checklist in preferences | `logSource`, session UI state |
-| **Glaze / Library** | Atlas recipes, tests, collections, images | 🟡 `POST /users/me/glazes/sync` (verify depth) | **P1–P2** images, version chain, batch scaler ([§ E](#e--glaze-atlas-glazes-glazetests--partial-sync)) | Discover catalog (bundled JSON until P2-2) |
+| **Glaze / Library** | Atlas recipes, tests, collections, images | ✅ `POST /users/me/glazes/sync` + images/version/tests/scaler/mix-logs all persist ([§ E](#e--glaze-atlas-glazes-glazetests--partial-sync)) | Verify FE round-trip | Discover catalog now `GET /glazes/discover/*` (P2-2) |
 | **Analytics** | Studio stats, charts, export | ❌ (FE computes from local store) | **P3** optional historical snapshots · entitlement read for gates | Period/tab UI prefs |
 | **Community — feed** | Posts, reactions, images | ✅ `GET /users/me/feed`, posts, uploads | Verify only | Feed scroll/cursor cache |
 | **Community — create** | Text + photo posts | ✅ | Verify `POST /uploads` in prod (#24 ✅) | Composer preset (navigation) |
 | **Community — challenges** | Join, submit, vote, gallery | 🟡 API shipped; FE still uses mock in `__DEV__` | **P1** remove mock store; server is source of truth | Dev phase bar |
 | **Community — Hall of Fame** | Winner archive | 🟡 API + FE wired (#28) | Verify in prod | — |
 | **Community — polls** | Poll list + votes | ✅ | Verify | Demo poll vote id (offline fallback) |
-| **Community — news** | Admin news cards | ❌ | **P2** `GET /news` (P1-7) when product ships #29 | — |
+| **Community — news** | Admin news cards | ✅ `GET /news` (P1-7) | Wire FE #29 | — |
 | **Community — events/drops** | Events tab | ❌ | Out of scope V1 (tab hidden) | Placeholder UI |
 | **Profile tab — posts** | Own post grid | ✅ `GET /users/me/posts` | Verify; drop session cache when stable | `profilePostCache` (memory) |
 | **Profile tab — journey/badges** | XP, badges, milestones | ❌ (computed from local counters + store) | **P3** optional `user_stats` / badge unlocks if achievements must survive reinstall | Badge **definitions** (code registry) |
 | **Friends** | Friends list, requests | ✅ friends API | **P2** stop using local `clayFriendsCount` | — |
-| **Studios** | Owned/member studios, invites | 🟡 `studios.ts` FE wired | **P2** `user.linkedStudioCode` + active studio context; piece queue needs API | `studio` / `studioMembers` runtime cache |
+| **Studios** | Owned/member studios, invites | ✅ `/users/me/studios/*` (P1-4) | **P2** `user.linkedStudioCode` invite codes (out of scope) + active studio context; piece queue needs API | `studio` / `studioMembers` runtime cache |
 | **Studio rhythm** | Schedule, drying timers, events, rituals | ❌ | **P2** `preferences.studio_rhythm` JSONB | Ad-hoc `tasks[]` |
 | **Notifications** | Toggles + local kilnkin pushes | 🟡 push token endpoint | **P2** prefs on server for **remote** pushes (P2-6) | Local notification schedule + in-app inbox |
-| **Premium** | Entitlement, purchases | 🟡 RC webhook (write-only) | **P2** `GET /users/me/entitlement` for server gates | `isPremium` from device SDK until then |
+| **Premium** | Entitlement, purchases | 🟡 RC webhook + server reads tier (`GetActiveTier`); gates export/quotas | **P2** optional `GET /users/me/entitlement` for FE-readable tier | `isPremium` from device SDK until a GET exists |
 | **Account settings** | Delete account, change password | ✅ `DELETE /users/me` · Ory password | Verify revive flow | — |
 | **Public profile** | Other users’ grid | ✅ `GET /users/:id/profile` | Verify privacy enforcement | — |
-| **Discover** | Recipe / inspiration catalog | ❌ static in app | **P3** `GET /discover` (P2-2) | Bundled JSON is OK for V1 |
+| **Discover** | Recipe / inspiration catalog | ✅ `GET /glazes/discover/recipes` + `/inspirations` (P2-2) | Wire FE off bundled JSON | Bundled JSON OK until FE wired |
 
 ---
 
@@ -299,12 +305,15 @@ Assets API exists; FE wires upload/hydrate in `pieceAssetSync.ts`. Remaining BE 
 | Firings (core + log fields) | `/users/me/firings` |
 | Feed, posts, reactions, uploads | Community routes |
 | Challenges, voting, Hall of Fame | `/challenges`, `/hall-of-fame` |
-| Polls | `GET /polls`, vote POST |
+| Polls | `GET /polls`, vote POST, `GET /polls/:id/results` |
 | Friends + requests | `/users/me/friends` |
 | Public profile | `GET /users/:userId/profile` |
 | Studios (CRUD, invites) | `/users/me/studios` |
+| News | `GET /news` (public) |
+| Discover catalog | `GET /glazes/discover/recipes`, `/inspirations` |
+| Glaze images / versions / usage | `…/glazes/:id/images`, `…/glazes/:id/versions`, `…/glazes/usage` |
 | Push token | `POST /users/me/push-tokens` — FE wired (#86 ✅) |
-| Account delete | `DELETE /users/me`, `POST /users/me/revive` |
+| Account delete + export | `DELETE /users/me`, `POST /users/me/revive`, `GET /users/me/export` (premium) |
 | Premium events | `POST /webhooks/revenuecat` |
 
 ---
@@ -418,10 +427,10 @@ Full detail: [Pieces completeness backlog](#pieces-feature--completeness-backlog
 |-------------|----------|----------|-------|
 | `kilns[]` (profile, pricing per kiln, delays) | ✅ | — | `useKilnsSync` |
 | `firings[]` core session fields | ✅ | — | |
-| `firings[].pieceIds` | ❌ | **P1** | Piece assignment on completed firing |
-| `firings[].statusOverride` | ❌ | P2 | Manual session state override |
-| `firings[].result`, `resultNotes` | ❌ | P2 | Outcome on log firing |
-| `firings[].logSource` | ❌ | P3 | FE discriminator (`session` vs `manual`) |
+| `firings[].pieceIds` | ✅ API ready | **P0-4** ✅ | Piece assignment shipped — `piece_ids[]` ARRAY_AGG + `replacePieceLinks`; FE wire assignment |
+| `firings[].statusOverride` | ✅ API ready | **P0-4** ✅ | Round-trips; FE must stop stripping |
+| `firings[].result`, `resultNotes` | ✅ API ready | **P0-4** ✅ | Outcome round-trips; FE wire completion |
+| `firings[].logSource` | ❌ | P3 | FE-only discriminator (`session` vs `manual`); no BE column by design |
 
 ---
 
@@ -430,14 +439,15 @@ Full detail: [Pieces completeness backlog](#pieces-feature--completeness-backlog
 | Zustand key | BE today | Priority | Notes |
 |-------------|----------|----------|-------|
 | Core recipe fields, ingredients, tags, collections | ✅ | — | `POST /users/me/glazes/sync` |
-| Batch metadata (`batchId`, `dateMixed`, `status`, …) | 🟡 | P1 | P0-11 shipped — verify round-trip |
-| `versionNumber`, `rootGlazeId`, `parentGlazeId` | 🟡 | P2 | P1-8 — sent; confirm persistence |
-| Gallery photos (`bucketPhotoUri`, test/finished/accident URIs) | 🟡 | P2 | P1-10 separate upload endpoints |
-| `discoverSourceRecipeId`, `discoverSavedAt` | 🟡 | P3 | P1-12 provenance |
-| `communitySourcePostId`, … | ❌ | P3 | P1-11 structured recipe posts |
-| `batchScalerGramsPerPiece`, `batchScalerWastePercent`, … | ❌ | P3 | P2-4 |
+| Batch metadata (`batchId`, `dateMixed`, `status`, …) | ✅ | verify | P0-11 — persists; verify FE round-trip |
+| `versionNumber`, `rootGlazeId`, `parentGlazeId` | ✅ | verify | P1-8 shipped — persists + `GET …/glazes/:id/versions` |
+| Gallery photos (`bucketPhotoUri`, test/finished/accident URIs) | ✅ | verify | P1-10 shipped — `…/glazes/:id/images` upload/delete; `images[]` in payload |
+| `discoverSourceRecipeId`, `discoverSavedAt` | ✅ | verify | P1-12 shipped — provenance persists, idempotent |
+| `communitySourcePostId`, … | ✅ | verify | P1-12 shipped — `source_post_id`/`source_user_id` persist |
+| `batchScalerGramsPerPiece`, `batchScalerWastePercent`, … | ✅ | verify | P2-4 shipped — persist in sync |
 | `glazeCollectionNames` | 🟡 | P2 | Derived from glaze `collections`; confirm server stores custom names |
-| `glazeTests[]` | 🟡 | P2 | P1-9 — in sync payload; verify BE + test photos |
+| `glazeTests[]` | ✅ | verify | P1-9 shipped — test tiles persist (clay/cone/defects/rating/photo_ref) |
+| Mix logs (`mix_logs[]` per glaze) | ✅ | verify | P2-3 shipped — persist via glaze sync |
 
 ---
 
@@ -519,8 +529,8 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 | `communityDemoPollVoteId` | Demo when `GET /polls` empty | ❌ | — | Device fallback |
 | `communityPostSaveCounts` | Save count stub | ❌ | P3 | Use `save_count` on feed payload (BE-8.5) |
 | `communityKilnShareHintShown`, `communityPieceShareHintShown` | One-time hints | ❌ | — | Device |
-| Glaze recipe in post caption | HTML comment parse | ❌ | P3 | P1-11 structured `post_type` |
-| News cards | Not built (#29) | ❌ | P2 | P1-7 |
+| Glaze recipe in post caption | HTML comment parse | ✅ BE | P3 | P1-11 shipped — structured `type: "glaze_recipe"` + `glaze_recipe` JSONB (field is `type`, not `post_type`); FE still parses comment block |
+| News cards | Not built (#29) | ✅ BE | P2 | P1-7 shipped — `GET /news`; FE #29 |
 | Events / Drops tab | `DropsTab` placeholder | ❌ | — | Out of scope V1 |
 
 ---
@@ -553,9 +563,9 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 
 | Data | Location | BE today | Priority | Notes |
 |------|----------|----------|----------|-------|
-| `isPremium` | `useEntitlements()` → store | 🟡 webhook logs events | P2 | `GET /users/me/entitlement` for server enforcement |
+| `isPremium` | `useEntitlements()` → store | 🟡 webhook + server reads tier (`GetActiveTier`) | P2 | Optional `GET /users/me/entitlement` for FE-readable tier |
 | RevenueCat customer | Device SDK | ✅ | — | |
-| Photo / analytics / export gates | `premiumGate.ts` | ❌ | P2 | Enforce server-side once entitlement API exists |
+| Photo / storage / export gates | `premiumGate.ts` | ✅ BE enforced | — | Photo+storage quotas (P2-9), glaze count (P2-5), export gated (P2-8) — all server-side now |
 
 #### Premium tier — what the backend should store (and enforce)
 
@@ -573,7 +583,7 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 | Community posts + images | ✅ | ✅ | ✅ (not tier-gated) |
 | Avatar / cover | ✅ | ✅ (counts toward 500 MB) | ✅ |
 | Analytics dashboards | Preview (FE gate) | ❌ not stored | ❌ not stored — still FE-computed |
-| Data export | Blocked (FE gate) | ❌ no export archive | ❌ V1: client-side JSON only |
+| Data export | Blocked (FE gate) | ❌ no export archive | ✅ **`GET /users/me/export`** (premium-gated, P2-8) — glaze + piece-glaze-link archive |
 | Studio Rhythm sprint / freeform | Blocked (FE gate) | ❌ today | **Same `preferences` blob** — tier checked on read/write |
 | Kilnkin companion swap | Onboarding pick only | ❌ today | **Same `preferences.kilnkin`** — swap allowed if premium |
 | Missions | 3/week cap (#15, not built) | Optional counter | Unlimited — server tracks weekly count for free |
@@ -601,9 +611,9 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 
 **BE work for premium (not “premium-only tables”):**
 
-1. **`GET /users/me/entitlement`** — `{ tier: free\|premium, expires_at?, source: revenuecat }` from webhook-populated `subscriptions` (P1-13 today write-only).
-2. **Quota checks on upload paths** — piece assets, glaze images, profile media, optional `/uploads` middleware summing user byte total.
-3. **Glaze sync cap** — on `POST /users/me/glazes/sync`, reject upsert when free user would exceed 15 non-deleted glazes server-side.
+1. **Entitlement read** — ✅ server reads active tier internally via `subscriptions.GetActiveTier` and gates routes with `middleware.RequirePremium()` (used by `/users/me/export`). **No public `GET /users/me/entitlement` yet** — FE still reads `isPremium` from the device SDK; add the GET if FE needs server-authoritative tier.
+2. **Quota checks on upload paths** — ✅ **done (P2-9)**: 500 MB cap + 1-photo-per-piece enforced on piece-asset, glaze-image, avatar, cover uploads (`internal/quota/cloud.go`).
+3. **Glaze sync cap** — ✅ **done (P2-5)**: `POST /users/me/glazes/sync` rejects a free user past 15 non-deleted glazes (`enforceGlazeLimit`); `GET /users/me/glazes/usage` exposes count/limit/tier.
 4. **Mission weekly cap** (when #15 ships) — `GET/POST /users/me/missions` or field on preferences with `completions_this_week` + reset cron.
 5. **Yearly wrap (P3)** — `GET /users/me/wrap/{year}` generating or serving a cached report — premium-only route.
 
@@ -615,7 +625,7 @@ Computed mostly from **local** store today — badges/journey re-derive after sy
 
 | Data | Location | BE today | Priority | Notes |
 |------|----------|----------|----------|-------|
-| Discover recipes & inspirations | `library/discover/*.ts` bundled JSON | ❌ | P3 | P2-2 catalog API when editorial workflow needed |
+| Discover recipes & inspirations | `library/discover/*.ts` bundled JSON | ✅ BE | P3 | P2-2 shipped — `GET /glazes/discover/recipes` + `/inspirations`; FE still bundled until wired |
 | `devDiscoverGlazeIds` | Dev seed in Discover | ❌ | — | `__DEV__` only |
 
 ---
