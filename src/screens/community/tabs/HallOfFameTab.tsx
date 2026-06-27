@@ -6,9 +6,8 @@ import {
   HallOfFameFeaturedHero,
   HallOfFameWinnerCard,
 } from '@/src/screens/community/components/challenge/HallOfFameWinnerCard';
-import { MOCK_HALL_OF_FAME_CYCLES } from '@/src/screens/community/mock/challengeMockData';
 import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
-import { hallOfFameWinnerToDisplay, mockCycleToWinners } from '@/src/screens/community/utils/challengeWinners';
+import { hallOfFameWinnerToDisplay } from '@/src/screens/community/utils/challengeWinners';
 import { apiGetHallOfFameArchive } from '@/src/services/community';
 import { useAppStore } from '@/src/store';
 import { Trophy } from 'lucide-react-native';
@@ -22,16 +21,6 @@ type ArchiveCycle = {
   emoji: string;
   winners: ChallengeWinnerDisplay[];
 };
-
-function mockCycles(): ArchiveCycle[] {
-  return MOCK_HALL_OF_FAME_CYCLES.map((cycle) => ({
-    id: cycle.challengeId,
-    label: cycle.label,
-    title: cycle.title,
-    emoji: cycle.emoji,
-    winners: mockCycleToWinners(cycle),
-  }));
-}
 
 export function HallOfFameTab() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
@@ -70,17 +59,8 @@ export function HallOfFameTab() {
         return;
       }
 
-      if (__DEV__) {
-        setCycles(mockCycles());
-        return;
-      }
-
       setCycles([]);
     } catch {
-      if (__DEV__) {
-        setCycles(mockCycles());
-        return;
-      }
       setError('Could not load Hall of Fame winners.');
       setCycles([]);
     } finally {

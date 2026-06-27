@@ -39,10 +39,12 @@ import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
 import { ToastOverlay } from '@/src/components/ui/toast-overlay';
 import { AccountDeletedGate } from '@/src/components/AccountDeletedGate';
 import { configureRevenueCat } from '@/src/hooks/useEntitlements';
-import { useAccountGraceCheck } from '@/src/hooks/useAccountGraceCheck';
-import { useCurrentUser } from '@/src/hooks/useCurrentUser';
+import { useMeSessionEffects } from '@/src/hooks/useCurrentUser';
+import { useEntitlementSync } from '@/src/hooks/useEntitlementSync';
 import { useNotificationTriggers } from '@/src/hooks/useNotificationTriggers';
+import { usePreferencesSync } from '@/src/hooks/usePreferencesSync';
 import { usePushTokenSync } from '@/src/hooks/usePushTokenSync';
+import { useRhythmSync } from '@/src/hooks/useRhythmSync';
 import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { useGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { usePiecesSync } from '@/src/screens/pieces/hooks/usePiecesSync';
@@ -121,8 +123,10 @@ function useAuthInitialization(hydrated: boolean) {
 }
 
 function AppShell() {
-  useCurrentUser();
-  useAccountGraceCheck();
+  useMeSessionEffects();
+  useEntitlementSync();
+  usePreferencesSync();
+  useRhythmSync();
   useOfflineSync();
   usePiecesSync();
   useGlazesSync();
@@ -191,7 +195,6 @@ function AppShell() {
       </Stack>
       <OfflineBanner />
       <ToastOverlay />
-      <AccountDeletedGate />
       <StatusBar style="auto" />
     </>
   );
@@ -244,6 +247,7 @@ export default function RootLayout() {
                     <TextScaleRoot style={{ flex: 1 }}>
                       <AppShell />
                     </TextScaleRoot>
+                    <AccountDeletedGate />
                     {nativeSplashHidden && showAnimatedSplash ? (
                       <AnimatedSplashScreen onFinish={handleAnimatedSplashFinish} />
                     ) : null}

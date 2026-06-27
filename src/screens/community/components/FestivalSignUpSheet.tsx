@@ -20,8 +20,10 @@ type Step = 'track' | 'rules';
 type Props = {
   visible: boolean;
   festival: Festival;
-  onConfirm: (trackId: string) => void;
+  /** Null when the challenge has no tracks — join without track_id. */
+  onConfirm: (trackId: string | null) => void;
   onClose: () => void;
+  submitting?: boolean;
 };
 
 function TrackOption({
@@ -84,36 +86,43 @@ function TrackOption({
   );
 }
 
-export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose }: Props) {
+export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose, submitting = false }: Props) {
   const sheetHeight = useModalSheetHeight(0.88);
-  const [step, setStep] = useState<Step>('track');
-  const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
+  const hasTrackStep = festival.tracks.length > 1;
+  const totalSteps = hasTrackStep ? 2 : 1;
+  const [step, setStep] = useState<Step>(hasTrackStep ? 'track' : 'rules');
+  const [selectedTrack, setSelectedTrack] = useState<string | null>(
+    festival.tracks.length === 1 ? festival.tracks[0].id : null,
+  );
   const [rulesAccepted, setRulesAccepted] = useState(false);
+
+  const resetForm = () => {
+    setStep(hasTrackStep ? 'track' : 'rules');
+    setSelectedTrack(festival.tracks.length === 1 ? festival.tracks[0].id : null);
+    setRulesAccepted(false);
+  };
 
   useEffect(() => {
     if (!visible) {
-      setStep('track');
-      setSelectedTrack(null);
-      setRulesAccepted(false);
+      resetForm();
+      return;
     }
-  }, [visible]);
+    setStep(hasTrackStep ? 'track' : 'rules');
+    setSelectedTrack(festival.tracks.length === 1 ? festival.tracks[0].id : null);
+    setRulesAccepted(false);
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps -- init once per open
 
   if (!visible) return null;
 
   const handleClose = () => {
-    setStep('track');
-    setSelectedTrack(null);
-    setRulesAccepted(false);
+    resetForm();
     onClose();
   };
 
   const handleConfirm = () => {
-    if (!selectedTrack || !rulesAccepted) return;
-    const trackId = selectedTrack;
-    setStep('track');
-    setSelectedTrack(null);
-    setRulesAccepted(false);
-    onConfirm(trackId);
+    if (submitting || !rulesAccepted) return;
+    if (hasTrackStep && !selectedTrack) return;
+    onConfirm(selectedTrack);
   };
 
   return (
@@ -134,7 +143,7 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose }: P
                       textTransform: 'uppercase',
                     }}
                   >
-                    Step 1 of 2
+                    Step 1 of {totalSteps}
                   </Text>
                   <Text
                     style={{
@@ -184,19 +193,49 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose }: P
         ) : (
           <>
             <ModalSheetHeader>
-              <TouchableOpacity
-                onPress={() => setStep('track')}
-                activeOpacity={0.7}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  alignSelf: 'flex-start',
-                }}
-              >
-                <ArrowLeft size={14} color={festival.accentColor} />
-                <Text style={{ fontSize: 13, color: festival.accentColor, fontWeight: '600' }}>Back</Text>
-              </TouchableOpacity>
+              {hasTrackStep ? (
+                <TouchableOpacity
+                  onPress={() => setStep('track')}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    alignSelf: 'flex-start',
+                  }}
+                >
+                  <ArrowLeft size={14} color={festival.accentColor} />
+                  <Text style={{ fontSize: 13, color: festival.accentColor, fontWeight: '600' }}>Back</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Text style={{ fontSize: 28 }}>{festival.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: '700',
+                        color: festival.accentColor,
+                        letterSpacing: 0.8,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Before you join
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: '700',
+                        color: '#1a1008',
+                        fontFamily: 'serif',
+                        lineHeight: 24,
+                      }}
+                    >
+                      {festival.name}
+                    </Text>
+                  </View>
+                </View>
+              )}
             </ModalSheetHeader>
 
             <ModalFormScrollView
@@ -217,7 +256,7 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose }: P
                   marginBottom: 4,
                 }}
               >
-                Step 2 of 2
+                Step {hasTrackStep ? 2 : 1} of {totalSteps}
               </Text>
               <Text
                 style={{
@@ -295,12 +334,12 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose }: P
             <ModalSheetFooter>
               <ModalSheetActions>
                 <SheetButton
-                  label="Join Festival"
+                  label={submitting ? 'Joining…' : 'Join Festival'}
                   onPress={handleConfirm}
                   variant="confirm"
-                  disabled={!rulesAccepted}
+                  disabled={!rulesAccepted || submitting}
                 />
-                <SheetButton label="Cancel" onPress={handleClose} variant="cancel" />
+                <SheetButton label="Cancel" onPress={handleClose} variant="cancel" disabled={submitting} />
               </ModalSheetActions>
             </ModalSheetFooter>
           </>

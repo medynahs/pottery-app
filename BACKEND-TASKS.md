@@ -32,7 +32,7 @@
 - `POST /posts` → **`POST /users/me/posts`**
 - `POST /uploads/presigned` (presigned S3) → **`POST /uploads`** server-side multipart → `{ asset_id, public_url }`. FE uploads the file directly to the API; there is no presign step.
 - Challenge `status` is **derived from dates** in the response (no status column, no cron).
-- `DELETE /users/me` is **soft-delete**: 204, ~1wk grace, then 403 `account_deleted` on everything except **`POST /users/me/revive`**. Deleted users vanish from others' feed/friends/leaderboards; deleted challenge winners return `user_deleted: true`.
+- `DELETE /users/me` is **soft-delete**: 204, **30-day grace** (`deleted_at`), then hard-purge; during grace 403 `account_deleted` on everything except **`POST /users/me/revive`**. Deleted users vanish from others' feed/friends/leaderboards; deleted challenge winners return `user_deleted: true`.
 
 ---
 
@@ -213,7 +213,7 @@ Posts accept flat `{ id, image_url, created_at, reaction_count }` or nested `ass
 
 ### P0-5 · Auth — Account deletion — ✅ DONE
 
-`DELETE /users/me` → **soft-delete** (`is_deleted=true`), 204, session invalidated. ~1-week grace period; during grace all endpoints return **403 `account_deleted`** except **`POST /users/me/revive`** (restores, 200). Cascade of pieces/firings/glazes/friends/posts handled by DB `ON DELETE CASCADE` on hard delete; soft-deleted users are hidden from others' feeds/friends/leaderboards immediately. Out of scope: push-token removal (no push table yet), hard-purge cron after grace.
+`DELETE /users/me` → **soft-delete** (`is_deleted=true`, `deleted_at` set), 204, session invalidated. **30-day grace period**; during grace all endpoints return **403 `account_deleted`** except **`POST /users/me/revive`** (restores, 200). Cascade of pieces/firings/glazes/friends/posts handled by DB `ON DELETE CASCADE` on hard purge; soft-deleted users are hidden from others' feeds/friends/leaderboards immediately.
 
 **FE wired:** `AccountSettingsScreen` — **FE should handle 403 `account_deleted` + offer the revive flow during grace.**
 
@@ -251,6 +251,7 @@ Posts accept flat `{ id, image_url, created_at, reaction_count }` or nested `ass
 | `DELETE …/entries/:entryId` | ✅ Withdraw |
 | `GET /challenges/:id/entries` | ✅ gallery; `?track_id=`; sort by votes |
 | Phase transitions | ✅ Not needed — derived from `submission_deadline`/`end_date` |
+| **Seed challenge tracks (ops / data)** | 🔲 **TODO** — active prod challenge(s) return `tracks: []` (e.g. *May Teacup Throwdown*). Tracks only exist when created via admin `POST /api/challenges` with a `tracks[]` payload; legacy rows have none. **Action:** backfill `challenge_tracks` (Beginner / Intermediate / Advanced or per-theme titles) for the live challenge, or recreate the challenge with tracks. FE join wizard uses API track UUIDs only — without rows, users get rules-only join (no `track_id`); gallery voting per-track needs seeded tracks. |
 
 **FE:** **Remove** `src/screens/community/mock/` and wire the real API.
 
@@ -727,6 +728,7 @@ Single map of **what the app collects or displays today** vs **what the backend 
 | Photo post create | `CreatePostSheet` | **API ready** | ✅ P0-6 | Repoint to `POST /uploads` (direct multipart) + `POST /users/me/posts`; drop presign fallback (#24) |
 | Glaze recipe in post (HTML comment block) | Share glaze flow | **Local parse** | P1-11 | No structured `post_type` yet |
 | **Challenge tab (Festivals)** | `FestivalsTab.tsx` | **API ready** | ✅ P0-8 | Backend live (`status` derived from dates). **Remove** `MOCK_UNDERWATER_CHALLENGE` / `useMockChallengeStore`; wire `GET /challenges` |
+| **Challenge tracks on live challenge** | `FestivalSignUpSheet`, `challengeTracks.ts` | **BE data gap** | 🔲 P0-8 ops | Prod `GET /challenges` returns `tracks: []` for pre-migration challenges — seed `challenge_tracks` via admin API or DB backfill so join wizard can offer real track UUIDs |
 | **Challenge gallery + voting** | `ChallengeGalleryScreen.tsx` | **API ready** | ✅ P0-9 | Wire `GET /challenges/:id/entries` + `POST …/votes`; drop `mockChallengeStore` |
 | **Hall of Fame tab** | `HallOfFameTab.tsx` | **API ready** | ✅ P1-6 | Wire `GET /hall-of-fame`; handle `user_deleted: true` winner tombstone. Drop `MOCK_HALL_OF_FAME_CYCLES` |
 | Challenge phase dev bar | `FestivalsTab` when `isMock` | **Dev/mock** | P0-8 | Remove when API drives `status` |

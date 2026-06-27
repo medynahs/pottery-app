@@ -21,7 +21,7 @@ export function isAccountDeletedError(error: unknown): boolean {
   return error.message.includes(ACCOUNT_DELETED_CODE);
 }
 
-async function apiErrorFromResponse(res: Response, prefix: string): Promise<ApiError> {
+export async function apiErrorFromResponse(res: Response, prefix: string): Promise<ApiError> {
   const body = await res.text().catch(() => '');
   let code: string | undefined;
 
@@ -72,6 +72,8 @@ export interface BackendProfile {
   pieces_public?: boolean;
   created_at: string;
   updated_at: string;
+  /** When the account was soft-deleted; hard purge runs 30 days later. */
+  deleted_at?: string | null;
   /** Present when account is in soft-delete grace — studio APIs are blocked until revive. */
   is_deleted?: boolean;
 }

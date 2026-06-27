@@ -12,7 +12,6 @@ export function buildPreviewChallengeDisplay(): ChallengeDisplay {
     label: ACTIVE_CHALLENGE.label,
     isActive: true,
     endsAt: null,
-    isMock: false,
     emoji: ACTIVE_CHALLENGE.emoji,
     gradientColors: ['#5A7A52', '#3D5A38'] as const,
     accentColor: ACTIVE_CHALLENGE.accentColor,

@@ -50,7 +50,11 @@ export default function CommunityScreen() {
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
   const [feedRefreshing, setFeedRefreshing] = useState(false);
   const [createPostVisible, setCreatePostVisible] = useState(false);
-  const [entryCeremony, setEntryCeremony] = useState<{ emoji: string; challengeName: string } | null>(null);
+  const [ceremony, setCeremony] = useState<
+    | { kind: 'submitted'; emoji: string; challengeName: string }
+    | { kind: 'left'; emoji: string; challengeName: string }
+    | null
+  >(null);
 
   useEffect(() => {
     if (composerPreset) {
@@ -115,7 +119,8 @@ export default function CommunityScreen() {
         return (
           <ChallengesTab
             onBrowseHallOfFame={() => setActiveFilter('Hall of Fame')}
-            onEntrySubmitted={setEntryCeremony}
+            onEntrySubmitted={(meta) => setCeremony({ kind: 'submitted', ...meta })}
+            onChallengeLeft={(meta) => setCeremony({ kind: 'left', ...meta })}
             onShareChallengePost={handleShareChallengePost}
           />
         );
@@ -198,18 +203,24 @@ export default function CommunityScreen() {
       ) : null}
 
       <CeremonyOverlay
-        visible={entryCeremony !== null}
-        emoji={entryCeremony?.emoji ?? '🏆'}
-        title="Piece submitted!"
+        visible={ceremony !== null}
+        emoji={ceremony?.kind === 'left' ? '🍃' : (ceremony?.emoji ?? '🏆')}
+        title={ceremony?.kind === 'left' ? 'See you next time' : 'Piece submitted!'}
         subtitle={
-          entryCeremony
-            ? `Your entry for ${entryCeremony.challengeName} is in.`
-            : undefined
+          ceremony?.kind === 'left'
+            ? `We would have loved to see your piece for ${ceremony.challengeName}, but maybe next time.`
+            : ceremony
+              ? `Your entry for ${ceremony.challengeName} is in.`
+              : undefined
         }
-        footnote="The community votes once submissions close. Good luck!"
-        tint="rgba(42, 107, 124, 1)"
+        footnote={
+          ceremony?.kind === 'left'
+            ? 'You can rejoin before the deadline if you change your mind.'
+            : 'The community votes once submissions close. Good luck!'
+        }
+        tint={ceremony?.kind === 'left' ? 'rgba(160, 120, 90, 1)' : 'rgba(42, 107, 124, 1)'}
         durationMs={3000}
-        onDismiss={() => setEntryCeremony(null)}
+        onDismiss={() => setCeremony(null)}
       />
     </StudioTabScreen>
   );

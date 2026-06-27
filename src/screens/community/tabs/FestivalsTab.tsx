@@ -32,6 +32,8 @@ import {
   mockWinnerToDisplay,
 } from '@/src/screens/community/utils/challengeWinners';
 import { buildPreviewChallengeDisplay } from '@/src/screens/community/utils/challengePreviewDisplay';
+import { challengeToFestival } from '@/src/screens/community/utils/challengeFestival';
+import { trackTitleFromChallenge } from '@/src/screens/community/utils/challengeTracks';
 import { MOCK_UNDERWATER_CHALLENGE } from '@/src/screens/community/utils/mockUnderwaterChallenge';
 import { useMockChallengeStore } from '@/src/screens/community/mock/mockChallengeStore';
 import type { ChallengePhase } from '@/src/screens/community/types';
@@ -43,6 +45,7 @@ import {
   apiListChallenges,
   apiSubmitChallengeEntry,
   apiWithdrawChallengeEntry,
+  challengeJoinErrorMessage,
   type BackendChallenge,
 } from '@/src/services/challenges';
 import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
@@ -506,10 +509,12 @@ function MockTrackCards({
 export function ChallengesTab({
   onBrowseHallOfFame,
   onEntrySubmitted,
+  onChallengeLeft,
   onShareChallengePost,
 }: {
   onBrowseHallOfFame?: () => void;
   onEntrySubmitted?: (meta: { emoji: string; challengeName: string }) => void;
+  onChallengeLeft?: (meta: { emoji: string; challengeName: string }) => void;
   onShareChallengePost?: () => void;
 }) {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
@@ -528,6 +533,7 @@ export function ChallengesTab({
   const [submitOpen, setSubmitOpen] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   const challenge = useMemo(() => {
     if (challengeApi) return toChallengeDisplay(challengeApi);
@@ -549,9 +555,12 @@ export function ChallengesTab({
     : challengeIsJoined(challengeApi) || apiEntryId !== null;
   const hasSubmitted = isMock ? mock.hasSubmitted : challengeHasSubmitted(challengeApi);
 
-  const enrolledTrack = ACTIVE_FESTIVAL.tracks.find((t) =>
-    t.id === (isMock ? mock.joinedTrackId : challengeApi?.track_id ?? null),
-  ) ?? null;
+  const enrolledTrackId = isMock ? mock.joinedTrackId : challengeApi?.track_id ?? null;
+  const enrolledTrackTitle = enrolledTrackId
+    ? isMock
+      ? ACTIVE_FESTIVAL.tracks.find((t) => t.id === enrolledTrackId)?.title ?? null
+      : trackTitleFromChallenge(challengeApi, enrolledTrackId)
+    : null;
 
   const winners: ChallengeWinnerDisplay[] = useMemo(() => {
     if (phase !== 'closed') return [];
@@ -587,7 +596,7 @@ export function ChallengesTab({
     } as never);
   };
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options?: { silent?: boolean }) => {
     if (!isSignedIn) {
       setChallengeApi(null);
       setApiEntryId(null);
@@ -595,7 +604,9 @@ export function ChallengesTab({
       return;
     }
 
-    setLoading(true);
+    if (!options?.silent) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const items = await apiListChallenges();
@@ -612,7 +623,9 @@ export function ChallengesTab({
         setError(err instanceof Error ? err.message : 'Failed to load challenges');
       }
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   }, [isSignedIn]);
 
@@ -620,19 +633,23 @@ export function ChallengesTab({
     void load();
   }, [load]);
 
-  const handleMockJoin = (trackId: string) => {
-    mock.join(trackId);
-    setSignUpOpen(false);
-    showToast('You joined the preview challenge!', 'success');
-  };
+  const signUpFestival = useMemo(() => {
+    if (isMock) return ACTIVE_FESTIVAL;
+    if (challengeApi) return challengeToFestival(challengeApi);
+    return null;
+  }, [isMock, challengeApi]);
 
-  const handleQuickJoin = async () => {
+  const handleSignUpConfirm = async (trackId: string | null) => {
+    if (submitting) return;
+
     if (isMock) {
-      if (phase === 'voting' || phase === 'closed') {
-        openGallery();
+      if (!trackId) {
+        showToast('Choose a track to join the preview challenge', 'error');
         return;
       }
-      setSignUpOpen(true);
+      mock.join(trackId);
+      setSignUpOpen(false);
+      showToast('You joined the preview challenge!', 'success');
       return;
     }
 
@@ -644,16 +661,26 @@ export function ChallengesTab({
     setSubmitting(true);
     try {
       const entry = await apiSubmitChallengeEntry(challengeApi.id, {
-        track_id: challengeApi.track_id ?? undefined,
+        ...(trackId ? { track_id: trackId } : {}),
         note: 'Joined from Pottery Life app',
       });
       setApiEntryId(entry.id);
-      markChallengeEntrySubmitted();
+      setChallengeApi((prev) =>
+        prev
+          ? {
+              ...prev,
+              is_joined: true,
+              track_id: trackId ?? entry.track_id ?? null,
+              my_entry_id: entry.id,
+              has_submitted: false,
+            }
+          : null,
+      );
+      setSignUpOpen(false);
       showToast('You joined the challenge!', 'success');
-      void load();
+      void load({ silent: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Could not join challenge';
-      showToast(message, 'error');
+      showToast(challengeJoinErrorMessage(err), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -687,7 +714,7 @@ export function ChallengesTab({
       setSubmitOpen(true);
       return;
     }
-    void handleQuickJoin();
+    setSignUpOpen(true);
   };
 
   const handleSecondaryPress = () => {
@@ -759,29 +786,46 @@ export function ChallengesTab({
     }
   };
 
+  const notifyChallengeLeft = () => {
+    onChallengeLeft?.({
+      emoji: challenge.emoji ?? '🏆',
+      challengeName: challenge.title,
+    });
+  };
+
   const handleLeave = async () => {
     if (isMock) {
       mock.leave();
-      setDropOpen(false);
-      showToast('Left preview challenge', 'success');
+      notifyChallengeLeft();
       return;
     }
 
     if (!isSignedIn || !challengeApi?.id || !apiEntryId) {
-      setDropOpen(false);
       return;
     }
 
+    setLeaving(true);
     try {
       await apiWithdrawChallengeEntry(challengeApi.id, apiEntryId);
       setApiEntryId(null);
-      showToast('Challenge entry withdrawn', 'success');
-      void load();
+      setChallengeApi((prev) =>
+        prev
+          ? {
+              ...prev,
+              is_joined: false,
+              track_id: null,
+              my_entry_id: null,
+              has_submitted: false,
+            }
+          : null,
+      );
+      notifyChallengeLeft();
+      void load({ silent: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not leave challenge';
       showToast(message, 'error');
     } finally {
-      setDropOpen(false);
+      setLeaving(false);
     }
   };
 
@@ -816,7 +860,7 @@ export function ChallengesTab({
         phaseSubtitle={phaseSubtitle}
         joined={isPreviewOnly ? false : joined}
         hasSubmitted={isPreviewOnly ? false : hasSubmitted}
-        enrolledTrackTitle={enrolledTrack?.title ?? null}
+        enrolledTrackTitle={enrolledTrackTitle}
         onPrimaryPress={handlePrimaryPress}
         onSecondaryPress={secondaryLabel ? handleSecondaryPress : undefined}
         secondaryLabel={isPreviewOnly ? undefined : secondaryLabel}
@@ -907,11 +951,12 @@ export function ChallengesTab({
 
       {isMock && phase === 'open' ? <MockTrackCards enrolledTrackId={mock.joinedTrackId} /> : null}
 
-      {isMock ? (
+      {signUpFestival ? (
         <FestivalSignUpSheet
           visible={signUpOpen}
-          festival={ACTIVE_FESTIVAL}
-          onConfirm={handleMockJoin}
+          festival={signUpFestival}
+          submitting={submitting}
+          onConfirm={(trackId) => { void handleSignUpConfirm(trackId); }}
           onClose={() => setSignUpOpen(false)}
         />
       ) : null}
@@ -921,7 +966,7 @@ export function ChallengesTab({
       <SubmitPieceSheet
         visible={submitOpen}
         contextName={challenge.title}
-        contextSubtitle={enrolledTrack?.title ?? challenge.label}
+        contextSubtitle={enrolledTrackTitle ?? challenge.label}
         accentColor={challenge.accentColor ?? COMMUNITY_THEME.accent}
         submitting={submitting}
         onSubmit={(payload) => { void handleSubmitEntry(payload); }}
@@ -934,6 +979,8 @@ export function ChallengesTab({
         body="You can rejoin before the deadline, but your current spot will be cleared."
         confirmLabel="Leave challenge"
         destructive
+        loading={leaving}
+        dismissOnConfirm={() => setDropOpen(false)}
         onConfirm={() => { void handleLeave(); }}
         onCancel={() => setDropOpen(false)}
       />

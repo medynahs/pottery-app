@@ -1,4 +1,5 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { ProfileDeletionGraceBanner } from '@/src/screens/overview/profile/components/ProfileDeletionGraceBanner';
 import { NotificationDebugPanel } from '@/src/components/dev/NotificationDebugPanel';
 import { KilnkinCompanionPickerSheet } from '@/src/components/KilnkinCompanionPickerSheet';
 import { PracticeTypePickerSheet } from '@/src/components/PracticeTypePickerSheet';
@@ -90,7 +91,9 @@ export default function AccountSettingsScreen() {
       return;
     }
 
-    // Clear local session before logout so /users/me does not race into grace-state UI.
+    // Persist deletion schedule, then clear session (schedule survives sign-out).
+    const deletionScheduledAt = new Date().toISOString();
+    useAppStore.getState().setAccountDeletionScheduledAt(deletionScheduledAt);
     queryClient.cancelQueries({ queryKey: ME_QUERY_KEY });
     queryClient.removeQueries({ queryKey: ME_QUERY_KEY });
     clearSession();
@@ -103,10 +106,7 @@ export default function AccountSettingsScreen() {
 
     setBusy(false);
     router.back();
-    showToast(
-      'Your account is scheduled for deletion. Sign back in within about a week to restore it.',
-      'success',
-    );
+    showToast('Your account is scheduled for deletion. You have 30 days to restore it.', 'success');
   }
 
   const toggleNotificationPref = async (key: keyof typeof notificationPrefs) => {
@@ -147,7 +147,7 @@ export default function AccountSettingsScreen() {
       <ConfirmSheet
         visible={sheet === 'delete1'}
         title="Delete your account?"
-        body="Your studio will be hidden immediately and scheduled for permanent deletion after about one week. You can sign back in during that time to restore everything."
+        body="Your account will be scheduled for deletion. You have 30 days to sign back in and restore it before your pieces, glazes, photos, and profile are permanently erased."
         confirmLabel="Yes, continue"
         destructive
         dismissOnConfirm={() => setSheet('delete2')}
@@ -158,9 +158,9 @@ export default function AccountSettingsScreen() {
       {/* Delete step 2, final */}
       <ConfirmSheet
         visible={sheet === 'delete2'}
-        title="Confirm deletion"
-        body="After about one week without restoring your account, your pieces, glazes, and studio data will be permanently removed."
-        confirmLabel="Schedule account deletion"
+        title="Schedule account deletion?"
+        body="After 30 days without restoring, your studio data is permanently erased. Until then you can sign in and tap Restore on your profile."
+        confirmLabel="Schedule deletion"
         destructive
         loading={busy}
         dismissOnConfirm={() => setSheet(null)}
@@ -176,6 +176,7 @@ export default function AccountSettingsScreen() {
         subtitle="Profile security and account controls"
         onClose={() => router.back()}
       >
+        <ProfileDeletionGraceBanner />
         <SectionLabel title="Subscription" />
         <SettingsGroup>
           <SettingsRow

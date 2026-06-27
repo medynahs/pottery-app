@@ -2,9 +2,11 @@ import { Banner } from '@/src/components/Banner';
 import { LabeledInput } from '@/src/components/LabeledInput';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
+import { markSessionBootstrap, refreshMeAfterSignIn } from '@/src/hooks/useCurrentUser';
 import { detectAccountDeletionGrace } from '@/src/services/accountGrace';
 import { googleSignIn, isExpoGo, register, UserCancelledError } from '@/src/services/auth';
 import { useAppStore } from '@/src/store';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Mail } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -24,6 +26,7 @@ interface Props {
 
 export default function RegisterScreen({ onSuccess }: Props) {
   const setSignedIn = useAppStore((s) => s.setSignedIn);
+  const queryClient = useQueryClient();
   const router      = useRouter();
   const safeInsets  = useSafeAreaInsets();
 
@@ -34,9 +37,22 @@ export default function RegisterScreen({ onSuccess }: Props) {
   const [error, setError]           = useState<string | null>(null);
 
   async function handleDone(mail: string) {
+    markSessionBootstrap();
     setSignedIn(mail);
-    const inGrace = await detectAccountDeletionGrace();
-    if (inGrace) useAppStore.getState().setAccountDeletionGrace(true);
+    const profile = await refreshMeAfterSignIn(queryClient);
+    if (!profile) {
+      const inGrace = await detectAccountDeletionGrace();
+      if (inGrace) useAppStore.getState().setAccountDeletionGrace(true);
+      else if (mail) {
+        const localPart = mail.split('@')[0]?.trim();
+        if (localPart) {
+          useAppStore.getState().setUser({
+            name: localPart,
+            avatarInitial: localPart[0]?.toUpperCase() ?? 'U',
+          });
+        }
+      }
+    }
     if (onSuccess) onSuccess();
     else router.back();
   }

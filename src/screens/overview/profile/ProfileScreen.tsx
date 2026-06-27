@@ -3,6 +3,7 @@ import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
+import { ProfileDeletionGraceBanner } from './components/ProfileDeletionGraceBanner';
 import { ProfileFreeTierPromo } from './components/ProfileFreeTierPromo';
 import { ProfileGrid } from './components/ProfileGrid';
 import { ProfileHeader } from './components/ProfileHeader';
@@ -36,6 +37,7 @@ export default function ProfileScreen() {
         onOpenJourney={() => router.push('/profile/journey' as never)}
       />
 
+      <ProfileDeletionGraceBanner />
       <ProfileFreeTierPromo />
 
       <ProfileGrid posts={posts} loading={loading} />

@@ -1,92 +1,60 @@
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
-import { ME_QUERY_KEY } from '@/src/hooks/useCurrentUser';
-import { GLAZES_QUERY_KEY } from '@/src/screens/library/useGlazesSync';
-import { FIRINGS_QUERY_KEY } from '@/src/screens/kiln/hooks/useFiringsSync';
-import { KILNS_QUERY_KEY } from '@/src/screens/kiln/hooks/useKilnsSync';
-import { PIECES_QUERY_KEY } from '@/src/screens/pieces/hooks/usePiecesSync';
-import { reviveAccount } from '@/src/services/api';
+import { useAccountDeletionGrace } from '@/src/hooks/useAccountDeletionGrace';
+import { useReviveAccount } from '@/src/hooks/useReviveAccount';
+import { ACCOUNT_DELETION_GRACE_DAYS } from '@/src/services/accountGrace';
 import { useAppStore } from '@/src/store/appStore';
-import { useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, View } from 'react-native';
 
-async function invalidateStudioQueries(queryClient: ReturnType<typeof useQueryClient>) {
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY }),
-    queryClient.invalidateQueries({ queryKey: PIECES_QUERY_KEY }),
-    queryClient.invalidateQueries({ queryKey: GLAZES_QUERY_KEY }),
-    queryClient.invalidateQueries({ queryKey: KILNS_QUERY_KEY }),
-    queryClient.invalidateQueries({ queryKey: FIRINGS_QUERY_KEY }),
-  ]);
-}
-
 export function AccountDeletedGate() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
-
-  const accountDeletionGrace = useAppStore((s) => s.accountDeletionGrace);
   const clearSession = useAppStore((s) => s.clearSession);
-  const setAccountDeletionGrace = useAppStore((s) => s.setAccountDeletionGrace);
-  const showToast = useAppStore((s) => s.showToast);
-  const queryClient = useQueryClient();
-  const [busy, setBusy] = useState<'revive' | 'signout' | null>(null);
+  const { inGrace, subtitle } = useAccountDeletionGrace();
+  const { revive, busy: reviveBusy } = useReviveAccount();
+  const [signingOut, setSigningOut] = useState(false);
 
-  const visible = accountDeletionGrace && isSignedIn;
-
-  const handleRevive = async () => {
-    if (!isSignedIn) return;
-    setBusy('revive');
-    try {
-      await reviveAccount();
-      setAccountDeletionGrace(false);
-      await invalidateStudioQueries(queryClient);
-      showToast('Welcome back — your studio has been restored.', 'success');
-    } catch (error) {
-      if (__DEV__) {
-        console.error('[AccountDeletedGate] revive failed', error);
-      }
-      showToast('Could not restore your account. Try again or contact support.', 'error');
-    } finally {
-      setBusy(null);
-    }
-  };
+  const visible = inGrace && isSignedIn;
 
   const handleSignOut = async () => {
     if (!isSignedIn) return;
-    setBusy('signout');
+    setSigningOut(true);
     try {
       await clearSession();
     } catch {
-      // clearSession already handles signout; ignore if session already gone
+      // Local cleanup is enough if the session is already gone.
     }
-    clearSession();
-    queryClient.removeQueries({ queryKey: ME_QUERY_KEY });
-    setBusy(null);
+    setSigningOut(false);
   };
 
+  const busy = reviveBusy || signingOut;
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => {}}>
+    <Modal visible={visible} transparent animationType="fade" presentationStyle="overFullScreen" onRequestClose={() => {}}>
       <View style={styles.overlay}>
         <View className="mx-6 max-w-md rounded-3xl border border-border bg-card px-6 py-7">
           <Text className="text-2xl font-serif font-bold text-foreground text-center">
             Account scheduled for deletion
           </Text>
           <Text className="text-sm text-muted-foreground leading-relaxed mt-3 text-center">
-            Your studio is paused during a one-week grace period — profile, pieces, and photos
-            are hidden until you restore or deletion finishes.
+            {subtitle}
+          </Text>
+          <Text className="text-xs text-muted-foreground leading-relaxed mt-2 text-center">
+            Studio data is paused during the {ACCOUNT_DELETION_GRACE_DAYS}-day grace period.
+            Tap restore to bring back your profile, pieces, and photos.
           </Text>
 
           <View className="mt-6 gap-3">
             <PrimaryButton
-              label={busy === 'revive' ? 'Restoring…' : 'Restore my account'}
-              onPress={() => void handleRevive()}
-              disabled={busy !== null}
+              label={reviveBusy ? 'Restoring…' : 'Restore my account'}
+              onPress={() => void revive()}
+              disabled={busy}
             />
             <PrimaryButton
-              label={busy === 'signout' ? 'Signing out…' : 'Sign out'}
+              label={signingOut ? 'Signing out…' : 'Sign out'}
               variant="outline"
               onPress={() => void handleSignOut()}
-              disabled={busy !== null}
+              disabled={busy}
             />
           </View>
 

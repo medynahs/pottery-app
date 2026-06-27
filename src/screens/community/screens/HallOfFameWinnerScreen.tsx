@@ -3,11 +3,7 @@ import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
 import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
-import { findMockWinner } from '@/src/screens/community/mock/challengeMockData';
-import {
-  hallOfFameWinnerDetailToDisplay,
-  mockWinnerToDisplay,
-} from '@/src/screens/community/utils/challengeWinners';
+import { hallOfFameWinnerDetailToDisplay } from '@/src/screens/community/utils/challengeWinners';
 import { apiGetHallOfFameWinner } from '@/src/services/community';
 import { useAppStore } from '@/src/store';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -50,19 +46,8 @@ export default function HallOfFameWinnerScreen() {
         }
       }
 
-      if (__DEV__) {
-        const rawWinner = findMockWinner(winnerId);
-        setWinner(rawWinner ? mockWinnerToDisplay(rawWinner) : null);
-        return;
-      }
-
       setWinner(null);
     } catch {
-      if (__DEV__) {
-        const rawWinner = findMockWinner(winnerId);
-        setWinner(rawWinner ? mockWinnerToDisplay(rawWinner) : null);
-        return;
-      }
       setError('Could not load this winner.');
       setWinner(null);
     } finally {

@@ -1,20 +1,25 @@
-import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useStudioLinkStatus } from '@/src/hooks/useStudioLinkStatus';
 import { generateSetupQuests } from '@/src/screens/overview/setupQuests/generateSetupQuests';
+import { GLAZES_QUERY_KEY } from '@/src/screens/library/useGlazesSync';
+import { PIECES_QUERY_KEY } from '@/src/screens/pieces/hooks/usePiecesSync';
 import { generateStudioRhythmSuggestions } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
-import { getDateKey, isStudioRhythmConfigured } from '@/src/screens/overview/studioRythm/studioRhythm';
+import { getDateKey, isStudioRhythmConfigured, normalizeStudioRhythm } from '@/src/screens/overview/studioRythm/studioRhythm';
 import { buildActivityFeed } from '@/src/screens/overview/utils/activityFeed';
 import { getStudioSignals } from '@/src/screens/overview/utils/getStudioSignals';
 import { getKilnkinNudge } from '@/src/screens/overview/utils/kilnkinNudge';
 import { mapPiecesToStudioPositions } from '@/src/screens/overview/utils/mapPiecesToStudioPositions';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
 import { buildQueuePreview } from '@/src/screens/overview/utils/buildQueuePreview';
+import {
+  hasEstablishedStudio,
+  isSetupProgressComplete,
+} from '@/src/screens/overview/utils/setupMode';
 import { ACTIVE_FIRING_STATES } from '@/src/screens/overview/utils/oneThingCard';
 import { buildPersonaOneThingCard } from '@/src/screens/overview/utils/personaPulseCard';
 import { getPetMood, PAT_REACTIONS } from '@/src/screens/overview/utils/petMood';
 import { useAppStore, useVisiblePieces } from '@/src/store';
-import { useNormalizedEnabledModules } from '@/src/store/appStore';
+import { DEFAULT_SETUP_PROGRESS, useNormalizedEnabledModules } from '@/src/store/appStore';
 import { resolveKilnDestination } from '@/src/screens/overview/utils/kilnNavigation';
 import {
   buildFiringQueueSnapshot,
@@ -24,6 +29,7 @@ import { computeStudioStats } from '@/src/utils/computeStudioStats';
 import { useRouter, type Href } from 'expo-router';
 import React from 'react';
 import { Animated, Easing } from 'react-native';
+import { useIsFetching } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type CustomTodo = {
@@ -37,25 +43,31 @@ const DOW_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sat
 export function useOverviewPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  useCurrentUser();
   const { PaywallGate } = usePremiumGate();
   const user = useAppStore((state) => state.user);
+  const isSignedIn = useAppStore((state) => state.isSignedIn);
   const isPremium = useAppStore((state) => state.isPremium);
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
-  const kilns = useAppStore((state) => state.kilns);
+  const kilns = useAppStore((state) => state.kilns) ?? [];
   const onboardingProfile = useAppStore((state) => state.onboardingProfile);
   const { hasLinkedStudio, loading: studioLinkLoading } = useStudioLinkStatus();
   const userType = onboardingProfile.userType;
-  const setupProgress = useAppStore((state) => state.setupProgress);
+  const setupProgress = useAppStore((state) => state.setupProgress) ?? DEFAULT_SETUP_PROGRESS;
+  const completeSetupChecklist = useAppStore((state) => state.completeSetupChecklist);
   const pricingOnboardingCompleted = useAppStore((state) => state.pricingOnboardingCompleted);
-  const glazes = useAppStore((state) => state.glazes);
-  const glazeTests = useAppStore((state) => state.glazeTests);
-  const pieces = useVisiblePieces();
+  const glazes = useAppStore((state) => state.glazes) ?? [];
+  const glazeTests = useAppStore((state) => state.glazeTests) ?? [];
+  const pieces = useVisiblePieces() ?? [];
   const enabledModules = useNormalizedEnabledModules();
   const hasKilnTab = enabledModules.includes('kiln');
   const hasCommunityTab = enabledModules.includes('community');
-  const firings = useAppStore((state) => state.firings);
-  const rhythm = useAppStore((state) => state.studioRhythm);
+  const firings = useAppStore((state) => state.firings) ?? [];
+  const rhythm = normalizeStudioRhythm(useAppStore((state) => state.studioRhythm));
+  const studioDataFetching = useIsFetching({
+    predicate: (query) =>
+      query.queryKey[0] === PIECES_QUERY_KEY[0]
+      || query.queryKey[0] === GLAZES_QUERY_KEY[0],
+  }) > 0;
   const rhythmConfigured = isStudioRhythmConfigured(rhythm);
   const dailyMissionCompletion = useAppStore((state) => state.dailyMissionCompletion);
   const toggleDailyMissionCompletion = useAppStore((state) => state.toggleDailyMissionCompletion);
@@ -80,22 +92,23 @@ export function useOverviewPage() {
     }),
     [kilns.length, rhythmConfigured, pieces.length, onboardingProfile.hasOwnKiln, onboardingProfile.userType, setupProgress, pricingOnboardingCompleted, glazes]
   );
+  const questCount = setupQuests?.length ?? 0;
   const initialSetupQuestCount = useAppStore((state) => state.initialSetupQuestCount);
   const setInitialSetupQuestCount = useAppStore((state) => state.setInitialSetupQuestCount);
-  const prevQuestCountRef = React.useRef(setupQuests.length);
+  const prevQuestCountRef = React.useRef(questCount);
 
   React.useEffect(() => {
-    if (setupQuests.length > 0 && initialSetupQuestCount === null) {
-      setInitialSetupQuestCount(setupQuests.length);
+    if (questCount > 0 && initialSetupQuestCount === null) {
+      setInitialSetupQuestCount(questCount);
     } else if (
       initialSetupQuestCount !== null &&
-      setupQuests.length > prevQuestCountRef.current
+      questCount > prevQuestCountRef.current
     ) {
-      const added = setupQuests.length - prevQuestCountRef.current;
+      const added = questCount - prevQuestCountRef.current;
       setInitialSetupQuestCount(initialSetupQuestCount + added);
     }
-    prevQuestCountRef.current = setupQuests.length;
-  }, [setupQuests.length, initialSetupQuestCount, setInitialSetupQuestCount]);
+    prevQuestCountRef.current = questCount;
+  }, [questCount, initialSetupQuestCount, setInitialSetupQuestCount]);
 
   const tomorrowRhythm = React.useMemo(() => {
     if (!rhythmConfigured) return { stages: [], events: [] };
@@ -132,7 +145,33 @@ export function useOverviewPage() {
     return { stages, events, isEmpty: stages.length === 0 && events.length === 0 };
   }, [rhythm, rhythmConfigured]);
 
-  const isSetupMode = setupQuests.length > 0;
+  const establishedStudio = React.useMemo(
+    () => hasEstablishedStudio({
+      pieceCount: pieces.length,
+      glazeCount: glazes.length,
+      kilnCount: kilns.length,
+      firingCount: firings.length,
+      rhythmConfigured,
+      pricingOnboardingCompleted,
+    }),
+    [
+      pieces.length,
+      glazes.length,
+      kilns.length,
+      firings.length,
+      rhythmConfigured,
+      pricingOnboardingCompleted,
+    ],
+  );
+
+  const awaitingStudioSync = isSignedIn && !establishedStudio && studioDataFetching;
+
+  React.useEffect(() => {
+    if (!establishedStudio || isSetupProgressComplete(setupProgress)) return;
+    completeSetupChecklist?.();
+  }, [establishedStudio, setupProgress, completeSetupChecklist]);
+
+  const isSetupMode = !establishedStudio && !awaitingStudioSync && questCount > 0;
 
   const finishedThisMonth = React.useMemo(
     () => computeStudioStats({

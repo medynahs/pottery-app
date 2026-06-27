@@ -44,6 +44,7 @@ import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
 import { fetchUsers, type BackendUser } from '../services';
 import { sessionExists, signOut } from '../services/auth';
+import { markSessionBootstrap } from '../services/sessionBootstrap';
 import type { Firing, FiringState, FiringStatusOverride, Kiln, KilnChecklist, KilnType, LogFiringPayload } from '../types/kiln';
 import type { GlazeOutcome, Piece, TimelineEntry } from '../types/pieces';
 import {
@@ -406,7 +407,10 @@ interface AppState {
   backendUserId: string | null;
   isPremium: boolean;
   accountDeletionGrace: boolean;
+  accountDeletionScheduledAt: string | null;
   setAccountDeletionGrace: (value: boolean) => void;
+  setAccountDeletionScheduledAt: (iso: string | null) => void;
+  clearAccountDeletionSchedule: () => void;
   setSignedIn: (email: string) => void;
   clearSession: () => void;
   setBackendUserId: (id: string | null) => void;
@@ -542,6 +546,8 @@ interface AppState {
   // ── Setup progress ────────────────────────────────────────────
   setupProgress: SetupProgress;
   markSetupProgress: (key: keyof SetupProgress) => void;
+  /** Mark all setup checklist items done (e.g. returning users with existing studio data). */
+  completeSetupChecklist: () => void;
   hasCreatedPost: boolean;
   /** Total community posts created on this device (for achievements). */
   communityPostsCreated: number;
@@ -771,20 +777,25 @@ export const useAppStore = create<AppState>()(
   backendUserId: null,
   isPremium: false,
   accountDeletionGrace: false,
+  accountDeletionScheduledAt: null,
   setAccountDeletionGrace: (value) => set({ accountDeletionGrace: value }),
+  setAccountDeletionScheduledAt: (iso) => set({ accountDeletionScheduledAt: iso }),
+  clearAccountDeletionSchedule: () =>
+    set({ accountDeletionGrace: false, accountDeletionScheduledAt: null }),
   setSignedIn: (email) => {
     set({ isSignedIn: true, email });
     void saveSecureEmail(email);
   },
   clearSession: () => {
-    set({
+    set((state) => ({
       isSignedIn: false,
       email: null,
       backendUserId: null,
       isPremium: false,
       accountDeletionGrace: false,
+      accountDeletionScheduledAt: state.accountDeletionScheduledAt,
       user: { name: '', avatarInitial: 'U', avatarImageUri: undefined, coverImageUri: undefined },
-    });
+    }));
     void signOut();
     void clearSecureEmail();
   },
@@ -794,6 +805,7 @@ export const useAppStore = create<AppState>()(
     try {
       const exists = await sessionExists();
       if (!exists) return;
+      markSessionBootstrap();
       const storedEmail = await loadSecureEmail();
       set({ isSignedIn: true, email: storedEmail });
     } catch {
@@ -1340,6 +1352,12 @@ export const useAppStore = create<AppState>()(
   markSetupProgress: (key) =>
     set((state) => ({
       setupProgress: { ...state.setupProgress, [key]: true },
+    })),
+  completeSetupChecklist: () =>
+    set((state) => ({
+      setupProgress: Object.fromEntries(
+        Object.keys(state.setupProgress).map((key) => [key, true]),
+      ) as SetupProgress,
     })),
   hasCreatedPost: false,
   communityPostsCreated: 0,
@@ -2257,6 +2275,7 @@ export const useAppStore = create<AppState>()(
         lastSyncedAt: state.lastSyncedAt,
         backendUserId: state.backendUserId,
         isPremium: state.isPremium,
+        accountDeletionScheduledAt: state.accountDeletionScheduledAt,
       }),
     }
   )

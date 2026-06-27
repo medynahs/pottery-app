@@ -160,10 +160,18 @@ export function normalizeStudioRhythmStageDays(stageDays: StageDay[]): StageDay[
   }));
 }
 
-export function normalizeStudioRhythm(rhythm: StudioRhythm): StudioRhythm {
+export function normalizeStudioRhythm(rhythm: StudioRhythm | null | undefined): StudioRhythm {
+  const base = rhythm ?? DEFAULT_STUDIO_RHYTHM;
   return {
-    ...rhythm,
-    stageDays: normalizeStudioRhythmStageDays(rhythm.stageDays ?? []),
+    ...DEFAULT_STUDIO_RHYTHM,
+    ...base,
+    stageDays: normalizeStudioRhythmStageDays(base.stageDays ?? []),
+    events: base.events ?? [],
+    rituals: base.rituals?.length ? base.rituals : DEFAULT_RITUALS,
+    dryingTimers: {
+      ...DEFAULT_STUDIO_RHYTHM.dryingTimers,
+      ...(base.dryingTimers ?? {}),
+    },
   };
 }
 
@@ -185,20 +193,24 @@ function stageDaysMatch(a: StageDay[], b: StageDay[]): boolean {
 }
 
 export function isStudioRhythmConfigured(rhythm: StudioRhythm): boolean {
+  const events = rhythm.events ?? [];
+  const rituals = rhythm.rituals ?? [];
+  const stageDays = rhythm.stageDays ?? [];
+
   if (rhythm.configuredAt) return true;
 
   if (rhythm.type === 'freeform') {
-    return rhythm.events.length > 0 || rhythm.rituals.some((r) => r.enabled);
+    return events.length > 0 || rituals.some((r) => r.enabled);
   }
 
-  const hasAssignedDays = rhythm.stageDays.some((sd) => sd.days.length > 0);
+  const hasAssignedDays = stageDays.some((sd) => (sd.days ?? []).length > 0);
   if (!hasAssignedDays) return false;
 
   const looksLikeLegacyDefault =
     rhythm.type === 'weekly'
-    && rhythm.events.length === 0
-    && rhythm.rituals.every((ritual) => !ritual.enabled)
-    && stageDaysMatch(rhythm.stageDays, LEGACY_AUTO_SEEDED_STAGE_DAYS);
+    && events.length === 0
+    && rituals.every((ritual) => !ritual.enabled)
+    && stageDaysMatch(stageDays, LEGACY_AUTO_SEEDED_STAGE_DAYS);
 
   return !looksLikeLegacyDefault;
 }

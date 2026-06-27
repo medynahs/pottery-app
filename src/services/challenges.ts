@@ -1,7 +1,42 @@
 // Challenges API, /challenges
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
+import { apiErrorFromResponse, ApiError } from './api';
 import { API_BASE_URL as API_BASE } from './index';
+
+function parseApiErrorBody(err: ApiError): string | null {
+  const bodyStart = err.message.indexOf('): ');
+  if (bodyStart === -1) return null;
+  const body = err.message.slice(bodyStart + 3).trim();
+  if (!body) return null;
+  try {
+    const json = JSON.parse(body) as { message?: string; error?: string };
+    return json.message ?? json.error ?? null;
+  } catch {
+    return body.length <= 120 ? body : null;
+  }
+}
+
+export function challengeJoinErrorMessage(err: unknown, fallback = 'Could not join challenge'): string {
+  if (err instanceof ApiError) {
+    if (err.status === 429) {
+      return 'Too many requests — wait a minute, then try joining again.';
+    }
+    const fromBody = parseApiErrorBody(err);
+    if (fromBody) {
+      if (/rate limit/i.test(fromBody)) {
+        return 'Too many requests — wait a minute, then try joining again.';
+      }
+      return fromBody;
+    }
+    if (err.status === 400) return 'This challenge is not accepting that track';
+    if (err.status === 401) return 'Please sign in again to join';
+  }
+  if (err instanceof Error && err.message && !err.message.includes('->')) {
+    return err.message;
+  }
+  return fallback;
+}
 
 export type ChallengeStatus = 'open' | 'voting' | 'closed';
 
@@ -84,6 +119,13 @@ export interface SubmitChallengeEntryPayload {
   post_id?: string;
 }
 
+export interface UpdateChallengeEntryPayload {
+  track_id?: string;
+  piece_id?: string;
+  note?: string;
+  post_id?: string;
+}
+
 export interface VoteChallengePayload {
   entry_id: string;
 }
@@ -156,7 +198,27 @@ export async function apiSubmitChallengeEntry(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(`POST /challenges/${challengeId}/entries -> ${res.status}`);
+    throw await apiErrorFromResponse(res, `POST /challenges/${challengeId}/entries failed`);
+  }
+  return res.json() as Promise<BackendChallengeEntry>;
+}
+
+/** PUT /challenges/{id}/entries/{entryId} — marks entry submitted (`submitted_at`). */
+export async function apiUpdateChallengeEntry(
+  challengeId: string,
+  entryId: string,
+  payload: UpdateChallengeEntryPayload,
+): Promise<BackendChallengeEntry> {
+  const res = await authedFetch(
+    `${API_BASE}/challenges/${challengeId}/entries/${entryId}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`PUT /challenges/${challengeId}/entries/${entryId} -> ${res.status}`);
   }
   return res.json() as Promise<BackendChallengeEntry>;
 }

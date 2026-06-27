@@ -24,7 +24,7 @@
 | `POST /uploads/presigned` → presigned S3 PUT | `POST /uploads` (server-side multipart) → `{ asset_id, public_url }` | **No presign infra.** FE POSTs the file directly to the API |
 | Challenge `status` field + phase cron | `status` **derived from dates** in API response | open/voting/closed computed from `submission_deadline`/`end_date`; no cron |
 
-**Account delete is soft-delete, not immediate:** `DELETE /users/me` → 204, sets `is_deleted`. ~1-week grace period. During grace, all endpoints return **403 `account_deleted`** except `POST /users/me/revive` (restores account, 200). Deleted users are hidden from others' feeds/friends/leaderboards; deleted challenge winners show as `user_deleted: true`. Hard-purge cron is deferred.
+**Account delete is soft-delete, not immediate:** `DELETE /users/me` → 204, sets `is_deleted` + `deleted_at`. **30-day grace period**, then hard-purge (DB row, S3 prefix, Ory identity). During grace, all endpoints return **403 `account_deleted`** except `POST /users/me/revive` (restores account, 200). Deleted users are hidden from others' feeds/friends/leaderboards; deleted challenge winners show as `user_deleted: true`.
 
 ---
 
@@ -95,7 +95,7 @@
 | Reactions | 🔶 | DB-unique `(post_id, user_id)`; count in feed payload (P0-7) |
 | Polls | 🔶 | Shipped (P1-5): `GET /polls` (active), `POST /polls/:id/vote` (DB-unique one per user → 409), `GET /polls/:id/results`. Admin-create via `POST /api/polls` |
 | Challenges (basic) | 🔶 | Join/submit/withdraw FE wired |
-| Challenge (tracks + voting) | 🔶 | Shipped (P0-8/9): tracks, idempotent join, submit/withdraw, voting w/ revote + self-vote reject. **Replace FE mock store** |
+| Challenge (tracks + voting) | 🔶 | Shipped (P0-8/9): tracks, idempotent join, submit/withdraw, voting w/ revote + self-vote reject. **Replace FE mock store**. **TODO (ops):** seed `challenge_tracks` on live challenge(s) — prod may return `tracks: []` for rows created before tracks existed; see [`BACKEND-TASKS.md` → P0-8](./BACKEND-TASKS.md) |
 | Hall of Fame | 🟡 | Winner-archive shipped (P1-6): FE wired — `GET /hall-of-fame` + `/hall-of-fame/winners/:id`; `user_deleted` tombstone |
 | News | 🔶 | **Shipped** (P1-7): `GET /news` (public, newest first) + seeded rows. FE not started (#29) |
 | Challenge moderation | 🔶 | **Shipped** (P2-7): vote rate-limit, `POST …/entries/:entryId/report`, admin `POST /admin/challenges/:id/entries/:entryId/disqualify` (hides entry from gallery + vote totals) |
