@@ -2,7 +2,7 @@ import { Banner } from '@/src/components/Banner';
 import { LabeledInput } from '@/src/components/LabeledInput';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
-import { OryHttpError, orySetPassword } from '@/src/services/auth';
+import { changePassword } from '@/src/services/auth';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -15,10 +15,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ChangePasswordScreen() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
-  const showToast    = useAppStore((s) => s.showToast);
-  const router       = useRouter();
-  const safeInsets   = useSafeAreaInsets();
+  const showToast  = useAppStore((s) => s.showToast);
+  const router     = useRouter();
+  const safeInsets = useSafeAreaInsets();
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm]   = useState('');
@@ -29,20 +28,13 @@ export default function ChangePasswordScreen() {
     setError(null);
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     if (password !== confirm) { setError('Passwords do not match.'); return; }
-    if (!sessionToken) { setError('You are not signed in.'); return; }
     setLoading(true);
     try {
-      await orySetPassword(sessionToken, password);
+      await changePassword(password);
       showToast('Password updated', 'success');
       router.back();
     } catch (e) {
-      // Ory requires a recently-authenticated ("privileged") session to change
-      // credentials. If the session is too old it answers 403.
-      if (e instanceof OryHttpError && e.status === 403) {
-        setError('For your security, please sign out and sign in again before changing your password.');
-      } else {
-        setError(e instanceof Error ? e.message : 'Could not update your password. Please try again.');
-      }
+      setError(e instanceof Error ? e.message : 'Could not update your password. Please try again.');
     } finally {
       setLoading(false);
     }

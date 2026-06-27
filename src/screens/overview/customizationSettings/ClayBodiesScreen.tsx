@@ -1,4 +1,5 @@
 import { ShrinkageCalculatorSheet } from '@/src/screens/pieces/modals/ShrinkageCalculatorSheet';
+import { ConfirmSheet } from '@/src/components/AppSheets';
 import { CustomizationSettingsShell } from '@/src/components/settings/CustomizationSettingsShell';
 import { Text } from '@/src/components/ui/text';
 import { DEFAULT_CLAY_BODIES, useAppStore, type ClayBody } from '@/src/store/appStore';

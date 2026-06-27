@@ -62,17 +62,13 @@ export class StudiosApiError extends Error {
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
-function authedFetch(
-  sessionToken: string,
-  url: string,
+function authedFetch(url: string,
   init?: RequestInit,
 ): Promise<Response> {
   return fetch(url, {
-    ...init,
-    credentials: 'omit',
+    ...init,
     headers: {
-      Accept: 'application/json',
-      'X-Session-Token': sessionToken,
+      Accept: 'application/json',
       ...(init?.headers ?? {}),
     },
   });
@@ -96,10 +92,9 @@ async function parseError(res: Response, endpoint: string): Promise<never> {
  * Creates a new studio. The caller automatically becomes the owner.
  */
 export async function apiCreateStudio(
-  sessionToken: string,
-  payload: CreateStudioPayload,
+    payload: CreateStudioPayload,
 ): Promise<BackendStudio> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/studios`, {
+  const res = await authedFetch(`${API_BASE}/users/me/studios`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -113,9 +108,8 @@ export async function apiCreateStudio(
  * Lists studios where the caller is the owner.
  */
 export async function apiListOwnedStudios(
-  sessionToken: string,
-): Promise<BackendStudio[]> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/studios/owned`);
+  ): Promise<BackendStudio[]> {
+  const res = await authedFetch(`${API_BASE}/users/me/studios/owned`);
   if (!res.ok) return parseError(res, 'GET /users/me/studios/owned');
   return res.json() as Promise<BackendStudio[]>;
 }
@@ -125,9 +119,8 @@ export async function apiListOwnedStudios(
  * Lists studios where the caller is a member (not owner).
  */
 export async function apiListMemberStudios(
-  sessionToken: string,
-): Promise<BackendStudio[]> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/studios/member-of`);
+  ): Promise<BackendStudio[]> {
+  const res = await authedFetch(`${API_BASE}/users/me/studios/member-of`);
   if (!res.ok) return parseError(res, 'GET /users/me/studios/member-of');
   return res.json() as Promise<BackendStudio[]>;
 }
@@ -137,11 +130,9 @@ export async function apiListMemberStudios(
  * Deletes a studio. Owner only. Returns 204 on success.
  */
 export async function apiDeleteStudio(
-  sessionToken: string,
-  studioId: string,
+    studioId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/${studioId}`,
     { method: 'DELETE' },
   );
@@ -153,11 +144,9 @@ export async function apiDeleteStudio(
  * Leave a studio. Non-owner members only (owner must delete instead). Returns 204.
  */
 export async function apiLeaveStudio(
-  sessionToken: string,
-  studioId: string,
+    studioId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/${studioId}/leave`,
     { method: 'POST' },
   );
@@ -171,11 +160,9 @@ export async function apiLeaveStudio(
  * Lists members of a studio. Caller must be a member.
  */
 export async function apiListStudioMembers(
-  sessionToken: string,
-  studioId: string,
+    studioId: string,
 ): Promise<import('./friends').BackendUser[]> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/${studioId}/members`,
   );
   if (!res.ok) return parseError(res, `GET /users/me/studios/${studioId}/members`);
@@ -187,12 +174,10 @@ export async function apiListStudioMembers(
  * Adds a member directly (owner only). Returns 204.
  */
 export async function apiAddStudioMember(
-  sessionToken: string,
-  studioId: string,
+    studioId: string,
   userId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/${studioId}/members`,
     {
       method: 'POST',
@@ -210,12 +195,10 @@ export async function apiAddStudioMember(
  * Invites a user to the studio. Owner only.
  */
 export async function apiInviteToStudio(
-  sessionToken: string,
-  studioId: string,
+    studioId: string,
   userId: string,
 ): Promise<BackendStudioInvite> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/${studioId}/invites`,
     {
       method: 'POST',
@@ -232,10 +215,8 @@ export async function apiInviteToStudio(
  * Lists pending studio invites for the caller.
  */
 export async function apiListIncomingStudioInvites(
-  sessionToken: string,
-): Promise<BackendStudioInvite[]> {
+  ): Promise<BackendStudioInvite[]> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/invites/incoming`,
   );
   if (!res.ok) return parseError(res, 'GET /users/me/studios/invites/incoming');
@@ -247,11 +228,9 @@ export async function apiListIncomingStudioInvites(
  * Accepts a studio invite.
  */
 export async function apiAcceptStudioInvite(
-  sessionToken: string,
-  inviteId: string,
+    inviteId: string,
 ): Promise<BackendStudioInvite> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/invites/${inviteId}/accept`,
     { method: 'POST' },
   );
@@ -264,11 +243,9 @@ export async function apiAcceptStudioInvite(
  * Rejects a studio invite.
  */
 export async function apiRejectStudioInvite(
-  sessionToken: string,
-  inviteId: string,
+    inviteId: string,
 ): Promise<BackendStudioInvite> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/invites/${inviteId}/reject`,
     { method: 'POST' },
   );
@@ -283,11 +260,9 @@ export async function apiRejectStudioInvite(
  * Requests to join a studio.
  */
 export async function apiRequestToJoinStudio(
-  sessionToken: string,
-  studioId: string,
+    studioId: string,
 ): Promise<BackendStudioJoinRequest> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/${studioId}/join-requests`,
     { method: 'POST' },
   );
@@ -300,10 +275,8 @@ export async function apiRequestToJoinStudio(
  * Lists pending join requests for studios the caller owns.
  */
 export async function apiListIncomingJoinRequests(
-  sessionToken: string,
-): Promise<BackendStudioJoinRequest[]> {
+  ): Promise<BackendStudioJoinRequest[]> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/join-requests/incoming`,
   );
   if (!res.ok) return parseError(res, 'GET /users/me/studios/join-requests/incoming');
@@ -315,11 +288,9 @@ export async function apiListIncomingJoinRequests(
  * Accepts a join request. Owner only.
  */
 export async function apiAcceptJoinRequest(
-  sessionToken: string,
-  requestId: string,
+    requestId: string,
 ): Promise<BackendStudioJoinRequest> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/join-requests/${requestId}/accept`,
     { method: 'POST' },
   );
@@ -332,11 +303,9 @@ export async function apiAcceptJoinRequest(
  * Rejects a join request. Owner only.
  */
 export async function apiRejectJoinRequest(
-  sessionToken: string,
-  requestId: string,
+    requestId: string,
 ): Promise<BackendStudioJoinRequest> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/studios/join-requests/${requestId}/reject`,
     { method: 'POST' },
   );

@@ -39,8 +39,8 @@ export async function resolveExpoPushToken(): Promise<string | null> {
  * notifications are permitted, and at least one notification toggle is on.
  */
 export async function syncPushTokenWithBackend(
-  sessionToken: string,
-  prefs: NotificationPrefs,
+  
+    prefs: NotificationPrefs,
 ): Promise<void> {
   if (!hasEnabledNotificationPrefs(prefs)) return;
 
@@ -51,5 +51,5 @@ export async function syncPushTokenWithBackend(
   if (!token) return;
 
   const platform = Platform.OS === 'ios' ? 'ios' : 'android';
-  await registerPushToken(sessionToken, token, platform);
+  await registerPushToken(token, platform);
 }

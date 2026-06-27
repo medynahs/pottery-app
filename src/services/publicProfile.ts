@@ -28,9 +28,7 @@ export class PublicProfileApiError extends Error {
   }
 }
 
-function authedFetch(
-  sessionToken: string | null | undefined,
-  url: string,
+function authedFetch(url: string,
   init?: RequestInit,
 ): Promise<Response> {
   return fetch(url, {
@@ -38,7 +36,6 @@ function authedFetch(
     credentials: 'omit',
     headers: {
       Accept: 'application/json',
-      ...(sessionToken ? { 'X-Session-Token': sessionToken } : {}),
       ...(init?.headers ?? {}),
     },
   });
@@ -86,10 +83,8 @@ function normalizeProfile(body: Record<string, unknown>): PublicProfile {
  */
 export async function apiGetPublicProfile(
   userId: string,
-  sessionToken?: string | null,
 ): Promise<PublicProfile> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/${encodeURIComponent(userId)}/profile`,
   );
 

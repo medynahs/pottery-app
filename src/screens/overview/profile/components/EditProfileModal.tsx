@@ -37,7 +37,8 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const sheetHeight = useModalSheetHeight();
   const user = useAppStore((s) => s.user);
   const setUser = useAppStore((s) => s.setUser);
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const uploadAvatar = useUploadAvatar();
   const uploadCover = useUploadCover();
   const saveProfile = useUpdateProfile();
@@ -105,7 +106,7 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
 
     const shouldUploadAvatar = avatarChanged.current && !!avatarImageUri;
     const shouldUploadCover = coverChanged.current && !!coverImageUri;
-    const shouldSaveText = Boolean(sessionToken);
+    const shouldSaveText = isSignedIn;
 
     if (!shouldSaveText && !shouldUploadAvatar && !shouldUploadCover) {
       onClose();

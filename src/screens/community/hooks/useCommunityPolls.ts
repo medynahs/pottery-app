@@ -47,28 +47,29 @@ function mapBackendPoll(poll: BackendPoll): CommunityPollView {
   };
 }
 
-export function useCommunityPolls(sessionToken: string | null) {
+export function useCommunityPolls() {
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const demoPollVoteId = useAppStore((s) => s.communityDemoPollVoteId);
   const voteDemoPoll = useAppStore((s) => s.voteCommunityDemoPoll);
   const [livePolls, setLivePolls] = useState<BackendPoll[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!sessionToken) {
+    if (!isSignedIn) {
       setLivePolls([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const data = await apiGetPolls(sessionToken);
+      const data = await apiGetPolls();
       setLivePolls(data ?? []);
     } catch {
       setLivePolls([]);
     } finally {
       setLoading(false);
     }
-  }, [sessionToken]);
+  }, [isSignedIn]);
 
   useEffect(() => {
     void load();
@@ -87,11 +88,11 @@ export function useCommunityPolls(sessionToken: string | null) {
         voteDemoPoll(optionId);
         return;
       }
-      if (!sessionToken) return;
-      const updated = await apiVotePoll(sessionToken, poll.id, optionId);
+      if (!isSignedIn) return;
+      const updated = await apiVotePoll(poll.id, optionId);
       setLivePolls((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     },
-    [sessionToken, voteDemoPoll],
+    [voteDemoPoll, isSignedIn],
   );
 
   return { polls, loading, reload: load, vote };

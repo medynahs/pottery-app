@@ -108,7 +108,7 @@ function Section({ label, count, children }: { label: string; count: number; chi
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const sessionToken = useAppStore((s) => s.sessionToken)!;
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
 
   const [friendRequests, setFriendRequests] = useState<BackendFriendRequest[]>([]);
   const [studioInvites, setStudioInvites] = useState<BackendStudioInvite[]>([]);
@@ -121,9 +121,9 @@ export default function NotificationsScreen() {
     else setIsLoading(true);
     try {
       const [fr, si, jr] = await Promise.all([
-        apiListIncomingFriendRequests(sessionToken),
-        apiListIncomingStudioInvites(sessionToken),
-        apiListIncomingJoinRequests(sessionToken),
+        apiListIncomingFriendRequests(),
+        apiListIncomingStudioInvites(),
+        apiListIncomingJoinRequests(),
       ]);
       setFriendRequests(fr ?? []);
       setStudioInvites(si ?? []);
@@ -133,7 +133,7 @@ export default function NotificationsScreen() {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [sessionToken]);
+  }, [isSignedIn]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -196,11 +196,11 @@ export default function NotificationsScreen() {
                   title="Friend request"
                   subtitle={`From user ${r.requester_id.slice(0, 8)}…`}
                   onAccept={async () => {
-                    await apiAcceptFriendRequest(sessionToken, r.id);
+                    await apiAcceptFriendRequest(r.id);
                     setFriendRequests((prev) => prev.filter((x) => x.id !== r.id));
                   }}
                   onDecline={async () => {
-                    await apiDeclineFriendRequest(sessionToken, r.id);
+                    await apiDeclineFriendRequest(r.id);
                     setFriendRequests((prev) => prev.filter((x) => x.id !== r.id));
                   }}
                 />
@@ -218,11 +218,11 @@ export default function NotificationsScreen() {
                   title="Studio invite"
                   subtitle={`Studio ${i.studio_id.slice(0, 8)}…`}
                   onAccept={async () => {
-                    await apiAcceptStudioInvite(sessionToken, i.id);
+                    await apiAcceptStudioInvite(i.id);
                     setStudioInvites((prev) => prev.filter((x) => x.id !== i.id));
                   }}
                   onDecline={async () => {
-                    await apiRejectStudioInvite(sessionToken, i.id);
+                    await apiRejectStudioInvite(i.id);
                     setStudioInvites((prev) => prev.filter((x) => x.id !== i.id));
                   }}
                 />
@@ -240,11 +240,11 @@ export default function NotificationsScreen() {
                   title="Join request"
                   subtitle={`Studio ${r.studio_id.slice(0, 8)}… · User ${r.requester_id.slice(0, 8)}…`}
                   onAccept={async () => {
-                    await apiAcceptJoinRequest(sessionToken, r.id);
+                    await apiAcceptJoinRequest(r.id);
                     setJoinRequests((prev) => prev.filter((x) => x.id !== r.id));
                   }}
                   onDecline={async () => {
-                    await apiRejectJoinRequest(sessionToken, r.id);
+                    await apiRejectJoinRequest(r.id);
                     setJoinRequests((prev) => prev.filter((x) => x.id !== r.id));
                   }}
                 />

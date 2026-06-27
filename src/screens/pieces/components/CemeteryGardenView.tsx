@@ -2,7 +2,7 @@ import { Text } from '@/src/components/ui/text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Sparkles } from 'lucide-react-native';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type DimensionValue } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -18,14 +18,14 @@ export const CEMETERY_SKY_GRADIENT = ['#1A1210', '#2A1C16', '#3D2B22', '#4A3828'
 
 const TUFT_WIDTHS = [12, 17, 10, 19, 14, 16, 11, 18, 13, 15, 10, 20, 12, 17];
 const STAR_FIELDS = [
-  { left: '8%', top: 14, size: 2, opacity: 0.55, delay: 0 },
-  { left: '22%', top: 22, size: 1.5, opacity: 0.35, delay: 400 },
-  { left: '38%', top: 11, size: 2, opacity: 0.45, delay: 800 },
-  { left: '54%', top: 18, size: 1.5, opacity: 0.3, delay: 200 },
-  { left: '71%', top: 12, size: 2, opacity: 0.5, delay: 600 },
-  { left: '86%', top: 20, size: 1.5, opacity: 0.38, delay: 1000 },
-  { left: '92%', top: 8, size: 2, opacity: 0.42, delay: 300 },
-];
+  { left: '8%', top: 14, size: 2, baseOpacity: 0.55, delay: 0 },
+  { left: '22%', top: 22, size: 1.5, baseOpacity: 0.35, delay: 400 },
+  { left: '38%', top: 11, size: 2, baseOpacity: 0.45, delay: 800 },
+  { left: '54%', top: 18, size: 1.5, baseOpacity: 0.3, delay: 200 },
+  { left: '71%', top: 12, size: 2, baseOpacity: 0.5, delay: 600 },
+  { left: '86%', top: 20, size: 1.5, baseOpacity: 0.38, delay: 1000 },
+  { left: '92%', top: 8, size: 2, baseOpacity: 0.42, delay: 300 },
+] as const;
 const PEBBLES = [
   { left: '6%', bottom: 28, size: 5 },
   { left: '18%', bottom: 18, size: 4 },
@@ -33,19 +33,19 @@ const PEBBLES = [
   { left: '63%', bottom: 16, size: 4 },
   { left: '78%', bottom: 24, size: 5 },
   { left: '90%', bottom: 20, size: 4 },
-];
+] as const;
 const WILDFLOWERS = [
   { left: '12%', bottom: 52, emoji: '✿', opacity: 0.45 },
   { left: '31%', bottom: 44, emoji: '🌾', opacity: 0.35 },
   { left: '58%', bottom: 48, emoji: '✿', opacity: 0.4 },
   { left: '82%', bottom: 40, emoji: '🪻', opacity: 0.38 },
-];
+] as const;
 const FIREFLIES = [
   { left: '16%', bottom: 72, delay: 0 },
   { left: '48%', bottom: 96, delay: 700 },
   { left: '71%', bottom: 58, delay: 1400 },
   { left: '88%', bottom: 84, delay: 2100 },
-];
+] as const;
 
 function TwinklingStar({
   left,
@@ -54,7 +54,7 @@ function TwinklingStar({
   baseOpacity,
   delay,
 }: {
-  left: string;
+  left: DimensionValue;
   top: number;
   size: number;
   baseOpacity: number;
@@ -178,7 +178,7 @@ function AnimatedGrassTuftRow({ variant }: { variant: 'ridge' | 'floor' }) {
   );
 }
 
-function Firefly({ left, bottom, delay }: { left: string; bottom: number; delay: number }) {
+function Firefly({ left, bottom, delay }: { left: DimensionValue; bottom: number; delay: number }) {
   const opacity = useSharedValue(0.15);
   const driftX = useSharedValue(0);
   const driftY = useSharedValue(0);

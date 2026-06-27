@@ -1,10 +1,28 @@
+import SuperTokens from 'supertokens-react-native';
+import { API_BASE_URL } from '@/src/services';
+SuperTokens.init({ apiDomain: API_BASE_URL, apiBasePath: '/auth' });
+
+import { isExpoGo } from '@/src/services/auth';
+// Native Google Sign-In is a native module Expo Go can't load, so configure it only
+// outside Expo Go (the app still boots there for email/password). webClientId MUST
+// equal the backend GOOGLE_CLIENT_ID (serverAuthCode is minted for the Web client,
+// exchanged server-side); offlineAccess is required to obtain that code.
+if (!isExpoGo) {
+  const { GoogleSignin } =
+    require('@react-native-google-signin/google-signin') as typeof import('@react-native-google-signin/google-signin');
+  GoogleSignin.configure({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '',
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '',
+    offlineAccess: true,
+  });
+}
+
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -39,11 +57,6 @@ import {
     Fraunces_600SemiBold,
     Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
-
-// Required on iOS: tells ASWebAuthenticationSession that the OAuth redirect was
-// received, so the session is cleanly closed. Without this call, a second
-// openAuthSessionAsync after sign-out throws "no resumable session found".
-WebBrowser.maybeCompleteAuthSession();
 
 // Prevent the splash screen from auto-hiding
 void SplashScreen.preventAutoHideAsync().catch(() => {

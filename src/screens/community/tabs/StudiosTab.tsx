@@ -399,7 +399,7 @@ function CreateStudioModal({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function StudiosTab() {
-  const sessionToken = useAppStore((s) => s.sessionToken)!;
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const showToast = useAppStore((s) => s.showToast);
 
   const [owned, setOwned] = useState<BackendStudio[]>([]);
@@ -424,10 +424,10 @@ export function StudiosTab() {
     setError(null);
     try {
       const [o, m, inv, jr] = await Promise.all([
-        apiListOwnedStudios(sessionToken),
-        apiListMemberStudios(sessionToken),
-        apiListIncomingStudioInvites(sessionToken),
-        apiListIncomingJoinRequests(sessionToken),
+        apiListOwnedStudios(),
+        apiListMemberStudios(),
+        apiListIncomingStudioInvites(),
+        apiListIncomingJoinRequests(),
       ]);
       setOwned(o ?? []);
       setMember(m ?? []);
@@ -438,7 +438,7 @@ export function StudiosTab() {
     } finally {
       setIsLoading(false);
     }
-  }, [sessionToken]);
+  }, [isSignedIn]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -453,60 +453,60 @@ export function StudiosTab() {
 
   const handleCreate = useCallback(
     async (name: string) => {
-      const studio = await apiCreateStudio(sessionToken, { name });
+      const studio = await apiCreateStudio({ name });
       setOwned((prev) => [studio, ...prev]);
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   const handleDeleteOwned = useCallback(
     async (studioId: string) => {
-      await apiDeleteStudio(sessionToken, studioId);
+      await apiDeleteStudio(studioId);
       setOwned((prev) => prev.filter((s) => s.id !== studioId));
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   const handleLeave = useCallback(
     async (studioId: string) => {
-      await apiLeaveStudio(sessionToken, studioId);
+      await apiLeaveStudio(studioId);
       setMember((prev) => prev.filter((s) => s.id !== studioId));
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   const handleAcceptInvite = useCallback(
     async (inviteId: string) => {
-      await apiAcceptStudioInvite(sessionToken, inviteId);
+      await apiAcceptStudioInvite(inviteId);
       setInvites((prev) => prev.filter((i) => i.id !== inviteId));
-      const updated = await apiListMemberStudios(sessionToken);
+      const updated = await apiListMemberStudios();
       setMember(updated ?? []);
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   const handleRejectInvite = useCallback(
     async (inviteId: string) => {
-      await apiRejectStudioInvite(sessionToken, inviteId);
+      await apiRejectStudioInvite(inviteId);
       setInvites((prev) => prev.filter((i) => i.id !== inviteId));
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   const handleAcceptJoinRequest = useCallback(
     async (requestId: string) => {
-      await apiAcceptJoinRequest(sessionToken, requestId);
+      await apiAcceptJoinRequest(requestId);
       setJoinRequests((prev) => prev.filter((r) => r.id !== requestId));
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   const handleRejectJoinRequest = useCallback(
     async (requestId: string) => {
-      await apiRejectJoinRequest(sessionToken, requestId);
+      await apiRejectJoinRequest(requestId);
       setJoinRequests((prev) => prev.filter((r) => r.id !== requestId));
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   const handleRequestToJoin = useCallback(async () => {
@@ -514,7 +514,7 @@ export function StudiosTab() {
     if (!studioId || joiningStudio) return;
     setJoiningStudio(true);
     try {
-      await apiRequestToJoinStudio(sessionToken, studioId);
+      await apiRequestToJoinStudio(studioId);
       setStudioToJoinId('');
       showToast('Join request sent', 'success');
     } catch (err) {
@@ -523,7 +523,7 @@ export function StudiosTab() {
     } finally {
       setJoiningStudio(false);
     }
-  }, [joiningStudio, sessionToken, showToast, studioToJoinId]);
+  }, [joiningStudio, showToast, studioToJoinId]);
 
   const handleInviteToStudio = useCallback(async () => {
     const studioId = selectedOwnedStudioId.trim();
@@ -531,7 +531,7 @@ export function StudiosTab() {
     if (!studioId || !userId || inviting) return;
     setInviting(true);
     try {
-      await apiInviteToStudio(sessionToken, studioId, userId);
+      await apiInviteToStudio(studioId, userId);
       setInviteUserId('');
       showToast('Invite sent', 'success');
     } catch (err) {
@@ -540,7 +540,7 @@ export function StudiosTab() {
     } finally {
       setInviting(false);
     }
-  }, [inviteUserId, inviting, selectedOwnedStudioId, sessionToken, showToast]);
+  }, [inviteUserId, inviting, selectedOwnedStudioId, showToast]);
 
   const handleAddMember = useCallback(async () => {
     const studioId = selectedOwnedStudioId.trim();
@@ -548,10 +548,10 @@ export function StudiosTab() {
     if (!studioId || !userId || addingMember) return;
     setAddingMember(true);
     try {
-      await apiAddStudioMember(sessionToken, studioId, userId);
+      await apiAddStudioMember(studioId, userId);
       setMemberUserId('');
       showToast('Member added', 'success');
-      const updatedMembers = await apiListStudioMembers(sessionToken, studioId);
+      const updatedMembers = await apiListStudioMembers(studioId);
       setMembers(updatedMembers ?? []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add member';
@@ -559,14 +559,14 @@ export function StudiosTab() {
     } finally {
       setAddingMember(false);
     }
-  }, [addingMember, memberUserId, selectedOwnedStudioId, sessionToken, showToast]);
+  }, [addingMember, memberUserId, selectedOwnedStudioId, showToast]);
 
   const handleRefreshMembers = useCallback(async () => {
     const studioId = selectedOwnedStudioId.trim();
     if (!studioId || membersLoading) return;
     setMembersLoading(true);
     try {
-      const updatedMembers = await apiListStudioMembers(sessionToken, studioId);
+      const updatedMembers = await apiListStudioMembers(studioId);
       setMembers(updatedMembers ?? []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load members';
@@ -574,7 +574,7 @@ export function StudiosTab() {
     } finally {
       setMembersLoading(false);
     }
-  }, [membersLoading, selectedOwnedStudioId, sessionToken, showToast]);
+  }, [membersLoading, selectedOwnedStudioId, showToast]);
 
   if (isLoading) {
     return (

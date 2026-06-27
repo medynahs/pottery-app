@@ -26,8 +26,7 @@ const IDLE_COLOR = 'hsl(24 20% 55%)';
 const PHRASE_HOLD_MS = 1700;
 
 type Props = {
-  postId: string;
-  sessionToken: string;
+  postId: string;
   initialCount: number;
   initialHasReacted: boolean;
 };
@@ -81,7 +80,6 @@ function ReactionIcon({
 
 export function PostReactionBar({
   postId,
-  sessionToken,
   initialCount,
   initialHasReacted,
 }: Props) {
@@ -129,9 +127,9 @@ export function PostReactionBar({
 
     try {
       if (isSame) {
-        await apiRemoveReaction(sessionToken, postId);
+        await apiRemoveReaction(postId);
       } else if (!wasReacted) {
-        await apiAddReaction(sessionToken, postId);
+        await apiAddReaction(postId);
       }
     } catch {
       setActiveKey(prevKey);

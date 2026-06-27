@@ -1,5 +1,5 @@
 // Pieces API, /users/me/pieces
-// All endpoints require an X-Session-Token header from Ory Kratos.
+// All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
 import { API_BASE_URL as API_BASE } from './index';
 
@@ -206,17 +206,13 @@ export const API_TO_LOCAL_STAGE: Record<ApiPieceStatus, string> = {
 
 // ─── Internal helper ─────────────────────────────────────────────────────────
 
-async function authedFetch(
-  sessionToken: string,
-  url: string,
+async function authedFetch(url: string,
   init?: RequestInit,
 ): Promise<Response> {
   return fetch(url, {
     ...init,
-    credentials: 'omit',
     headers: {
       Accept: 'application/json',
-      'X-Session-Token': sessionToken,
       ...(init?.headers ?? {}),
     },
   });
@@ -225,8 +221,9 @@ async function authedFetch(
 // ─── Piece CRUD ───────────────────────────────────────────────────────────────
 
 /** GET /users/me/pieces, list all pieces for the authenticated user. */
-export async function apiListPieces(sessionToken: string): Promise<BackendPiece[]> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces`);
+export async function apiListPieces(
+    ): Promise<BackendPiece[]> {
+  const res = await authedFetch(`${API_BASE}/users/me/pieces`);
   if (!res.ok) throw new Error(`listPieces failed (${res.status})`);
   return res.json() as Promise<BackendPiece[]>;
 }
@@ -236,10 +233,9 @@ export async function apiListPieces(sessionToken: string): Promise<BackendPiece[
  * authoritative alive list plus a client_ref → backend id map.
  */
 export async function apiSyncPieces(
-  sessionToken: string,
-  payload: SyncPiecesRequest,
+    payload: SyncPiecesRequest,
 ): Promise<SyncPiecesResponse> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces/sync`, {
+  const res = await authedFetch(`${API_BASE}/users/me/pieces/sync`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -250,10 +246,9 @@ export async function apiSyncPieces(
 
 /** DELETE /users/me/pieces/{piece_id}, permanently remove a piece. */
 export async function apiDeletePiece(
-  sessionToken: string,
-  pieceId: string,
+    pieceId: string,
 ): Promise<void> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces/${pieceId}`, {
+  const res = await authedFetch(`${API_BASE}/users/me/pieces/${pieceId}`, {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error(`deletePiece failed (${res.status})`);
@@ -261,10 +256,9 @@ export async function apiDeletePiece(
 
 /** POST /users/me/pieces, create a new piece.  */
 export async function apiCreatePiece(
-  sessionToken: string,
-  payload: CreatePiecePayload,
+    payload: CreatePiecePayload,
 ): Promise<BackendPiece> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces`, {
+  const res = await authedFetch(`${API_BASE}/users/me/pieces`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -275,11 +269,10 @@ export async function apiCreatePiece(
 
 /** PUT /users/me/pieces/{piece_id}, update name, description or status. */
 export async function apiUpdatePiece(
-  sessionToken: string,
-  pieceId: string,
+    pieceId: string,
   payload: UpdatePiecePayload,
 ): Promise<BackendPiece> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces/${pieceId}`, {
+  const res = await authedFetch(`${API_BASE}/users/me/pieces/${pieceId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -292,11 +285,9 @@ export async function apiUpdatePiece(
 
 /** GET /users/me/pieces/{piece_id}/assets, list all assets for a piece. */
 export async function apiListPieceAssets(
-  sessionToken: string,
-  pieceId: string,
+    pieceId: string,
 ): Promise<BackendPieceAsset[]> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/pieces/${pieceId}/assets`,
   );
   if (!res.ok) throw new Error(`listPieceAssets failed (${res.status})`);
@@ -308,8 +299,7 @@ export async function apiListPieceAssets(
  * The file must be a local URI (e.g. from expo-image-picker).
  */
 export async function apiUploadPieceAsset(
-  sessionToken: string,
-  pieceId: string,
+    pieceId: string,
   file: { uri: string; name: string; type: string },
   status?: ApiPieceStatus,
   localStage?: string,
@@ -321,7 +311,7 @@ export async function apiUploadPieceAsset(
   if (localStage) form.append('local_stage', localStage);
   if (description) form.append('description', description);
 
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces/${pieceId}/assets`, {
+  const res = await authedFetch(`${API_BASE}/users/me/pieces/${pieceId}/assets`, {
     method: 'POST',
     // Do NOT set Content-Type, let fetch inject the multipart boundary.
     body: form as unknown as BodyInit_,
@@ -332,12 +322,10 @@ export async function apiUploadPieceAsset(
 
 /** DELETE /users/me/pieces/{piece_id}/assets/{asset_id}, permanently remove an asset. */
 export async function apiDeletePieceAsset(
-  sessionToken: string,
-  pieceId: string,
+    pieceId: string,
   assetId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/pieces/${pieceId}/assets/${assetId}`,
     { method: 'DELETE' },
   );
@@ -349,8 +337,7 @@ export async function apiDeletePieceAsset(
  * description, and/or replace the image for an asset.
  */
 export async function apiUpdatePieceAsset(
-  sessionToken: string,
-  pieceId: string,
+    pieceId: string,
   assetId: string,
   payload: UpdateAssetPayload,
 ): Promise<BackendPieceAsset> {
@@ -367,8 +354,7 @@ export async function apiUpdatePieceAsset(
     if (payload.description) form.append('description', payload.description);
 
     const res = await authedFetch(
-      sessionToken,
-      `${API_BASE}/users/me/pieces/${pieceId}/assets/${assetId}`,
+    `${API_BASE}/users/me/pieces/${pieceId}/assets/${assetId}`,
       { method: 'PUT', body: form as unknown as BodyInit_ },
     );
     if (!res.ok) throw new Error(`updatePieceAsset failed (${res.status})`);
@@ -382,7 +368,6 @@ export async function apiUpdatePieceAsset(
   if (payload.description !== undefined) jsonPayload.description = payload.description;
 
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/me/pieces/${pieceId}/assets/${assetId}`,
     {
       method: 'PUT',

@@ -1,7 +1,7 @@
 import { CEMETERY_MODE_TRANSITION_MS } from '@/src/screens/pieces/cemeteryTheme';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, type DimensionValue } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -18,7 +18,7 @@ const DRIFTING_MOTES = [
   { left: '44%', top: '52%', delay: 600, size: 2 },
   { left: '82%', top: '62%', delay: 1800, size: 2.5 },
   { left: '26%', top: '72%', delay: 900, size: 2 },
-];
+] as const;
 
 function DriftingMote({
   left,
@@ -26,8 +26,8 @@ function DriftingMote({
   delay,
   size,
 }: {
-  left: string;
-  top: string;
+  left: DimensionValue;
+  top: DimensionValue;
   delay: number;
   size: number;
 }) {

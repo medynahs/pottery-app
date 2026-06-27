@@ -9,17 +9,17 @@ import { useAppStore } from '../store/appStore';
  * notification-pref changes, and native token rotation.
  */
 export function usePushTokenSync() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const notificationPrefs = useAppStore((s) => s.notificationPrefs);
 
   const sync = useCallback(async () => {
-    if (!sessionToken) return;
+    if (!isSignedIn) return;
     try {
-      await syncPushTokenWithBackend(sessionToken, notificationPrefs);
+      await syncPushTokenWithBackend(notificationPrefs);
     } catch {
       // Best-effort — local notifications still work without server registration.
     }
-  }, [sessionToken, notificationPrefs]);
+  }, [notificationPrefs]);
 
   useEffect(() => {
     void sync();

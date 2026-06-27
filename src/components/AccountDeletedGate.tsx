@@ -6,7 +6,6 @@ import { FIRINGS_QUERY_KEY } from '@/src/screens/kiln/hooks/useFiringsSync';
 import { KILNS_QUERY_KEY } from '@/src/screens/kiln/hooks/useKilnsSync';
 import { PIECES_QUERY_KEY } from '@/src/screens/pieces/hooks/usePiecesSync';
 import { reviveAccount } from '@/src/services/api';
-import { oryLogout } from '@/src/services/auth';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
@@ -23,7 +22,8 @@ async function invalidateStudioQueries(queryClient: ReturnType<typeof useQueryCl
 }
 
 export function AccountDeletedGate() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const accountDeletionGrace = useAppStore((s) => s.accountDeletionGrace);
   const clearSession = useAppStore((s) => s.clearSession);
   const setAccountDeletionGrace = useAppStore((s) => s.setAccountDeletionGrace);
@@ -31,13 +31,13 @@ export function AccountDeletedGate() {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState<'revive' | 'signout' | null>(null);
 
-  const visible = accountDeletionGrace && !!sessionToken;
+  const visible = accountDeletionGrace && isSignedIn;
 
   const handleRevive = async () => {
-    if (!sessionToken) return;
+    if (!isSignedIn) return;
     setBusy('revive');
     try {
-      await reviveAccount(sessionToken);
+      await reviveAccount();
       setAccountDeletionGrace(false);
       await invalidateStudioQueries(queryClient);
       showToast('Welcome back — your studio has been restored.', 'success');
@@ -52,12 +52,12 @@ export function AccountDeletedGate() {
   };
 
   const handleSignOut = async () => {
-    if (!sessionToken) return;
+    if (!isSignedIn) return;
     setBusy('signout');
     try {
-      await oryLogout(sessionToken);
+      await clearSession();
     } catch {
-      // Local cleanup is enough if the Ory session is already gone.
+      // clearSession already handles signout; ignore if session already gone
     }
     clearSession();
     queryClient.removeQueries({ queryKey: ME_QUERY_KEY });

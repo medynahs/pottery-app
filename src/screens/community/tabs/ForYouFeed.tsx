@@ -43,7 +43,8 @@ export function ForYouFeed({
   onBrowseDiscover,
   onCreatePost,
 }: Props) {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const backendUserId = useAppStore((s) => s.backendUserId);
   const communityFeedRevision = useAppStore((s) => s.communityFeedRevision);
   const pieces = useVisiblePieces();
@@ -56,7 +57,7 @@ export function ForYouFeed({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [discoverAvailable, setDiscoverAvailable] = useState(false);
 
-  const { polls, vote: votePoll, reload: reloadPolls } = useCommunityPolls(sessionToken);
+  const { polls, vote: votePoll, reload: reloadPolls } = useCommunityPolls();
 
   const isRefreshRef = useRef(false);
 
@@ -66,7 +67,7 @@ export function ForYouFeed({
 
   const fetchFeed = useCallback(
     async (cursor?: string) => {
-      if (!sessionToken) {
+      if (!isSignedIn) {
         setIsLoading(false);
         return;
       }
@@ -82,14 +83,14 @@ export function ForYouFeed({
         setIsLoadingMore(true);
       }
       try {
-        const friendsPage = await apiGetFeed(sessionToken, { limit: 20, cursor });
+        const friendsPage = await apiGetFeed({ limit: 20, cursor });
         const friendsPosts = friendsPage.items ?? friendsPage.posts ?? [];
 
         let merged = friendsPosts;
         if (isFirstPage) {
           const [myPage, discoverPage] = await Promise.all([
-            apiListMyPosts(sessionToken, { limit: 20 }).catch(() => null),
-            apiGetDiscoverFeed(sessionToken, { limit: 20 }),
+            apiListMyPosts({ limit: 20 }).catch(() => null),
+            apiGetDiscoverFeed({ limit: 20 }),
           ]);
           const myPosts = myPage?.items ?? myPage?.posts ?? [];
           const discoverPosts = discoverPage?.items ?? discoverPage?.posts ?? [];
@@ -123,14 +124,14 @@ export function ForYouFeed({
         isRefreshRef.current = false;
       }
     },
-    [sessionToken, onRefreshingChange],
+    [onRefreshingChange],
   );
 
   useEffect(() => {
     fetchFeed();
     void reloadPolls();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionToken]);
+  }, [isSignedIn]);
 
   useEffect(() => {
     if (refreshKey === 0) return;
@@ -211,7 +212,6 @@ export function ForYouFeed({
             <FeedPostCard
               key={post.id}
               post={post}
-              sessionToken={sessionToken!}
               onDeleted={handlePostDeleted}
             />
           ))}

@@ -512,7 +512,8 @@ export function ChallengesTab({
   onEntrySubmitted?: (meta: { emoji: string; challengeName: string }) => void;
   onShareChallengePost?: () => void;
 }) {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
   const markChallengeEntrySubmitted = useAppStore((s) => s.markChallengeEntrySubmitted);
@@ -587,7 +588,7 @@ export function ChallengesTab({
   };
 
   const load = useCallback(async () => {
-    if (!sessionToken) {
+    if (!isSignedIn) {
       setChallengeApi(null);
       setApiEntryId(null);
       setLoading(false);
@@ -597,7 +598,7 @@ export function ChallengesTab({
     setLoading(true);
     setError(null);
     try {
-      const items = await apiListChallenges(sessionToken);
+      const items = await apiListChallenges();
       const primary = pickPrimaryChallenge(items);
       if (!primary && items.length > 0) {
         console.warn('[FestivalsTab] challenges returned but none passed active filter:', items.map((i) => ({ id: i.id, status: i.status })));
@@ -613,7 +614,7 @@ export function ChallengesTab({
     } finally {
       setLoading(false);
     }
-  }, [sessionToken]);
+  }, [isSignedIn]);
 
   useEffect(() => {
     void load();
@@ -635,14 +636,14 @@ export function ChallengesTab({
       return;
     }
 
-    if (!sessionToken || !challengeApi?.id) {
+    if (!isSignedIn || !challengeApi?.id) {
       showToast('No active challenge available', 'error');
       return;
     }
 
     setSubmitting(true);
     try {
-      const entry = await apiSubmitChallengeEntry(sessionToken, challengeApi.id, {
+      const entry = await apiSubmitChallengeEntry(challengeApi.id, {
         track_id: challengeApi.track_id ?? undefined,
         note: 'Joined from Pottery Life app',
       });
@@ -707,7 +708,7 @@ export function ChallengesTab({
       return;
     }
 
-    if (!sessionToken || !challengeApi?.id) {
+    if (!isSignedIn || !challengeApi?.id) {
       setSubmitOpen(false);
       showToast('No active challenge available', 'error');
       return;
@@ -717,7 +718,7 @@ export function ChallengesTab({
     try {
       let postId: string | undefined;
 
-      const uploaded = await uploadPostPhotoAsset(sessionToken, payload.photoUri);
+      const uploaded = await uploadPostPhotoAsset(payload.photoUri);
 
       const meta = buildCommunityPostMeta({
         postKind: 'update',
@@ -728,7 +729,7 @@ export function ChallengesTab({
         },
       });
       const content = embedCommunityPostMeta(payload.note, meta);
-      const post = await apiCreatePost(sessionToken, {
+      const post = await apiCreatePost({
         content,
         asset_ids: [uploaded.assetId],
       });
@@ -737,7 +738,7 @@ export function ChallengesTab({
       cacheProfilePost(hydrateCreatedPost(post, uploaded, [uploaded.assetId]));
       markPostCreated();
 
-      const entry = await apiSubmitChallengeEntry(sessionToken, challengeApi.id, {
+      const entry = await apiSubmitChallengeEntry(challengeApi.id, {
         track_id: challengeApi.track_id ?? undefined,
         note: payload.note,
         post_id: postId,
@@ -766,13 +767,13 @@ export function ChallengesTab({
       return;
     }
 
-    if (!sessionToken || !challengeApi?.id || !apiEntryId) {
+    if (!isSignedIn || !challengeApi?.id || !apiEntryId) {
       setDropOpen(false);
       return;
     }
 
     try {
-      await apiWithdrawChallengeEntry(sessionToken, challengeApi.id, apiEntryId);
+      await apiWithdrawChallengeEntry(challengeApi.id, apiEntryId);
       setApiEntryId(null);
       showToast('Challenge entry withdrawn', 'success');
       void load();

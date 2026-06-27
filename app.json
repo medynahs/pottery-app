@@ -61,12 +61,19 @@
           "backgroundColor": "#FBF0E0"
         }
       ],
-      "expo-web-browser",
       "expo-secure-store",
       [
         "expo-custom-assets",
         {
-          "assetsPaths": ["./assets/rive"]
+          "assetsPaths": [
+            "./assets/rive"
+          ]
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.431375939143-e0puarac123gua0cbuph6ouq5s55nkdn"
         }
       ]
     ],

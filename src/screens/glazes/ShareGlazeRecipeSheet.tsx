@@ -99,7 +99,8 @@ export function ShareGlazeRecipeSheet({
   onClose,
   onShared,
 }: ShareGlazeRecipeSheetProps) {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
   const markChallengeEntrySubmitted = useAppStore((s) => s.markChallengeEntrySubmitted);
@@ -121,8 +122,8 @@ export function ShareGlazeRecipeSheet({
       setShowPreview(true);
     })();
 
-    if (sessionToken) {
-      apiListChallenges(sessionToken)
+    if (isSignedIn) {
+      apiListChallenges()
         .then((items) => setChallenges(items ?? []))
         .catch(() => setChallenges([]));
     }
@@ -131,7 +132,7 @@ export function ShareGlazeRecipeSheet({
       mounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, glaze?.id, sessionToken]);
+  }, [visible, glaze?.id]);
 
   const caption =
     glaze && draft ? composeShareCaption(draft, glaze, linkedPieces) : '';
@@ -142,7 +143,7 @@ export function ShareGlazeRecipeSheet({
   const previewPhotoUri =
     glaze && draft ? resolveSharePhotoUri(glaze, draft, linkedPieces) : undefined;
   const charCount = postContent.length;
-  const canPost = Boolean(sessionToken && caption.trim() && charCount <= MAX_SHARE_POST_LENGTH);
+  const canPost = Boolean(isSignedIn && caption.trim() && charCount <= MAX_SHARE_POST_LENGTH);
 
   const patchDraft = (patch: Partial<ShareGlazeDraft>) => {
     setDraft((current) => (current ? { ...current, ...patch } : current));
@@ -168,18 +169,18 @@ export function ShareGlazeRecipeSheet({
   };
 
   const handleShare = async () => {
-    if (!glaze || !sessionToken || !draft || !canPost) return;
+    if (!glaze || !isSignedIn || !draft || !canPost) return;
     setPosting(true);
     try {
       const assetIds: string[] = [];
       let uploadedPhoto: { assetId: string; publicUrl?: string } | null = null;
       if (draft.attachPhoto && previewPhotoUri) {
-        uploadedPhoto = await uploadPostPhotoAsset(sessionToken, previewPhotoUri);
+        uploadedPhoto = await uploadPostPhotoAsset(previewPhotoUri);
         assetIds.push(uploadedPhoto.assetId);
       }
 
       const created = hydrateCreatedPost(
-        await apiCreatePost(sessionToken, {
+        await apiCreatePost({
           content: postContent,
           asset_ids: assetIds.length > 0 ? assetIds : undefined,
         }),
@@ -192,7 +193,7 @@ export function ShareGlazeRecipeSheet({
           ? linkedPieces.find((p) => p.id === draft.linkedPieceId)
           : undefined;
         try {
-          await apiSubmitChallengeEntry(sessionToken, draft.challengeId, {
+          await apiSubmitChallengeEntry(draft.challengeId, {
             note: caption.trim().slice(0, 280),
             piece_id: linkedPiece?.backendId,
           });
@@ -254,7 +255,7 @@ export function ShareGlazeRecipeSheet({
             paddingBottom: FORM_FIELD_GAP + 8,
           }}
         >
-            {!sessionToken ? (
+            {!isSignedIn ? (
               <Text className="text-sm text-muted-foreground leading-6">
                 Sign in to share recipes with other potters. Your atlas stays private until you post.
               </Text>
@@ -497,7 +498,7 @@ export function ShareGlazeRecipeSheet({
         </ModalFormScrollView>
 
         <ModalSheetFooter>
-          {sessionToken ? (
+          {isSignedIn ? (
             <TouchableOpacity
               onPress={handleSaveForLater}
               disabled={!draft}
@@ -512,13 +513,13 @@ export function ShareGlazeRecipeSheet({
             <TouchableOpacity
               onPress={onClose}
               activeOpacity={0.82}
-              className={`rounded-2xl border border-border py-3.5 items-center ${sessionToken ? 'flex-1' : 'w-full'}`}
+              className={`rounded-2xl border border-border py-3.5 items-center ${isSignedIn ? 'flex-1' : 'w-full'}`}
             >
               <Text className="text-sm font-semibold text-foreground">
-                {sessionToken ? 'Cancel' : 'Close'}
+                {isSignedIn ? 'Cancel' : 'Close'}
               </Text>
             </TouchableOpacity>
-            {sessionToken ? (
+            {isSignedIn ? (
               <TouchableOpacity
                 onPress={handleShare}
                 disabled={!canPost || posting}

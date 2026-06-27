@@ -107,13 +107,14 @@ function mergeFiringsIntoStore(backendFirings: BackendFiring[]) {
 }
 
 export function useFiringsSync() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
-  const oryIdentityId = useAppStore((s) => s.oryIdentityId);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
+  
 
   const query = useQuery({
-    queryKey: firingsQueryKey(oryIdentityId ?? ''),
-    queryFn: () => apiListFirings(sessionToken!),
-    enabled: !!sessionToken && !!oryIdentityId,
+    queryKey: firingsQueryKey('me'),
+    queryFn: () => apiListFirings(),
+    enabled: isSignedIn,
     staleTime: 2 * 60 * 1000,
     retry: 2,
   });
@@ -127,14 +128,15 @@ export function useFiringsSync() {
 }
 
 export function useCreateFiringMutation() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const updateFiring = useAppStore((s) => s.updateFiring);
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (firing: Firing) => {
-      if (!sessionToken) return null;
-      const backend = await apiCreateFiring(sessionToken, firingToApiPayload(firing));
+      if (!isSignedIn) return null;
+      const backend = await apiCreateFiring(firingToApiPayload(firing));
       return { firing, backend };
     },
     onSuccess: (result) => {
@@ -149,12 +151,13 @@ export function useCreateFiringMutation() {
 }
 
 export function useUpdateFiringMutation() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
 
   return useMutation({
     mutationFn: async (firing: Firing) => {
-      if (!sessionToken || !firing.backendId) return;
-      await apiUpdateFiring(sessionToken, firing.backendId, firingToApiPayload(firing));
+      if (!isSignedIn || !firing.backendId) return;
+      await apiUpdateFiring(firing.backendId, firingToApiPayload(firing));
     },
     onError: () => {
       useAppStore.getState().showToast('Could not update firing', 'error');
@@ -163,12 +166,13 @@ export function useUpdateFiringMutation() {
 }
 
 export function useDeleteFiringMutation() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
 
   return useMutation({
     mutationFn: async (firing: Firing) => {
-      if (!sessionToken || !firing.backendId) return;
-      await apiDeleteFiring(sessionToken, firing.backendId);
+      if (!isSignedIn || !firing.backendId) return;
+      await apiDeleteFiring(firing.backendId);
     },
     onError: () => {
       useAppStore.getState().showToast('Could not delete firing on server', 'error');

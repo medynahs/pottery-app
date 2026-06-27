@@ -28,7 +28,8 @@ export function ProfileHeader({
 }) {
   const router = useRouter();
   const user = useAppStore((s) => s.user);
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const { progress, title } = useProfileLevel();
   const {
     shareMenuVisible,
@@ -42,11 +43,11 @@ export function ProfileHeader({
   const [studioCount, setStudioCount] = useState<number | null>(null);
 
   const loadStats = useCallback(async () => {
-    if (!sessionToken) return;
+    if (!isSignedIn) return;
 
     const setClayFriendsCount = useAppStore.getState().setClayFriendsCount;
 
-    void apiListFriends(sessionToken)
+    void apiListFriends()
       .then((friends) => {
         const count = (friends ?? []).length;
         setFriendCount(count);
@@ -59,8 +60,8 @@ export function ProfileHeader({
       });
 
     void Promise.all([
-      apiListOwnedStudios(sessionToken),
-      apiListMemberStudios(sessionToken),
+      apiListOwnedStudios(),
+      apiListMemberStudios(),
     ])
       .then(([owned, member]) => {
         setStudioCount((owned ?? []).length + (member ?? []).length);
@@ -69,7 +70,7 @@ export function ProfileHeader({
         console.warn('[ProfileHeader] studios count failed:', err);
         setStudioCount(0);
       });
-  }, [sessionToken]);
+  }, [isSignedIn]);
 
   useEffect(() => { loadStats(); }, [loadStats]);
 

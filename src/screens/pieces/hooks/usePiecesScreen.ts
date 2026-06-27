@@ -33,7 +33,8 @@ export function usePiecesScreen() {
   const advancePiecesToStage = useAppStore((s) => s.advancePiecesToStage);
   const showToast = useAppStore((s) => s.showToast);
   const sendToCemetery = useAppStore((s) => s.sendToCemetery);
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const defaultBisqueTemp = useAppStore((s) => s.defaultBisqueTemp);
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
   const shareToCommunity = useCommunityComposer();
@@ -432,9 +433,9 @@ export function usePiecesScreen() {
   }, [sendToCemetery]);
 
   const handleSharePiece = React.useCallback((piece: Piece) => {
-    if (!sessionToken) return;
+    if (!isSignedIn) return;
     shareToCommunity(buildPieceSharePreset(piece));
-  }, [sessionToken, shareToCommunity]);
+  }, [shareToCommunity]);
 
   return {
     pieces,
@@ -482,6 +483,5 @@ export function usePiecesScreen() {
     handleSendToCemetery,
     handleConfirmSendToCemetery,
     handleSharePiece,
-    sessionToken,
-  };
+    };
 }

@@ -34,7 +34,8 @@ function mockCycles(): ArchiveCycle[] {
 }
 
 export function HallOfFameTab() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cycles, setCycles] = useState<ArchiveCycle[]>([]);
@@ -43,12 +44,12 @@ export function HallOfFameTab() {
     setLoading(true);
     setError(null);
     try {
-      if (!sessionToken) {
+      if (!isSignedIn) {
         setCycles([]);
         return;
       }
 
-      const archive = await apiGetHallOfFameArchive(sessionToken);
+      const archive = await apiGetHallOfFameArchive();
       if (archive?.cycles?.length) {
         setCycles(
           archive.cycles.map((cycle) => ({
@@ -85,7 +86,7 @@ export function HallOfFameTab() {
     } finally {
       setLoading(false);
     }
-  }, [sessionToken]);
+  }, [isSignedIn]);
 
   useEffect(() => {
     void load();

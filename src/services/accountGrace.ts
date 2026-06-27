@@ -21,13 +21,9 @@ export function profileIndicatesDeletionGrace(profile: BackendProfile): boolean 
   return profile.is_deleted === true;
 }
 
-/**
- * Returns true when the backend user is in the soft-delete grace window.
- * During grace, only POST /users/me/revive is allowed — studio APIs return 403.
- */
-export async function detectAccountDeletionGrace(sessionToken: string): Promise<boolean> {
+export async function detectAccountDeletionGrace(): Promise<boolean> {
   try {
-    const profile = await fetchMe(sessionToken);
+    const profile = await fetchMe();
     return profileIndicatesDeletionGrace(profile);
   } catch (error) {
     if (isAccountDeletedError(error)) return true;

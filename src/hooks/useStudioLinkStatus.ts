@@ -3,12 +3,12 @@ import { useAppStore } from '@/src/store';
 import React from 'react';
 
 export function useStudioLinkStatus() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const [hasLinkedStudio, setHasLinkedStudio] = React.useState<boolean | null>(null);
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (!sessionToken) {
+    if (!isSignedIn) {
       setHasLinkedStudio(false);
       return;
     }
@@ -16,7 +16,7 @@ export function useStudioLinkStatus() {
     let cancelled = false;
     setLoading(true);
 
-    Promise.all([apiListMemberStudios(sessionToken), apiListOwnedStudios(sessionToken)])
+    Promise.all([apiListMemberStudios(), apiListOwnedStudios()])
       .then(([memberStudios, ownedStudios]) => {
         if (cancelled) return;
         const count = (memberStudios?.length ?? 0) + (ownedStudios?.length ?? 0);
@@ -32,7 +32,7 @@ export function useStudioLinkStatus() {
     return () => {
       cancelled = true;
     };
-  }, [sessionToken]);
+  }, [isSignedIn]);
 
   return { hasLinkedStudio, loading };
 }

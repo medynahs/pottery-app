@@ -3,7 +3,7 @@ import { LabeledInput } from '@/src/components/LabeledInput';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
 import { detectAccountDeletionGrace } from '@/src/services/accountGrace';
-import { oryGoogleRegister, oryRegister, OryUserCancelledError } from '@/src/services/auth';
+import { googleSignIn, isExpoGo, register, UserCancelledError } from '@/src/services/auth';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Mail } from 'lucide-react-native';
@@ -23,9 +23,9 @@ interface Props {
 }
 
 export default function RegisterScreen({ onSuccess }: Props) {
-  const setSessionToken = useAppStore((s) => s.setSessionToken);
-  const router          = useRouter();
-  const safeInsets      = useSafeAreaInsets();
+  const setSignedIn = useAppStore((s) => s.setSignedIn);
+  const router      = useRouter();
+  const safeInsets  = useSafeAreaInsets();
 
   const [email, setEmail]           = useState('');
   const [password, setPassword]     = useState('');
@@ -33,12 +33,10 @@ export default function RegisterScreen({ onSuccess }: Props) {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError]           = useState<string | null>(null);
 
-  async function handleDone(token: string, id: string, mail: string) {
-    setSessionToken(token, id, mail);
-    const inGrace = await detectAccountDeletionGrace(token);
-    if (inGrace) {
-      useAppStore.getState().setAccountDeletionGrace(true);
-    }
+  async function handleDone(mail: string) {
+    setSignedIn(mail);
+    const inGrace = await detectAccountDeletionGrace();
+    if (inGrace) useAppStore.getState().setAccountDeletionGrace(true);
     if (onSuccess) onSuccess();
     else router.back();
   }
@@ -47,10 +45,10 @@ export default function RegisterScreen({ onSuccess }: Props) {
     setError(null);
     setGoogleLoading(true);
     try {
-      const r = await oryGoogleRegister();
-      handleDone(r.session_token, r.session.identity.id, r.session.identity.traits.email);
+      const mail = await googleSignIn();
+      await handleDone(mail);
     } catch (e) {
-      if (e instanceof OryUserCancelledError) return;
+      if (e instanceof UserCancelledError) return;
       setError(e instanceof Error ? e.message : 'Google sign-up failed.');
     } finally {
       setGoogleLoading(false);
@@ -63,8 +61,8 @@ export default function RegisterScreen({ onSuccess }: Props) {
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setLoading(true);
     try {
-      const r = await oryRegister(email, password);
-      handleDone(r.session_token, r.session.identity.id, r.session.identity.traits.email);
+      await register(email, password);
+      await handleDone(email.trim());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Registration failed. Please try again.');
     } finally {
@@ -93,16 +91,18 @@ export default function RegisterScreen({ onSuccess }: Props) {
 
           {error ? <Banner message={error} className="mb-5" /> : null}
 
-          <View className="mb-5">
-            <PrimaryButton
-              variant="outline"
-              label="Sign up with Google"
-              loading={googleLoading}
-              disabled={busy}
-              onPress={() => void handleGoogle()}
-              icon={<GoogleBadge />}
-            />
-          </View>
+          {!isExpoGo ? (
+            <View className="mb-5">
+              <PrimaryButton
+                variant="outline"
+                label="Sign up with Google"
+                loading={googleLoading}
+                disabled={busy}
+                onPress={() => void handleGoogle()}
+                icon={<GoogleBadge />}
+              />
+            </View>
+          ) : null}
 
           <View className="gap-4 mb-5">
             <LabeledInput

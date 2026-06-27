@@ -26,7 +26,7 @@ import {
 /** Default min height for multiline notes fields in forms. */
 export const NOTES_INPUT_MIN_HEIGHT = 96;
 
-export type NotesInputProps = Omit<InputProps, 'multiline' | 'textAlignVertical'> & {
+export type NotesInputProps = Omit<InputProps, 'multiline' | 'textAlignVertical' | 'variant'> & {
   label?: string;
   hint?: string;
   /** Min height in dp. Default {@link NOTES_INPUT_MIN_HEIGHT}. */

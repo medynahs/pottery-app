@@ -12,7 +12,6 @@ import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
 import { ME_QUERY_KEY } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { deleteAccount, ApiError } from '@/src/services/api';
-import { oryLogout } from '@/src/services/auth';
 import { ensureNotificationPermission } from '@/src/services/notifications';
 import { syncPushTokenWithBackend } from '@/src/services/pushTokens';
 import { useAppStore } from '@/src/store';
@@ -43,12 +42,12 @@ export default function AccountSettingsScreen() {
   const setNotificationPref = useAppStore((s) => s.setNotificationPref);
   const kilnkinCompanion = useAppStore((s) => s.kilnkinCompanion);
   const setKilnkinCompanion = useAppStore((s) => s.setKilnkinCompanion);
-  const sessionToken  = useAppStore((s) => s.sessionToken);
-  const oryEmail      = useAppStore((s) => s.oryEmail);
+  const isSignedIn    = useAppStore((s) => s.isSignedIn);
+  const email      = useAppStore((s) => s.email);
   const clearSession  = useAppStore((s) => s.clearSession);
   const showToast     = useAppStore((s) => s.showToast);
   const isPremium     = useAppStore((s) => s.isPremium);
-  const isAuthenticated = !!sessionToken;
+  const isAuthenticated = isSignedIn;
   const { requestAccess, PaywallGate } = usePremiumGate();
 
   type Sheet = 'signout' | 'delete1' | 'delete2' | null;
@@ -61,7 +60,7 @@ export default function AccountSettingsScreen() {
   async function doSignOut() {
     setBusy(true);
     try {
-      if (sessionToken) await oryLogout(sessionToken);
+      if (isSignedIn) await clearSession();
     } catch {
       // clear regardless
     } finally {
@@ -74,10 +73,10 @@ export default function AccountSettingsScreen() {
   }
 
   async function doDeleteAccount() {
-    if (!sessionToken) return;
+    if (!isSignedIn) return;
     setBusy(true);
     try {
-      await deleteAccount(sessionToken);
+      await deleteAccount();
     } catch (error) {
       if (__DEV__) {
         console.error('[AccountSettings] deleteAccount failed', error);
@@ -97,7 +96,7 @@ export default function AccountSettingsScreen() {
     clearSession();
 
     try {
-      await oryLogout(sessionToken);
+      await clearSession();
     } catch {
       // Local cleanup already done; Ory session may already be invalidated server-side.
     }
@@ -122,9 +121,9 @@ export default function AccountSettingsScreen() {
 
     setNotificationPref(key, nextValue);
 
-    if (nextValue && sessionToken) {
+    if (nextValue && isSignedIn) {
       const nextPrefs = { ...notificationPrefs, [key]: nextValue };
-      void syncPushTokenWithBackend(sessionToken, nextPrefs).catch(() => {
+      void syncPushTokenWithBackend(nextPrefs).catch(() => {
         // Launch hook will retry; local scheduling is unaffected.
       });
     }
@@ -220,8 +219,8 @@ export default function AccountSettingsScreen() {
           <>
             {/* Signed-in card */}
             <SettingsGroup>
-              {oryEmail ? (
-                <SettingsRow icon={Mail} iconColor="hsl(100 40% 45%)" iconBg="bg-green-50" label="E-Mail" value={oryEmail} />
+              {email ? (
+                <SettingsRow icon={Mail} iconColor="hsl(100 40% 45%)" iconBg="bg-green-50" label="E-Mail" value={email} />
               ) : null}
               <SettingsRow icon={Lock}   iconColor="hsl(38 80% 50%)"  iconBg="bg-amber-50"  label="Change Password" onPress={() => router.push('/change-password')} />
               {/* <SettingsRow icon={Globe}  iconColor="hsl(24 30% 45%)"  iconBg="bg-stone-100" label="Language" value="English" /> */}

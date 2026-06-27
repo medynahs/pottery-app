@@ -1,5 +1,5 @@
 // Firings API, /users/me/firings
-// All endpoints require an X-Session-Token header from Ory Kratos.
+// All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
 import { API_BASE_URL as API_BASE } from './index';
 
@@ -91,25 +91,21 @@ export function firingLogFieldsForApi(firing: {
   return payload;
 }
 
-function authedFetch(
-  sessionToken: string,
-  url: string,
+function authedFetch(url: string,
   init?: RequestInit,
 ): Promise<Response> {
   return fetch(url, {
     ...init,
-    credentials: 'omit',
     headers: {
       Accept: 'application/json',
-      'X-Session-Token': sessionToken,
       ...(init?.headers ?? {}),
     },
   });
 }
 
 /** GET /users/me/firings */
-export async function apiListFirings(sessionToken: string): Promise<BackendFiring[]> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/firings`);
+export async function apiListFirings(): Promise<BackendFiring[]> {
+  const res = await authedFetch(`${API_BASE}/users/me/firings`);
   if (!res.ok) {
     throw new Error(`GET /users/me/firings -> ${res.status}`);
   }
@@ -118,10 +114,9 @@ export async function apiListFirings(sessionToken: string): Promise<BackendFirin
 
 /** POST /users/me/firings */
 export async function apiCreateFiring(
-  sessionToken: string,
-  payload: CreateFiringPayload,
+    payload: CreateFiringPayload,
 ): Promise<BackendFiring> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/firings`, {
+  const res = await authedFetch(`${API_BASE}/users/me/firings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -134,10 +129,9 @@ export async function apiCreateFiring(
 
 /** GET /users/me/firings/{id} */
 export async function apiGetFiring(
-  sessionToken: string,
-  firingId: string,
+    firingId: string,
 ): Promise<BackendFiring> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/firings/${firingId}`);
+  const res = await authedFetch(`${API_BASE}/users/me/firings/${firingId}`);
   if (!res.ok) {
     throw new Error(`GET /users/me/firings/${firingId} -> ${res.status}`);
   }
@@ -146,11 +140,10 @@ export async function apiGetFiring(
 
 /** PATCH /users/me/firings/{id} */
 export async function apiUpdateFiring(
-  sessionToken: string,
-  firingId: string,
+    firingId: string,
   payload: UpdateFiringPayload,
 ): Promise<BackendFiring> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/firings/${firingId}`, {
+  const res = await authedFetch(`${API_BASE}/users/me/firings/${firingId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -163,10 +156,9 @@ export async function apiUpdateFiring(
 
 /** DELETE /users/me/firings/{id} */
 export async function apiDeleteFiring(
-  sessionToken: string,
-  firingId: string,
+    firingId: string,
 ): Promise<void> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/firings/${firingId}`, {
+  const res = await authedFetch(`${API_BASE}/users/me/firings/${firingId}`, {
     method: 'DELETE',
   });
   if (!res.ok) {

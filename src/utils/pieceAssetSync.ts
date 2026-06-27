@@ -169,7 +169,6 @@ function applyTimelinePhotoFromAsset(
 }
 
 async function uploadCoverPhoto(
-  sessionToken: string,
   piece: Piece,
 ): Promise<Piece> {
   const coverUri = piece.photo ?? piece.imgUrl;
@@ -179,14 +178,13 @@ async function uploadCoverPhoto(
 
   const file = localImageFileFromUri(coverUri);
   const asset = piece.coverAssetId
-    ? await apiUpdatePieceAsset(sessionToken, piece.backendId, piece.coverAssetId, { file })
-    : await apiUploadPieceAsset(sessionToken, piece.backendId, file);
+    ? await apiUpdatePieceAsset(piece.backendId, piece.coverAssetId, { file })
+    : await apiUploadPieceAsset(piece.backendId, file);
 
   return applyCoverFromAsset(piece, asset);
 }
 
 async function deleteOrphanedAssets(
-  sessionToken: string,
   piece: Piece,
   before: Piece,
 ): Promise<Piece> {
@@ -198,7 +196,7 @@ async function deleteOrphanedAssets(
 
   if (before.coverAssetId && beforeCover && !afterCover) {
     try {
-      await apiDeletePieceAsset(sessionToken, piece.backendId, before.coverAssetId);
+      await apiDeletePieceAsset(piece.backendId, before.coverAssetId);
     } catch {
       // suppress — local state still cleared
     }
@@ -216,7 +214,7 @@ async function deleteOrphanedAssets(
     const assetId = before.photoAssetIds?.[uri];
     if (!assetId) continue;
     try {
-      await apiDeletePieceAsset(sessionToken, piece.backendId, assetId);
+      await apiDeletePieceAsset(piece.backendId, assetId);
     } catch {
       // suppress
     }
@@ -227,7 +225,6 @@ async function deleteOrphanedAssets(
 }
 
 async function uploadTimelinePhotos(
-  sessionToken: string,
   piece: Piece,
 ): Promise<Piece> {
   if (!piece.backendId) return piece;
@@ -248,11 +245,11 @@ async function uploadTimelinePhotos(
       const existingId = current.photoAssetIds?.[uri];
 
       const asset = existingId
-        ? await apiUpdatePieceAsset(sessionToken, piece.backendId, existingId, {
+        ? await apiUpdatePieceAsset(piece.backendId, existingId, {
             file,
             status: apiStatus,
           })
-        : await apiUploadPieceAsset(sessionToken, piece.backendId, file, apiStatus);
+        : await apiUploadPieceAsset(piece.backendId, file, apiStatus);
 
       current = applyTimelinePhotoFromAsset(current, entryIndex, photoIndex, uri, asset);
     }
@@ -262,8 +259,8 @@ async function uploadTimelinePhotos(
 }
 
 export async function flushPiecePhotoSync(pieceId: number): Promise<void> {
-  const { sessionToken } = useAppStore.getState();
-  if (!sessionToken) return;
+  const isSignedIn = useAppStore.getState().isSignedIn;
+  if (!isSignedIn) return;
 
   const piece = useAppStore.getState().pieces.find((p) => p.id === pieceId);
   if (!piece || piece.deleted) return;
@@ -279,7 +276,7 @@ export async function flushPiecePhotoSync(pieceId: number): Promise<void> {
   try {
     const coverBefore = current.photo ?? current.imgUrl;
     if (coverBefore && isLocalMediaUri(coverBefore)) {
-      const next = await uploadCoverPhoto(sessionToken, current);
+      const next = await uploadCoverPhoto(current);
       if ((next.photo ?? next.imgUrl) !== coverBefore && isRemoteMediaUri(next.photo ?? next.imgUrl)) {
         uploaded += 1;
       }
@@ -287,12 +284,12 @@ export async function flushPiecePhotoSync(pieceId: number): Promise<void> {
     }
 
     const timelineBefore = JSON.stringify(current.timeline);
-    current = await uploadTimelinePhotos(sessionToken, current);
+    current = await uploadTimelinePhotos(current);
     if (JSON.stringify(current.timeline) !== timelineBefore) {
       uploaded += 1;
     }
 
-    current = await deleteOrphanedAssets(sessionToken, current, before);
+    current = await deleteOrphanedAssets(current, before);
 
     const changed = JSON.stringify(current) !== JSON.stringify(before);
     if (changed) {
@@ -343,8 +340,8 @@ let hydrateInFlight = false;
 
 /** Pull cloud asset URLs for all backend-linked pieces (e.g. after sign-in on a new device). */
 export async function hydrateAllPieceAssetsFromCloud(): Promise<void> {
-  const { sessionToken, pieces } = useAppStore.getState();
-  if (!sessionToken || hydrateInFlight) return;
+  const { pieces, isSignedIn } = useAppStore.getState();
+  if (!isSignedIn || hydrateInFlight) return;
 
   const targets = pieces.filter((piece) => piece.backendId && !piece.deleted);
   if (targets.length === 0) return;
@@ -356,7 +353,7 @@ export async function hydrateAllPieceAssetsFromCloud(): Promise<void> {
     await Promise.all(
       targets.map(async (piece) => {
         try {
-          const assets = await apiListPieceAssets(sessionToken, piece.backendId!);
+          const assets = await apiListPieceAssets(piece.backendId!);
           if (!assets.length) return;
           const merged = mergeAssetsIntoPiece(piece, assets);
           if (JSON.stringify(merged) !== JSON.stringify(piece)) {

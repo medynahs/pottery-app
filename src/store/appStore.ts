@@ -43,7 +43,7 @@ import { migrateStudioRituals } from '../screens/overview/studioRythm/studioRhyt
 import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
 import { fetchUsers, type BackendUser } from '../services';
-import { oryGetSession, OryHttpError } from '../services/auth';
+import { sessionExists, signOut } from '../services/auth';
 import type { Firing, FiringState, FiringStatusOverride, Kiln, KilnChecklist, KilnType, LogFiringPayload } from '../types/kiln';
 import type { GlazeOutcome, Piece, TimelineEntry } from '../types/pieces';
 import {
@@ -58,7 +58,7 @@ import {
   type PricingUserType
 } from '../types/pricing';
 import type { AppNotification, Studio, StudioMember } from '../types/studio';
-import { clearSecureAuth, loadSecureAuth, saveSecureAuth } from './secureStorage';
+import { clearSecureEmail, loadSecureEmail, saveSecureEmail } from './secureStorage';
 import { zustandStorage } from './storage';
 import { resolvePremiumFromEntitlement } from '../utils/forcePremium';
 
@@ -401,14 +401,13 @@ interface AppState {
   setPrivacyPref: (key: keyof PrivacyPrefs, value: boolean) => void;
 
   // ── Auth ──────────────────────────────────────────────────────
-  sessionToken: string | null;
-  oryIdentityId: string | null;
-  oryEmail: string | null;
+  isSignedIn: boolean;
+  email: string | null;
   backendUserId: string | null;
   isPremium: boolean;
   accountDeletionGrace: boolean;
   setAccountDeletionGrace: (value: boolean) => void;
-  setSessionToken: (token: string, identityId: string, email: string) => void;
+  setSignedIn: (email: string) => void;
   clearSession: () => void;
   setBackendUserId: (id: string | null) => void;
   setIsPremium: (v: boolean) => void;
@@ -767,51 +766,36 @@ export const useAppStore = create<AppState>()(
     set((state) => ({ privacyPrefs: { ...state.privacyPrefs, [key]: value } })),
 
   // ── Auth ──────────────────────────────────────────────────────
-  sessionToken: null,
-  oryIdentityId: null,
-  oryEmail: null,
+  isSignedIn: false,
+  email: null,
   backendUserId: null,
   isPremium: false,
   accountDeletionGrace: false,
   setAccountDeletionGrace: (value) => set({ accountDeletionGrace: value }),
-  setSessionToken: (token, identityId, email) => {
-    set({ sessionToken: token, oryIdentityId: identityId, oryEmail: email });
-    void saveSecureAuth(token, identityId, email);
+  setSignedIn: (email) => {
+    set({ isSignedIn: true, email });
+    void saveSecureEmail(email);
   },
   clearSession: () => {
     set({
-      sessionToken: null,
-      oryIdentityId: null,
-      oryEmail: null,
+      isSignedIn: false,
+      email: null,
       backendUserId: null,
       isPremium: false,
       accountDeletionGrace: false,
-      // Reset user-specific fields so the next sign-in starts clean.
-      // Without this, the previous user's avatar persists in AsyncStorage
-      // and is shown briefly (or permanently) when a different account signs in.
       user: { name: '', avatarInitial: 'U', avatarImageUri: undefined, coverImageUri: undefined },
     });
-    void clearSecureAuth();
+    void signOut();
+    void clearSecureEmail();
   },
   setBackendUserId: (id) => set({ backendUserId: id }),
   setIsPremium: (v) => set({ isPremium: resolvePremiumFromEntitlement(v) }),
   initializeAuth: async () => {
     try {
-      const auth = await loadSecureAuth();
-      if (!auth) return;
-      set({
-        sessionToken: auth.sessionToken,
-        oryIdentityId: auth.oryIdentityId,
-        oryEmail: auth.oryEmail,
-      });
-      // Validate the restored token in the background (never blocks startup).
-      // Only an explicit 401 clears the session, network errors / offline
-      // cold starts must not sign the user out.
-      void oryGetSession(auth.sessionToken).catch((e: unknown) => {
-        if (e instanceof OryHttpError && e.status === 401) {
-          get().clearSession();
-        }
-      });
+      const exists = await sessionExists();
+      if (!exists) return;
+      const storedEmail = await loadSecureEmail();
+      set({ isSignedIn: true, email: storedEmail });
     } catch {
       // SecureStore unavailable (e.g. Expo Go simulator), proceed without session
     }

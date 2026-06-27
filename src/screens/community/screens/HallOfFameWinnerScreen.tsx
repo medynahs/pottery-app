@@ -22,7 +22,8 @@ import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
 export default function HallOfFameWinnerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const winnerId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : undefined;
 
@@ -41,8 +42,8 @@ export default function HallOfFameWinnerScreen() {
     setError(null);
 
     try {
-      if (sessionToken) {
-        const detail = await apiGetHallOfFameWinner(sessionToken, winnerId);
+      if (isSignedIn) {
+        const detail = await apiGetHallOfFameWinner(winnerId);
         if (detail) {
           setWinner(hallOfFameWinnerDetailToDisplay(detail));
           return;
@@ -67,7 +68,7 @@ export default function HallOfFameWinnerScreen() {
     } finally {
       setLoading(false);
     }
-  }, [sessionToken, winnerId]);
+  }, [winnerId]);
 
   useEffect(() => {
     void load();
