@@ -1,5 +1,5 @@
 // Pieces API, /users/me/pieces
-// All endpoints require an X-Session-Token header from Ory Kratos.
+// All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
 import { API_BASE_URL as API_BASE } from './index';
 
@@ -210,9 +210,9 @@ async function authedFetch(url: string,
   init?: RequestInit,
 ): Promise<Response> {
   return fetch(url, {
-    ...init,
+    ...init,
     headers: {
-      Accept: 'application/json',
+      Accept: 'application/json',
       ...(init?.headers ?? {}),
     },
   });

@@ -1,5 +1,5 @@
 // Friends API, /users/me/friends
-// All endpoints require Authorization: Bearer <token> (Ory session token).
+// All endpoints require Authorization: Bearer <token> (SuperTokens session token).
 
 import { API_BASE_URL as API_BASE } from './index';
 
@@ -7,7 +7,7 @@ import { API_BASE_URL as API_BASE } from './index';
 
 export interface BackendUser {
   id: string;
-  ory_id: string;
+  auth_id: string;
   email: string;
   name: string;
   avatar_url: string | null;
@@ -56,9 +56,9 @@ function authedFetch(url: string,
   init?: RequestInit,
 ): Promise<Response> {
   return fetch(url, {
-    ...init,
+    ...init,
     headers: {
-      Accept: 'application/json',
+      Accept: 'application/json',
       ...(init?.headers ?? {}),
     },
   });

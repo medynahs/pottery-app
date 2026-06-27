@@ -1,5 +1,5 @@
 // Kilns API, /users/me/kilns
-// All endpoints require an X-Session-Token header from Ory Kratos.
+// All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
 import type { Kiln, KilnPricingModel, KilnType } from '../types/kiln';
 import { API_BASE_URL } from './index';

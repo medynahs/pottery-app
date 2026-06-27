@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-const EMAIL_KEY = 'pottery_ory_email';
+const EMAIL_KEY = 'pottery_auth_email';
 
 export async function saveSecureEmail(email: string): Promise<void> {
   await SecureStore.setItemAsync(EMAIL_KEY, email);

@@ -59,7 +59,7 @@ async function apiErrorFromResponse(res: Response, prefix: string): Promise<ApiE
 
 export interface BackendProfile {
   id: string;
-  ory_id: string;
+  auth_id: string;
   email: string;
   name: string | null;
   studio_name?: string | null;

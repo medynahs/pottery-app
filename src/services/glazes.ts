@@ -1,5 +1,5 @@
 // Glazes API, /users/me/glazes
-// All endpoints require an X-Session-Token header from Ory Kratos.
+// All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 //
 // The backend stores a glaze's images in a child table tagged by gallery type;
 // the app keeps four separate photo fields. The mappers below split a backend
@@ -357,9 +357,9 @@ export function localTestToSyncItem(
 
 async function authedFetch(url: string, init?: RequestInit): Promise<Response> {
   return fetch(url, {
-    ...init,
+    ...init,
     headers: {
-      Accept: 'application/json',
+      Accept: 'application/json',
       ...(init?.headers ?? {}),
     },
   });
