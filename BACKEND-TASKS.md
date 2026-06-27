@@ -23,6 +23,8 @@
 | **P1-4 Studios** · **P1-5 Polls** · **P1-7 Admin news** | ✅ shipped |
 | **P1-8 Glaze version chain** · **P1-9 Test tiles** · **P1-10 Glaze images** · **P1-11 Structured recipe posts** · **P1-12 Save provenance** | ✅ shipped |
 | **P2-2 Discover catalog** · **P2-3 Mix logs** · **P2-4 Batch scaler** · **P2-5 Server glaze count** · **P2-6 Challenge push** · **P2-7 Moderation** · **P2-8 Delete full lifecycle** · **P2-9 Cloud upload quotas** | ✅ shipped |
+| **Studio Rhythm premium gate** — `PUT /users/me/rythm` rejects sprint/freeform for free users (403); preferences path routes through same gate so neither path bypasses it. **FE thread:** write rhythm via `/users/me/rythm`, not the preferences blob | ✅ shipped |
+| **Public entitlement GET** — `GET /users/me/entitlement` → `{ tier, expires_at? }`. Server-authoritative tier read. FE adopts when `premiumGate.ts` migrates off the RevenueCat device SDK. | ✅ shipped |
 
 **FE must adopt these route changes** (shipped differently than this doc originally specified):
 
@@ -483,7 +485,7 @@ Shipped: `source_post_id` (FK `ON DELETE SET NULL`), `source_user_id` (FK `ON DE
 
 ### P1-13 · Premium — RevenueCat webhook — ✅ DONE
 
-`POST /webhooks/revenuecat` shipped — secret-verified (`REVENUECAT_WEBHOOK_SECRET`), rate-limited 10/min. Records subscription events into a `subscriptions` table. Server now **reads** the active tier internally via `GetActiveTier` and gates routes/quotas with `middleware.RequirePremium()` (export P2-8, glaze count P2-5, cloud quotas P2-9). **No public `GET /users/me/entitlement` yet** — FE still reads `isPremium` from the device SDK; add the GET only if the FE needs a server-authoritative tier.
+`POST /webhooks/revenuecat` shipped — secret-verified (`REVENUECAT_WEBHOOK_SECRET`), rate-limited 10/min. Records subscription events into a `subscriptions` table. Server now **reads** the active tier internally via `GetActiveTier` and gates routes/quotas with `middleware.RequirePremium()` (export P2-8, glaze count P2-5, cloud quotas P2-9). Public **`GET /users/me/entitlement`** → `{ tier: "basic"|"premium", expires_at? }` is also shipped; FE still reads `isPremium` from the device SDK and adopts the GET when hardening against SDK spoofing.
 
 ---
 
@@ -809,6 +811,7 @@ Aligns with [Recommended implementation order](#recommended-implementation-order
 | GET | `/glazes/discover/recipes`, `/inspirations` | ✅ P2-2 | Versioned Discover catalog (public; admin publish `/api/glazes/discover`) |
 | GET | `/users/me/export` | ✅ P2-8 | Premium-gated data archive (glazes + piece glaze links) |
 | POST | `/challenges/:id/entries/:entryId/report` · admin `…/disqualify` | ✅ P2-7 | Moderation: report → 204; disqualify hides entry |
+| PUT | `/users/me/rythm` | ✅ shipped | Studio rhythm — sprint/freeform premium-gated (403 for free); FE must use this route, not preferences blob |
 
 ---
 

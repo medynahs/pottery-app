@@ -65,16 +65,86 @@ function apiStatusMatchesLocalStage(localStage: string, apiStatus: ApiPieceStatu
   return localStageToApiStatus(localStage) === apiStatus;
 }
 
+function buildPieceMetadata(piece: Piece): Record<string, unknown> | undefined {
+  const meta: Record<string, unknown> = {};
+  if (piece.clay) meta.clay = piece.clay;
+  if (piece.location) meta.location = piece.location;
+  if (piece.formingMethod) meta.formingMethod = piece.formingMethod;
+  if (piece.form) meta.form = piece.form;
+  if (piece.weight) meta.weight = piece.weight;
+  if (piece.dimensions) meta.dimensions = piece.dimensions;
+  if (piece.bisqueTemp) meta.bisqueTemp = piece.bisqueTemp;
+  if (piece.glazeTemp) meta.glazeTemp = piece.glazeTemp;
+  if (piece.firingType) meta.firingType = piece.firingType;
+  if (piece.decorations) meta.decorations = piece.decorations;
+  if (piece.notes) meta.notes = piece.notes;
+  if (piece.heightCm != null) meta.heightCm = piece.heightCm;
+  if (piece.widthCm != null) meta.widthCm = piece.widthCm;
+  if (piece.volumeCm3 != null) meta.volumeCm3 = piece.volumeCm3;
+  if (piece.weightGrams != null) meta.weightGrams = piece.weightGrams;
+  return Object.keys(meta).length > 0 ? meta : undefined;
+}
+
+function buildPiecePricing(piece: Piece): Record<string, unknown> | undefined {
+  const p: Record<string, unknown> = {};
+  const add = (k: string, v: unknown) => { if (v != null) p[k] = v; };
+  add('pricingUserType', piece.pricingUserType);
+  add('firingFeeMode', piece.firingFeeMode);
+  add('salePriceMode', piece.salePriceMode);
+  add('firingFee', piece.firingFee);
+  add('firingFeeQuoteRequired', piece.firingFeeQuoteRequired);
+  add('workHours', piece.workHours);
+  add('adminHours', piece.adminHours);
+  add('workMinutes', piece.workMinutes);
+  add('adminMinutes', piece.adminMinutes);
+  add('costClay', piece.costClay);
+  add('costGlaze', piece.costGlaze);
+  add('costEnergy', piece.costEnergy);
+  add('costOther', piece.costOther);
+  add('costClayOverride', piece.costClayOverride);
+  add('costGlazeOverride', piece.costGlazeOverride);
+  add('costEnergyOverride', piece.costEnergyOverride);
+  add('materialCost', piece.materialCost);
+  add('laborCost', piece.laborCost);
+  add('adminCost', piece.adminCost);
+  add('overheadCost', piece.overheadCost);
+  add('sellingFeePct', piece.sellingFeePct);
+  add('taxPct', piece.taxPct);
+  add('sellingFeeAmount', piece.sellingFeeAmount);
+  add('taxAmount', piece.taxAmount);
+  add('profitAmount', piece.profitAmount);
+  add('totalCost', piece.totalCost);
+  add('markupPct', piece.markupPct);
+  add('suggestedPrice', piece.suggestedPrice);
+  add('wholesalePrice', piece.wholesalePrice);
+  add('retailPriceTarget', piece.retailPriceTarget);
+  add('wholesalePriceTarget', piece.wholesalePriceTarget);
+  add('soldPrice', piece.soldPrice);
+  add('price', piece.price);
+  return Object.keys(p).length > 0 ? p : undefined;
+}
+
 function pieceToSnapshot(piece: Piece): PieceSyncSnapshot {
   const glazes = useAppStore.getState().glazes;
   const snapshot: PieceSyncSnapshot = {
     client_ref: String(piece.id),
     name: piece.name,
     status: localStageToApiStatus(piece.stage),
+    local_stage: piece.stage,
     ...pieceGlazeFieldsForApi(piece, glazes),
   };
   if (piece.description) snapshot.description = piece.description;
   if (piece.deleted) snapshot.deleted = true;
+  if (piece.status) snapshot.outcome_status = piece.status;
+  if (piece.timeline?.length) snapshot.timeline = piece.timeline as unknown[];
+  const meta = buildPieceMetadata(piece);
+  if (meta) snapshot.metadata = meta;
+  if (piece.epitaph) snapshot.epitaph = piece.epitaph;
+  if (piece.causeOfDeath) snapshot.cause_of_death = piece.causeOfDeath;
+  if (piece.batchId) snapshot.batch_client_ref = piece.batchId;
+  if (piece.batchSize != null) snapshot.batch_size = piece.batchSize;
+  const pricing = buildPiecePricing(piece);
+  if (pricing) snapshot.pricing = pricing;
   return snapshot;
 }
 
@@ -117,10 +187,12 @@ export function hasPendingPiecesSync(): boolean {
 
 function backendToLocalPatch(bp: BackendPiece, existing?: Piece): Piece {
   const glazes = useAppStore.getState().glazes;
-  const stage = API_TO_LOCAL_STAGE[bp.status] ?? bp.status;
+  const collapsedStage = API_TO_LOCAL_STAGE[bp.status] ?? bp.status;
+  const stage = bp.local_stage ?? collapsedStage;
   const parsedId = bp.client_ref ? Number(bp.client_ref) : NaN;
   const localId = existing?.id ?? (!Number.isNaN(parsedId) ? parsedId : Date.now() + Math.floor(Math.random() * 1_000));
 
+  const meta = bp.metadata ?? undefined;
   const base: Piece = existing ?? {
     id: localId,
     name: bp.name,
@@ -128,7 +200,7 @@ function backendToLocalPatch(bp: BackendPiece, existing?: Piece): Piece {
     createdAt: bp.created_at,
     updatedAt: bp.updated_at,
     timeline: [{ stage, timestamp: bp.created_at }],
-    clay: '',
+    clay: (meta?.clay as string | undefined) ?? '',
   };
 
   const glazeId =
@@ -140,12 +212,36 @@ function backendToLocalPatch(bp: BackendPiece, existing?: Piece): Piece {
       ? (bp.glaze_outcome ?? undefined)
       : existing?.glazeOutcome;
 
+  const pricing = bp.pricing ?? undefined;
+
   return {
     ...base,
+    ...((pricing as object | undefined) ?? {}),
     backendId: bp.id,
     name: bp.name,
     stage,
     description: bp.description ?? undefined,
+    status: bp.outcome_status ?? existing?.status ?? undefined,
+    timeline: (bp.timeline?.length ? bp.timeline : existing?.timeline) as Piece['timeline'],
+    clay: (meta?.clay as string | undefined) ?? existing?.clay ?? '',
+    location: (meta?.location as string | undefined) ?? existing?.location,
+    formingMethod: (meta?.formingMethod as string | undefined) ?? existing?.formingMethod,
+    form: (meta?.form as string | undefined) ?? existing?.form,
+    weight: (meta?.weight as string | undefined) ?? existing?.weight,
+    dimensions: (meta?.dimensions as string | undefined) ?? existing?.dimensions,
+    bisqueTemp: (meta?.bisqueTemp as string | undefined) ?? existing?.bisqueTemp,
+    glazeTemp: (meta?.glazeTemp as string | undefined) ?? existing?.glazeTemp,
+    firingType: (meta?.firingType as string | undefined) ?? existing?.firingType,
+    decorations: (meta?.decorations as string | undefined) ?? existing?.decorations,
+    notes: (meta?.notes as string | undefined) ?? existing?.notes,
+    heightCm: (meta?.heightCm as number | undefined) ?? existing?.heightCm,
+    widthCm: (meta?.widthCm as number | undefined) ?? existing?.widthCm,
+    volumeCm3: (meta?.volumeCm3 as number | undefined) ?? existing?.volumeCm3,
+    weightGrams: (meta?.weightGrams as number | undefined) ?? existing?.weightGrams,
+    epitaph: bp.epitaph ?? existing?.epitaph ?? undefined,
+    causeOfDeath: bp.cause_of_death ?? existing?.causeOfDeath ?? undefined,
+    batchId: bp.batch_client_ref ?? existing?.batchId ?? undefined,
+    batchSize: bp.batch_size ?? existing?.batchSize ?? undefined,
     updatedAt: bp.updated_at,
     glazeId,
     glazeOutcome,
@@ -218,7 +314,9 @@ function applySyncResponse(localPieces: Piece[], response: SyncPiecesResponse): 
     if (!backendPiece) return piece;
 
     const glazes = useAppStore.getState().glazes;
-    const stageSynced = apiStatusMatchesLocalStage(piece.stage, backendPiece.status);
+    const stageSynced = backendPiece.local_stage
+      ? backendPiece.local_stage === piece.stage
+      : apiStatusMatchesLocalStage(piece.stage, backendPiece.status);
     const glazeSynced = pieceGlazeFieldsSynced(piece, backendPiece, glazes);
 
     if (stageSynced && glazeSynced) {
@@ -257,10 +355,10 @@ function applyBackendAckToLocalPiece(localId: number, backendPiece: BackendPiece
         glazeOutcome,
       };
 
-      if (
-        apiStatusMatchesLocalStage(piece.stage, backendPiece.status)
-        && pieceGlazeFieldsSynced(piece, backendPiece, glazes)
-      ) {
+      const stageSynced = backendPiece.local_stage
+        ? backendPiece.local_stage === piece.stage
+        : apiStatusMatchesLocalStage(piece.stage, backendPiece.status);
+      if (stageSynced && pieceGlazeFieldsSynced(piece, backendPiece, glazes)) {
         return { ...next, syncDirty: false };
       }
 
@@ -282,11 +380,23 @@ async function pushDirtyBackendPiece(
       return 'deleted';
     }
 
+    const glazes = useAppStore.getState().glazes;
+    const meta = buildPieceMetadata(piece);
+    const pricing = buildPiecePricing(piece);
     const backendPiece = await apiUpdatePiece(sessionToken, piece.backendId, {
       name: piece.name,
       status: localStageToApiStatus(piece.stage),
+      local_stage: piece.stage,
       description: piece.description,
-      ...pieceGlazeFieldsForApi(piece, useAppStore.getState().glazes),
+      outcome_status: piece.status,
+      timeline: piece.timeline?.length ? (piece.timeline as unknown[]) : undefined,
+      metadata: meta,
+      epitaph: piece.epitaph,
+      cause_of_death: piece.causeOfDeath,
+      batch_client_ref: piece.batchId,
+      batch_size: piece.batchSize,
+      pricing,
+      ...pieceGlazeFieldsForApi(piece, glazes),
     });
     applyBackendAckToLocalPiece(piece.id, backendPiece);
     return 'updated';

@@ -30,6 +30,15 @@ export interface BackendPiece {
   is_deleted?: boolean;
   glaze_id?: string | null;
   glaze_outcome?: ApiGlazeOutcome | null;
+  local_stage?: string | null;
+  timeline?: unknown[] | null;
+  outcome_status?: string | null;
+  metadata?: Record<string, unknown> | null;
+  epitaph?: string | null;
+  cause_of_death?: string | null;
+  batch_client_ref?: string | null;
+  batch_size?: number | null;
+  pricing?: Record<string, unknown> | null;
 }
 
 /** Snapshot sent to POST /users/me/pieces/sync, identity is client_ref only. */
@@ -41,6 +50,15 @@ export interface PieceSyncSnapshot {
   deleted?: boolean;
   glaze_id?: string | null;
   glaze_outcome?: ApiGlazeOutcome | null;
+  local_stage?: string;
+  timeline?: unknown[];
+  outcome_status?: string;
+  metadata?: Record<string, unknown>;
+  epitaph?: string;
+  cause_of_death?: string;
+  batch_client_ref?: string;
+  batch_size?: number;
+  pricing?: Record<string, unknown>;
 }
 
 export interface SyncPiecesRequest {
@@ -58,6 +76,7 @@ export interface BackendPieceAsset {
   path: string;
   url: string;
   status: ApiPieceStatus | null;
+  local_stage?: string | null;
   description: string | null;
   created_at: string;
 }
@@ -76,10 +95,20 @@ export interface UpdatePiecePayload {
   status?: ApiPieceStatus;
   glaze_id?: string | null;
   glaze_outcome?: ApiGlazeOutcome | null;
+  local_stage?: string;
+  timeline?: unknown[];
+  outcome_status?: string;
+  metadata?: Record<string, unknown>;
+  epitaph?: string;
+  cause_of_death?: string;
+  batch_client_ref?: string;
+  batch_size?: number;
+  pricing?: Record<string, unknown>;
 }
 
 export interface UpdateAssetPayload {
   status?: ApiPieceStatus;
+  local_stage?: string;
   description?: string;
   /** If provided, the asset image is replaced. */
   file?: { uri: string; name: string; type: string };
@@ -283,11 +312,13 @@ export async function apiUploadPieceAsset(
   pieceId: string,
   file: { uri: string; name: string; type: string },
   status?: ApiPieceStatus,
+  localStage?: string,
   description?: string,
 ): Promise<BackendPieceAsset> {
   const form = new FormData();
   form.append('file', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
   if (status) form.append('status', status);
+  if (localStage) form.append('local_stage', localStage);
   if (description) form.append('description', description);
 
   const res = await authedFetch(sessionToken, `${API_BASE}/users/me/pieces/${pieceId}/assets`, {
@@ -332,6 +363,7 @@ export async function apiUpdatePieceAsset(
       type: payload.file.type,
     } as unknown as Blob);
     if (payload.status) form.append('status', payload.status);
+    if (payload.local_stage) form.append('local_stage', payload.local_stage);
     if (payload.description) form.append('description', payload.description);
 
     const res = await authedFetch(
@@ -344,8 +376,9 @@ export async function apiUpdatePieceAsset(
   }
 
   // Metadata-only update, JSON body
-  const jsonPayload: { status?: ApiPieceStatus; description?: string } = {};
+  const jsonPayload: { status?: ApiPieceStatus; local_stage?: string; description?: string } = {};
   if (payload.status) jsonPayload.status = payload.status;
+  if (payload.local_stage) jsonPayload.local_stage = payload.local_stage;
   if (payload.description !== undefined) jsonPayload.description = payload.description;
 
   const res = await authedFetch(
