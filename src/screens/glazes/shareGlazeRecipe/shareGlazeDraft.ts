@@ -15,14 +15,12 @@ export type SharePhotoSource = 'glaze' | 'piece' | 'none';
 
 export type ShareGlazeDraft = {
   intro: string;
-  hashtags: string;
   includeRecipe: boolean;
   includeNotes: boolean;
   teaserMode: boolean;
   attachPhoto: boolean;
   photoSource: SharePhotoSource;
   linkedPieceId: number | null;
-  challengeId: string | null;
 };
 
 export const SHARE_INTRO_PRESETS: Array<{ id: string; label: string; text: string }> = [
@@ -57,14 +55,12 @@ export function buildDefaultShareDraft(
 
   return {
     intro: `Sharing a recipe from my glaze atlas, ${name} has been firing well in my studio.`,
-    hashtags: '#glazerecipe #potterylife #ceramics',
     includeRecipe: true,
     includeNotes: Boolean(glaze.notes?.trim()),
     teaserMode: false,
     attachPhoto: Boolean(resolveGlazePhotoUri(glaze) || featuredPiece?.photo || featuredPiece?.imgUrl),
     photoSource: featuredPiece && !resolveGlazePhotoUri(glaze) ? 'piece' : 'glaze',
     linkedPieceId: featuredPiece?.id ?? null,
-    challengeId: null,
   };
 }
 
@@ -139,12 +135,6 @@ export function composeShareCaption(
     lines.push('');
     lines.push('Notes:');
     lines.push(glaze.notes.trim());
-  }
-
-  const tags = draft.hashtags.trim();
-  if (tags) {
-    lines.push('');
-    lines.push(tags);
   }
 
   return lines.join('\n').trim();

@@ -10,9 +10,6 @@ import type {
   DiscoverRecipe,
   FinishFilter,
 } from './types';
-import { buildDevDiscoverRecipes } from './glazeToDiscoverRecipe';
-import { DISCOVER_INSPIRATIONS } from './inspirations';
-import { DISCOVER_RECIPES } from './recipes';
 
 function normalizeQuery(q: string): string {
   return q.trim().toLowerCase();
@@ -49,6 +46,7 @@ export function inspirationMatchesSearch(inspiration: DiscoverInspiration, query
     inspiration.description,
     inspiration.applicationNotes,
     inspiration.coneLabel,
+    inspiration.finish ?? '',
     inspiration.colorFamily ?? '',
     productHaystack,
   ]
@@ -58,9 +56,8 @@ export function inspirationMatchesSearch(inspiration: DiscoverInspiration, query
 }
 
 export function itemMatchesSearch(item: DiscoverItem, query: string): boolean {
-  return item.kind === 'recipe'
-    ? recipeMatchesSearch(item.recipe, query)
-    : inspirationMatchesSearch(item.inspiration, query);
+  if (item.kind === 'recipe') return recipeMatchesSearch(item.recipe, query);
+  return inspirationMatchesSearch(item.inspiration, query);
 }
 
 export function itemMatchesFilters(
@@ -78,19 +75,19 @@ export function itemMatchesFilters(
   if (filters.contentTypeFilter === 'recipes' && item.kind !== 'recipe') return false;
   if (filters.contentTypeFilter === 'combos' && item.kind !== 'inspiration') return false;
 
-  const cone = item.kind === 'recipe' ? item.recipe.cone : item.inspiration.cone;
-  if (filters.coneFilter !== 'all' && cone !== filters.coneFilter) return false;
-
-  if (filters.colorFilter !== 'all') {
-    const colorFamily =
-      item.kind === 'recipe' ? item.recipe.colorFamily : item.inspiration.colorFamily;
-    if (colorFamily !== filters.colorFilter) return false;
+  if (filters.coneFilter !== 'all') {
+    const cone = item.kind === 'recipe' ? item.recipe.cone : item.inspiration.cone;
+    if (cone !== filters.coneFilter) return false;
   }
 
   if (filters.finishFilter !== 'all') {
-    const finish =
-      item.kind === 'recipe' ? item.recipe.finish : item.inspiration.finish;
+    const finish = item.kind === 'recipe' ? item.recipe.finish : item.inspiration.finish;
     if (!finish || finish !== filters.finishFilter) return false;
+  }
+
+  if (filters.colorFilter !== 'all') {
+    const family = item.kind === 'recipe' ? item.recipe.colorFamily : item.inspiration.colorFamily;
+    if (!family || family !== filters.colorFilter) return false;
   }
 
   if (filters.brandFilter !== 'all') {
@@ -107,24 +104,6 @@ export function itemMatchesFilters(
   }
 
   return true;
-}
-
-export function buildDiscoverCatalog(options?: {
-  glazes?: GlazeLibraryItem[];
-  devDiscoverGlazeIds?: string[];
-  authorName?: string;
-}): DiscoverItem[] {
-  const devRecipes = buildDevDiscoverRecipes(
-    options?.glazes ?? [],
-    options?.devDiscoverGlazeIds ?? [],
-    options?.authorName,
-  );
-
-  return [
-    ...devRecipes.map((recipe) => ({ kind: 'recipe' as const, recipe })),
-    ...DISCOVER_RECIPES.map((recipe) => ({ kind: 'recipe' as const, recipe })),
-    ...DISCOVER_INSPIRATIONS.map((inspiration) => ({ kind: 'inspiration' as const, inspiration })),
-  ];
 }
 
 export function collectDiscoverBrands(items: DiscoverItem[]): string[] {

@@ -13,16 +13,16 @@ export const POTTERY_NOOK_SEED_TIPS: CommunitySeedTip[] = [
   {
     id: 'ask-text',
     title: 'Ask the community',
-    body: 'Glaze crawling? Kiln overfire? Text-only posts are welcome — other potters often answer faster than forums.',
+    body: 'Post a question in the caption — glaze help, firing tips, or whatever you are working through.',
   },
   {
     id: 'challenge-tag',
     title: 'Join the monthly challenge',
-    body: 'Make on theme, then post with the challenge tag. You do not need a perfect piece — works in progress count.',
+    body: 'Open the Challenges tab, join the theme, then submit a photo and note. Works in progress count.',
   },
   {
     id: 'discover-recipes',
     title: 'Starter recipes in Glaze Atlas',
-    body: 'Browse nine curated recipes and six layering inspirations offline, then save any recipe straight to My Atlas.',
+    body: 'Browse curated recipes and layering combos in Discover, then save any recipe straight to My Atlas.',
   },
 ];

@@ -561,9 +561,6 @@ interface AppState {
   communityPieceShareHintShown: boolean;
   markCommunityKilnShareHintShown: () => void;
   markCommunityPieceShareHintShown: () => void;
-  /** Local vote on bundled demo poll when GET /polls is empty. */
-  communityDemoPollVoteId: string | null;
-  voteCommunityDemoPoll: (optionId: string) => void;
   /** Bumped when a community post is created or deleted, feeds subscribe to refresh. */
   communityFeedRevision: number;
   /** Pre-fill community composer when opening from journal, kiln, etc. */
@@ -1370,8 +1367,6 @@ export const useAppStore = create<AppState>()(
   communityPieceShareHintShown: false,
   markCommunityKilnShareHintShown: () => set({ communityKilnShareHintShown: true }),
   markCommunityPieceShareHintShown: () => set({ communityPieceShareHintShown: true }),
-  communityDemoPollVoteId: null,
-  voteCommunityDemoPoll: (optionId) => set({ communityDemoPollVoteId: optionId }),
   communityFeedRevision: 0,
   communityPostComposerPreset: null,
   communityPostSaveCounts: {},
@@ -2269,7 +2264,6 @@ export const useAppStore = create<AppState>()(
         hasOpenedCommunityTab: state.hasOpenedCommunityTab,
         communityKilnShareHintShown: state.communityKilnShareHintShown,
         communityPieceShareHintShown: state.communityPieceShareHintShown,
-        communityDemoPollVoteId: state.communityDemoPollVoteId,
         notificationPrefs: state.notificationPrefs,
         privacyPrefs: state.privacyPrefs,
         lastSyncedAt: state.lastSyncedAt,

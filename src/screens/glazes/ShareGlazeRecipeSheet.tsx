@@ -32,7 +32,6 @@ import {
   embedGlazePayloadInContent,
 } from '@/src/screens/glazes/shareGlazeRecipe/glazePostPayload';
 import { ShareGlazeFeedPreview } from '@/src/screens/glazes/shareGlazeRecipe/ShareGlazeFeedPreview';
-import { apiSubmitChallengeEntry, apiListChallenges, challengeDisplayName, type BackendChallenge } from '@/src/services/challenges';
 import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
 import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAnalytics } from '@/src/hooks/useAnalytics';
@@ -44,7 +43,6 @@ import React from 'react';
 import {
   ActivityIndicator,
   ScrollView,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -103,12 +101,10 @@ export function ShareGlazeRecipeSheet({
 
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
-  const markChallengeEntrySubmitted = useAppStore((s) => s.markChallengeEntrySubmitted);
   const { trackCommunityPostCreated } = useAnalytics();
   const [posting, setPosting] = React.useState(false);
   const [draft, setDraft] = React.useState<ShareGlazeDraft | null>(null);
   const [showPreview, setShowPreview] = React.useState(true);
-  const [challenges, setChallenges] = React.useState<BackendChallenge[]>([]);
   const sheetHeight = useModalSheetHeight(0.84);
 
   React.useEffect(() => {
@@ -121,12 +117,6 @@ export function ShareGlazeRecipeSheet({
       setDraft(saved ?? buildDefaultShareDraft(glaze, linkedPieces));
       setShowPreview(true);
     })();
-
-    if (isSignedIn) {
-      apiListChallenges()
-        .then((items) => setChallenges(items ?? []))
-        .catch(() => setChallenges([]));
-    }
 
     return () => {
       mounted = false;
@@ -188,21 +178,6 @@ export function ShareGlazeRecipeSheet({
         assetIds,
       );
 
-      if (draft.challengeId) {
-        const linkedPiece = draft.linkedPieceId
-          ? linkedPieces.find((p) => p.id === draft.linkedPieceId)
-          : undefined;
-        try {
-          await apiSubmitChallengeEntry(draft.challengeId, {
-            note: caption.trim().slice(0, 280),
-            piece_id: linkedPiece?.backendId,
-          });
-          markChallengeEntrySubmitted();
-        } catch {
-          showToast('Posted to feed, challenge entry failed', 'error');
-        }
-      }
-
       await clearShareDraft(glaze.id);
       markPostCreated();
       trackCommunityPostCreated({
@@ -228,7 +203,6 @@ export function ShareGlazeRecipeSheet({
   };
 
   const displayName = glaze ? stripGlazeVersionSuffix(glaze.name) || glaze.name : '';
-  const activeChallenge = challenges[0] ?? null;
   const pieceOptions = linkedPieces.filter((p) => !p.deleted);
 
   return (
@@ -244,7 +218,7 @@ export function ShareGlazeRecipeSheet({
             Share to Community
           </Text>
           <Text className="text-sm text-muted-foreground mt-1.5 leading-5">
-            Craft your post, attach a photo, and optionally enter the active challenge.
+            Craft your post and attach a photo. Challenge entries go through the Challenges tab.
           </Text>
         </ModalSheetHeader>
 
@@ -308,7 +282,10 @@ export function ShareGlazeRecipeSheet({
                   </FormField>
                 </FormSectionCard>
 
-                <FormSectionCard title="Post options">
+                <FormSectionCard
+                  title="Post options"
+                  last={!draft.attachPhoto && pieceOptions.length === 0}
+                >
                   <FormField label="Options" nested first last>
                   <View className="flex-row flex-wrap gap-2">
                     <ToggleChip
@@ -349,7 +326,7 @@ export function ShareGlazeRecipeSheet({
                 </FormSectionCard>
 
                 {draft.attachPhoto ? (
-                  <FormSectionCard title="Photo source">
+                  <FormSectionCard title="Photo source" last={pieceOptions.length === 0}>
                     <FormField label="Source" nested first last>
                     <View className="flex-row flex-wrap gap-2">
                       <ToggleChip
@@ -375,7 +352,7 @@ export function ShareGlazeRecipeSheet({
                 ) : null}
 
                 {pieceOptions.length > 0 ? (
-                  <FormSectionCard title="Linked piece" subtitle="Show which pot wore this glaze.">
+                  <FormSectionCard title="Linked piece" subtitle="Show which pot wore this glaze." last>
                     <FormField label="Piece" nested first last>
                     <ScrollView
                       horizontal
@@ -412,55 +389,6 @@ export function ShareGlazeRecipeSheet({
                     </FormField>
                   </FormSectionCard>
                 ) : null}
-
-                {activeChallenge ? (
-                  <FormSectionCard
-                    title="Monthly challenge"
-                    subtitle={`Enter "${challengeDisplayName(activeChallenge)}" with this post.`}
-                  >
-                    <FormField label="Challenge entry" nested first last>
-                    <ToggleChip
-                      label={
-                        draft.challengeId === activeChallenge.id
-                          ? 'Entering challenge'
-                          : 'Enter challenge'
-                      }
-                      active={draft.challengeId === activeChallenge.id}
-                      onPress={() =>
-                        patchDraft({
-                          challengeId:
-                            draft.challengeId === activeChallenge.id ? null : activeChallenge.id,
-                        })
-                      }
-                    />
-                    </FormField>
-                  </FormSectionCard>
-                ) : null}
-
-                <FormSectionCard title="Hashtags" subtitle="Space-separated tags for discoverability." last>
-                  <FormField label="Tags" nested first last>
-                  <TextInput
-                    value={draft.hashtags}
-                    onChangeText={(hashtags) => patchDraft({ hashtags })}
-                    placeholder="#glazerecipe #potterylife"
-                    placeholderTextColor="hsl(24 10% 65%)"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    maxLength={120}
-                    style={{
-                      borderWidth: 1,
-                      borderColor: 'hsl(24 15% 88%)',
-                      borderRadius: 16,
-                      paddingHorizontal: 14,
-                      paddingVertical: 12,
-                      fontSize: 14,
-                      lineHeight: 20,
-                      color: 'hsl(24 25% 15%)',
-                      backgroundColor: 'hsl(40 40% 98%)',
-                    }}
-                  />
-                  </FormField>
-                </FormSectionCard>
 
                 <View className="flex-row items-center justify-between mb-3">
                   <TouchableOpacity onPress={() => setShowPreview((v) => !v)} activeOpacity={0.75}>

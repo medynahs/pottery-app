@@ -7,6 +7,5 @@ export function buildPieceSharePreset(piece: Piece): CommunityPostComposerPreset
     kind: 'piece_journal',
     pieceId: piece.id,
     photoUri: resolvePieceJournalPhoto(piece),
-    includeChallengeTag: true,
   };
 }

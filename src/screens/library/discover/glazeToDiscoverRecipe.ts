@@ -1,7 +1,7 @@
 import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
 import { glazeCardColor } from '@/src/screens/library/atlas/helpers';
 import { resolveGlazePhotoUri } from '@/src/screens/glazes/glazePieceLink';
-import { estimateRecipeCostPer100g } from './recipes';
+import { estimateRecipeCostPer100g } from './recipeCost';
 import type { DiscoverRecipe, RecipeIngredient } from './types';
 import { normalizeCone } from './types';
 

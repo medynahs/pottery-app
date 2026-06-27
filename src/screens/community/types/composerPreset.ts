@@ -10,8 +10,4 @@ export type CommunityPostComposerPreset = {
   cone?: string;
   photoUri?: string;
   caption?: string;
-  challengeId?: string;
-  challengeTitle?: string;
-  includeChallengeTag?: boolean;
-  askTopic?: 'glaze' | 'firing' | 'general';
 };

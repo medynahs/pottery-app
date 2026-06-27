@@ -16,6 +16,7 @@ import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RecipeIngredients } from './RecipeIngredients';
 import { getDiscoverRecipe, isDiscoverRecipeSaved } from './recipeLookup';
+import { useDiscoverCatalog } from './useDiscoverCatalog';
 import { discoverGlazeToLibraryItem } from './saveDiscoverGlaze';
 import { SaveCollectionSheet } from './SaveCollectionSheet';
 
@@ -31,8 +32,14 @@ export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string })
 
   const [saveSheetOpen, setSaveSheetOpen] = React.useState(false);
 
+  const catalogQuery = useDiscoverCatalog({
+    glazes,
+    authorName: user.name?.trim() || 'My Studio',
+  });
+
   const recipe = getDiscoverRecipe(
     recipeId,
+    catalogQuery.data,
     glazes,
     user.name?.trim() || 'My Studio',
   );

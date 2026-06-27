@@ -1,16 +1,19 @@
 import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
-import { buildDevDiscoverRecipes, devDiscoverSourceGlazeId } from './glazeToDiscoverRecipe';
-import { DISCOVER_INSPIRATIONS } from './inspirations';
-import { DISCOVER_RECIPES } from './recipes';
+import {
+  buildDevDiscoverRecipes,
+  devDiscoverSourceGlazeId,
+} from './glazeToDiscoverRecipe';
+import type { DiscoverCatalog } from './useDiscoverCatalog';
 import type { DiscoverInspiration, DiscoverRecipe } from './types';
 
 export function getDiscoverRecipe(
   id: string,
+  catalog: DiscoverCatalog | undefined,
   glazes: GlazeLibraryItem[] = [],
   authorName?: string,
 ): DiscoverRecipe | undefined {
-  const staticRecipe = DISCOVER_RECIPES.find((recipe) => recipe.id === id);
-  if (staticRecipe) return staticRecipe;
+  const apiRecipe = catalog?.recipes.find((recipe) => recipe.id === id);
+  if (apiRecipe) return apiRecipe;
 
   const sourceGlazeId = devDiscoverSourceGlazeId(id);
   if (!sourceGlazeId) return undefined;
@@ -19,8 +22,11 @@ export function getDiscoverRecipe(
   return devRecipe?.id === id ? devRecipe : undefined;
 }
 
-export function getDiscoverInspiration(id: string): DiscoverInspiration | undefined {
-  return DISCOVER_INSPIRATIONS.find((i) => i.id === id);
+export function getDiscoverInspiration(
+  id: string,
+  catalog: DiscoverCatalog | undefined,
+): DiscoverInspiration | undefined {
+  return catalog?.inspirations.find((i) => i.id === id);
 }
 
 export function isDiscoverRecipeSaved(

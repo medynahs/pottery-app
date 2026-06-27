@@ -12,6 +12,16 @@ export type CommunityPostMeta = {
     pieceId: number;
     pieceName: string;
   };
+  /** @deprecated V1 — legacy posts only; generic composer no longer writes this */
+  linkedPiece?: {
+    pieceId: number;
+    pieceName: string;
+  };
+  /** @deprecated V1 — legacy posts only; generic composer no longer writes this */
+  linkedGlaze?: {
+    glazeId: string;
+    glazeName: string;
+  };
   kilnFiring?: {
     firingId: string;
     firingName: string;
@@ -23,7 +33,8 @@ export type CommunityPostMeta = {
   challenge?: {
     challengeId: string;
     title: string;
-    hashtag: string;
+    /** @deprecated Legacy posts only — not written for new posts */
+    hashtag?: string;
   };
   ask?: {
     topic?: 'glaze' | 'firing' | 'general';

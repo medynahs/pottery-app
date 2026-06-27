@@ -1,4 +1,6 @@
 import { EmptyState } from '@/src/components/EmptyState';
+import { InlineErrorCard } from '@/src/components/InlineErrorCard';
+import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
 import { Text } from '@/src/components/ui/text';
 import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import { useAppStore } from '@/src/store';
@@ -7,7 +9,6 @@ import { Plus } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import {
-  buildDiscoverCatalog,
   collectDiscoverBrands,
   itemMatchesFilters,
   itemMatchesSearch,
@@ -17,6 +18,7 @@ import { DiscoverGrid } from './discover/DiscoverGrid';
 import { FilterPanel, SearchBar } from './discover/FilterPanel';
 import { isDiscoverRecipeSaved } from './discover/recipeLookup';
 import { comboUsesOwnedGlaze } from './discover/products';
+import { useDiscoverCatalog } from './discover/useDiscoverCatalog';
 import {
   type BrandFilter,
   type ColorFilter,
@@ -34,27 +36,26 @@ export default function GlazeDiscoverScreen() {
 
   const [devSheetOpen, setDevSheetOpen] = React.useState(false);
 
-  const catalog = React.useMemo(
-    () =>
-      buildDiscoverCatalog({
-        glazes,
-        devDiscoverGlazeIds,
-        authorName: user.name?.trim() || 'My Studio',
-      }),
-    [glazes, devDiscoverGlazeIds, user.name],
-  );
+  const catalogQuery = useDiscoverCatalog({
+    glazes,
+    devDiscoverGlazeIds,
+    authorName: user.name?.trim() || 'My Studio',
+  });
 
-  const brandOptions = React.useMemo(() => collectDiscoverBrands(catalog), [catalog]);
+  const catalog = catalogQuery.data;
+  const catalogItems = catalog?.items ?? [];
+
+  const brandOptions = React.useMemo(() => collectDiscoverBrands(catalogItems), [catalogItems]);
 
   const savedRecipeIds = React.useMemo(() => {
     const ids = new Set<string>();
-    for (const item of catalog) {
+    for (const item of catalogItems) {
       if (item.kind === 'recipe' && isDiscoverRecipeSaved(item.recipe.id, glazes)) {
         ids.add(item.recipe.id);
       }
     }
     return ids;
-  }, [catalog, glazes]);
+  }, [catalogItems, glazes]);
 
   const [search, setSearch] = React.useState('');
   const [showFilters, setShowFilters] = React.useState(false);
@@ -76,7 +77,7 @@ export default function GlazeDiscoverScreen() {
 
   const filteredItems = React.useMemo(
     () =>
-      catalog.filter((item) => {
+      catalogItems.filter((item) => {
         return (
           itemMatchesSearch(item, search)
           && itemMatchesFilters(item, {
@@ -91,7 +92,7 @@ export default function GlazeDiscoverScreen() {
         );
       }),
     [
-      catalog,
+      catalogItems,
       search,
       coneFilter,
       finishFilter,
@@ -178,21 +179,44 @@ export default function GlazeDiscoverScreen() {
           ) : null}
         </View>
 
-        {filteredItems.length === 0 ? (
+        {catalogQuery.isLoading ? (
+          <View className="px-6 gap-3">
+            <SkeletonLeaderboardRow />
+            <SkeletonLeaderboardRow />
+            <SkeletonLeaderboardRow />
+          </View>
+        ) : null}
+
+        {!catalogQuery.isLoading && catalogQuery.isError ? (
           <View className="px-6">
-            <EmptyState
-              title="No matches"
-              description="Try a different brand, cone, or search term."
+            <InlineErrorCard
+              message="Could not load the Discover catalog."
+              onRetry={() => void catalogQuery.refetch()}
             />
           </View>
-        ) : (
+        ) : null}
+
+        {!catalogQuery.isLoading && !catalogQuery.isError && filteredItems.length === 0 ? (
+          <View className="px-6">
+            <EmptyState
+              title={catalogItems.length === 0 ? 'Catalog coming soon' : 'No matches'}
+              description={
+                catalogItems.length === 0
+                  ? 'Curated recipes and combos will appear here once published.'
+                  : 'Try a different brand, cone, or search term.'
+              }
+            />
+          </View>
+        ) : null}
+
+        {!catalogQuery.isLoading && !catalogQuery.isError && filteredItems.length > 0 ? (
           <DiscoverGrid
             items={filteredItems}
             savedRecipeIds={savedRecipeIds}
             ownedGlazeIds={ownedComboIds(filteredItems, glazes)}
             onPressItem={openItem}
           />
-        )}
+        ) : null}
       </ScrollView>
     </View>
   );

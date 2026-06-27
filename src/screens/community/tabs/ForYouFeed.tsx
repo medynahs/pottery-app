@@ -7,19 +7,18 @@ import { CommunitySeedTipCard } from '@/src/screens/community/components/Communi
 import { CommunityWelcomeHub } from '@/src/screens/community/components/CommunityWelcomeHub';
 import { POTTERY_NOOK_SEED_TIPS } from '@/src/screens/community/data/communitySeedContent';
 import { useCommunityPolls } from '@/src/screens/community/hooks/useCommunityPolls';
+import {
+  FOR_YOU_FEED_QUERY_KEY,
+  fetchFriendsFeedPage,
+  useForYouFeed,
+  type ForYouFeedSnapshot,
+} from '@/src/screens/community/hooks/useForYouFeed';
 import { useAppStore, useVisiblePieces } from '@/src/store';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { isSparseCommunityFeed } from '@/src/utils/communityFeedMerge';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
-import {
-  apiGetDiscoverFeed,
-  apiGetFeed,
-  apiListMyPosts,
-  type BackendFeedPost,
-} from '../../../services/community';
-import {
-  isSparseCommunityFeed,
-  mergeForYouFeedPosts,
-} from '@/src/utils/communityFeedMerge';
+import type { BackendFeedPost } from '../../../services/community';
 import { FeedPostCard } from '../components/FeedPostCard';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -43,111 +42,68 @@ export function ForYouFeed({
   onBrowseDiscover,
   onCreatePost,
 }: Props) {
-  const isSignedIn = useAppStore((s) => s.isSignedIn);
-
+  const queryClient = useQueryClient();
   const backendUserId = useAppStore((s) => s.backendUserId);
-  const communityFeedRevision = useAppStore((s) => s.communityFeedRevision);
   const pieces = useVisiblePieces();
   const hasPieces = pieces.length > 0;
 
-  const [posts, setPosts] = useState<BackendFeedPost[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const feedQuery = useForYouFeed(refreshKey);
+  const { polls, vote: votePoll } = useCommunityPolls(refreshKey);
+
+  const [extraPosts, setExtraPosts] = useState<BackendFeedPost[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [discoverAvailable, setDiscoverAvailable] = useState(false);
 
-  const { polls, vote: votePoll, reload: reloadPolls } = useCommunityPolls();
+  const snapshot = feedQuery.data;
+  const posts = [...(snapshot?.posts ?? []), ...extraPosts];
+  const discoverAvailable = snapshot?.discoverAvailable ?? false;
+  const isLoading = feedQuery.isLoading;
+  const isRefreshing = feedQuery.isFetching && !feedQuery.isLoading;
+  const error =
+    feedQuery.error instanceof Error ? feedQuery.error.message : feedQuery.error ? 'Failed to load feed' : null;
 
-  const isRefreshRef = useRef(false);
+  useEffect(() => {
+    if (!snapshot) return;
+    setExtraPosts([]);
+    setNextCursor(snapshot.nextCursor);
+  }, [snapshot]);
 
-  const handlePostDeleted = useCallback((postId: string) => {
-    setPosts((prev) => prev.filter((p) => p.id !== postId));
-  }, []);
+  useEffect(() => {
+    onRefreshingChange(isRefreshing);
+  }, [isRefreshing, onRefreshingChange]);
 
-  const fetchFeed = useCallback(
-    async (cursor?: string) => {
-      if (!isSignedIn) {
-        setIsLoading(false);
-        return;
-      }
-      const isFirstPage = !cursor;
-      if (isFirstPage) {
-        if (isRefreshRef.current) {
-          onRefreshingChange(true);
-        } else {
-          setIsLoading(true);
-        }
-        setError(null);
-      } else {
-        setIsLoadingMore(true);
-      }
-      try {
-        const friendsPage = await apiGetFeed({ limit: 20, cursor });
-        const friendsPosts = friendsPage.items ?? friendsPage.posts ?? [];
-
-        let merged = friendsPosts;
-        if (isFirstPage) {
-          const [myPage, discoverPage] = await Promise.all([
-            apiListMyPosts({ limit: 20 }).catch(() => null),
-            apiGetDiscoverFeed({ limit: 20 }),
-          ]);
-          const myPosts = myPage?.items ?? myPage?.posts ?? [];
-          const discoverPosts = discoverPage?.items ?? discoverPage?.posts ?? [];
-          setDiscoverAvailable(discoverPosts.length > 0);
-          merged = mergeForYouFeedPosts(myPosts, discoverPosts, friendsPosts);
-        }
-
-        if (isFirstPage) {
-          setPosts(merged);
-        } else {
-          setPosts((prev) => {
-            const seen = new Set(prev.map((post) => post.id));
-            const next = [...prev];
-            friendsPosts.forEach((post) => {
-              if (!seen.has(post.id)) {
-                seen.add(post.id);
-                next.push(post);
-              }
-            });
-            return next;
-          });
-        }
-        setNextCursor(friendsPage.next_cursor);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to load feed';
-        if (isFirstPage) setError(msg);
-      } finally {
-        setIsLoading(false);
-        setIsLoadingMore(false);
-        onRefreshingChange(false);
-        isRefreshRef.current = false;
-      }
+  const handlePostDeleted = useCallback(
+    (postId: string) => {
+      queryClient.setQueryData<ForYouFeedSnapshot>(FOR_YOU_FEED_QUERY_KEY, (prev) =>
+        prev ? { ...prev, posts: prev.posts.filter((post) => post.id !== postId) } : prev,
+      );
+      setExtraPosts((prev) => prev.filter((post) => post.id !== postId));
     },
-    [onRefreshingChange],
+    [queryClient],
   );
 
-  useEffect(() => {
-    fetchFeed();
-    void reloadPolls();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn]);
-
-  useEffect(() => {
-    if (refreshKey === 0) return;
-    isRefreshRef.current = true;
-    fetchFeed();
-    void reloadPolls();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey]);
-
-  useEffect(() => {
-    if (communityFeedRevision === 0) return;
-    isRefreshRef.current = true;
-    fetchFeed();
-    void reloadPolls();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [communityFeedRevision]);
+  const fetchMore = useCallback(async () => {
+    if (!nextCursor || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const page = await fetchFriendsFeedPage(nextCursor);
+      const friendsPosts = page.items ?? page.posts ?? [];
+      setExtraPosts((prev) => {
+        const seen = new Set([...(snapshot?.posts ?? []), ...prev].map((post) => post.id));
+        const next = [...prev];
+        friendsPosts.forEach((post) => {
+          if (!seen.has(post.id)) {
+            seen.add(post.id);
+            next.push(post);
+          }
+        });
+        return next;
+      });
+      setNextCursor(page.next_cursor);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, nextCursor, snapshot?.posts]);
 
   const showSeedContent = !isLoading && !error && isSparseCommunityFeed(posts);
   const othersPosts = posts.filter((p) => !backendUserId || p.user_id !== backendUserId);
@@ -166,7 +122,7 @@ export function ForYouFeed({
       )}
 
       {!isLoading && error && (
-        <InlineErrorCard message={error} onRetry={() => fetchFeed()} />
+        <InlineErrorCard message={error} onRetry={() => void feedQuery.refetch()} />
       )}
 
       {!isLoading && !error && polls.length > 0 ? (
@@ -178,7 +134,6 @@ export function ForYouFeed({
               options={poll.options}
               votedOptionId={poll.votedOptionId}
               totalVotes={poll.totalVotes}
-              isDemo={poll.isDemo}
               onVote={(optionId) => votePoll(poll, optionId)}
             />
           ))}
@@ -220,7 +175,7 @@ export function ForYouFeed({
 
       {!isLoading && !error && nextCursor && (
         <TouchableOpacity
-          onPress={() => fetchFeed(nextCursor)}
+          onPress={() => void fetchMore()}
           disabled={isLoadingMore}
           className="py-3 rounded-2xl border border-border bg-card items-center"
           activeOpacity={0.7}

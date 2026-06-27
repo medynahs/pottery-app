@@ -95,7 +95,7 @@
 | # | Status | Ticket | Acceptance |
 |---|--------|--------|------------|
 | 3 | ✅ | Password reset screen | `app/forgot-password.tsx` |
-| 4 | 🟡 | Password reset BE (Ory) | FE wired → [BACKEND P1-1](./BACKEND-TASKS.md) |
+| 4 | ✅ | Password reset BE (Ory) | FE wired and BE working
 | 5 | ✅ | Real account deletion call | `DELETE /users/me` + logout |
 | 6 | ✅ | DELETE /users/me + revive grace | Soft-delete; `AccountDeletedGate` on 403 `account_deleted` |
 
@@ -175,7 +175,6 @@ All tracked in [`BACKEND-TASKS.md`](./BACKEND-TASKS.md) P0-6 through P1-7.
 
 ## 📊 Analytics — frontend (7)
 
-Local computation only — no new BE.
 
 | # | Status | Ticket | Acceptance |
 |---|--------|--------|------------|
@@ -185,7 +184,6 @@ Local computation only — no new BE.
 | 33 | ✅ | Avg time in stage | |
 | 34 | ✅ | Clay body usage | |
 | 35 | ✅ | Glaze usage | |
-| 36 | ❌ | XP / badge progress summary | Shared utility with Journey |
 
 ---
 
@@ -384,9 +382,6 @@ Detailed phase tracking for major tabs. V1 ticket numbers above take precedence 
 
 ## Community challenge (mock → real API)
 
-**Mock:** `src/screens/community/mock/`  
-**Wire when:** [BACKEND P0-8, P0-9, P1-6](./BACKEND-TASKS.md)
-
 | Screen | Replace mock with |
 |--------|-------------------|
 | Challenges tab | `GET /challenges` + phase/status |
@@ -403,8 +398,5 @@ Remove `ChallengePhaseDevBar` in production once API drives `status`.
 | File | Purpose |
 |------|---------|
 | **FRONTEND.md** (this file) | V1 tickets, decisions, FE roadmaps |
-| **BACKEND.md** | API overview, sync patterns, deployment status |
-| **BACKEND-TASKS.md** | Prioritized backend backlog (P0 → P2) |
 | **README.md** | Project setup + doc index |
 
-**Retired files (merged June 2026):** `TICKETS.md`, `GLAZE-TAB-TASKS.md`, `GLAZE-TAB-BACKEND-TASKS.md`, `KILN-TAB-TASKS.md`, `PROFILE-BACKEND-TASKS.md`, `COMMUNITY-CHALLENGE-BACKEND-TASKS.md`

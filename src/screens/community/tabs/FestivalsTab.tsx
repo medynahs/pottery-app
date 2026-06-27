@@ -39,14 +39,12 @@ import { useMockChallengeStore } from '@/src/screens/community/mock/mockChalleng
 import type { ChallengePhase } from '@/src/screens/community/types';
 import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
 import { buildCommunityPostMeta, embedCommunityPostMeta } from '@/src/screens/community/utils/communityPostPayload';
-import { challengeHashtag } from '@/src/screens/community/utils/challengeTag';
 import { cacheProfilePost } from '@/src/screens/overview/profile/utils/profilePostCache';
+import { useChallengesQuery, usePatchChallengesCache, useRefreshChallenges } from '@/src/screens/community/hooks/useChallengesQuery';
 import {
-  apiListChallenges,
   apiSubmitChallengeEntry,
   apiWithdrawChallengeEntry,
   challengeJoinErrorMessage,
-  type BackendChallenge,
 } from '@/src/services/challenges';
 import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
 import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
@@ -63,7 +61,7 @@ import {
   Trophy,
   Users,
 } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -307,7 +305,7 @@ function ChallengeHero({
         {previewMode ? (
           <View className="mt-1">
             <Text className="text-xs leading-relaxed mb-3" style={{ color: COMMUNITY_THEME.inkSoft }}>
-              Make on theme, share a photo on the feed with the challenge tag, and check back for voting once the live challenge hub is enabled.
+              Make on theme and check back here when the next live challenge opens — join and submit your entry from this tab.
             </Text>
             <PrimaryButton label={primaryLabel} onPress={onPrimaryPress} />
           </View>
@@ -510,12 +508,10 @@ export function ChallengesTab({
   onBrowseHallOfFame,
   onEntrySubmitted,
   onChallengeLeft,
-  onShareChallengePost,
 }: {
   onBrowseHallOfFame?: () => void;
   onEntrySubmitted?: (meta: { emoji: string; challengeName: string }) => void;
   onChallengeLeft?: (meta: { emoji: string; challengeName: string }) => void;
-  onShareChallengePost?: () => void;
 }) {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
 
@@ -524,12 +520,23 @@ export function ChallengesTab({
   const markChallengeEntrySubmitted = useAppStore((s) => s.markChallengeEntrySubmitted);
   const router = useRouter();
   const mock = useMockChallengeStore();
+  const challengesQuery = useChallengesQuery();
+  const patchChallengesCache = usePatchChallengesCache();
+  const refreshChallenges = useRefreshChallenges();
 
-  const [challengeApi, setChallengeApi] = useState<BackendChallenge | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const challengeApi = useMemo(
+    () => pickPrimaryChallenge(challengesQuery.data ?? []),
+    [challengesQuery.data],
+  );
+  const loading = challengesQuery.isLoading && !challengesQuery.data;
+  const error =
+    __DEV__ && challengesQuery.error instanceof Error
+      ? challengesQuery.error.message
+      : __DEV__ && challengesQuery.error
+        ? 'Failed to load challenges'
+        : null;
   const [submitting, setSubmitting] = useState(false);
-  const [apiEntryId, setApiEntryId] = useState<string | null>(null);
+  const apiEntryId = challengeEntryId(challengeApi);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
@@ -576,7 +583,7 @@ export function ChallengesTab({
   }, [phase, isMock, mock, challengeApi]);
 
   const primaryLabel = isPreviewOnly
-    ? 'Share with challenge tag'
+    ? 'Next challenge soon'
     : isMock
       ? mock.getPrimaryCta()
       : getPrimaryCtaLabel(phase, joined, hasSubmitted);
@@ -595,43 +602,6 @@ export function ChallengesTab({
       params: { challengeId: challenge.id },
     } as never);
   };
-
-  const load = useCallback(async (options?: { silent?: boolean }) => {
-    if (!isSignedIn) {
-      setChallengeApi(null);
-      setApiEntryId(null);
-      setLoading(false);
-      return;
-    }
-
-    if (!options?.silent) {
-      setLoading(true);
-    }
-    setError(null);
-    try {
-      const items = await apiListChallenges();
-      const primary = pickPrimaryChallenge(items);
-      if (!primary && items.length > 0) {
-        console.warn('[FestivalsTab] challenges returned but none passed active filter:', items.map((i) => ({ id: i.id, status: i.status })));
-      }
-      setChallengeApi(primary);
-      setApiEntryId(challengeEntryId(primary));
-    } catch (err) {
-      setChallengeApi(null);
-      setApiEntryId(null);
-      if (__DEV__) {
-        setError(err instanceof Error ? err.message : 'Failed to load challenges');
-      }
-    } finally {
-      if (!options?.silent) {
-        setLoading(false);
-      }
-    }
-  }, [isSignedIn]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   const signUpFestival = useMemo(() => {
     if (isMock) return ACTIVE_FESTIVAL;
@@ -664,21 +634,15 @@ export function ChallengesTab({
         ...(trackId ? { track_id: trackId } : {}),
         note: 'Joined from Pottery Life app',
       });
-      setApiEntryId(entry.id);
-      setChallengeApi((prev) =>
-        prev
-          ? {
-              ...prev,
-              is_joined: true,
-              track_id: trackId ?? entry.track_id ?? null,
-              my_entry_id: entry.id,
-              has_submitted: false,
-            }
-          : null,
-      );
+      patchChallengesCache(challengeApi.id, {
+        is_joined: true,
+        track_id: trackId ?? entry.track_id ?? null,
+        my_entry_id: entry.id,
+        has_submitted: false,
+      });
       setSignUpOpen(false);
       showToast('You joined the challenge!', 'success');
-      void load({ silent: true });
+      refreshChallenges();
     } catch (err) {
       showToast(challengeJoinErrorMessage(err), 'error');
     } finally {
@@ -688,7 +652,7 @@ export function ChallengesTab({
 
   const handlePrimaryPress = () => {
     if (isPreviewOnly) {
-      onShareChallengePost?.();
+      showToast('No active challenge right now — check back soon!', 'success');
       return;
     }
 
@@ -752,7 +716,6 @@ export function ChallengesTab({
         challenge: {
           challengeId: challengeApi.id,
           title: challengeApi.name,
-          hashtag: challengeHashtag(challengeApi.name),
         },
       });
       const content = embedCommunityPostMeta(payload.note, meta);
@@ -770,11 +733,15 @@ export function ChallengesTab({
         note: payload.note,
         post_id: postId,
       });
-      setApiEntryId(entry.id);
+      patchChallengesCache(challengeApi.id, {
+        is_joined: true,
+        my_entry_id: entry.id,
+        has_submitted: true,
+      });
       markChallengeEntrySubmitted();
       setSubmitOpen(false);
       onEntrySubmitted?.({ emoji: challenge.emoji ?? '🏆', challengeName: challenge.title });
-      void load();
+      refreshChallenges();
     } catch (err) {
       const message =
         err instanceof CommunityUploadError || err instanceof Error
@@ -807,20 +774,14 @@ export function ChallengesTab({
     setLeaving(true);
     try {
       await apiWithdrawChallengeEntry(challengeApi.id, apiEntryId);
-      setApiEntryId(null);
-      setChallengeApi((prev) =>
-        prev
-          ? {
-              ...prev,
-              is_joined: false,
-              track_id: null,
-              my_entry_id: null,
-              has_submitted: false,
-            }
-          : null,
-      );
+      patchChallengesCache(challengeApi.id, {
+        is_joined: false,
+        track_id: null,
+        my_entry_id: null,
+        has_submitted: false,
+      });
       notifyChallengeLeft();
-      void load({ silent: true });
+      refreshChallenges();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not leave challenge';
       showToast(message, 'error');
@@ -845,7 +806,7 @@ export function ChallengesTab({
   }
 
   if (error && isMock) {
-    return <InlineErrorCard message={error} onRetry={() => { void load(); }} />;
+    return <InlineErrorCard message={error} onRetry={() => { void challengesQuery.refetch(); }} />;
   }
 
   return (

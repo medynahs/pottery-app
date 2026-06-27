@@ -20,6 +20,10 @@ export type ForYouFeedSnapshot = {
   discoverAvailable: boolean;
 };
 
+export async function fetchFriendsFeedPage(cursor?: string): Promise<FeedPage> {
+  return fetchFeedPageSafe('GET /users/me/feed', () => apiGetFeed({ limit: 20, cursor }));
+}
+
 function isFeedServerError(error: unknown): boolean {
   return error instanceof CommunityApiError && error.status === 500;
 }
@@ -44,9 +48,7 @@ async function fetchFeedPageSafe(
 }
 
 async function fetchForYouFeedFirstPage(): Promise<ForYouFeedSnapshot> {
-  const friendsPage = await fetchFeedPageSafe('GET /users/me/feed', () =>
-    apiGetFeed({ limit: 20 }),
-  );
+  const friendsPage = await fetchFriendsFeedPage();
   const friendsPosts = friendsPage.items ?? friendsPage.posts ?? [];
 
   const [myPage, discoverPage] = await Promise.all([
@@ -76,7 +78,8 @@ export function useForYouFeed(refreshKey: number) {
     queryKey: FOR_YOU_FEED_QUERY_KEY,
     queryFn: () => fetchForYouFeedFirstPage(),
     enabled: isSignedIn,
-    staleTime: 60 * 1000,
+    staleTime: 2 * 60 * 1000,
+    placeholderData: (previous) => previous,
     retry: (failureCount, error) => {
       if (isRateLimited(error)) return failureCount < 4;
       return failureCount < 1;

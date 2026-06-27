@@ -6,11 +6,15 @@ import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
 import { ChallengeTrackTabs } from '@/src/screens/community/components/challenge/ChallengePhaseUI';
 import { ChallengeEntryCard } from '@/src/screens/community/components/challenge/ChallengeEntryCard';
 import { ACTIVE_FESTIVAL } from '@/src/screens/community/data';
-import { trackTitle } from '@/src/screens/community/mock/challengeMockData';
 import { useMockChallengeStore } from '@/src/screens/community/mock/mockChallengeStore';
 import type { ChallengeEntryDisplay } from '@/src/screens/community/types';
 import { resolveChallengePhase } from '@/src/screens/community/utils/challengePhase';
 import { backendEntryToDisplay } from '@/src/screens/community/utils/challengeWinners';
+import {
+  fallbackFestivalTrackTitle,
+  resolveChallengeTracks,
+  trackTitleFromChallenge,
+} from '@/src/screens/community/utils/challengeTracks';
 import {
   isMockChallengeId,
   MOCK_UNDERWATER_CHALLENGE,
@@ -20,6 +24,7 @@ import {
   apiGetChallengeEntries,
   apiVoteChallengeEntry,
   challengeDisplayName,
+  type BackendChallenge,
 } from '@/src/services/challenges';
 import { useAppStore } from '@/src/store';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -45,6 +50,7 @@ export default function ChallengeGalleryScreen() {
   const [apiTitle, setApiTitle] = useState<string | null>(null);
   const [apiPhase, setApiPhase] = useState<'open' | 'voting' | 'closed'>('open');
   const [apiEntries, setApiEntries] = useState<ChallengeEntryDisplay[]>([]);
+  const [apiChallenge, setApiChallenge] = useState<BackendChallenge | null>(null);
   const [apiVotesByTrack, setApiVotesByTrack] = useState<Record<string, string>>({});
   const [activeTrackId, setActiveTrackId] = useState(ACTIVE_FESTIVAL.tracks[0]?.id ?? 'beginner');
 
@@ -52,16 +58,18 @@ export default function ChallengeGalleryScreen() {
   const canVote = phase === 'voting';
   const title = isMock ? MOCK_UNDERWATER_CHALLENGE.title : apiTitle ?? 'Challenge gallery';
 
-  const tracks = useMemo(
-    () => ACTIVE_FESTIVAL.tracks.map((t) => ({ id: t.id, title: t.title })),
-    [],
-  );
+  const tracks = useMemo(() => {
+    if (isMock) {
+      return ACTIVE_FESTIVAL.tracks.map((t) => ({ id: t.id, title: t.title }));
+    }
+    return resolveChallengeTracks(apiChallenge).map((t) => ({ id: t.id, title: t.title }));
+  }, [isMock, apiChallenge]);
 
   const mockEntries = useMemo(() => {
     return mock.getEntriesForTrack(activeTrackId).map((entry) => ({
       id: entry.id,
       trackId: entry.trackId,
-      trackTitle: trackTitle(entry.trackId),
+      trackTitle: fallbackFestivalTrackTitle(entry.trackId),
       artistName: entry.artistName,
       studioName: entry.studioName,
       pieceTitle: entry.pieceTitle,
@@ -93,13 +101,25 @@ export default function ChallengeGalleryScreen() {
     setError(null);
     try {
       const challenge = await apiGetChallenge(challengeId);
+      setApiChallenge(challenge);
       setApiTitle(challengeDisplayName(challenge));
       setApiPhase(resolveChallengePhase(challenge));
 
-      const rawEntries = await apiGetChallengeEntries(challengeId, activeTrackId);
+      const challengeTracks = resolveChallengeTracks(challenge);
+      const trackId = challengeTracks.some((t) => t.id === activeTrackId)
+        ? activeTrackId
+        : challengeTracks[0]?.id ?? activeTrackId;
+      if (trackId !== activeTrackId) {
+        setActiveTrackId(trackId);
+      }
+
+      const rawEntries = await apiGetChallengeEntries(challengeId, trackId);
       setApiEntries(
         rawEntries.map((entry) =>
-          backendEntryToDisplay(entry, entry.track_id ? trackTitle(entry.track_id) : 'Submission'),
+          backendEntryToDisplay(
+            entry,
+            entry.track_id ? trackTitleFromChallenge(challenge, entry.track_id) : 'Submission',
+          ),
         ),
       );
 

@@ -1,4 +1,3 @@
-import { challengeHashtag } from '@/src/screens/community/utils/challengeTag';
 import type { Piece } from '@/src/types/pieces';
 
 export type CommunityPostKind =
@@ -126,13 +125,6 @@ export function buildAskCommunityCaption(userCaption: string, topic: AskTopic): 
   return lines.join('\n').trim();
 }
 
-export function appendChallengeHashtag(content: string, challengeTitle: string | null): string {
-  if (!challengeTitle?.trim()) return content;
-  const tag = challengeHashtag(challengeTitle);
-  if (content.includes(tag)) return content;
-  return `${content.trim()}\n\n${tag}`;
-}
-
 export function composeCommunityPostContent(input: {
   kind: CommunityPostKind;
   caption: string;
@@ -143,8 +135,6 @@ export function composeCommunityPostContent(input: {
   firingType?: string;
   cone?: string;
   askTopic?: AskTopic;
-  challengeTitle?: string | null;
-  includeChallengeTag?: boolean;
 }): string {
   const {
     kind,
@@ -156,8 +146,6 @@ export function composeCommunityPostContent(input: {
     firingType = 'bisque',
     cone = '6',
     askTopic = 'general',
-    challengeTitle,
-    includeChallengeTag,
   } = input;
   const trimmed = caption.trim();
 
@@ -177,18 +165,9 @@ export function composeCommunityPostContent(input: {
   } else if (kind === 'studio_notice') {
     body = trimmed ? `📌 Studio notice\n\n${trimmed}` : '📌 Studio notice';
   } else {
-    const lines: string[] = [];
-    if (linkedPiece) lines.push(`Piece: ${linkedPiece.name}`);
-    if (trimmed) {
-      if (lines.length > 0) lines.push('');
-      lines.push(trimmed);
-    }
-    body = lines.join('\n').trim();
+    body = trimmed;
   }
 
-  if (includeChallengeTag && challengeTitle) {
-    body = appendChallengeHashtag(body, challengeTitle);
-  }
   return body;
 }
 

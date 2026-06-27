@@ -9,7 +9,7 @@ import { SaveCommunityGlazeSheet } from '@/src/screens/community/components/Save
 import { parseCommunityPostMeta } from '@/src/screens/community/utils/communityPostPayload';
 import {
   communityPostAskTopicLabel,
-  communityPostChallengeHashtag,
+  communityPostChallengeTitle,
   communityPostKindLabel,
   stripCommunityPostPayload,
 } from '@/src/screens/community/utils/feedDisplayContent';
@@ -50,7 +50,7 @@ function timeAgo(isoDate: string): string {
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 interface Props {
-  post: BackendFeedPost;
+  post: BackendFeedPost;
   onDeleted?: (postId: string) => void;
 }
 
@@ -84,8 +84,8 @@ export function FeedPostCard({ post, onDeleted }: Props) {
     () => (post.content ? communityPostAskTopicLabel(post.content) : null),
     [post.content],
   );
-  const challengeHashtag = React.useMemo(
-    () => (post.content ? communityPostChallengeHashtag(post.content) : null),
+  const challengeTitle = React.useMemo(
+    () => (post.content ? communityPostChallengeTitle(post.content) : null),
     [post.content],
   );
   const postMeta = React.useMemo(
@@ -291,9 +291,9 @@ export function FeedPostCard({ post, onDeleted }: Props) {
                 <Text className="text-[10px] font-semibold text-blue-700">{askTopicLabel}</Text>
               </View>
             ) : null}
-            {challengeHashtag ? (
+            {challengeTitle ? (
               <View className="self-start px-2.5 py-1 rounded-full bg-primary/10 border border-primary/25">
-                <Text className="text-[10px] font-semibold text-primary">{challengeHashtag}</Text>
+                <Text className="text-[10px] font-semibold text-primary">{challengeTitle}</Text>
               </View>
             ) : null}
           </View>
@@ -302,7 +302,7 @@ export function FeedPostCard({ post, onDeleted }: Props) {
           <Text className="text-sm text-foreground leading-relaxed mb-3">{displayContent}</Text>
         ) : null}
 
-        {pieceJournalPayload ? (
+        {isOwnPost && pieceJournalPayload ? (
           <TouchableOpacity
             onPress={() => router.push(`/(tabs)/pieces?openJournalPieceId=${pieceJournalPayload.pieceId}` as never)}
             activeOpacity={0.82}
@@ -321,14 +321,21 @@ export function FeedPostCard({ post, onDeleted }: Props) {
           >
             {kilnPieceChips.map((pieceId, index) => {
               const name = postMeta?.kilnFiring?.pieceNames[index] ?? `Piece ${pieceId}`;
+              const chip = (
+                <View className="px-3 py-2 rounded-full border border-orange-300/50 bg-orange-50">
+                  <Text className="text-xs font-semibold text-orange-900">{name}</Text>
+                </View>
+              );
+              if (!isOwnPost) {
+                return <View key={`${pieceId}-${index}`}>{chip}</View>;
+              }
               return (
                 <TouchableOpacity
                   key={`${pieceId}-${index}`}
                   onPress={() => router.push(`/(tabs)/pieces?openJournalPieceId=${pieceId}` as never)}
                   activeOpacity={0.82}
-                  className="px-3 py-2 rounded-full border border-orange-300/50 bg-orange-50"
                 >
-                  <Text className="text-xs font-semibold text-orange-900">{name}</Text>
+                  {chip}
                 </TouchableOpacity>
               );
             })}

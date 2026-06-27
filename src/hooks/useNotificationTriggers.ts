@@ -1,8 +1,10 @@
 import * as Notifications from 'expo-notifications';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
+import { CHALLENGES_QUERY_KEY } from '../screens/community/hooks/useChallengesQuery';
 import { generateStudioRhythmSuggestions } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import { getTodayMissionKey } from '../screens/overview/utils/missionDate';
-import { apiListChallenges, challengeDisplayName, type BackendChallenge } from '../services/challenges';
+import { apiListChallenges, challengeDisplayName } from '../services/challenges';
 import {
     cancelScheduledNotificationsByKind,
     scheduleKilnkinNotification,
@@ -48,6 +50,7 @@ function nextLocalHour(hour: number): Date {
 }
 
 export function useNotificationTriggers() {
+  const queryClient = useQueryClient();
   const notificationPrefs = useAppStore((s) => s.notificationPrefs);
   const kilnkinCompanion = useAppStore((s) => s.kilnkinCompanion);
   const isSignedIn = useAppStore((s) => s.isSignedIn);
@@ -320,7 +323,11 @@ export function useNotificationTriggers() {
 
     const scheduleChallengeDeadlineReminder = async () => {
       try {
-        const challenges = await apiListChallenges();
+        const challenges = await queryClient.fetchQuery({
+          queryKey: CHALLENGES_QUERY_KEY,
+          queryFn: () => apiListChallenges(),
+          staleTime: 5 * 60 * 1000,
+        });
         if (cancelled) return;
 
         const now = Date.now();
@@ -365,5 +372,5 @@ export function useNotificationTriggers() {
     return () => {
       cancelled = true;
     };
-  }, [kilnkinCompanion, notificationPrefs.challengeDeadline]);
+  }, [kilnkinCompanion, notificationPrefs.challengeDeadline, isSignedIn, queryClient]);
 }

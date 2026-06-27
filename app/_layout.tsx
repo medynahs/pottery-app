@@ -18,7 +18,8 @@ if (!isExpoGo) {
 }
 
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { createAppQueryClient } from '@/src/lib/queryClient';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -200,7 +201,7 @@ function AppShell() {
   );
 }
 
-const queryClient = new QueryClient();
+const queryClient = createAppQueryClient();
 
 export default function RootLayout() {
   useDevLocalDataReset();

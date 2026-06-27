@@ -204,7 +204,6 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
       cone: liveFiring.cone,
       pieceIds: liveFiring.pieceIds,
       caption: liveFiring.resultNotes ?? '',
-      includeChallengeTag: true,
     });
   }, [liveFiring, shareToCommunity]);
 

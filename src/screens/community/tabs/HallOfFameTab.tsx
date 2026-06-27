@@ -6,12 +6,11 @@ import {
   HallOfFameFeaturedHero,
   HallOfFameWinnerCard,
 } from '@/src/screens/community/components/challenge/HallOfFameWinnerCard';
+import { useHallOfFameArchive } from '@/src/screens/community/hooks/useHallOfFameArchive';
 import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
 import { hallOfFameWinnerToDisplay } from '@/src/screens/community/utils/challengeWinners';
-import { apiGetHallOfFameArchive } from '@/src/services/community';
-import { useAppStore } from '@/src/store';
 import { Trophy } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View } from 'react-native';
 
 type ArchiveCycle = {
@@ -23,61 +22,34 @@ type ArchiveCycle = {
 };
 
 export function HallOfFameTab() {
-  const isSignedIn = useAppStore((s) => s.isSignedIn);
+  const { data: archive, isLoading, error, refetch, isFetching } = useHallOfFameArchive();
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [cycles, setCycles] = useState<ArchiveCycle[]>([]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (!isSignedIn) {
-        setCycles([]);
-        return;
-      }
-
-      const archive = await apiGetHallOfFameArchive();
-      if (archive?.cycles?.length) {
-        setCycles(
-          archive.cycles.map((cycle) => ({
-            id: cycle.challenge_id,
-            label: cycle.label?.trim() || 'Past challenge',
-            title: cycle.title,
-            emoji: cycle.emoji?.trim() || '🏆',
-            winners: cycle.winners.map((w) =>
-              hallOfFameWinnerToDisplay(w, {
-                challenge_id: cycle.challenge_id,
-                title: cycle.title,
-                label: cycle.label,
-                emoji: cycle.emoji,
-              }),
-            ),
-          })),
-        );
-        return;
-      }
-
-      setCycles([]);
-    } catch {
-      setError('Could not load Hall of Fame winners.');
-      setCycles([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [isSignedIn]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const cycles = useMemo((): ArchiveCycle[] => {
+    if (!archive?.cycles?.length) return [];
+    return archive.cycles.map((cycle) => ({
+      id: cycle.challenge_id,
+      label: cycle.label?.trim() || 'Past challenge',
+      title: cycle.title,
+      emoji: cycle.emoji?.trim() || '🏆',
+      winners: cycle.winners.map((w) =>
+        hallOfFameWinnerToDisplay(w, {
+          challenge_id: cycle.challenge_id,
+          title: cycle.title,
+          label: cycle.label,
+          emoji: cycle.emoji,
+        }),
+      ),
+    }));
+  }, [archive]);
 
   const featuredWinner = useMemo(() => {
     const firstCycle = cycles[0];
     return firstCycle?.winners[0] ?? null;
   }, [cycles]);
 
-  if (loading) {
+  const errorMessage = error ? 'Could not load Hall of Fame winners.' : null;
+
+  if (isLoading && !archive) {
     return (
       <View className="gap-2">
         {[0, 1, 2].map((i) => (
@@ -107,8 +79,8 @@ export function HallOfFameTab() {
         </Text>
       </View>
 
-      {error ? (
-        <InlineErrorCard message={error} onRetry={() => void load()} />
+      {errorMessage ? (
+        <InlineErrorCard message={errorMessage} onRetry={() => void refetch()} />
       ) : null}
 
       {featuredWinner ? <HallOfFameFeaturedHero winner={featuredWinner} /> : null}
@@ -127,7 +99,7 @@ export function HallOfFameTab() {
         </View>
       ))}
 
-      {!featuredWinner && !error ? (
+      {!featuredWinner && !errorMessage && !isFetching ? (
         <Text className="text-sm text-center py-8" style={{ color: COMMUNITY_THEME.inkMuted }}>
           Winners will appear here after the first challenge closes.
         </Text>

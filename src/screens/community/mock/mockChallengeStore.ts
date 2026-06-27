@@ -2,8 +2,8 @@ import { useSyncExternalStore } from 'react';
 import {
   MOCK_CHALLENGE_ENTRIES,
   MOCK_HALL_OF_FAME_CYCLES,
-  trackTitle,
 } from './challengeMockData';
+import { fallbackFestivalTrackTitle } from '@/src/screens/community/utils/challengeTracks';
 import type { ChallengePhase, MockChallengeEntry, MockHallOfFameWinner } from './challengeMockTypes';
 
 type MockChallengeState = {
@@ -164,7 +164,7 @@ export function useMockChallengeStore() {
     getPhaseLabel: () => getPhaseLabel(snapshot.phase),
     getPrimaryCta: () =>
       getPrimaryCta(snapshot.phase, snapshot.joinedTrackId !== null, snapshot.hasSubmitted),
-    trackTitle,
+    trackTitle: fallbackFestivalTrackTitle,
   };
 }
 

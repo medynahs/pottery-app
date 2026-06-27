@@ -14,7 +14,6 @@ type CommunityPollCardProps = {
   options: PollOptionView[];
   votedOptionId: string | null;
   totalVotes: number;
-  isDemo?: boolean;
   onVote: (optionId: string) => Promise<void> | void;
 };
 
@@ -23,7 +22,6 @@ export function CommunityPollCard({
   options,
   votedOptionId,
   totalVotes,
-  isDemo = false,
   onVote,
 }: CommunityPollCardProps) {
   const [voting, setVoting] = useState<string | null>(null);
@@ -45,11 +43,6 @@ export function CommunityPollCard({
       <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
         Community Poll
       </Text>
-      {isDemo ? (
-        <Text className="text-[10px] text-primary font-semibold mb-2">
-          From Pottery Nook · vote locally until live polls are enabled
-        </Text>
-      ) : null}
       <Text className="text-sm font-bold text-foreground mb-3">{question}</Text>
       <View className="gap-2">
         {options.map((opt) => {

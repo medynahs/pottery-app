@@ -14,7 +14,6 @@ import { Bell, Pencil, Users } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
 import { MainTabHeader } from '../../components/MainTabHeader';
-import { ACTIVE_CHALLENGE } from './data';
 import { CreatePostSheet } from './components/CreatePostSheet';
 import { FilterBar } from './components/FilterBar';
 import { ChallengesTab } from './tabs/FestivalsTab';
@@ -84,22 +83,12 @@ export default function CommunityScreen() {
   }, [openComposer, pieces]);
 
   const handleAskCommunity = useCallback(() => {
-    openComposer({ kind: 'ask_community', askTopic: 'glaze' });
     setCreatePostVisible(true);
-  }, [openComposer]);
+  }, []);
 
   const handleBrowseDiscover = useCallback(() => {
     router.push('/(tabs)/library?tab=discover' as never);
   }, [router]);
-
-  const handleShareChallengePost = useCallback(() => {
-    openComposer({
-      kind: 'update',
-      includeChallengeTag: true,
-      challengeTitle: ACTIVE_CHALLENGE.title,
-    });
-    setCreatePostVisible(true);
-  }, [openComposer]);
 
   if (!isSignedIn) return <CommunityUnauthenticatedGate />;
 
@@ -121,7 +110,6 @@ export default function CommunityScreen() {
             onBrowseHallOfFame={() => setActiveFilter('Hall of Fame')}
             onEntrySubmitted={(meta) => setCeremony({ kind: 'submitted', ...meta })}
             onChallengeLeft={(meta) => setCeremony({ kind: 'left', ...meta })}
-            onShareChallengePost={handleShareChallengePost}
           />
         );
       case 'Hall of Fame':

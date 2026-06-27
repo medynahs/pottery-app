@@ -1,7 +1,7 @@
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import {
-  communityPostChallengeHashtag,
+  communityPostChallengeTitle,
   communityPostKindLabel,
   stripCommunityPostPayload,
 } from '@/src/screens/community/utils/feedDisplayContent';
@@ -47,7 +47,7 @@ function usePostDisplay(post: BackendFeedPost) {
     const displayContent = post.content ? stripCommunityPostPayload(post.content) : '';
     const meta = post.content ? parseCommunityPostMeta(post.content) : null;
     const pieceJournal = meta?.pieceJournal ?? null;
-    const challengeTag = post.content ? communityPostChallengeHashtag(post.content) : null;
+    const challengeTitle = post.content ? communityPostChallengeTitle(post.content) : null;
     const firstAsset = post.assets?.[0];
     const style = postKindStyle(kindLabel);
 
@@ -55,7 +55,7 @@ function usePostDisplay(post: BackendFeedPost) {
       kindLabel,
       displayContent,
       pieceJournal,
-      challengeTag,
+      challengeTitle,
       firstAsset,
       style,
     };
@@ -70,7 +70,8 @@ export function ProfilePostCard({
   onPress?: () => void;
 }) {
   const router = useRouter();
-  const { kindLabel, displayContent, pieceJournal, challengeTag, firstAsset, style } = usePostDisplay(post);
+  const { kindLabel, displayContent, pieceJournal, challengeTitle, firstAsset, style } =
+    usePostDisplay(post);
 
   const handleOpenJournal = () => {
     if (!pieceJournal) return;
@@ -119,9 +120,9 @@ export function ProfilePostCard({
             </Text>
           ) : null}
 
-          {challengeTag ? (
+          {challengeTitle ? (
             <Text className="text-[10px] font-semibold mb-2 text-primary">
-              {challengeTag}
+              Challenge · {challengeTitle}
             </Text>
           ) : null}
 

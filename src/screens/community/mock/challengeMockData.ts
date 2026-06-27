@@ -237,18 +237,3 @@ export const MOCK_HALL_OF_FAME_CYCLES: MockHallOfFameCycle[] = [
   },
 ];
 
-export function findMockWinner(winnerId: string): MockHallOfFameWinner | null {
-  for (const cycle of MOCK_HALL_OF_FAME_CYCLES) {
-    const winner = cycle.winners.find((w) => w.id === winnerId);
-    if (winner) return winner;
-  }
-  return null;
-}
-
-export function findMockEntry(entryId: string): MockChallengeEntry | null {
-  return MOCK_CHALLENGE_ENTRIES.find((e) => e.id === entryId) ?? null;
-}
-
-export function trackTitle(trackId: string): string {
-  return ACTIVE_FESTIVAL.tracks.find((t) => t.id === trackId)?.title ?? trackId;
-}
