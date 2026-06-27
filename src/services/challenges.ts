@@ -95,17 +95,13 @@ export function challengeDisplayName(
   return challenge.name?.trim() || 'Community Challenge';
 }
 
-function authedFetch(
-  sessionToken: string,
-  url: string,
+function authedFetch(url: string,
   init?: RequestInit,
 ): Promise<Response> {
   return fetch(url, {
-    ...init,
-    credentials: 'omit',
+    ...init,
     headers: {
-      Accept: 'application/json',
-      'X-Session-Token': sessionToken,
+      Accept: 'application/json',
       ...(init?.headers ?? {}),
     },
   });
@@ -120,9 +116,8 @@ function toJsonOrNull<T>(res: Response): Promise<T | null> {
 
 /** GET /challenges */
 export async function apiListChallenges(
-  sessionToken: string,
-): Promise<BackendChallenge[]> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/challenges`);
+  ): Promise<BackendChallenge[]> {
+  const res = await authedFetch(`${API_BASE}/challenges`);
   if (!res.ok) {
     console.warn(`[challenges] GET /challenges -> HTTP ${res.status}`);
     throw new Error(`GET /challenges -> ${res.status}`);
@@ -141,10 +136,9 @@ export async function apiListChallenges(
 
 /** GET /challenges/{id} */
 export async function apiGetChallenge(
-  sessionToken: string,
-  challengeId: string,
+    challengeId: string,
 ): Promise<BackendChallenge> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/challenges/${challengeId}`);
+  const res = await authedFetch(`${API_BASE}/challenges/${challengeId}`);
   if (!res.ok) {
     throw new Error(`GET /challenges/${challengeId} -> ${res.status}`);
   }
@@ -153,11 +147,10 @@ export async function apiGetChallenge(
 
 /** POST /challenges/{id}/entries */
 export async function apiSubmitChallengeEntry(
-  sessionToken: string,
-  challengeId: string,
+    challengeId: string,
   payload: SubmitChallengeEntryPayload,
 ): Promise<BackendChallengeEntry> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/challenges/${challengeId}/entries`, {
+  const res = await authedFetch(`${API_BASE}/challenges/${challengeId}/entries`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -170,12 +163,10 @@ export async function apiSubmitChallengeEntry(
 
 /** DELETE /challenges/{id}/entries/{entryId} */
 export async function apiWithdrawChallengeEntry(
-  sessionToken: string,
-  challengeId: string,
+    challengeId: string,
   entryId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/challenges/${challengeId}/entries/${entryId}`,
     { method: 'DELETE' },
   );
@@ -186,13 +177,11 @@ export async function apiWithdrawChallengeEntry(
 
 /** GET /challenges/{id}/entries */
 export async function apiGetChallengeEntries(
-  sessionToken: string,
-  challengeId: string,
+    challengeId: string,
   trackId?: string,
 ): Promise<BackendChallengeEntry[]> {
   const query = trackId ? `?track_id=${encodeURIComponent(trackId)}` : '';
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/challenges/${challengeId}/entries${query}`,
   );
   if (!res.ok) {
@@ -207,11 +196,10 @@ export async function apiGetChallengeEntries(
 
 /** POST /challenges/{id}/votes */
 export async function apiVoteChallengeEntry(
-  sessionToken: string,
-  challengeId: string,
+    challengeId: string,
   entryId: string,
 ): Promise<void> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/challenges/${challengeId}/votes`, {
+  const res = await authedFetch(`${API_BASE}/challenges/${challengeId}/votes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ entry_id: entryId } satisfies VoteChallengePayload),
@@ -223,10 +211,9 @@ export async function apiVoteChallengeEntry(
 
 /** GET /challenges/{id}/leaderboard */
 export async function apiGetChallengeLeaderboard(
-  sessionToken: string,
-  challengeId: string,
+    challengeId: string,
 ): Promise<BackendChallengeLeaderboardEntry[]> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/challenges/${challengeId}/leaderboard`);
+  const res = await authedFetch(`${API_BASE}/challenges/${challengeId}/leaderboard`);
   if (!res.ok) {
     throw new Error(`GET /challenges/${challengeId}/leaderboard -> ${res.status}`);
   }

@@ -34,7 +34,8 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const { height } = useWindowDimensions();
 
   const kilns = useAppStore((state) => state.kilns);
-  const sessionToken = useAppStore((state) => state.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const pieces = useVisiblePieces();
   const shareToCommunity = useCommunityComposer();
   const showToast = useAppStore((state) => state.showToast);
@@ -194,7 +195,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   }, []);
 
   const handleShareFiring = React.useCallback(() => {
-    if (!sessionToken || !liveFiring) return;
+    if (!isSignedIn || !liveFiring) return;
     shareToCommunity({
       kind: 'kiln_firing',
       firingId: liveFiring.id,
@@ -205,7 +206,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
       caption: liveFiring.resultNotes ?? '',
       includeChallengeTag: true,
     });
-  }, [liveFiring, sessionToken, shareToCommunity]);
+  }, [liveFiring, shareToCommunity]);
 
   if (!firing || !liveFiring) return null;
 
@@ -307,7 +308,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
       durationMs={3000}
       onDismiss={() => {
         setFiringCeremonyVisible(false);
-        if (sessionToken && !hasCreatedPost && !kilnShareHintShown) {
+        if (isSignedIn && !hasCreatedPost && !kilnShareHintShown) {
           markKilnShareHintShown();
           showToast('Share this firing to the community — tap the button below', 'success');
         }
@@ -418,7 +419,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
             }
             glazeReadyPieces={glazeReadyPieces}
             onAssignAllGlazeReady={assignAllGlazeReady}
-            onShareToCommunity={isCompleted && sessionToken ? handleShareFiring : undefined}
+            onShareToCommunity={isCompleted && isSignedIn ? handleShareFiring : undefined}
           />
         </ScrollView>
       </ModalCard>

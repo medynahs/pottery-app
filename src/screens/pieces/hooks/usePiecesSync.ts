@@ -368,14 +368,13 @@ function applyBackendAckToLocalPiece(localId: number, backendPiece: BackendPiece
 }
 
 async function pushDirtyBackendPiece(
-  sessionToken: string,
   piece: Piece,
 ): Promise<'updated' | 'deleted' | 'failed'> {
   if (!piece.backendId) return 'failed';
 
   try {
     if (piece.deleted) {
-      await apiDeletePiece(sessionToken, piece.backendId);
+      await apiDeletePiece(piece.backendId);
       setPiecesIfChanged(useAppStore.getState().pieces.filter((p) => p.id !== piece.id));
       return 'deleted';
     }
@@ -383,7 +382,7 @@ async function pushDirtyBackendPiece(
     const glazes = useAppStore.getState().glazes;
     const meta = buildPieceMetadata(piece);
     const pricing = buildPiecePricing(piece);
-    const backendPiece = await apiUpdatePiece(sessionToken, piece.backendId, {
+    const backendPiece = await apiUpdatePiece(piece.backendId, {
       name: piece.name,
       status: localStageToApiStatus(piece.stage),
       local_stage: piece.stage,
@@ -415,9 +414,9 @@ function mergePiecesIntoStore(backendPieces: BackendPiece[], localPieces: Piece[
 export async function flushPiecesSync(): Promise<boolean> {
   if (syncInFlight) return false;
 
-  const { sessionToken, pieces, setIsSyncing, setLastSyncedAt } =
+  const { pieces, setIsSyncing, setLastSyncedAt } =
     useAppStore.getState();
-  if (!sessionToken) return false;
+  if (!isSignedIn) return false;
 
   const toSync = piecesNeedingSync(pieces);
   if (toSync.length === 0) return true;
@@ -430,7 +429,7 @@ export async function flushPiecesSync(): Promise<boolean> {
     const needsBulkSync = toSync.filter((piece) => !piece.backendId);
 
     for (const piece of backendLinked) {
-      const result = await pushDirtyBackendPiece(sessionToken, piece);
+      const result = await pushDirtyBackendPiece(piece);
       if (result === 'failed') {
         useAppStore.getState().showToast('Could not sync piece changes', 'error');
         return false;
@@ -441,7 +440,7 @@ export async function flushPiecesSync(): Promise<boolean> {
       const snapshots = needsBulkSync.slice(0, MAX_SYNC_BATCH).map(pieceToSnapshot);
       if (__DEV__) console.log(`[pieces:sync] bulk pushing ${snapshots.length} snapshot(s)`);
 
-      const response = await apiSyncPieces(sessionToken, { pieces: snapshots });
+      const response = await apiSyncPieces({ pieces: snapshots });
       setPiecesIfChanged(applySyncResponse(useAppStore.getState().pieces, response));
     }
 
@@ -481,22 +480,23 @@ export function schedulePiecesSync() {
  * into the store, and schedules a push sync for any local-only changes.
  */
 export function usePiecesSync() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
-  const oryIdentityId = useAppStore((s) => s.oryIdentityId);
-  const prevUserId = useRef(oryIdentityId);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
+  
+  const prevUserId = useRef('me');
 
   useEffect(() => {
-    if (prevUserId.current !== oryIdentityId) {
-      prevUserId.current = oryIdentityId;
+    if (false) {
+      prevUserId.current = 'me';
       initialPullMerged = false;
       lastMergedAt = 0;
     }
-  }, [oryIdentityId]);
+  }, ['me']);
 
   const query = useQuery({
-    queryKey: piecesQueryKey(oryIdentityId ?? ''),
-    queryFn: () => apiListPieces(sessionToken!),
-    enabled: !!sessionToken && !!oryIdentityId,
+    queryKey: piecesQueryKey('me'),
+    queryFn: () => apiListPieces(),
+    enabled: isSignedIn,
     staleTime: 2 * 60 * 1000,
     retry: 2,
   });
@@ -527,14 +527,14 @@ export function usePiecesSync() {
 /** Sync status + manual refetch for the Pieces screen (no duplicate query hook). */
 export function usePiecesSyncStatus() {
   const isSyncing = useAppStore((s) => s.isSyncing);
-  const oryIdentityId = useAppStore((s) => s.oryIdentityId);
-  const isFetching = useIsFetching({ queryKey: piecesQueryKey(oryIdentityId ?? '') }) > 0;
+  
+  const isFetching = useIsFetching({ queryKey: piecesQueryKey('me') }) > 0;
   const queryClient = useQueryClient();
 
   const refetchPieces = useCallback(async () => {
-    await queryClient.refetchQueries({ queryKey: piecesQueryKey(oryIdentityId ?? '') });
+    await queryClient.refetchQueries({ queryKey: piecesQueryKey('me') });
     if (hasPendingPiecesSync()) schedulePiecesSync();
-  }, [queryClient, oryIdentityId]);
+  }, [queryClient, 'me']);
 
   return {
     isSyncing: isFetching || isSyncing,
@@ -550,14 +550,15 @@ export interface DeletePieceAssetOptions {
 }
 
 export function useDeletePieceAssetMutation() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ pieceBackendId, assetId }: DeletePieceAssetOptions) => {
-      if (!sessionToken) throw new Error('Not signed in');
+      if (!isSignedIn) throw new Error('Not signed in');
       if (__DEV__) console.log(`[pieces:asset:delete] DELETE asset ${assetId} on piece ${pieceBackendId}`);
-      await apiDeletePieceAsset(sessionToken, pieceBackendId, assetId);
+      await apiDeletePieceAsset(pieceBackendId, assetId);
     },
     onSuccess: (_, { pieceBackendId }) => {
       void queryClient.invalidateQueries({ queryKey: pieceAssetsQueryKey(pieceBackendId) });
@@ -578,12 +579,13 @@ export interface UploadPieceAssetOptions {
 }
 
 export function useUploadPieceAssetMutation() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ pieceBackendId, file, stage, description }: UploadPieceAssetOptions) => {
-      if (!sessionToken) throw new Error('Not signed in');
+      if (!isSignedIn) throw new Error('Not signed in');
       const piece = useAppStore.getState().pieces.find((p) => p.backendId === pieceBackendId);
       if (piece && !canSyncPiecePhotoToCloud(piece, false)) {
         throw new Error('Cloud backup limit reached');
@@ -591,7 +593,7 @@ export function useUploadPieceAssetMutation() {
       const apiStatus: ApiPieceStatus | undefined = stage
         ? (LOCAL_STAGE_TO_API[stage] ?? undefined)
         : undefined;
-      return apiUploadPieceAsset(sessionToken, pieceBackendId, file, apiStatus, description);
+      return apiUploadPieceAsset(pieceBackendId, file, apiStatus, description);
     },
     onSuccess: (_, { pieceBackendId }) => {
       void queryClient.invalidateQueries({ queryKey: pieceAssetsQueryKey(pieceBackendId) });
@@ -615,13 +617,14 @@ export interface UpdatePieceAssetOptions {
 }
 
 export function useUpdatePieceAssetMutation() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ pieceBackendId, assetId, payload }: UpdatePieceAssetOptions) => {
-      if (!sessionToken) throw new Error('Not signed in');
-      return apiUpdatePieceAsset(sessionToken, pieceBackendId, assetId, payload);
+      if (!isSignedIn) throw new Error('Not signed in');
+      return apiUpdatePieceAsset(pieceBackendId, assetId, payload);
     },
     onSuccess: (_, { pieceBackendId }) => {
       void queryClient.invalidateQueries({ queryKey: pieceAssetsQueryKey(pieceBackendId) });

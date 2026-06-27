@@ -139,34 +139,25 @@ export function avatarDataUri(profile: BackendProfile): string | null {
   return profile.avatar_url ?? null;
 }
 
-function authedJson(
-  sessionToken: string,
-  path: string,
-  init?: RequestInit,
-): Promise<Response> {
+function authedJson(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${API_BASE}${path}`, {
     ...init,
-    credentials: 'omit',
     headers: {
       Accept: 'application/json',
-      'X-Session-Token': sessionToken,
       ...(init?.headers ?? {}),
     },
   });
 }
 
-export async function fetchMe(sessionToken: string): Promise<BackendProfile> {
-  const res = await authedJson(sessionToken, '/users/me');
+export async function fetchMe(): Promise<BackendProfile> {
+  const res = await authedJson('/users/me');
   if (!res.ok) throw await apiErrorFromResponse(res, 'fetchMe failed');
   return res.json() as Promise<BackendProfile>;
 }
 
 /** PUT /users/me — partial update of name, studio, location, bio. */
-export async function updateProfile(
-  sessionToken: string,
-  payload: UpdateProfilePayload,
-): Promise<BackendProfile> {
-  const res = await authedJson(sessionToken, '/users/me', {
+export async function updateProfile(payload: UpdateProfilePayload): Promise<BackendProfile> {
+  const res = await authedJson('/users/me', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -185,11 +176,8 @@ export async function updateProfile(
 export const updateMe = updateProfile;
 
 /** PUT /users/me/privacy — profile_public and pieces_public enforcement on share. */
-export async function updatePrivacy(
-  sessionToken: string,
-  payload: UpdatePrivacyPayload,
-): Promise<BackendProfile> {
-  const res = await authedJson(sessionToken, '/users/me/privacy', {
+export async function updatePrivacy(payload: UpdatePrivacyPayload): Promise<BackendProfile> {
+  const res = await authedJson('/users/me/privacy', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -204,27 +192,16 @@ export async function updatePrivacy(
   return res.json() as Promise<BackendProfile>;
 }
 
-/**
- * Soft-deletes the signed-in user's account. The backend sets `is_deleted` and
- * starts a ~1-week grace period. During grace, APIs return 403 `account_deleted`
- * except `POST /users/me/revive`. The Ory session is invalidated on delete.
- */
-export async function deleteAccount(sessionToken: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/users/me`, {
-    method: 'DELETE',
-    credentials: 'omit',
-    headers: { 'X-Session-Token': sessionToken },
-  });
+export async function deleteAccount(): Promise<void> {
+  const res = await fetch(`${API_BASE}/users/me`, { method: 'DELETE' });
   if (!res.ok) throw await apiErrorFromResponse(res, 'Account deletion failed');
 }
 
 async function uploadUserImage(
   kind: 'avatar' | 'cover',
-  sessionToken: string,
   imageUri: string,
   mimeType = 'image/jpeg',
 ): Promise<BackendProfile> {
-  // Strip query params / fragments before extracting extension
   const cleanUri = imageUri.split('?')[0].split('#')[0];
   const ext = cleanUri.split('.').pop() ?? 'jpg';
   const form = new FormData();
@@ -236,9 +213,6 @@ async function uploadUserImage(
 
   const res = await fetch(`${API_BASE}/users/me/${kind}`, {
     method: 'POST',
-    credentials: 'omit',
-    headers: { 'X-Session-Token': sessionToken },
-    // Do NOT set Content-Type, let fetch inject the multipart boundary automatically
     body: form as unknown as BodyInit_,
   });
   if (!res.ok) {
@@ -248,41 +222,24 @@ async function uploadUserImage(
   return res.json() as Promise<BackendProfile>;
 }
 
-export async function uploadAvatar(
-  sessionToken: string,
-  imageUri: string,
-  mimeType = 'image/jpeg',
-): Promise<BackendProfile> {
-  return uploadUserImage('avatar', sessionToken, imageUri, mimeType);
+export async function uploadAvatar(imageUri: string, mimeType = 'image/jpeg'): Promise<BackendProfile> {
+  return uploadUserImage('avatar', imageUri, mimeType);
 }
 
-export async function uploadCover(
-  sessionToken: string,
-  imageUri: string,
-  mimeType = 'image/jpeg',
-): Promise<BackendProfile> {
-  return uploadUserImage('cover', sessionToken, imageUri, mimeType);
+export async function uploadCover(imageUri: string, mimeType = 'image/jpeg'): Promise<BackendProfile> {
+  return uploadUserImage('cover', imageUri, mimeType);
 }
 
-export async function registerPushToken(
-  sessionToken: string,
-  token: string,
-  platform: 'ios' | 'android',
-): Promise<void> {
+export async function registerPushToken(token: string, platform: 'ios' | 'android'): Promise<void> {
   const res = await fetch(`${API_BASE}/users/me/push-tokens`, {
     method: 'POST',
-    credentials: 'omit',
-    headers: { 'X-Session-Token': sessionToken, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, platform }),
   });
   if (!res.ok) throw new ApiError(`registerPushToken failed (${res.status})`, res.status);
 }
 
-export async function reviveAccount(sessionToken: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/users/me/revive`, {
-    method: 'POST',
-    credentials: 'omit',
-    headers: { 'X-Session-Token': sessionToken },
-  });
+export async function reviveAccount(): Promise<void> {
+  const res = await fetch(`${API_BASE}/users/me/revive`, { method: 'POST' });
   if (!res.ok) throw new ApiError(`reviveAccount failed (${res.status})`, res.status);
 }

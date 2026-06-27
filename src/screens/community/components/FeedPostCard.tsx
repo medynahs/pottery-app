@@ -50,12 +50,11 @@ function timeAgo(isoDate: string): string {
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 interface Props {
-  post: BackendFeedPost;
-  sessionToken: string;
+  post: BackendFeedPost;
   onDeleted?: (postId: string) => void;
 }
 
-export function FeedPostCard({ post, sessionToken, onDeleted }: Props) {
+export function FeedPostCard({ post, onDeleted }: Props) {
   const router = useRouter();
   const backendUserId = useAppStore((s) => s.backendUserId);
   const user = useAppStore((s) => s.user);
@@ -164,7 +163,7 @@ export function FeedPostCard({ post, sessionToken, onDeleted }: Props) {
     if (!canSendFriendRequest || requestState !== 'idle') return;
     setRequestState('sending');
     try {
-      await apiSendFriendRequest(sessionToken, post.user_id);
+      await apiSendFriendRequest(post.user_id);
       setRequestState('sent');
       showToast('Friend request sent', 'success');
     } catch {
@@ -177,7 +176,7 @@ export function FeedPostCard({ post, sessionToken, onDeleted }: Props) {
     if (deleting) return;
     setDeleting(true);
     try {
-      await apiDeletePost(sessionToken, post.id);
+      await apiDeletePost(post.id);
       removeCachedProfilePost(post.id);
       markPostDeleted();
       setDeleted(true);
@@ -368,7 +367,6 @@ export function FeedPostCard({ post, sessionToken, onDeleted }: Props) {
 
         <PostReactionBar
           postId={post.id}
-          sessionToken={sessionToken}
           initialCount={post.reaction_count ?? 0}
           initialHasReacted={post.has_reacted}
         />

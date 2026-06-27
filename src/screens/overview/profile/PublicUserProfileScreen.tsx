@@ -85,7 +85,8 @@ type PublicUserProfileScreenProps = {
 export default function PublicUserProfileScreen({ userId }: PublicUserProfileScreenProps) {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const viewerUserId = useAppStore((s) => s.backendUserId);
   const showToast = useAppStore((s) => s.showToast);
 
@@ -96,7 +97,7 @@ export default function PublicUserProfileScreen({ userId }: PublicUserProfileScr
   const [lightboxUri, setLightboxUri] = useState<string | null>(null);
 
   const { status: friendStatus, loading: friendLoading, reload: reloadFriendStatus } =
-    useClayFriendStatus(userId, viewerUserId, sessionToken);
+    useClayFriendStatus(userId, viewerUserId);
 
   const {
     shareMenuVisible,
@@ -112,7 +113,7 @@ export default function PublicUserProfileScreen({ userId }: PublicUserProfileScr
     setError(null);
     setLoading(true);
     try {
-      const data = await apiGetPublicProfile(userId, sessionToken);
+      const data = await apiGetPublicProfile(userId);
       setProfile(data);
     } catch (e) {
       const message =
@@ -124,7 +125,7 @@ export default function PublicUserProfileScreen({ userId }: PublicUserProfileScr
     } finally {
       setLoading(false);
     }
-  }, [sessionToken, userId]);
+  }, [userId]);
 
   useEffect(() => {
     if (friendStatus === 'self') {
@@ -145,7 +146,7 @@ export default function PublicUserProfileScreen({ userId }: PublicUserProfileScr
   }, [width]);
 
   const handleAddFriend = async () => {
-    if (!sessionToken) {
+    if (!isSignedIn) {
       showToast('Sign in to add Clay Friends', 'error');
       router.push('/login' as never);
       return;
@@ -154,7 +155,7 @@ export default function PublicUserProfileScreen({ userId }: PublicUserProfileScr
 
     setRequestSending(true);
     try {
-      await apiSendFriendRequest(sessionToken, userId);
+      await apiSendFriendRequest(userId);
       showToast('Friend request sent', 'success');
       await reloadFriendStatus();
     } catch {
@@ -238,7 +239,7 @@ export default function PublicUserProfileScreen({ userId }: PublicUserProfileScr
               <Text className="text-sm text-muted-foreground mt-1 leading-5">{profile.bio}</Text>
             ) : null}
 
-            {!sessionToken ? (
+            {!isSignedIn ? (
               <TouchableOpacity
                 onPress={() => router.push('/login' as never)}
                 activeOpacity={0.85}

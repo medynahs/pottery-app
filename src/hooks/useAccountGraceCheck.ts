@@ -7,18 +7,18 @@ import { useAppStore } from '../store/appStore';
  * (login, cold-start restore). Complements useCurrentUser's reactive handling.
  */
 export function useAccountGraceCheck() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const setAccountDeletionGrace = useAppStore((s) => s.setAccountDeletionGrace);
 
   useEffect(() => {
-    if (!sessionToken) {
+    if (!isSignedIn) {
       setAccountDeletionGrace(false);
       return;
     }
 
     let cancelled = false;
     void (async () => {
-      const inGrace = await detectAccountDeletionGrace(sessionToken);
+      const inGrace = await detectAccountDeletionGrace();
       if (!cancelled) {
         setAccountDeletionGrace(inGrace);
       }
@@ -27,5 +27,5 @@ export function useAccountGraceCheck() {
     return () => {
       cancelled = true;
     };
-  }, [sessionToken, setAccountDeletionGrace]);
+  }, [setAccountDeletionGrace]);
 }

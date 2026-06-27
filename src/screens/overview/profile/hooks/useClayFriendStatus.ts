@@ -9,8 +9,7 @@ export type ClayFriendStatus = 'self' | 'friend' | 'pending_outgoing' | 'none';
 
 export function useClayFriendStatus(
   targetUserId: string | undefined,
-  viewerUserId: string | null | undefined,
-  sessionToken: string | null | undefined,
+  viewerUserId: string | null | undefined: string | null | undefined,
 ) {
   const [status, setStatus] = useState<ClayFriendStatus>('none');
   const [loading, setLoading] = useState(true);
@@ -22,7 +21,7 @@ export function useClayFriendStatus(
       return;
     }
 
-    if (!viewerUserId || !sessionToken) {
+    if (!viewerUserId || !isSignedIn) {
       setStatus('none');
       setLoading(false);
       return;
@@ -37,8 +36,8 @@ export function useClayFriendStatus(
     setLoading(true);
     try {
       const [friends, outgoing] = await Promise.all([
-        apiListFriends(sessionToken),
-        apiListOutgoingFriendRequests(sessionToken),
+        apiListFriends(),
+        apiListOutgoingFriendRequests(),
       ]);
 
       if ((friends ?? []).some((friend) => friend.id === targetUserId)) {
@@ -55,14 +54,14 @@ export function useClayFriendStatus(
       }
 
       // Incoming requests are handled on Friends tab; viewer can accept there.
-      void apiListIncomingFriendRequests(sessionToken);
+      void apiListIncomingFriendRequests();
       setStatus('none');
     } catch {
       setStatus('none');
     } finally {
       setLoading(false);
     }
-  }, [sessionToken, targetUserId, viewerUserId]);
+  }, [targetUserId, viewerUserId]);
 
   useEffect(() => {
     void reload();

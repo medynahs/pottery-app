@@ -12,14 +12,15 @@ import {
 } from '../utils/profilePostCache';
 
 export function useProfilePosts() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const communityFeedRevision = useAppStore((s) => s.communityFeedRevision);
   const [posts, setPosts] = useState<BackendFeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [isReloading, setIsReloading] = useState(false);
 
   const load = useCallback(async (options?: { background?: boolean }) => {
-    if (!sessionToken) {
+    if (!isSignedIn) {
       setPosts([]);
       setLoading(false);
       return;
@@ -34,7 +35,7 @@ export function useProfilePosts() {
     const cached = getCachedProfilePosts();
 
     try {
-      const page = await apiListMyPosts(sessionToken, { limit: 50 });
+      const page = await apiListMyPosts({ limit: 50 });
       const serverPosts = page.items ?? page.posts ?? [];
       setPosts(mergeProfilePosts(serverPosts, cached));
     } catch (e) {
@@ -53,7 +54,7 @@ export function useProfilePosts() {
       setLoading(false);
       setIsReloading(false);
     }
-  }, [sessionToken]);
+  }, [isSignedIn]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
@@ -68,5 +69,5 @@ export function useProfilePosts() {
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   }, []);
 
-  return { posts, loading, reload, isReloading, sessionToken, removePost };
+  return { posts, loading, reload, isReloading, removePost };
 }

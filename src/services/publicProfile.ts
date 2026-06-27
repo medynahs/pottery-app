@@ -28,17 +28,14 @@ export class PublicProfileApiError extends Error {
   }
 }
 
-function authedFetch(
-  sessionToken: string | null | undefined,
-  url: string,
+function authedFetch(url: string,
   init?: RequestInit,
 ): Promise<Response> {
   return fetch(url, {
     ...init,
     credentials: 'omit',
     headers: {
-      Accept: 'application/json',
-      ...(sessionToken ? { 'X-Session-Token': sessionToken } : {}),
+      Accept: 'application/json',
       ...(init?.headers ?? {}),
     },
   });
@@ -85,11 +82,9 @@ function normalizeProfile(body: Record<string, unknown>): PublicProfile {
  * Public read-only profile for share links. Auth optional.
  */
 export async function apiGetPublicProfile(
-  userId: string,
-  sessionToken?: string | null,
+  userId: string | null,
 ): Promise<PublicProfile> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE}/users/${encodeURIComponent(userId)}/profile`,
   );
 

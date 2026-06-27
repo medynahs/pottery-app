@@ -78,16 +78,11 @@ async function appendPhotoToForm(
 }
 
 async function postMultipartUpload(
-  sessionToken: string,
   form: FormData,
 ): Promise<UploadAssetResponse> {
   const res = await fetch(`${API_BASE}/uploads`, {
     method: 'POST',
-    credentials: 'omit',
-    headers: {
-      Accept: 'application/json',
-      'X-Session-Token': sessionToken,
-    },
+    headers: { Accept: 'application/json' },
     body: form as unknown as BodyInit_,
   });
 
@@ -110,8 +105,8 @@ async function postMultipartUpload(
  * Upload a local or remote image for a community post via multipart POST /uploads.
  */
 export async function uploadPostPhotoAsset(
-  sessionToken: string,
-  photoUri: string,
+  
+    photoUri: string,
 ): Promise<{ assetId: string; publicUrl?: string }> {
   const uri = photoUri?.trim();
   if (!uri) {
@@ -126,13 +121,13 @@ export async function uploadPostPhotoAsset(
 
   let data: UploadAssetResponse;
   try {
-    data = await postMultipartUpload(sessionToken, form);
+    data = await postMultipartUpload(form);
   } catch (err) {
     // Some handlers expect `image` instead of `file` (avatar-style).
     if (err instanceof CommunityUploadError && err.status === 400) {
       const fallback = new FormData();
       await appendPhotoToForm(fallback, uri, 'image', fileName, contentType);
-      data = await postMultipartUpload(sessionToken, fallback);
+      data = await postMultipartUpload(fallback);
     } else {
       throw err;
     }

@@ -3,13 +3,13 @@ import { useAppStore } from '@/src/store';
 import React from 'react';
 
 export function useCanPostStudioNotice() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const userType = useAppStore((s) => s.onboardingProfile.userType);
   const [canPost, setCanPost] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (!sessionToken) {
+    if (!isSignedIn) {
       setCanPost(false);
       return;
     }
@@ -22,7 +22,7 @@ export function useCanPostStudioNotice() {
     let cancelled = false;
     setLoading(true);
 
-    apiListOwnedStudios(sessionToken)
+    apiListOwnedStudios()
       .then((owned) => {
         if (!cancelled) setCanPost((owned?.length ?? 0) > 0);
       })
@@ -36,7 +36,7 @@ export function useCanPostStudioNotice() {
     return () => {
       cancelled = true;
     };
-  }, [sessionToken, userType]);
+  }, [userType]);
 
   return { canPostStudioNotice: canPost, loading };
 }

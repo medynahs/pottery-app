@@ -56,8 +56,7 @@ const MAX_POST_LENGTH = 500;
 type CreatePostSheetProps = {
   visible: boolean;
   preset: CommunityPostComposerPreset | null;
-  onClose: () => void;
-  sessionToken: string;
+  onClose: () => void;
   onPosted: () => void;
 };
 
@@ -90,7 +89,6 @@ export function CreatePostSheet({
   visible,
   preset,
   onClose,
-  sessionToken,
   onPosted,
 }: CreatePostSheetProps) {
   const pieces = useVisiblePieces();
@@ -228,9 +226,9 @@ export function CreatePostSheet({
   }, [canPostStudioNotice, postKind, userType]);
 
   React.useEffect(() => {
-    if (!visible || !sessionToken) return;
+    if (!visible || !isSignedIn) return;
     let cancelled = false;
-    apiListChallenges(sessionToken)
+    apiListChallenges()
       .then((challenges) => {
         if (cancelled) return;
         const active = resolveActiveChallenge(challenges);
@@ -245,7 +243,7 @@ export function CreatePostSheet({
     return () => {
       cancelled = true;
     };
-  }, [visible, sessionToken, preset?.includeChallengeTag]);
+  }, [visible, preset?.includeChallengeTag]);
 
   React.useEffect(() => {
     if (postKind !== 'piece_journal' || !linkedPiece || photoIsCustom) return;
@@ -330,11 +328,11 @@ export function CreatePostSheet({
       let uploadedPhoto: { assetId: string; publicUrl?: string } | null = null;
 
       if (photoUri) {
-        uploadedPhoto = await uploadPostPhotoAsset(sessionToken, photoUri);
+        uploadedPhoto = await uploadPostPhotoAsset(photoUri);
         assetIds.push(uploadedPhoto.assetId);
       }
 
-      const created = await apiCreatePost(sessionToken, {
+      const created = await apiCreatePost({
         content: finalContent,
         asset_ids: assetIds.length > 0 ? assetIds : undefined,
       });
@@ -350,7 +348,7 @@ export function CreatePostSheet({
             : linkedKilnPieces[0]?.id;
         if (entryPieceId != null) {
           try {
-            await apiSubmitChallengeEntry(sessionToken, challengeId, {
+            await apiSubmitChallengeEntry(challengeId, {
               piece_id: String(entryPieceId),
               note: content.trim() || undefined,
             });

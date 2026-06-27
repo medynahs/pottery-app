@@ -111,28 +111,22 @@ export function backendKilnToLocal(b: BackendKiln, existing?: Kiln): Kiln {
 
 // ─── API functions ────────────────────────────────────────────────────────────
 
-function authHeaders(sessionToken: string): HeadersInit_ {
-  return {
-    'X-Session-Token': sessionToken,
-    'Content-Type': 'application/json',
-  };
-}
 
-export async function apiListKilns(sessionToken: string): Promise<BackendKiln[]> {
+
+export async function apiListKilns(): Promise<BackendKiln[]> {
   const response = await fetch(`${API_BASE_URL}/users/me/kilns`, {
-    headers: authHeaders(sessionToken),
+    headers: { 'Content-Type': 'application/json' },
   });
   if (!response.ok) throw new Error(`GET /users/me/kilns → ${response.status}`);
   return response.json() as Promise<BackendKiln[]>;
 }
 
 export async function apiUpsertKiln(
-  sessionToken: string,
   payload: UpsertKilnPayload,
 ): Promise<BackendKiln> {
   const response = await fetch(`${API_BASE_URL}/users/me/kilns`, {
     method: 'POST',
-    headers: authHeaders(sessionToken),
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!response.ok) throw new Error(`POST /users/me/kilns → ${response.status}`);
@@ -140,15 +134,11 @@ export async function apiUpsertKiln(
 }
 
 export async function apiDeleteKiln(
-  sessionToken: string,
   backendId: string,
 ): Promise<void> {
   const response = await fetch(
     `${API_BASE_URL}/users/me/kilns/${encodeURIComponent(backendId)}`,
-    {
-      method: 'DELETE',
-      headers: { 'X-Session-Token': sessionToken },
-    },
+    { method: 'DELETE' },
   );
   if (!response.ok) throw new Error(`DELETE /users/me/kilns/${backendId} → ${response.status}`);
 }

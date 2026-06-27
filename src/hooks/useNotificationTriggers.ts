@@ -50,7 +50,7 @@ function nextLocalHour(hour: number): Date {
 export function useNotificationTriggers() {
   const notificationPrefs = useAppStore((s) => s.notificationPrefs);
   const kilnkinCompanion = useAppStore((s) => s.kilnkinCompanion);
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const firings = useAppStore((s) => s.firings);
   const pieces = useVisiblePieces();
   const rhythm = useAppStore((s) => s.studioRhythm);
@@ -314,13 +314,13 @@ export function useNotificationTriggers() {
       void cancelScheduledNotificationsByKind('challenge-deadline');
       return;
     }
-    if (!sessionToken) return;
+    if (!isSignedIn) return;
 
     let cancelled = false;
 
     const scheduleChallengeDeadlineReminder = async () => {
       try {
-        const challenges = await apiListChallenges(sessionToken);
+        const challenges = await apiListChallenges();
         if (cancelled) return;
 
         const now = Date.now();
@@ -365,5 +365,5 @@ export function useNotificationTriggers() {
     return () => {
       cancelled = true;
     };
-  }, [kilnkinCompanion, notificationPrefs.challengeDeadline, sessionToken]);
+  }, [kilnkinCompanion, notificationPrefs.challengeDeadline]);
 }

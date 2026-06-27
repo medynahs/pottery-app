@@ -181,7 +181,8 @@ function OutgoingRequestRow({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function FriendsTab() {
-  const sessionToken = useAppStore((s) => s.sessionToken)!;
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+!;
 
   const [friends, setFriends] = useState<BackendUser[]>([]);
   const [incoming, setIncoming] = useState<BackendFriendRequest[]>([]);
@@ -197,9 +198,9 @@ export function FriendsTab() {
       setError(null);
       try {
         const [f, inc, out] = await Promise.all([
-          apiListFriends(sessionToken),
-          apiListIncomingFriendRequests(sessionToken),
-          apiListOutgoingFriendRequests(sessionToken),
+          apiListFriends(),
+          apiListIncomingFriendRequests(),
+          apiListOutgoingFriendRequests(),
         ]);
         setFriends(f ?? []);
         setIncoming(inc ?? []);
@@ -211,44 +212,44 @@ export function FriendsTab() {
         setRefreshing(false);
       }
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   useEffect(() => { load(); }, [load]);
 
   const handleRemoveFriend = useCallback(
     async (friendId: string) => {
-      await apiRemoveFriend(sessionToken, friendId);
+      await apiRemoveFriend(friendId);
       setFriends((prev) => prev.filter((f) => f.id !== friendId));
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   const handleAccept = useCallback(
     async (requestId: string) => {
-      await apiAcceptFriendRequest(sessionToken, requestId);
+      await apiAcceptFriendRequest(requestId);
       setIncoming((prev) => prev.filter((r) => r.id !== requestId));
       // Reload friends list to include the newly confirmed friend
-      const updated = await apiListFriends(sessionToken);
+      const updated = await apiListFriends();
       setFriends(updated ?? []);
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   const handleDecline = useCallback(
     async (requestId: string) => {
-      await apiDeclineFriendRequest(sessionToken, requestId);
+      await apiDeclineFriendRequest(requestId);
       setIncoming((prev) => prev.filter((r) => r.id !== requestId));
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   const handleCancel = useCallback(
     async (requestId: string) => {
-      await apiCancelFriendRequest(sessionToken, requestId);
+      await apiCancelFriendRequest(requestId);
       setOutgoing((prev) => prev.filter((r) => r.id !== requestId));
     },
-    [sessionToken],
+    [isSignedIn],
   );
 
   if (isLoading) {

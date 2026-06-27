@@ -13,7 +13,7 @@ import { useProfilePosts } from './hooks/useProfilePosts';
 export default function ProfilePostsArchiveScreen() {
   const router = useRouter();
   const openComposer = useCommunityComposer();
-  const { posts, loading, error, reload, sessionToken, removePost } = useProfilePosts();
+  const { posts, loading, error, reload, removePost } = useProfilePosts();
   const summary = React.useMemo(() => summarizePosts(posts), [posts]);
 
   return (
@@ -59,7 +59,6 @@ export default function ProfilePostsArchiveScreen() {
             <FeedPostCard
               key={post.id}
               post={post}
-              sessionToken={sessionToken ?? ''}
               onDeleted={removePost}
             />
           ))}

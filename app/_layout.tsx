@@ -1,3 +1,7 @@
+import SuperTokens from 'supertokens-react-native';
+import { API_BASE_URL } from '@/src/services';
+SuperTokens.init({ apiDomain: API_BASE_URL, apiBasePath: '/auth' });
+
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';

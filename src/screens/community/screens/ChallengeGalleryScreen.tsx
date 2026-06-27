@@ -32,7 +32,8 @@ export default function ChallengeGalleryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const showToast = useAppStore((s) => s.showToast);
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const mock = useMockChallengeStore();
   const { challengeId: challengeIdParam } = useLocalSearchParams<{ challengeId?: string }>();
 
@@ -77,7 +78,7 @@ export default function ChallengeGalleryScreen() {
     : apiVotesByTrack[activeTrackId] ?? null;
 
   const loadApiGallery = useCallback(async () => {
-    if (!sessionToken || isMock) {
+    if (!isSignedIn || isMock) {
       setLoading(false);
       return;
     }
@@ -91,11 +92,11 @@ export default function ChallengeGalleryScreen() {
     setLoading(true);
     setError(null);
     try {
-      const challenge = await apiGetChallenge(sessionToken, challengeId);
+      const challenge = await apiGetChallenge(challengeId);
       setApiTitle(challengeDisplayName(challenge));
       setApiPhase(resolveChallengePhase(challenge));
 
-      const rawEntries = await apiGetChallengeEntries(sessionToken, challengeId, activeTrackId);
+      const rawEntries = await apiGetChallengeEntries(challengeId, activeTrackId);
       setApiEntries(
         rawEntries.map((entry) =>
           backendEntryToDisplay(entry, entry.track_id ? trackTitle(entry.track_id) : 'Submission'),
@@ -115,7 +116,7 @@ export default function ChallengeGalleryScreen() {
     } finally {
       setLoading(false);
     }
-  }, [sessionToken, isMock, challengeId, activeTrackId]);
+  }, [isMock, challengeId, activeTrackId]);
 
   useEffect(() => {
     void loadApiGallery();
@@ -130,10 +131,10 @@ export default function ChallengeGalleryScreen() {
       return;
     }
 
-    if (!sessionToken) return;
+    if (!isSignedIn) return;
 
     try {
-      await apiVoteChallengeEntry(sessionToken, challengeId, entryId);
+      await apiVoteChallengeEntry(challengeId, entryId);
       setApiVotesByTrack((prev) => ({ ...prev, [activeTrackId]: entryId }));
       setApiEntries((prev) =>
         prev.map((entry) => {

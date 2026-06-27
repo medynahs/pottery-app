@@ -4,6 +4,6 @@ import { useAppStore } from '@/src/store';
 import React from 'react';
 
 export default function ProfileTab() {
-  const isAuthenticated = useAppStore((s) => !!s.sessionToken);
+  const isAuthenticated = useAppStore((s) => s.isSignedIn);
   return isAuthenticated ? <ProfileScreen /> : <AuthLandingScreen />;
 }

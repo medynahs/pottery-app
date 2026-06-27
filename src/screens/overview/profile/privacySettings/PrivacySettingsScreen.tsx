@@ -20,7 +20,8 @@ import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-nat
 
 export default function PrivacySettingsScreen() {
   const router = useRouter();
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const privacyPrefs = useAppStore((s) => s.privacyPrefs);
   const setPrivacyPref = useAppStore((s) => s.setPrivacyPref);
   const pieces = useAppStore((s) => s.pieces);
@@ -43,7 +44,7 @@ export default function PrivacySettingsScreen() {
     const nextPrefs = { ...privacyPrefs, [key]: nextValue };
     setPrivacyPref(key, nextValue);
 
-    if (!sessionToken) return;
+    if (!isSignedIn) return;
 
     setSyncingKey(key);
     try {

@@ -355,13 +355,11 @@ export function localTestToSyncItem(
 
 // ─── Internal helper ─────────────────────────────────────────────────────────
 
-async function authedFetch(sessionToken: string, url: string, init?: RequestInit): Promise<Response> {
+async function authedFetch(url: string, init?: RequestInit): Promise<Response> {
   return fetch(url, {
-    ...init,
-    credentials: 'omit',
+    ...init,
     headers: {
-      Accept: 'application/json',
-      'X-Session-Token': sessionToken,
+      Accept: 'application/json',
       ...(init?.headers ?? {}),
     },
   });
@@ -370,16 +368,18 @@ async function authedFetch(sessionToken: string, url: string, init?: RequestInit
 // ─── Glaze CRUD ─────────────────────────────────────────────────────────────
 
 /** GET /users/me/glazes, list live glazes (each with its images). */
-export async function apiListGlazes(sessionToken: string): Promise<BackendGlaze[]> {
-  const res = await authedFetch(sessionToken, `${API_BASE_URL}/users/me/glazes`);
+export async function apiListGlazes(
+    ): Promise<BackendGlaze[]> {
+  const res = await authedFetch(`${API_BASE_URL}/users/me/glazes`);
   if (!res.ok) throw new Error(`listGlazes failed (${res.status})`);
   const rows = (await res.json()) as RawBackendGlaze[];
   return rows.map(normalizeBackendGlaze);
 }
 
 /** GET /users/me/glazes/tests, list live test tiles across all glazes. */
-export async function apiListGlazeTests(sessionToken: string): Promise<BackendGlazeTest[]> {
-  const res = await authedFetch(sessionToken, `${API_BASE_URL}/users/me/glazes/tests`);
+export async function apiListGlazeTests(
+    ): Promise<BackendGlazeTest[]> {
+  const res = await authedFetch(`${API_BASE_URL}/users/me/glazes/tests`);
   if (!res.ok) throw new Error(`listGlazeTests failed (${res.status})`);
   return res.json() as Promise<BackendGlazeTest[]>;
 }
@@ -389,10 +389,9 @@ export async function apiListGlazeTests(sessionToken: string): Promise<BackendGl
  * server returns the authoritative live lists plus a client_ref → backend id map.
  */
 export async function apiSyncGlazes(
-  sessionToken: string,
-  payload: SyncGlazesRequest,
+    payload: SyncGlazesRequest,
 ): Promise<SyncGlazesResponse> {
-  const res = await authedFetch(sessionToken, `${API_BASE_URL}/users/me/glazes/sync`, {
+  const res = await authedFetch(`${API_BASE_URL}/users/me/glazes/sync`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -407,8 +406,7 @@ export async function apiSyncGlazes(
 
 /** POST /users/me/glazes/:glaze_id/images, upload an image under a gallery type. */
 export async function apiUploadGlazeImage(
-  sessionToken: string,
-  glazeBackendId: string,
+    glazeBackendId: string,
   file: { uri: string; name: string; type: string },
   imageType: GlazeImageType,
 ): Promise<GlazeImageUploadResponse> {
@@ -417,7 +415,6 @@ export async function apiUploadGlazeImage(
   form.append('type', imageType);
 
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE_URL}/users/me/glazes/${glazeBackendId}/images`,
     {
       method: 'POST',
@@ -431,12 +428,10 @@ export async function apiUploadGlazeImage(
 
 /** DELETE /users/me/glazes/:glaze_id/images/:image_id, remove an image record. */
 export async function apiDeleteGlazeImage(
-  sessionToken: string,
-  glazeBackendId: string,
+    glazeBackendId: string,
   imageId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    sessionToken,
     `${API_BASE_URL}/users/me/glazes/${glazeBackendId}/images/${imageId}`,
     { method: 'DELETE' },
   );

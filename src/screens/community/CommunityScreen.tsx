@@ -36,7 +36,8 @@ function CommunityUnauthenticatedGate() {
 }
 
 export default function CommunityScreen() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const composerPreset = useAppStore((s) => s.communityPostComposerPreset);
   const clearComposerPreset = useAppStore((s) => s.clearCommunityPostComposerPreset);
   const hasCreatedPost = useAppStore((s) => s.hasCreatedPost);
@@ -58,12 +59,12 @@ export default function CommunityScreen() {
   }, [composerPreset]);
 
   useEffect(() => {
-    if (!sessionToken || hasOpenedCommunityTab) return;
+    if (!isSignedIn || hasOpenedCommunityTab) return;
     if (!hasCreatedPost) {
       setActiveFilter('Challenges');
     }
     markCommunityTabOpened();
-  }, [sessionToken, hasOpenedCommunityTab, hasCreatedPost, markCommunityTabOpened]);
+  }, [hasOpenedCommunityTab, hasCreatedPost, markCommunityTabOpened]);
 
   const handleRefresh = useCallback(() => {
     setFeedRefreshKey((k) => k + 1);
@@ -96,7 +97,7 @@ export default function CommunityScreen() {
     setCreatePostVisible(true);
   }, [openComposer]);
 
-  if (!sessionToken) return <CommunityUnauthenticatedGate />;
+  if (!isSignedIn) return <CommunityUnauthenticatedGate />;
 
   const BellButton = (
     <TouchableOpacity
@@ -189,7 +190,6 @@ export default function CommunityScreen() {
             clearComposerPreset();
             setCreatePostVisible(false);
           }}
-          sessionToken={sessionToken}
           onPosted={() => {
             setActiveFilter('For You');
             handleRefresh();

@@ -117,13 +117,13 @@ export function useOnboardingState() {
     if (draft.studioCode.trim()) userPatch.linkedStudioCode = draft.studioCode.trim();
     if (Object.keys(userPatch).length > 0) setUser(userPatch);
 
-    const sessionToken = useAppStore.getState().sessionToken;
+    const isSignedIn = useAppStore.getState().isSignedIn;
     if (
-      sessionToken &&
+      isSignedIn &&
       draft.userType === 'studio-potter' &&
       draft.studioCode.trim()
     ) {
-      apiRequestToJoinStudio(sessionToken, draft.studioCode.trim()).catch(() => {
+      apiRequestToJoinStudio(draft.studioCode.trim()).catch(() => {
         // Join is optional; user can retry from Community → Studios
       });
     }

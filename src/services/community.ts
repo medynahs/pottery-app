@@ -141,17 +141,13 @@ export function hydrateCreatedPost(
 
 // ─── Internal helper ─────────────────────────────────────────────────────────
 
-function authedFetch(
-  sessionToken: string,
-  url: string,
+function authedFetch(url: string,
   init?: RequestInit,
 ): Promise<Response> {
   return fetch(url, {
-    ...init,
-    credentials: 'omit',
+    ...init,
     headers: {
-      Accept: 'application/json',
-      'X-Session-Token': sessionToken,
+      Accept: 'application/json',
       ...(init?.headers ?? {}),
     },
   });
@@ -171,15 +167,14 @@ function authedFetch(
  * - Exclude posts the viewer already sees via friends feed (optional dedupe server-side)
  */
 export async function apiGetDiscoverFeed(
-  sessionToken: string,
-  opts?: { limit?: number; cursor?: string },
+    opts?: { limit?: number; cursor?: string },
 ): Promise<FeedPage | null> {
   const params = new URLSearchParams();
   if (opts?.limit !== undefined) params.set('limit', String(opts.limit));
   if (opts?.cursor) params.set('cursor', opts.cursor);
   const qs = params.size > 0 ? `?${params.toString()}` : '';
   try {
-    const res = await authedFetch(sessionToken, `${API_BASE}/feed${qs}`);
+    const res = await authedFetch(`${API_BASE}/feed${qs}`);
     if (res.status === 404 || res.status === 501) return null;
     if (!res.ok) return null;
     const page = (await res.json()) as FeedPage;
@@ -195,14 +190,13 @@ export async function apiGetDiscoverFeed(
  * Supports cursor pagination: `cursor` is an RFC3339Nano|post_uuid string.
  */
 export async function apiGetFeed(
-  sessionToken: string,
-  opts?: { limit?: number; cursor?: string },
+    opts?: { limit?: number; cursor?: string },
 ): Promise<FeedPage> {
   const params = new URLSearchParams();
   if (opts?.limit !== undefined) params.set('limit', String(opts.limit));
   if (opts?.cursor) params.set('cursor', opts.cursor);
   const qs = params.size > 0 ? `?${params.toString()}` : '';
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/feed${qs}`);
+  const res = await authedFetch(`${API_BASE}/users/me/feed${qs}`);
   if (!res.ok) throw new Error(`GET /users/me/feed → ${res.status}`);
   const page = (await res.json()) as FeedPage;
   return normalizeFeedPage(page);
@@ -213,14 +207,13 @@ export async function apiGetFeed(
  * Lists the authenticated user's own posts, newest first.
  */
 export async function apiListMyPosts(
-  sessionToken: string,
-  opts?: { limit?: number; cursor?: string },
+    opts?: { limit?: number; cursor?: string },
 ): Promise<FeedPage> {
   const params = new URLSearchParams();
   if (opts?.limit !== undefined) params.set('limit', String(opts.limit));
   if (opts?.cursor) params.set('cursor', opts.cursor);
   const qs = params.size > 0 ? `?${params.toString()}` : '';
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/posts${qs}`);
+  const res = await authedFetch(`${API_BASE}/users/me/posts${qs}`);
   if (!res.ok) await parseCommunityError(res, 'GET /users/me/posts');
   const page = (await res.json()) as FeedPage;
   return normalizeFeedPage(page);
@@ -231,10 +224,9 @@ export async function apiListMyPosts(
  * Creates a new social post. Upload photos first via POST /uploads, then pass asset_ids.
  */
 export async function apiCreatePost(
-  sessionToken: string,
-  payload: CreatePostPayload,
+    payload: CreatePostPayload,
 ): Promise<BackendFeedPost> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/users/me/posts`, {
+  const res = await authedFetch(`${API_BASE}/users/me/posts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -249,10 +241,9 @@ export async function apiCreatePost(
  * Permanently deletes the authenticated user's own post. Returns 204 on success.
  */
 export async function apiDeletePost(
-  sessionToken: string,
-  postId: string,
+    postId: string,
 ): Promise<void> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/posts/${postId}`, {
+  const res = await authedFetch(`${API_BASE}/posts/${postId}`, {
     method: 'DELETE',
   });
   // 404 means already gone, treat as success
@@ -266,10 +257,9 @@ export async function apiDeletePost(
  * Adds a like reaction to a post. Returns 201 on success.
  */
 export async function apiAddReaction(
-  sessionToken: string,
-  postId: string,
+    postId: string,
 ): Promise<void> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/posts/${postId}/reactions`, {
+  const res = await authedFetch(`${API_BASE}/posts/${postId}/reactions`, {
     method: 'POST',
   });
   // 409 means already reacted, treat as success
@@ -283,10 +273,9 @@ export async function apiAddReaction(
  * Removes the current user's reaction from a post. Returns 204 on success.
  */
 export async function apiRemoveReaction(
-  sessionToken: string,
-  postId: string,
+    postId: string,
 ): Promise<void> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/posts/${postId}/reactions`, {
+  const res = await authedFetch(`${API_BASE}/posts/${postId}/reactions`, {
     method: 'DELETE',
   });
   // 404 means reaction didn't exist, treat as success
@@ -350,9 +339,8 @@ export interface BackendHallOfFameLeaderboardEntry {
  * Returns null when the endpoint is missing or returns an unsupported shape.
  */
 export async function apiGetHallOfFameArchive(
-  sessionToken: string,
-): Promise<BackendHallOfFameResponse | null> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/hall-of-fame`);
+  ): Promise<BackendHallOfFameResponse | null> {
+  const res = await authedFetch(`${API_BASE}/hall-of-fame`);
   if (!res.ok) return null;
 
   const data = await res.json().catch(() => null);
@@ -370,10 +358,9 @@ export async function apiGetHallOfFameArchive(
  * Winner detail for deep links from Hall of Fame cards.
  */
 export async function apiGetHallOfFameWinner(
-  sessionToken: string,
-  winnerId: string,
+    winnerId: string,
 ): Promise<BackendHallOfFameWinnerDetail | null> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/hall-of-fame/winners/${winnerId}`);
+  const res = await authedFetch(`${API_BASE}/hall-of-fame/winners/${winnerId}`);
   if (res.status === 404) return null;
   if (!res.ok) return null;
 
@@ -405,8 +392,9 @@ export interface BackendPoll {
  * GET /polls
  * Returns active polls for the community.
  */
-export async function apiGetPolls(sessionToken: string): Promise<BackendPoll[]> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/polls`);
+export async function apiGetPolls(
+    ): Promise<BackendPoll[]> {
+  const res = await authedFetch(`${API_BASE}/polls`);
   if (!res.ok) throw new Error(`GET /polls → ${res.status}`);
   return res.json() as Promise<BackendPoll[]>;
 }
@@ -417,11 +405,10 @@ export async function apiGetPolls(sessionToken: string): Promise<BackendPoll[]> 
  * 409 = already voted.
  */
 export async function apiVotePoll(
-  sessionToken: string,
-  pollId: string,
+    pollId: string,
   optionId: string,
 ): Promise<BackendPoll> {
-  const res = await authedFetch(sessionToken, `${API_BASE}/polls/${pollId}/vote`, {
+  const res = await authedFetch(`${API_BASE}/polls/${pollId}/vote`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ option_id: optionId }),

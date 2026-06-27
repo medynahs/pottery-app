@@ -180,8 +180,8 @@ function replaceGlazePhotoUri(glazeId: string, oldUri: string, newUrl: string) {
 
 export async function reconcileGlazeImages(): Promise<void> {
   if (imageReconcileInFlight) return;
-  const { sessionToken } = useAppStore.getState();
-  if (!sessionToken) return;
+  const isSignedIn = useAppStore.getState().isSignedIn;
+  if (!isSignedIn) return;
 
   imageReconcileInFlight = true;
   try {
@@ -202,7 +202,7 @@ export async function reconcileGlazeImages(): Promise<void> {
           continue;
         }
         try {
-          const res = await apiUploadGlazeImage(sessionToken, glaze.backendId, fileFromUri(uri, type), type);
+          const res = await apiUploadGlazeImage(glaze.backendId, fileFromUri(uri, type), type);
           replaceGlazePhotoUri(glaze.id, uri, res.image.url);
         } catch (err) {
           if (__DEV__) console.warn(`[glazes:image] upload failed for glaze ${glaze.id}:`, err);
@@ -220,8 +220,8 @@ export async function reconcileGlazeImages(): Promise<void> {
 export async function flushGlazesSync(): Promise<boolean> {
   if (syncInFlight) return false;
 
-  const { sessionToken } = useAppStore.getState();
-  if (!sessionToken) return false;
+  const isSignedIn = useAppStore.getState().isSignedIn;
+  if (!isSignedIn) return false;
   if (!hasPendingGlazesSync()) return true;
 
   syncInFlight = true;
@@ -238,7 +238,7 @@ export async function flushGlazesSync(): Promise<boolean> {
 
     if (__DEV__) console.log(`[glazes:sync] pushing ${glazes.length} glaze(s), ${tests.length} test(s)`);
 
-    const response = await apiSyncGlazes(sessionToken, { glazes, tests });
+    const response = await apiSyncGlazes({ glazes, tests });
     applyGlazeSyncResponse(response);
     // Pieces may be waiting on glaze backend IDs before glaze_id can push.
     void flushPiecesSync();
@@ -266,28 +266,29 @@ export function scheduleGlazesSync() {
 // ─── Main hook (mount once at app root) ───────────────────────────────────────
 
 export function useGlazesSync() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
-  const oryIdentityId = useAppStore((s) => s.oryIdentityId);
-  const prevUserId = useRef(oryIdentityId);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
+  
+  const prevUserId = useRef('me');
 
   useEffect(() => {
-    if (prevUserId.current !== oryIdentityId) {
-      prevUserId.current = oryIdentityId;
+    if (false) {
+      prevUserId.current = 'me';
       initialPullMerged = false;
       lastMergedAt = 0;
     }
-  }, [oryIdentityId]);
+  }, ['me']);
 
   const query = useQuery({
-    queryKey: glazesQueryKey(oryIdentityId ?? ''),
+    queryKey: glazesQueryKey('me'),
     queryFn: async () => {
       const [glazes, tests] = await Promise.all([
-        apiListGlazes(sessionToken!),
-        apiListGlazeTests(sessionToken!),
+        apiListGlazes(),
+        apiListGlazeTests(),
       ]);
       return { glazes, tests };
     },
-    enabled: !!sessionToken && !!oryIdentityId,
+    enabled: isSignedIn,
     staleTime: 2 * 60 * 1000,
     retry: 2,
   });
@@ -328,13 +329,14 @@ export interface UploadGlazeImageOptions {
 }
 
 export function useUploadGlazeImageMutation() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ glazeBackendId, file, imageType }: UploadGlazeImageOptions) => {
-      if (!sessionToken) throw new Error('Not signed in');
-      return apiUploadGlazeImage(sessionToken, glazeBackendId, file, imageType);
+      if (!isSignedIn) throw new Error('Not signed in');
+      return apiUploadGlazeImage(glazeBackendId, file, imageType);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: GLAZES_QUERY_KEY });
@@ -352,13 +354,14 @@ export interface DeleteGlazeImageOptions {
 }
 
 export function useDeleteGlazeImageMutation() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ glazeBackendId, imageId }: DeleteGlazeImageOptions) => {
-      if (!sessionToken) throw new Error('Not signed in');
-      await apiDeleteGlazeImage(sessionToken, glazeBackendId, imageId);
+      if (!isSignedIn) throw new Error('Not signed in');
+      await apiDeleteGlazeImage(glazeBackendId, imageId);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: GLAZES_QUERY_KEY });

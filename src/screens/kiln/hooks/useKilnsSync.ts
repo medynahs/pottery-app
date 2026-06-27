@@ -73,13 +73,14 @@ function mergeKilnsIntoStore(
  * to work without changes.
  */
 export function useKilnsSync() {
-  const sessionToken = useAppStore(s => s.sessionToken);
-  const oryIdentityId = useAppStore(s => s.oryIdentityId);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
+  
 
   const query = useQuery({
-    queryKey: kilnsQueryKey(oryIdentityId ?? ''),
-    queryFn: () => apiListKilns(sessionToken!),
-    enabled: !!sessionToken && !!oryIdentityId,
+    queryKey: kilnsQueryKey('me'),
+    queryFn: () => apiListKilns(),
+    enabled: isSignedIn,
     staleTime: 5 * 60 * 1000,
     retry: 2,
   });
@@ -103,13 +104,14 @@ export function useKilnsSync() {
  * On success, stamps the returned UUID as `backendId` on the local record.
  */
 export function useUpsertKilnMutation() {
-  const sessionToken = useAppStore(s => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
   const updateKiln = useAppStore(s => s.updateKiln);
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (kiln: Kiln) => {
-      if (!sessionToken) {
+      if (!isSignedIn) {
         if (__DEV__) console.log(`[kilns:upsert] "${kiln.name}" skipped, not signed in`);
         return null;
       }
@@ -118,7 +120,7 @@ export function useUpsertKilnMutation() {
         console.log(
           `[kilns:upsert] "${kiln.name}" (backendId: ${kiln.backendId ?? 'new'})`,
         );
-      const bk = await apiUpsertKiln(sessionToken, payload);
+      const bk = await apiUpsertKiln(payload);
       return { bk, kiln };
     },
     onSuccess: (result, kiln) => {
@@ -145,11 +147,12 @@ export function useUpsertKilnMutation() {
  * removed optimistically before this is called.
  */
 export function useDeleteKilnMutation() {
-  const sessionToken = useAppStore(s => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
+
 
   return useMutation({
     mutationFn: async (kiln: Kiln) => {
-      if (!sessionToken) {
+      if (!isSignedIn) {
         if (__DEV__) console.log(`[kilns:delete] "${kiln.name}" skipped, not signed in`);
         return;
       }
@@ -159,7 +162,7 @@ export function useDeleteKilnMutation() {
         return;
       }
       if (__DEV__) console.log(`[kilns:delete] DELETE ${kiln.backendId}`);
-      await apiDeleteKiln(sessionToken, kiln.backendId);
+      await apiDeleteKiln(kiln.backendId);
     },
     onError: (err, kiln) => {
       if (__DEV__)

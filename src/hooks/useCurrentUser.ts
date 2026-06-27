@@ -38,7 +38,7 @@ function applyProfileToStore(profile: Parameters<typeof userPatchFromBackendProf
 }
 
 export function useCurrentUser() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const setBackendUserId = useAppStore((s) => s.setBackendUserId);
   const clearSession = useAppStore((s) => s.clearSession);
   const setAccountDeletionGrace = useAppStore((s) => s.setAccountDeletionGrace);
@@ -46,22 +46,22 @@ export function useCurrentUser() {
 
   const query = useQuery({
     queryKey: ME_QUERY_KEY,
-    queryFn: () => fetchMe(sessionToken!),
-    enabled: !!sessionToken,
+    queryFn: () => fetchMe(),
+    enabled: isSignedIn,
     staleTime: 5 * 60 * 1000,
     retry: (failureCount, error) =>
       !isSessionExpired(error) && !isAccountDeletedError(error) && failureCount < 2,
   });
 
   useEffect(() => {
-    if (sessionToken && isSessionExpired(query.error)) {
+    if (isSignedIn && isSessionExpired(query.error)) {
       clearSession();
       showToast('Your session has expired. Please sign in again.', 'error');
     }
-  }, [query.error, sessionToken, clearSession, showToast]);
+  }, [query.error, clearSession, showToast]);
 
   useEffect(() => {
-    if (!sessionToken) {
+    if (!isSignedIn) {
       setAccountDeletionGrace(false);
       return;
     }
@@ -76,7 +76,7 @@ export function useCurrentUser() {
     if (query.data) {
       setAccountDeletionGrace(false);
     }
-  }, [query.error, query.data, sessionToken, setAccountDeletionGrace]);
+  }, [query.error, query.data, setAccountDeletionGrace]);
 
   useEffect(() => {
     if (!query.data) return;
@@ -91,12 +91,12 @@ export function useCurrentUser() {
  * Persist profile text fields via PUT /users/me and refresh the me cache + store.
  */
 export function useUpdateProfile() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const queryClient = useQueryClient();
 
   return async (payload: UpdateProfilePayload): Promise<void> => {
-    if (!sessionToken) throw new Error('Not signed in');
-    const updatedProfile = await updateProfile(sessionToken, payload);
+    if (!isSignedIn) throw new Error('Not signed in');
+    const updatedProfile = await updateProfile(payload);
     queryClient.setQueryData(ME_QUERY_KEY, (prev) =>
       mergeMeCache(prev as BackendProfile | undefined, updatedProfile),
     );
@@ -108,12 +108,12 @@ export function useUpdateProfile() {
  * Persist community visibility toggles via PUT /users/me/privacy.
  */
 export function useUpdatePrivacy() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const queryClient = useQueryClient();
 
   return async (payload: UpdatePrivacyPayload): Promise<void> => {
-    if (!sessionToken) throw new Error('Not signed in');
-    const updatedProfile = await updatePrivacy(sessionToken, payload);
+    if (!isSignedIn) throw new Error('Not signed in');
+    const updatedProfile = await updatePrivacy(payload);
     queryClient.setQueryData(ME_QUERY_KEY, (prev) =>
       mergeMeCache(prev as BackendProfile | undefined, updatedProfile),
     );
@@ -125,12 +125,12 @@ export function useUpdatePrivacy() {
  * One-shot helper to upload an avatar and immediately update the cache + store.
  */
 export function useUploadAvatar() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const queryClient = useQueryClient();
 
   return async (imageUri: string, mimeType?: string): Promise<void> => {
-    if (!sessionToken) throw new Error('Not signed in');
-    const updatedProfile = await uploadAvatar(sessionToken, imageUri, mimeType);
+    if (!isSignedIn) throw new Error('Not signed in');
+    const updatedProfile = await uploadAvatar(imageUri, mimeType);
     queryClient.setQueryData(ME_QUERY_KEY, (prev) =>
       mergeMeCache(prev as BackendProfile | undefined, {
         ...updatedProfile,
@@ -148,15 +148,15 @@ export function useUploadAvatar() {
  * One-shot helper to upload a profile cover photo, mirroring useUploadAvatar.
  */
 export function useUploadCover() {
-  const sessionToken = useAppStore((s) => s.sessionToken);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const queryClient = useQueryClient();
 
   return async (imageUri: string, mimeType?: string): Promise<void> => {
-    if (!sessionToken) throw new Error('Not signed in');
-    let updatedProfile = await uploadCover(sessionToken, imageUri, mimeType);
+    if (!isSignedIn) throw new Error('Not signed in');
+    let updatedProfile = await uploadCover(imageUri, mimeType);
     if (!updatedProfile.cover_url) {
       try {
-        updatedProfile = await fetchMe(sessionToken);
+        updatedProfile = await fetchMe();
       } catch {
         // Keep the upload response; fall back to the local picker URI below.
       }

@@ -129,8 +129,7 @@ export default function PiecesScreen() {
     handleSendToCemetery,
     handleConfirmSendToCemetery,
     handleSharePiece,
-    sessionToken,
-  } = usePiecesScreen();
+    } = usePiecesScreen();
 
   const exitSelectionMode = React.useCallback(() => {
     setSelectionMode(false);
@@ -342,7 +341,7 @@ export default function PiecesScreen() {
       });
     }
 
-    if (sessionToken) {
+    if (isSignedIn) {
       options.push({
         label: 'Share to community',
         icon: Share2,
@@ -366,7 +365,6 @@ export default function PiecesScreen() {
     setEditPiece,
     handleDuplicate,
     handleDuplicateBatch,
-    sessionToken,
     handleSharePiece,
     handleDelete,
     enterSelectionWith,
