@@ -400,7 +400,6 @@ function CreateStudioModal({
 
 export function StudiosTab() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
-!;
   const showToast = useAppStore((s) => s.showToast);
 
   const [owned, setOwned] = useState<BackendStudio[]>([]);

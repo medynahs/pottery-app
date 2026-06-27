@@ -4,8 +4,8 @@ import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { EmptyState } from '@/src/components/EmptyState';
 import { SearchField } from '@/src/components/SearchField';
 import { StudioTabScreen } from '@/src/components/StudioTabScreen';
-import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import { Text } from '@/src/components/ui/text';
+import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
 import { useAppStore } from '@/src/store';
 import { countPiecePhotos } from '@/src/utils/premiumGate';
@@ -17,27 +17,26 @@ import { RefreshControl, ScrollView, TouchableOpacity, View, useWindowDimensions
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { MainTabHeader } from '../../components/MainTabHeader';
 import type { Piece } from '../../types/pieces';
+import {
+  CEMETERY_ACCENT,
+  CEMETERY_BORDER_SUBTLE,
+  CEMETERY_PILL_ACTIVE,
+  CEMETERY_PILL_ACTIVE_BORDER,
+  CEMETERY_PILL_INACTIVE_BG,
+  CEMETERY_TEXT,
+  CEMETERY_TEXT_SUBTLE
+} from './cemeteryTheme';
 import { BatchCard } from './components/BatchCard';
 import {
   CemeteryGardenEmpty,
   CemeteryGardenView,
   useCemeteryHeadstoneWidth,
 } from './components/CemeteryGardenView';
-import { CemeteryScrollAtmosphere } from './components/CemeteryScrollAtmosphere';
 import { CemeteryPieceCard } from './components/CemeteryPieceCard';
+import { CemeteryScrollAtmosphere } from './components/CemeteryScrollAtmosphere';
 import { FilterSortSheet } from './components/FilterSortSheet';
 import { PieceCard } from './components/PieceCard';
 import { PieceSelectionBar } from './components/PieceSelectionBar';
-import {
-  CEMETERY_ACCENT,
-  CEMETERY_BORDER_SUBTLE,
-  CEMETERY_ICON,
-  CEMETERY_PILL_ACTIVE,
-  CEMETERY_PILL_ACTIVE_BORDER,
-  CEMETERY_PILL_INACTIVE_BG,
-  CEMETERY_TEXT,
-  CEMETERY_TEXT_SUBTLE,
-} from './cemeteryTheme';
 import { usePiecesScreen } from './hooks/usePiecesScreen';
 import { AddPieceModal } from './modals/AddPieceModal';
 import { CemeterySacrificeModal } from './modals/CemeterySacrificeModal';
@@ -78,6 +77,7 @@ export default function PiecesScreen() {
   const [selectedPieceIds, setSelectedPieceIds] = React.useState<Set<number>>(() => new Set());
   const [galleryPiece, setGalleryPiece] = React.useState<Piece | null>(null);
   const [statusSheetPiece, setStatusSheetPiece] = React.useState<Piece | null>(null);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
   const glazes = useAppStore((s) => s.glazes);
   const piecesCompactCards = useAppStore((s) => s.piecesCompactCards);
@@ -129,7 +129,7 @@ export default function PiecesScreen() {
     handleSendToCemetery,
     handleConfirmSendToCemetery,
     handleSharePiece,
-    } = usePiecesScreen();
+  } = usePiecesScreen();
 
   const exitSelectionMode = React.useCallback(() => {
     setSelectionMode(false);
@@ -442,7 +442,7 @@ export default function PiecesScreen() {
         ] : []}
         onCancel={() => setPendingAdvanceChoice(null)}
       />
-      
+
       <MainTabHeader
         variant={isCemeteryStage ? 'cemetery' : 'default'}
         title={isCemeteryStage ? 'Honored Pieces' : 'My Pieces'}
@@ -467,13 +467,12 @@ export default function PiecesScreen() {
           />
           <TouchableOpacity
             onPress={() => setFiltersOpen(true)}
-            className={`w-11 h-11 rounded-2xl items-center justify-center border ${
-              activeFilterCount > 0
+            className={`w-11 h-11 rounded-2xl items-center justify-center border ${activeFilterCount > 0
                 ? 'bg-primary/10 border-primary/30'
                 : isCemeteryStage
                   ? 'bg-[#2A1C16]/85 border-[#5A4030]'
                   : 'bg-card/75 border-border'
-            }`}
+              }`}
           >
             <SlidersHorizontal
               size={16}
@@ -511,215 +510,213 @@ export default function PiecesScreen() {
             />
           }
         >
-        {/* Stage Filter */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="flex-row gap-2 px-6 py-4"
-        >
-          {stageTabs.map(({ id, label, Icon }) => {
-            const isActive = activeStage === id;
-            const isCemeteryTab = id === 'cemetery';
-            const cemeteryActive = isCemeteryTab && isActive;
+          {/* Stage Filter */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerClassName="flex-row gap-2 px-6 py-4"
+          >
+            {stageTabs.map(({ id, label, Icon }) => {
+              const isActive = activeStage === id;
+              const isCemeteryTab = id === 'cemetery';
+              const cemeteryActive = isCemeteryTab && isActive;
 
-            if (isCemeteryStage) {
+              if (isCemeteryStage) {
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    onPress={() => setActiveStage(id)}
+                    className="flex-row items-center gap-1.5 px-4 py-2 rounded-full border"
+                    style={{
+                      backgroundColor: cemeteryActive
+                        ? CEMETERY_PILL_ACTIVE
+                        : CEMETERY_PILL_INACTIVE_BG,
+                      borderColor: cemeteryActive
+                        ? CEMETERY_PILL_ACTIVE_BORDER
+                        : CEMETERY_BORDER_SUBTLE,
+                    }}
+                  >
+                    <Icon
+                      size={14}
+                      color={cemeteryActive ? CEMETERY_TEXT : CEMETERY_TEXT_SUBTLE}
+                    />
+                    <Text
+                      className="text-sm font-medium"
+                      style={{ color: cemeteryActive ? CEMETERY_TEXT : CEMETERY_TEXT_SUBTLE }}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }
+
               return (
                 <TouchableOpacity
                   key={id}
                   onPress={() => setActiveStage(id)}
-                  className="flex-row items-center gap-1.5 px-4 py-2 rounded-full border"
-                  style={{
-                    backgroundColor: cemeteryActive
-                      ? CEMETERY_PILL_ACTIVE
-                      : CEMETERY_PILL_INACTIVE_BG,
-                    borderColor: cemeteryActive
-                      ? CEMETERY_PILL_ACTIVE_BORDER
-                      : CEMETERY_BORDER_SUBTLE,
-                  }}
+                  className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full border ${isActive ? 'bg-foreground border-foreground' : 'bg-card border-border'
+                    }`}
                 >
                   <Icon
                     size={14}
-                    color={cemeteryActive ? CEMETERY_TEXT : CEMETERY_TEXT_SUBTLE}
+                    color={isActive ? 'hsl(34 35% 92%)' : 'hsl(24 20% 40%)'}
                   />
                   <Text
-                    className="text-sm font-medium"
-                    style={{ color: cemeteryActive ? CEMETERY_TEXT : CEMETERY_TEXT_SUBTLE }}
+                    className={`text-sm font-medium ${isActive ? 'text-background' : 'text-muted-foreground'
+                      }`}
                   >
                     {label}
                   </Text>
                 </TouchableOpacity>
               );
-            }
+            })}
+          </ScrollView>
 
-            return (
-              <TouchableOpacity
-                key={id}
-                onPress={() => setActiveStage(id)}
-                className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full border ${
-                  isActive ? 'bg-foreground border-foreground' : 'bg-card border-border'
-                }`}
-              >
-                <Icon
-                  size={14}
-                  color={isActive ? 'hsl(34 35% 92%)' : 'hsl(24 20% 40%)'}
-                />
-                <Text
-                  className={`text-sm font-medium ${
-                    isActive ? 'text-background' : 'text-muted-foreground'
-                  }`}
-                >
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          <View className="px-6">
+            {activeStage === 'cemetery' ? (
+              <CemeteryGardenView count={honoredCount}>
+                {filteredPieces.length > 0 ? (
+                  <Animated.View layout={itemLayout} className="flex-row flex-wrap justify-between">
+                    {displayItems.map((item) => {
+                      if (item.type === 'set-header' || item.type === 'batch') return null;
 
-        <View className="px-6">
-          {activeStage === 'cemetery' ? (
-            <CemeteryGardenView count={honoredCount}>
-              {filteredPieces.length > 0 ? (
-                <Animated.View layout={itemLayout} className="flex-row flex-wrap justify-between">
-                  {displayItems.map((item) => {
-                    if (item.type === 'set-header' || item.type === 'batch') return null;
-
+                      return (
+                        <Animated.View
+                          key={`piece-${item.piece.id}`}
+                          layout={itemLayout}
+                          entering={FadeInDown.duration(300).easing(Easing.out(Easing.cubic))}
+                          exiting={FadeOutUp.duration(260).easing(Easing.in(Easing.cubic))}
+                          style={cemeteryColumnStyle}
+                        >
+                          <CemeteryPieceCard
+                            piece={item.piece}
+                            headstoneWidth={cemeteryHeadstoneWidth}
+                            selectionMode={selectionMode}
+                            selected={selectedPieceIds.has(item.piece.id)}
+                            onPress={() => openJournal(item.piece)}
+                            onToggleSelect={() => togglePieceSelection(item.piece.id)}
+                            onLongPress={() => setActionSheetPiece(item.piece)}
+                            onMore={() => setActionSheetPiece(item.piece)}
+                          />
+                        </Animated.View>
+                      );
+                    })}
+                  </Animated.View>
+                ) : pieces.length > 0 ? (
+                  <CemeteryGardenEmpty />
+                ) : null}
+              </CemeteryGardenView>
+            ) : (
+              <Animated.View layout={itemLayout} className="flex-row flex-wrap justify-between">
+                {displayItems.map((item) => {
+                  if (item.type === 'set-header') {
                     return (
                       <Animated.View
-                        key={`piece-${item.piece.id}`}
+                        key={`header-${item.batchId}`}
                         layout={itemLayout}
                         entering={FadeInDown.duration(300).easing(Easing.out(Easing.cubic))}
                         exiting={FadeOutUp.duration(260).easing(Easing.in(Easing.cubic))}
-                        style={cemeteryColumnStyle}
+                        className="w-full mb-2 mt-0.5"
                       >
-                        <CemeteryPieceCard
-                          piece={item.piece}
-                          headstoneWidth={cemeteryHeadstoneWidth}
+                        <TouchableOpacity
+                          onPress={() => toggleExpand(item.batchId)}
+                          activeOpacity={0.8}
+                          className="self-start flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted/40"
+                        >
+                          <Layers size={10} color="hsl(24 20% 40%)" />
+                          <Text className="text-[10px] font-body-medium text-muted-foreground">
+                            {item.name} · {item.count}
+                          </Text>
+                          <Text className="text-[10px] font-body-medium text-primary">Collapse</Text>
+                          <ChevronUp size={11} color="hsl(39 57% 51%)" />
+                        </TouchableOpacity>
+                      </Animated.View>
+                    );
+                  }
+
+                  if (item.type === 'batch') {
+                    const representative = item.pieces[0];
+                    const nextStageId = representative ? getNextStageId(representative.stage) : null;
+                    const nextStageLabel = nextStageId ? (stageLookup[nextStageId]?.label ?? nextStageId) : undefined;
+                    const stageLabel = representative ? (stageLookup[representative.stage]?.label ?? representative.stage) : '';
+                    return (
+                      <Animated.View
+                        key={`batch-${item.batchId}`}
+                        layout={itemLayout}
+                        entering={FadeInDown.duration(300).easing(Easing.out(Easing.cubic))}
+                        exiting={FadeOutUp.duration(260).easing(Easing.in(Easing.cubic))}
+                        style={{ width: '48%', marginBottom: 16 }}
+                      >
+                        <BatchCard
+                          pieces={item.pieces}
+                          onAdvanceAll={() => handleAdvanceBatch(item.pieces)}
+                          stageLabel={stageLabel}
+                          nextStageLabel={nextStageLabel}
                           selectionMode={selectionMode}
-                          selected={selectedPieceIds.has(item.piece.id)}
-                          onPress={() => openJournal(item.piece)}
-                          onToggleSelect={() => togglePieceSelection(item.piece.id)}
-                          onLongPress={() => setActionSheetPiece(item.piece)}
-                          onMore={() => setActionSheetPiece(item.piece)}
+                          selectedCount={item.pieces.filter((piece) => selectedPieceIds.has(piece.id)).length}
+                          onExpand={() => toggleExpand(item.batchId)}
+                          onMore={() => setBatchActionPieces(item.pieces)}
+                          onToggleBatchSelect={() => toggleBatchSelection(item.pieces)}
                         />
                       </Animated.View>
                     );
-                  })}
-                </Animated.View>
-              ) : pieces.length > 0 ? (
-                <CemeteryGardenEmpty />
-              ) : null}
-            </CemeteryGardenView>
-          ) : (
-          <Animated.View layout={itemLayout} className="flex-row flex-wrap justify-between">
-            {displayItems.map((item) => {
-              if (item.type === 'set-header') {
-                return (
-                  <Animated.View
-                    key={`header-${item.batchId}`}
-                    layout={itemLayout}
-                    entering={FadeInDown.duration(300).easing(Easing.out(Easing.cubic))}
-                    exiting={FadeOutUp.duration(260).easing(Easing.in(Easing.cubic))}
-                    className="w-full mb-2 mt-0.5"
-                  >
-                    <TouchableOpacity
-                      onPress={() => toggleExpand(item.batchId)}
-                      activeOpacity={0.8}
-                      className="self-start flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted/40"
+                  }
+
+                  return (
+                    <Animated.View
+                      key={`piece-${item.piece.id}`}
+                      layout={itemLayout}
+                      entering={FadeInDown.duration(300).easing(Easing.out(Easing.cubic))}
+                      exiting={FadeOutUp.duration(260).easing(Easing.in(Easing.cubic))}
+                      style={{ width: '48%', marginBottom: 16 }}
                     >
-                      <Layers size={10} color="hsl(24 20% 40%)" />
-                      <Text className="text-[10px] font-body-medium text-muted-foreground">
-                        {item.name} · {item.count}
-                      </Text>
-                      <Text className="text-[10px] font-body-medium text-primary">Collapse</Text>
-                      <ChevronUp size={11} color="hsl(39 57% 51%)" />
-                    </TouchableOpacity>
-                  </Animated.View>
-                );
-              }
+                      <PieceCard
+                        piece={item.piece}
+                        compact={piecesCompactCards}
+                        selectionMode={selectionMode}
+                        selected={selectedPieceIds.has(item.piece.id)}
+                        onPress={() => openJournal(item.piece)}
+                        onToggleSelect={() => togglePieceSelection(item.piece.id)}
+                        onLongPress={() => setActionSheetPiece(item.piece)}
+                        onAdvance={() => handleAdvance(item.piece.id)}
+                        stageLabel={stageLookup[item.piece.stage]?.label}
+                        nextStageLabel={(() => {
+                          const nextStageId = getNextStageId(item.piece.stage);
+                          return nextStageId ? (stageLookup[nextStageId]?.label ?? nextStageId) : undefined;
+                        })()}
+                        progressStageOrder={progressStageOrder}
+                        onSendToCemetery={item.piece.stage !== 'cemetery' ? () => handleSendToCemetery(item.piece.id) : undefined}
+                        onJournal={() => openJournal(item.piece)}
+                        onMore={() => setActionSheetPiece(item.piece)}
+                      />
+                    </Animated.View>
+                  );
+                })}
+              </Animated.View>
+            )}
 
-              if (item.type === 'batch') {
-                const representative = item.pieces[0];
-                const nextStageId = representative ? getNextStageId(representative.stage) : null;
-                const nextStageLabel = nextStageId ? (stageLookup[nextStageId]?.label ?? nextStageId) : undefined;
-                const stageLabel = representative ? (stageLookup[representative.stage]?.label ?? representative.stage) : '';
-                return (
-                  <Animated.View
-                    key={`batch-${item.batchId}`}
-                    layout={itemLayout}
-                    entering={FadeInDown.duration(300).easing(Easing.out(Easing.cubic))}
-                    exiting={FadeOutUp.duration(260).easing(Easing.in(Easing.cubic))}
-                    style={{ width: '48%', marginBottom: 16 }}
-                  >
-                    <BatchCard
-                      pieces={item.pieces}
-                      onAdvanceAll={() => handleAdvanceBatch(item.pieces)}
-                      stageLabel={stageLabel}
-                      nextStageLabel={nextStageLabel}
-                      selectionMode={selectionMode}
-                      selectedCount={item.pieces.filter((piece) => selectedPieceIds.has(piece.id)).length}
-                      onExpand={() => toggleExpand(item.batchId)}
-                      onMore={() => setBatchActionPieces(item.pieces)}
-                      onToggleBatchSelect={() => toggleBatchSelection(item.pieces)}
-                    />
-                  </Animated.View>
-                );
-              }
-
-              return (
-                <Animated.View
-                  key={`piece-${item.piece.id}`}
-                  layout={itemLayout}
-                  entering={FadeInDown.duration(300).easing(Easing.out(Easing.cubic))}
-                  exiting={FadeOutUp.duration(260).easing(Easing.in(Easing.cubic))}
-                  style={{ width: '48%', marginBottom: 16 }}
-                >
-                  <PieceCard
-                    piece={item.piece}
-                    compact={piecesCompactCards}
-                    selectionMode={selectionMode}
-                    selected={selectedPieceIds.has(item.piece.id)}
-                    onPress={() => openJournal(item.piece)}
-                    onToggleSelect={() => togglePieceSelection(item.piece.id)}
-                    onLongPress={() => setActionSheetPiece(item.piece)}
-                    onAdvance={() => handleAdvance(item.piece.id)}
-                    stageLabel={stageLookup[item.piece.stage]?.label}
-                    nextStageLabel={(() => {
-                      const nextStageId = getNextStageId(item.piece.stage);
-                      return nextStageId ? (stageLookup[nextStageId]?.label ?? nextStageId) : undefined;
-                    })()}
-                    progressStageOrder={progressStageOrder}
-                    onSendToCemetery={item.piece.stage !== 'cemetery' ? () => handleSendToCemetery(item.piece.id) : undefined}
-                    onJournal={() => openJournal(item.piece)}
-                    onMore={() => setActionSheetPiece(item.piece)}
-                  />
-                </Animated.View>
-              );
-            })}
-          </Animated.View>
-          )}
-
-          {filteredPieces.length === 0 && (
-            pieces.length === 0 ? (
-              <EmptyState
-                icon={Layers}
-                variant={isCemeteryStage ? 'cemetery' : 'default'}
-                title="Your shelf is waiting"
-                description="Every potter starts with a first lump of clay. Log a piece to track it from wet clay to glazed and fired."
-                ctaLabel="Add your first piece"
-                ctaIcon={Plus}
-                onCtaPress={() => setAddOpen(true)}
-              />
-            ) : activeStage !== 'cemetery' ? (
-              <EmptyState
-                title="No pieces match"
-                description={search.trim() || activeFilterCount > 0
-                  ? 'Try a different search or loosen your filters.'
-                  : 'Nothing at this stage right now, your pieces are busy elsewhere in the studio.'}
-              />
-            ) : null
-          )}
-        </View>
-      </ScrollView>
+            {filteredPieces.length === 0 && (
+              pieces.length === 0 ? (
+                <EmptyState
+                  icon={Layers}
+                  variant={isCemeteryStage ? 'cemetery' : 'default'}
+                  title="Your shelf is waiting"
+                  description="Every potter starts with a first lump of clay. Log a piece to track it from wet clay to glazed and fired."
+                  ctaLabel="Add your first piece"
+                  ctaIcon={Plus}
+                  onCtaPress={() => setAddOpen(true)}
+                />
+              ) : activeStage !== 'cemetery' ? (
+                <EmptyState
+                  title="No pieces match"
+                  description={search.trim() || activeFilterCount > 0
+                    ? 'Try a different search or loosen your filters.'
+                    : 'Nothing at this stage right now, your pieces are busy elsewhere in the studio.'}
+                />
+              ) : null
+            )}
+          </View>
+        </ScrollView>
       </View>
 
       {selectionMode ? (
@@ -840,12 +837,12 @@ export default function PiecesScreen() {
         piecePhotoCount={
           advanceRequest
             ? Math.max(
-                0,
-                ...advanceRequest.pieceIds.map((id) => {
-                  const p = pieces.find((piece) => piece.id === id);
-                  return p ? countPiecePhotos(p) : 0;
-                }),
-              )
+              0,
+              ...advanceRequest.pieceIds.map((id) => {
+                const p = pieces.find((piece) => piece.id === id);
+                return p ? countPiecePhotos(p) : 0;
+              }),
+            )
             : 0
         }
         stageLookup={stageLookup}

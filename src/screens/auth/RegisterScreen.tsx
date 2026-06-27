@@ -3,7 +3,7 @@ import { LabeledInput } from '@/src/components/LabeledInput';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
 import { detectAccountDeletionGrace } from '@/src/services/accountGrace';
-import { googleSignIn, register, UserCancelledError } from '@/src/services/auth';
+import { googleSignIn, isExpoGo, register, UserCancelledError } from '@/src/services/auth';
 import { useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Mail } from 'lucide-react-native';
@@ -91,16 +91,18 @@ export default function RegisterScreen({ onSuccess }: Props) {
 
           {error ? <Banner message={error} className="mb-5" /> : null}
 
-          <View className="mb-5">
-            <PrimaryButton
-              variant="outline"
-              label="Sign up with Google"
-              loading={googleLoading}
-              disabled={busy}
-              onPress={() => void handleGoogle()}
-              icon={<GoogleBadge />}
-            />
-          </View>
+          {!isExpoGo ? (
+            <View className="mb-5">
+              <PrimaryButton
+                variant="outline"
+                label="Sign up with Google"
+                loading={googleLoading}
+                disabled={busy}
+                onPress={() => void handleGoogle()}
+                icon={<GoogleBadge />}
+              />
+            </View>
+          ) : null}
 
           <View className="gap-4 mb-5">
             <LabeledInput

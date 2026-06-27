@@ -104,7 +104,7 @@ function authedFetch(url: string,
 }
 
 /** GET /users/me/firings */
-export async function apiListFirings(sessionToken: string): Promise<BackendFiring[]> {
+export async function apiListFirings(): Promise<BackendFiring[]> {
   const res = await authedFetch(`${API_BASE}/users/me/firings`);
   if (!res.ok) {
     throw new Error(`GET /users/me/firings -> ${res.status}`);

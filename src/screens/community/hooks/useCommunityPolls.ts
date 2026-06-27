@@ -47,7 +47,8 @@ function mapBackendPoll(poll: BackendPoll): CommunityPollView {
   };
 }
 
-export function useCommunityPolls(sessionToken: string | null) {
+export function useCommunityPolls() {
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const demoPollVoteId = useAppStore((s) => s.communityDemoPollVoteId);
   const voteDemoPoll = useAppStore((s) => s.voteCommunityDemoPoll);
   const [livePolls, setLivePolls] = useState<BackendPoll[]>([]);
@@ -91,7 +92,7 @@ export function useCommunityPolls(sessionToken: string | null) {
       const updated = await apiVotePoll(poll.id, optionId);
       setLivePolls((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     },
-    [voteDemoPoll],
+    [voteDemoPoll, isSignedIn],
   );
 
   return { polls, loading, reload: load, vote };

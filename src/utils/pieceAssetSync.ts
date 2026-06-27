@@ -340,7 +340,7 @@ let hydrateInFlight = false;
 
 /** Pull cloud asset URLs for all backend-linked pieces (e.g. after sign-in on a new device). */
 export async function hydrateAllPieceAssetsFromCloud(): Promise<void> {
-  const { pieces } = useAppStore.getState();
+  const { pieces, isSignedIn } = useAppStore.getState();
   if (!isSignedIn || hydrateInFlight) return;
 
   const targets = pieces.filter((piece) => piece.backendId && !piece.deleted);

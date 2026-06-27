@@ -1,4 +1,3 @@
-import { InlineErrorCard } from '@/src/components/InlineErrorCard';
 import { DetailScreenShell } from '@/src/components/DetailScreenShell';
 import { Text } from '@/src/components/ui/text';
 import { FeedPostCard } from '@/src/screens/community/components/FeedPostCard';
@@ -13,7 +12,7 @@ import { useProfilePosts } from './hooks/useProfilePosts';
 export default function ProfilePostsArchiveScreen() {
   const router = useRouter();
   const openComposer = useCommunityComposer();
-  const { posts, loading, error, reload, removePost } = useProfilePosts();
+  const { posts, loading, removePost } = useProfilePosts();
   const summary = React.useMemo(() => summarizePosts(posts), [posts]);
 
   return (
@@ -35,10 +34,6 @@ export default function ProfilePostsArchiveScreen() {
       {loading ? (
         <View className="items-center py-16">
           <ActivityIndicator size="large" color="hsl(39 57% 51%)" />
-        </View>
-      ) : error ? (
-        <View className="px-6 py-8">
-          <InlineErrorCard message={error} onRetry={reload} />
         </View>
       ) : posts.length === 0 ? (
         <View className="px-6 py-12 items-center">

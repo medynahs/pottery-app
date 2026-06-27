@@ -414,7 +414,7 @@ function mergePiecesIntoStore(backendPieces: BackendPiece[], localPieces: Piece[
 export async function flushPiecesSync(): Promise<boolean> {
   if (syncInFlight) return false;
 
-  const { pieces, setIsSyncing, setLastSyncedAt } =
+  const { pieces, setIsSyncing, setLastSyncedAt, isSignedIn } =
     useAppStore.getState();
   if (!isSignedIn) return false;
 

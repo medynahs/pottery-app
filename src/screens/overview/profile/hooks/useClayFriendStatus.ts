@@ -3,14 +3,16 @@ import {
   apiListIncomingFriendRequests,
   apiListOutgoingFriendRequests,
 } from '@/src/services/friends';
+import { useAppStore } from '@/src/store';
 import { useCallback, useEffect, useState } from 'react';
 
 export type ClayFriendStatus = 'self' | 'friend' | 'pending_outgoing' | 'none';
 
 export function useClayFriendStatus(
   targetUserId: string | undefined,
-  viewerUserId: string | null | undefined: string | null | undefined,
+  viewerUserId: string | null | undefined,
 ) {
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const [status, setStatus] = useState<ClayFriendStatus>('none');
   const [loading, setLoading] = useState(true);
 
@@ -61,7 +63,7 @@ export function useClayFriendStatus(
     } finally {
       setLoading(false);
     }
-  }, [targetUserId, viewerUserId]);
+  }, [targetUserId, viewerUserId, isSignedIn]);
 
   useEffect(() => {
     void reload();

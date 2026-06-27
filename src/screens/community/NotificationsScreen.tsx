@@ -109,7 +109,6 @@ function Section({ label, count, children }: { label: string; count: number; chi
 export default function NotificationsScreen() {
   const router = useRouter();
   const isSignedIn = useAppStore((s) => s.isSignedIn);
-!;
 
   const [friendRequests, setFriendRequests] = useState<BackendFriendRequest[]>([]);
   const [studioInvites, setStudioInvites] = useState<BackendStudioInvite[]>([]);

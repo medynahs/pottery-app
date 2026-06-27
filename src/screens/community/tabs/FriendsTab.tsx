@@ -182,7 +182,6 @@ function OutgoingRequestRow({
 
 export function FriendsTab() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
-!;
 
   const [friends, setFriends] = useState<BackendUser[]>([]);
   const [incoming, setIncoming] = useState<BackendFriendRequest[]>([]);

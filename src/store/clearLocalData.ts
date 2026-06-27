@@ -2,11 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 import { useAppStore } from './appStore';
-import { clearSecureAuth } from './secureStorage';
+import { clearSecureEmail } from './secureStorage';
 
 /** Wipes AsyncStorage, SecureStore auth, and the Zustand persist snapshot. */
 export async function clearAllLocalData(): Promise<void> {
-  await Promise.all([AsyncStorage.clear(), clearSecureAuth()]);
+  await Promise.all([AsyncStorage.clear(), clearSecureEmail()]);
   await useAppStore.persist.clearStorage();
 }
 

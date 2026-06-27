@@ -35,7 +35,7 @@ function authedFetch(url: string,
     ...init,
     credentials: 'omit',
     headers: {
-      Accept: 'application/json',
+      Accept: 'application/json',
       ...(init?.headers ?? {}),
     },
   });
@@ -82,7 +82,7 @@ function normalizeProfile(body: Record<string, unknown>): PublicProfile {
  * Public read-only profile for share links. Auth optional.
  */
 export async function apiGetPublicProfile(
-  userId: string | null,
+  userId: string,
 ): Promise<PublicProfile> {
   const res = await authedFetch(
     `${API_BASE}/users/${encodeURIComponent(userId)}/profile`,

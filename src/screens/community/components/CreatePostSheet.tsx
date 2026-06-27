@@ -56,7 +56,7 @@ const MAX_POST_LENGTH = 500;
 type CreatePostSheetProps = {
   visible: boolean;
   preset: CommunityPostComposerPreset | null;
-  onClose: () => void;
+  onClose: () => void;
   onPosted: () => void;
 };
 
@@ -101,6 +101,7 @@ export function CreatePostSheet({
   const { stages } = useStageConfig();
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
+  const isSignedIn = useAppStore((s) => s.isSignedIn);
   const { trackCommunityPostCreated } = useAnalytics();
   const sheetHeight = useModalSheetHeight(0.88);
   const scrollRef = React.useRef<ScrollView>(null);
@@ -243,7 +244,7 @@ export function CreatePostSheet({
     return () => {
       cancelled = true;
     };
-  }, [visible, preset?.includeChallengeTag]);
+  }, [visible, preset?.includeChallengeTag, isSignedIn]);
 
   React.useEffect(() => {
     if (postKind !== 'piece_journal' || !linkedPiece || photoIsCustom) return;

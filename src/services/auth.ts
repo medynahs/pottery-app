@@ -1,6 +1,11 @@
-import * as WebBrowser from 'expo-web-browser';
+import Constants from 'expo-constants';
 import Session from 'supertokens-react-native';
 import { API_BASE_URL as API_BASE } from './index';
+
+// Native Google Sign-In ships a native module that Expo Go can't load. Gate every
+// touch of it behind this so the app still boots there (email/password, resets and
+// the supertokens-react-native session are all pure JS and keep working).
+export const isExpoGo = Constants.appOwnership === 'expo';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -19,8 +24,6 @@ export class UserCancelledError extends Error {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const REDIRECT = 'potterynook://auth-callback';
 
 type FdiFormField = { id: string; value: string };
 
@@ -102,44 +105,41 @@ export async function sessionExists(): Promise<boolean> {
   return Session.doesSessionExist();
 }
 
-// ─── Google OAuth (SuperTokens ThirdParty FDI) ────────────────────────────────
+// ─── Google OAuth (native Google Sign-In → SuperTokens ThirdParty FDI) ────────
 
 export async function googleSignIn(): Promise<string> {
-  const authUrlRes = await fetch(
-    `${API_BASE}/auth/authorisationurl?thirdPartyId=google&redirectURIOnProviderDashboard=${encodeURIComponent(REDIRECT)}`,
-  );
-  if (!authUrlRes.ok) throw new AuthError('Failed to get Google sign-in URL.');
-  const authData = await authUrlRes.json() as { urlWithQueryParams: string; pkceCodeVerifier?: string };
-  const { urlWithQueryParams, pkceCodeVerifier } = authData;
-
-  const result = await WebBrowser.openAuthSessionAsync(urlWithQueryParams, REDIRECT, {
-    preferEphemeralSession: true,
-  });
-
-  if (result.type === 'cancel' || result.type === 'dismiss') throw new UserCancelledError();
-  if (result.type !== 'success' || !result.url) throw new AuthError('Google sign-in failed. Please try again.');
-
-  const callbackUrl = result.url;
-  const params = new URLSearchParams(callbackUrl.split('?')[1] ?? '');
-  const code = params.get('code');
-  const state = params.get('state');
-
-  if (!code) throw new AuthError('No authorization code returned from Google.');
-
-  const signinRes = await fdiPost(
-    '/auth/signinup',
-    JSON.stringify({
-      thirdPartyId: 'google',
-      redirectURIInfo: {
-        redirectURIOnProviderDashboard: REDIRECT,
-        redirectURIQueryParams: { code, state },
-        pkceCodeVerifier,
-      },
-    }),
-  );
-  const signinData = await signinRes.json() as { status: string; user?: { email: string } };
-  if (signinData.status !== 'OK') {
-    throw new AuthError(signinData.status ?? 'Google sign-in failed.');
+  if (isExpoGo) {
+    throw new AuthError('Google sign-in needs a development build; it is not available in Expo Go.');
   }
-  return signinData.user?.email ?? '';
+  const { GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes } =
+    require('@react-native-google-signin/google-signin') as typeof import('@react-native-google-signin/google-signin');
+  try {
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    const response = await GoogleSignin.signIn();
+
+    if (!isSuccessResponse(response)) throw new UserCancelledError();
+
+    const serverAuthCode = response.data.serverAuthCode;
+    if (!serverAuthCode) {
+      throw new AuthError('No serverAuthCode from Google (check offlineAccess + webClientId).');
+    }
+
+    const res = await fdiPost(
+      '/auth/signinup',
+      JSON.stringify({
+        thirdPartyId: 'google',
+        redirectURIInfo: {
+          redirectURIOnProviderDashboard: '',
+          redirectURIQueryParams: { code: serverAuthCode },
+        },
+      }),
+    );
+    const data = await res.json() as { status: string; user?: { email?: string; emails?: string[] } };
+    if (data.status !== 'OK') throw new AuthError(data.status ?? 'Google sign-in failed.');
+    return data.user?.email ?? data.user?.emails?.[0] ?? '';
+  } catch (e) {
+    if (e instanceof UserCancelledError || e instanceof AuthError) throw e;
+    if (isErrorWithCode(e) && e.code === statusCodes.SIGN_IN_CANCELLED) throw new UserCancelledError();
+    throw new AuthError(e instanceof Error ? e.message : 'Google sign-in failed.');
+  }
 }
