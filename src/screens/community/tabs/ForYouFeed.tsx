@@ -24,7 +24,6 @@ import { FeedPostCard } from '../components/FeedPostCard';
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  refreshKey: number;
   onRefreshingChange: (refreshing: boolean) => void;
   onJoinChallenge: () => void;
   onSharePiece: () => void;
@@ -34,7 +33,6 @@ interface Props {
 }
 
 export function ForYouFeed({
-  refreshKey,
   onRefreshingChange,
   onJoinChallenge,
   onSharePiece,
@@ -47,8 +45,8 @@ export function ForYouFeed({
   const pieces = useVisiblePieces();
   const hasPieces = pieces.length > 0;
 
-  const feedQuery = useForYouFeed(refreshKey);
-  const { polls, vote: votePoll } = useCommunityPolls(refreshKey);
+  const feedQuery = useForYouFeed();
+  const { polls, vote: votePoll } = useCommunityPolls();
 
   const [extraPosts, setExtraPosts] = useState<BackendFeedPost[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);

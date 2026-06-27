@@ -1,4 +1,5 @@
 import { isRemoteMediaUri } from '@/src/utils/cloudStorage';
+import { isNetworkFailure, networkFailureMessage } from '@/src/utils/networkErrors';
 import { API_BASE_URL as API_BASE } from './index';
 
 type UploadAssetResponse = {
@@ -80,11 +81,16 @@ async function appendPhotoToForm(
 async function postMultipartUpload(
   form: FormData,
 ): Promise<UploadAssetResponse> {
-  const res = await fetch(`${API_BASE}/uploads`, {
-    method: 'POST',
-    headers: { Accept: 'application/json' },
-    body: form as unknown as BodyInit_,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/uploads`, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      body: form as unknown as BodyInit_,
+    });
+  } catch (error) {
+    throw new CommunityUploadError(networkFailureMessage('upload'), undefined, undefined);
+  }
 
   if (!res.ok) {
     const details = await parseUploadError(res);

@@ -39,7 +39,7 @@ import { useMockChallengeStore } from '@/src/screens/community/mock/mockChalleng
 import type { ChallengePhase } from '@/src/screens/community/types';
 import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
 import { buildCommunityPostMeta, embedCommunityPostMeta } from '@/src/screens/community/utils/communityPostPayload';
-import { cacheProfilePost } from '@/src/screens/overview/profile/utils/profilePostCache';
+import { prependCommunityPost } from '@/src/screens/community/utils/communityCacheUpdates';
 import { useChallengesQuery, usePatchChallengesCache, useRefreshChallenges } from '@/src/screens/community/hooks/useChallengesQuery';
 import {
   apiSubmitChallengeEntry,
@@ -49,6 +49,7 @@ import {
 import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
 import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAppStore } from '@/src/store';
+import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
@@ -517,6 +518,7 @@ export function ChallengesTab({
 
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
+  const queryClient = useQueryClient();
   const markChallengeEntrySubmitted = useAppStore((s) => s.markChallengeEntrySubmitted);
   const router = useRouter();
   const mock = useMockChallengeStore();
@@ -725,7 +727,7 @@ export function ChallengesTab({
       });
       postId = post.id;
 
-      cacheProfilePost(hydrateCreatedPost(post, uploaded, [uploaded.assetId]));
+      prependCommunityPost(queryClient, hydrateCreatedPost(post, uploaded, [uploaded.assetId]));
       markPostCreated();
 
       const entry = await apiSubmitChallengeEntry(challengeApi.id, {

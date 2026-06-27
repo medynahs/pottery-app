@@ -2,13 +2,15 @@ import {
   apiListChallenges,
   type BackendChallenge,
 } from '@/src/services/challenges';
+import { defaultQueryRetry, STABLE_QUERY_OPTIONS } from '@/src/lib/queryRetry';
 import { useAppStore } from '@/src/store';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { CHALLENGES_QUERY_KEY } from '../queryKeys';
 
-export const CHALLENGES_QUERY_KEY = ['community', 'challenges'] as const;
+export { CHALLENGES_QUERY_KEY } from '../queryKeys';
 
-const CHALLENGES_STALE_MS = 5 * 60 * 1000;
+const CHALLENGES_STALE_MS = 10 * 60 * 1000;
 
 export function useChallengesQuery() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
@@ -19,6 +21,8 @@ export function useChallengesQuery() {
     enabled: isSignedIn,
     staleTime: CHALLENGES_STALE_MS,
     placeholderData: (previous) => previous,
+    retry: defaultQueryRetry,
+    ...STABLE_QUERY_OPTIONS,
   });
 }
 

@@ -38,6 +38,7 @@ import { FilterSortSheet } from './components/FilterSortSheet';
 import { PieceCard } from './components/PieceCard';
 import { PieceSelectionBar } from './components/PieceSelectionBar';
 import { usePiecesScreen } from './hooks/usePiecesScreen';
+import { useLazyPieceAssetsHydration } from './hooks/useLazyPieceAssetsHydration';
 import { AddPieceModal } from './modals/AddPieceModal';
 import { CemeterySacrificeModal } from './modals/CemeterySacrificeModal';
 import { PieceJournalModal } from './modals/PieceJournalModal';
@@ -53,6 +54,7 @@ const itemLayout = LinearTransition
   .easing(Easing.inOut(Easing.cubic));
 
 export default function PiecesScreen() {
+  useLazyPieceAssetsHydration();
   const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
   const cemeteryColumns = screenWidth >= 430 ? 3 : 2;

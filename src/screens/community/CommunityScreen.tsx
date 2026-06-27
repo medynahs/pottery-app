@@ -7,11 +7,13 @@ import {
   TAB_SCROLL_BOTTOM_PADDING_WITH_FAB,
 } from '@/src/constants/tabScreenLayout';
 import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
+import { FOR_YOU_FEED_QUERY_KEY } from '@/src/screens/community/hooks/useForYouFeed';
 import { buildPieceSharePreset } from '@/src/screens/pieces/utils/sharePieceToCommunity';
 import { useAppStore, useVisiblePieces } from '@/src/store';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Bell, Pencil, Users } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
 import { MainTabHeader } from '../../components/MainTabHeader';
 import { CreatePostSheet } from './components/CreatePostSheet';
@@ -36,6 +38,8 @@ function CommunityUnauthenticatedGate() {
 
 export default function CommunityScreen() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
+  const queryClient = useQueryClient();
+  const lastFeedRefreshAt = useRef(0);
 
   const composerPreset = useAppStore((s) => s.communityPostComposerPreset);
   const clearComposerPreset = useAppStore((s) => s.clearCommunityPostComposerPreset);
@@ -46,7 +50,6 @@ export default function CommunityScreen() {
   const openComposer = useCommunityComposer();
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<FilterTab>('For You');
-  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
   const [feedRefreshing, setFeedRefreshing] = useState(false);
   const [createPostVisible, setCreatePostVisible] = useState(false);
   const [ceremony, setCeremony] = useState<
@@ -70,8 +73,14 @@ export default function CommunityScreen() {
   }, [hasOpenedCommunityTab, hasCreatedPost, markCommunityTabOpened]);
 
   const handleRefresh = useCallback(() => {
-    setFeedRefreshKey((k) => k + 1);
-  }, []);
+    const now = Date.now();
+    if (now - lastFeedRefreshAt.current < 30_000) {
+      setFeedRefreshing(false);
+      return;
+    }
+    lastFeedRefreshAt.current = now;
+    void queryClient.refetchQueries({ queryKey: FOR_YOU_FEED_QUERY_KEY });
+  }, [queryClient]);
 
   const handleShareFirstPiece = useCallback(() => {
     const piece = pieces[0];
@@ -117,7 +126,6 @@ export default function CommunityScreen() {
       default:
         return (
           <ForYouFeed
-            refreshKey={feedRefreshKey}
             onRefreshingChange={setFeedRefreshing}
             onJoinChallenge={() => setActiveFilter('Challenges')}
             onSharePiece={handleShareFirstPiece}
@@ -185,7 +193,6 @@ export default function CommunityScreen() {
           }}
           onPosted={() => {
             setActiveFilter('For You');
-            handleRefresh();
           }}
         />
       ) : null}

@@ -17,19 +17,21 @@ import {
   buildCommunityPostMeta,
   embedCommunityPostMeta,
 } from '@/src/screens/community/utils/communityPostPayload';
+import { resolveCommunityPostError } from '@/src/screens/community/utils/postErrorMessage';
 import {
   canSubmitCommunityPost,
   composeCommunityPostContent,
   resolvePieceJournalPhoto,
   type CommunityPostKind,
 } from '@/src/screens/community/utils/createPostCompose';
-import { cacheProfilePost } from '@/src/screens/overview/profile/utils/profilePostCache';
+import { prependCommunityPost } from '@/src/screens/community/utils/communityCacheUpdates';
 import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
-import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
+import { uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAppStore, useVisiblePieces } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
+import { useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { BookOpen, Camera, Flame, X } from 'lucide-react-native';
+import { BookOpen, Camera, Flame, RefreshCw, WifiOff, X } from 'lucide-react-native';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -178,6 +180,7 @@ export function CreatePostSheet({
   const { stages } = useStageConfig();
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
+  const queryClient = useQueryClient();
   const { trackCommunityPostCreated } = useAnalytics();
   const { openPickSheet } = usePhotoPicker({ aspect: [4, 3], quality: 0.85 });
   const sheetHeight = useModalSheetHeight(0.82);
@@ -194,6 +197,7 @@ export function CreatePostSheet({
   const [firingCone, setFiringCone] = React.useState('6');
   const [firingId, setFiringId] = React.useState<string | undefined>();
   const [posting, setPosting] = React.useState(false);
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   const authorName = user.studioName?.trim() || user.name?.trim() || 'You';
   const authorSubtitle = user.studioName?.trim() && user.name?.trim() ? user.name.trim() : null;
@@ -253,6 +257,7 @@ export function CreatePostSheet({
     setFiringCone('6');
     setFiringId(undefined);
     setPosting(false);
+    setSubmitError(null);
   }, []);
 
   const applyPreset = React.useCallback((next: CommunityPostComposerPreset) => {
@@ -329,8 +334,9 @@ export function CreatePostSheet({
   };
 
   const submit = async () => {
-    if (!canPost) return;
+    if (!canPost || posting) return;
     Keyboard.dismiss();
+    setSubmitError(null);
     setPosting(true);
 
     try {
@@ -367,7 +373,8 @@ export function CreatePostSheet({
         asset_ids: assetIds.length > 0 ? assetIds : undefined,
       });
 
-      cacheProfilePost(
+      prependCommunityPost(
+        queryClient,
         hydrateCreatedPost(created, uploadedPhoto, assetIds),
       );
 
@@ -380,12 +387,10 @@ export function CreatePostSheet({
       onPosted();
       onClose();
     } catch (e) {
-      console.error('[CreatePost] error:', e);
-      const message =
-        e instanceof CommunityUploadError
-          ? e.message
-          : 'Failed to post, please try again';
-      showToast(message, 'error');
+      if (__DEV__) {
+        console.error('[CreatePost] error:', e);
+      }
+      setSubmitError(resolveCommunityPostError(e));
     } finally {
       setPosting(false);
     }
@@ -482,7 +487,10 @@ export function CreatePostSheet({
               ) : null}
               <TextInput
                 value={content}
-                onChangeText={setContent}
+                onChangeText={(text) => {
+                  setContent(text);
+                  if (submitError) setSubmitError(null);
+                }}
                 placeholder={placeholder}
                 placeholderTextColor={INPUT_PLACEHOLDER_COLOR}
                 multiline
@@ -556,6 +564,27 @@ export function CreatePostSheet({
             />
           ) : null}
         </ModalFormScrollView>
+
+        {submitError ? (
+          <View className="mx-4 mb-2 px-3 py-3 rounded-2xl border border-destructive/25 bg-destructive/8">
+            <View className="flex-row items-start gap-2.5">
+              <WifiOff size={18} color="hsl(0 65% 48%)" style={{ marginTop: 1 }} />
+              <View className="flex-1 min-w-0">
+                <Text className="text-sm font-semibold text-foreground">Couldn&apos;t post</Text>
+                <Text className="text-xs text-muted-foreground mt-1 leading-5">{submitError}</Text>
+                <TouchableOpacity
+                  onPress={submit}
+                  disabled={!canPost || posting}
+                  activeOpacity={0.8}
+                  className="flex-row items-center gap-1.5 mt-2.5 self-start"
+                >
+                  <RefreshCw size={14} color="hsl(39 57% 45%)" />
+                  <Text className="text-sm font-semibold text-primary">Try again</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         <ModalSheetFooter>
           <View className="flex-row items-center justify-between">

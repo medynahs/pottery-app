@@ -14,7 +14,6 @@ import { useIsFetching, useMutation, useQuery, useQueryClient } from '@tanstack/
 import { useCallback, useEffect, useRef } from 'react';
 import { canSyncPiecePhotoToCloud } from '@/src/utils/cloudStorage';
 import {
-  hydrateAllPieceAssetsFromCloud,
   scheduleAllPendingPiecePhotoSync,
 } from '@/src/utils/pieceAssetSync';
 import {
@@ -510,10 +509,7 @@ export function usePiecesSync() {
     const { pieces } = useAppStore.getState();
     mergePiecesIntoStore(query.data, pieces);
 
-    void (async () => {
-      await hydrateAllPieceAssetsFromCloud();
-      scheduleAllPendingPiecePhotoSync();
-    })();
+    void scheduleAllPendingPiecePhotoSync();
 
     if (!initialPullMerged) {
       initialPullMerged = true;

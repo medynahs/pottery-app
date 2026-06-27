@@ -2,6 +2,7 @@
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
 import { API_BASE_URL as API_BASE } from './index';
+import { isNetworkFailure, networkFailureMessage } from '@/src/utils/networkErrors';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
 
@@ -150,6 +151,11 @@ function authedFetch(url: string,
       Accept: 'application/json',
       ...(init?.headers ?? {}),
     },
+  }).catch((error) => {
+    if (isNetworkFailure(error)) {
+      throw new CommunityApiError(0, url, networkFailureMessage('post'));
+    }
+    throw error;
   });
 }
 

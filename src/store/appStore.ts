@@ -1374,7 +1374,6 @@ export const useAppStore = create<AppState>()(
     set((state) => ({
       hasCreatedPost: true,
       communityPostsCreated: state.communityPostsCreated + 1,
-      communityFeedRevision: state.communityFeedRevision + 1,
     })),
   markChallengeEntrySubmitted: () =>
     set((state) => ({
@@ -1385,10 +1384,7 @@ export const useAppStore = create<AppState>()(
       challengeWins: state.challengeWins + 1,
     })),
   setClayFriendsCount: (count) => set({ clayFriendsCount: Math.max(0, count) }),
-  markPostDeleted: () =>
-    set((state) => ({
-      communityFeedRevision: state.communityFeedRevision + 1,
-    })),
+  markPostDeleted: () => set({}),
   openCommunityPostComposer: (preset) => set({ communityPostComposerPreset: preset }),
   clearCommunityPostComposerPreset: () => set({ communityPostComposerPreset: null }),
   recordCommunityPostSave: (postId) =>

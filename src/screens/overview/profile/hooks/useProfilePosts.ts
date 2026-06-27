@@ -3,22 +3,34 @@ import {
   CommunityApiError,
   type BackendFeedPost,
 } from '@/src/services/community';
+import { defaultQueryRetry, STABLE_QUERY_OPTIONS } from '@/src/lib/queryRetry';
 import { useAppStore } from '@/src/store/appStore';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect } from 'react';
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import {
   getCachedProfilePosts,
   mergeProfilePosts,
   removeCachedProfilePost,
 } from '../utils/profilePostCache';
+import { FOR_YOU_FEED_QUERY_KEY, PROFILE_POSTS_QUERY_KEY } from '@/src/screens/community/queryKeys';
+import type { ForYouFeedSnapshot } from '@/src/screens/community/hooks/useForYouFeed';
 
-export const PROFILE_POSTS_QUERY_KEY = ['community', 'myPosts'] as const;
+export { PROFILE_POSTS_QUERY_KEY } from '@/src/screens/community/queryKeys';
 
-const PROFILE_POSTS_STALE_MS = 2 * 60 * 1000;
+const PROFILE_POSTS_STALE_MS = 10 * 60 * 1000;
 
-async function fetchProfilePosts(): Promise<BackendFeedPost[]> {
+async function fetchProfilePosts(queryClient: QueryClient): Promise<BackendFeedPost[]> {
   const cached = getCachedProfilePosts();
+
+  const forYou = queryClient.getQueryData<ForYouFeedSnapshot>(FOR_YOU_FEED_QUERY_KEY);
+  const backendUserId = useAppStore.getState().backendUserId;
+  if (forYou?.posts?.length && backendUserId) {
+    const fromFeed = forYou.posts.filter((post) => post.user_id === backendUserId);
+    if (fromFeed.length > 0) {
+      return mergeProfilePosts(fromFeed, cached);
+    }
+  }
+
   try {
     const page = await apiListMyPosts({ limit: 50 });
     const serverPosts = page.items ?? page.posts ?? [];
@@ -39,28 +51,17 @@ async function fetchProfilePosts(): Promise<BackendFeedPost[]> {
 
 export function useProfilePosts() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
-  const communityFeedRevision = useAppStore((s) => s.communityFeedRevision);
   const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: PROFILE_POSTS_QUERY_KEY,
-    queryFn: fetchProfilePosts,
+    queryFn: () => fetchProfilePosts(queryClient),
     enabled: isSignedIn,
     staleTime: PROFILE_POSTS_STALE_MS,
     placeholderData: (previous) => previous,
+    retry: defaultQueryRetry,
+    ...STABLE_QUERY_OPTIONS,
   });
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!isSignedIn || !query.isStale) return;
-      void query.refetch();
-    }, [isSignedIn, query.isStale, query.refetch]),
-  );
-
-  useEffect(() => {
-    if (communityFeedRevision === 0) return;
-    void queryClient.invalidateQueries({ queryKey: PROFILE_POSTS_QUERY_KEY });
-  }, [communityFeedRevision, queryClient]);
 
   const reload = useCallback(() => {
     void query.refetch();

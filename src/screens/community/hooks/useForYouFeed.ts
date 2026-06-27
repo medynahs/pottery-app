@@ -6,19 +6,24 @@ import {
   type BackendFeedPost,
   type FeedPage,
 } from '@/src/services/community';
-import { mergeForYouFeedPosts } from '@/src/utils/communityFeedMerge';
+import { mergeForYouFeedPosts, isSparseCommunityFeed } from '@/src/utils/communityFeedMerge';
 import { markAccountDeletionGraceFromError } from '@/src/services/accountGrace';
+import {
+  getCachedProfilePosts,
+  mergeProfilePosts,
+} from '@/src/screens/overview/profile/utils/profilePostCache';
+import { seedProfilePostsCache, type ForYouFeedSnapshot } from '@/src/screens/community/utils/communityCacheUpdates';
 import { useAppStore } from '@/src/store';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { defaultQueryRetry, STABLE_QUERY_OPTIONS } from '@/src/lib/queryRetry';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { FOR_YOU_FEED_QUERY_KEY, PROFILE_POSTS_QUERY_KEY } from '../queryKeys';
 
-export const FOR_YOU_FEED_QUERY_KEY = ['community', 'forYou'] as const;
+export { FOR_YOU_FEED_QUERY_KEY } from '../queryKeys';
+export type { ForYouFeedSnapshot } from '@/src/screens/community/utils/communityCacheUpdates';
 
-export type ForYouFeedSnapshot = {
-  posts: BackendFeedPost[];
-  nextCursor: string | null;
-  discoverAvailable: boolean;
-};
+const FOR_YOU_STALE_MS = 10 * 60 * 1000;
+const SPARSE_FEED_THRESHOLD = 5;
 
 export async function fetchFriendsFeedPage(cursor?: string): Promise<FeedPage> {
   return fetchFeedPageSafe('GET /users/me/feed', () => apiGetFeed({ limit: 20, cursor }));
@@ -47,16 +52,39 @@ async function fetchFeedPageSafe(
   }
 }
 
-async function fetchForYouFeedFirstPage(): Promise<ForYouFeedSnapshot> {
+function getMyPostsFromCache(queryClient: QueryClient): BackendFeedPost[] {
+  const profileCached = queryClient.getQueryData<BackendFeedPost[]>(PROFILE_POSTS_QUERY_KEY);
+  if (profileCached?.length) return profileCached;
+  return mergeProfilePosts([], getCachedProfilePosts());
+}
+
+export async function fetchForYouFeedFirstPage(
+  queryClient: QueryClient,
+): Promise<ForYouFeedSnapshot> {
   const friendsPage = await fetchFriendsFeedPage();
   const friendsPosts = friendsPage.items ?? friendsPage.posts ?? [];
 
-  const [myPage, discoverPage] = await Promise.all([
-    fetchFeedPageSafe('GET /users/me/posts', () => apiListMyPosts({ limit: 20 })),
-    apiGetDiscoverFeed({ limit: 20 }),
-  ]);
-  const myPosts = myPage.items ?? myPage.posts ?? [];
-  const discoverPosts = discoverPage?.items ?? discoverPage?.posts ?? [];
+  let myPosts = getMyPostsFromCache(queryClient);
+  if (myPosts.length === 0) {
+    const myPage = await fetchFeedPageSafe('GET /users/me/posts', () =>
+      apiListMyPosts({ limit: 20 }),
+    );
+    myPosts = myPage.items ?? myPage.posts ?? [];
+    seedProfilePostsCache(queryClient, myPosts);
+  }
+
+  let discoverPosts: BackendFeedPost[] = [];
+  const withoutDiscover = mergeForYouFeedPosts(myPosts, [], friendsPosts);
+  if (isSparseCommunityFeed(withoutDiscover, { maxPosts: SPARSE_FEED_THRESHOLD })) {
+    try {
+      const discoverPage = await apiGetDiscoverFeed({ limit: 20 });
+      discoverPosts = discoverPage?.items ?? discoverPage?.posts ?? [];
+    } catch (error) {
+      if (__DEV__) {
+        console.warn('[forYouFeed] GET /discover unavailable', (error as Error).message);
+      }
+    }
+  }
 
   return {
     posts: mergeForYouFeedPosts(myPosts, discoverPosts, friendsPosts),
@@ -65,26 +93,17 @@ async function fetchForYouFeedFirstPage(): Promise<ForYouFeedSnapshot> {
   };
 }
 
-function isRateLimited(error: unknown): boolean {
-  return error instanceof CommunityApiError && error.status === 429;
-}
-
-export function useForYouFeed(refreshKey: number) {
-  const queryClient = useQueryClient();
+export function useForYouFeed() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
-  const communityFeedRevision = useAppStore((s) => s.communityFeedRevision);
 
   const query = useQuery({
     queryKey: FOR_YOU_FEED_QUERY_KEY,
-    queryFn: () => fetchForYouFeedFirstPage(),
+    queryFn: ({ client }) => fetchForYouFeedFirstPage(client),
     enabled: isSignedIn,
-    staleTime: 2 * 60 * 1000,
+    staleTime: FOR_YOU_STALE_MS,
     placeholderData: (previous) => previous,
-    retry: (failureCount, error) => {
-      if (isRateLimited(error)) return failureCount < 4;
-      return failureCount < 1;
-    },
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+    retry: defaultQueryRetry,
+    ...STABLE_QUERY_OPTIONS,
   });
 
   useEffect(() => {
@@ -92,16 +111,6 @@ export function useForYouFeed(refreshKey: number) {
     const setGrace = useAppStore.getState().setAccountDeletionGrace;
     markAccountDeletionGraceFromError(query.error, setGrace);
   }, [query.error]);
-
-  useEffect(() => {
-    if (!isSignedIn || refreshKey === 0) return;
-    void queryClient.invalidateQueries({ queryKey: FOR_YOU_FEED_QUERY_KEY });
-  }, [refreshKey, isSignedIn, queryClient]);
-
-  useEffect(() => {
-    if (!isSignedIn || communityFeedRevision === 0) return;
-    void queryClient.invalidateQueries({ queryKey: FOR_YOU_FEED_QUERY_KEY });
-  }, [communityFeedRevision, isSignedIn, queryClient]);
 
   return query;
 }

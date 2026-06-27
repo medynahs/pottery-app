@@ -133,21 +133,11 @@ function AppShell() {
   useGlazesSync();
   useNotificationTriggers();
   usePushTokenSync();
-  const backendUsersStatus = useAppStore((state) => state.backendUsersStatus);
-  const loadBackendUsers = useAppStore((state) => state.loadBackendUsers);
 
   // Initialise RevenueCat SDK early so offerings are prefetched
   useEffect(() => {
     configureRevenueCat();
   }, []);
-
-  useEffect(() => {
-    if (backendUsersStatus !== 'idle') {
-      return;
-    }
-
-    void loadBackendUsers();
-  }, [backendUsersStatus, loadBackendUsers]);
 
   return (
     <>

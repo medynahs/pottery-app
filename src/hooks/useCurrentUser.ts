@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
+import { isRateLimited } from '../lib/queryRetry';
 import {
   ApiError,
   fetchMe,
@@ -36,10 +37,6 @@ function isCancelledQueryError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const name = (error as { name?: string }).name;
   return name === 'CancelledError' || name === 'AbortError';
-}
-
-function isRateLimited(error: unknown): boolean {
-  return error instanceof ApiError && error.status === 429;
 }
 
 function mergeMeCache(prev: BackendProfile | undefined, next: BackendProfile): BackendProfile {
@@ -103,7 +100,7 @@ function meQueryOptions(isSignedIn: boolean) {
       if (isSessionExpired(error) || isAccountDeletedError(error)) return false;
       if (markAccountDeletionGraceFromError(error, () => {})) return false;
       if (isCancelledQueryError(error)) return false;
-      if (isRateLimited(error)) return failureCount < 4;
+      if (isRateLimited(error)) return false;
       return failureCount < 2;
     },
     retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 8000),

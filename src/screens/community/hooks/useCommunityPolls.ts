@@ -1,11 +1,13 @@
 import { apiGetPolls, apiVotePoll, type BackendPoll } from '@/src/services/community';
+import { defaultQueryRetry, STABLE_QUERY_OPTIONS } from '@/src/lib/queryRetry';
 import { useAppStore } from '@/src/store';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { COMMUNITY_POLLS_QUERY_KEY } from '../queryKeys';
 
-export const COMMUNITY_POLLS_QUERY_KEY = ['community', 'polls'] as const;
+export { COMMUNITY_POLLS_QUERY_KEY } from '../queryKeys';
 
-const POLLS_STALE_MS = 5 * 60 * 1000;
+const POLLS_STALE_MS = 15 * 60 * 1000;
 
 export type CommunityPollView = {
   id: string;
@@ -29,10 +31,9 @@ function mapBackendPoll(poll: BackendPoll): CommunityPollView {
   };
 }
 
-export function useCommunityPolls(refreshKey = 0) {
+export function useCommunityPolls() {
   const queryClient = useQueryClient();
   const isSignedIn = useAppStore((s) => s.isSignedIn);
-  const communityFeedRevision = useAppStore((s) => s.communityFeedRevision);
 
   const query = useQuery({
     queryKey: COMMUNITY_POLLS_QUERY_KEY,
@@ -43,17 +44,9 @@ export function useCommunityPolls(refreshKey = 0) {
     enabled: isSignedIn,
     staleTime: POLLS_STALE_MS,
     placeholderData: (previous) => previous,
+    retry: defaultQueryRetry,
+    ...STABLE_QUERY_OPTIONS,
   });
-
-  useEffect(() => {
-    if (!isSignedIn || refreshKey === 0) return;
-    void queryClient.invalidateQueries({ queryKey: COMMUNITY_POLLS_QUERY_KEY });
-  }, [refreshKey, isSignedIn, queryClient]);
-
-  useEffect(() => {
-    if (!isSignedIn || communityFeedRevision === 0) return;
-    void queryClient.invalidateQueries({ queryKey: COMMUNITY_POLLS_QUERY_KEY });
-  }, [communityFeedRevision, isSignedIn, queryClient]);
 
   const polls = useMemo(
     (): CommunityPollView[] => (query.data ?? []).map(mapBackendPoll),

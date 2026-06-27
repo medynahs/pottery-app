@@ -338,6 +338,25 @@ export function scheduleAllPendingPiecePhotoSync(): void {
 
 let hydrateInFlight = false;
 
+const HYDRATE_CONCURRENCY = 2;
+
+async function runWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T) => Promise<void>,
+): Promise<void> {
+  if (items.length === 0) return;
+  let index = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (index < items.length) {
+      const current = items[index];
+      index += 1;
+      await worker(current);
+    }
+  });
+  await Promise.all(runners);
+}
+
 /** Pull cloud asset URLs for all backend-linked pieces (e.g. after sign-in on a new device). */
 export async function hydrateAllPieceAssetsFromCloud(): Promise<void> {
   const { pieces, isSignedIn } = useAppStore.getState();
@@ -350,20 +369,18 @@ export async function hydrateAllPieceAssetsFromCloud(): Promise<void> {
   try {
     const updates = new Map<number, Piece>();
 
-    await Promise.all(
-      targets.map(async (piece) => {
-        try {
-          const assets = await apiListPieceAssets(piece.backendId!);
-          if (!assets.length) return;
-          const merged = mergeAssetsIntoPiece(piece, assets);
-          if (JSON.stringify(merged) !== JSON.stringify(piece)) {
-            updates.set(piece.id, merged);
-          }
-        } catch (err) {
-          if (__DEV__) console.warn(`[pieces:asset:hydrate] failed for ${piece.backendId}:`, err);
+    await runWithConcurrency(targets, HYDRATE_CONCURRENCY, async (piece) => {
+      try {
+        const assets = await apiListPieceAssets(piece.backendId!);
+        if (!assets.length) return;
+        const merged = mergeAssetsIntoPiece(piece, assets);
+        if (JSON.stringify(merged) !== JSON.stringify(piece)) {
+          updates.set(piece.id, merged);
         }
-      }),
-    );
+      } catch (err) {
+        if (__DEV__) console.warn(`[pieces:asset:hydrate] failed for ${piece.backendId}:`, err);
+      }
+    });
 
     if (updates.size > 0) {
       setPiecesIfChanged(

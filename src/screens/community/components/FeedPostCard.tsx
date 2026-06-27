@@ -23,8 +23,8 @@ import {
   deriveCustomCollectionNames,
   sanitizeCustomCollections,
 } from '@/src/screens/library/atlas/collections';
+import { removeCommunityPostFromCaches } from '@/src/screens/community/utils/communityCacheUpdates';
 import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
-import { removeCachedProfilePost } from '@/src/screens/overview/profile/utils/profilePostCache';
 import { apiDeletePost } from '@/src/services/community';
 import { apiSendFriendRequest } from '@/src/services/friends';
 import { useAppStore } from '@/src/store';
@@ -33,6 +33,7 @@ import { useRouter } from 'expo-router';
 import { Bookmark, Check, MoreHorizontal, Trash2, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import type { BackendFeedPost } from '../../../services/community';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -65,7 +66,7 @@ export function FeedPostCard({ post, onDeleted }: Props) {
   const recordCommunityPostSave = useAppStore((s) => s.recordCommunityPostSave);
   const communityPostSaveCounts = useAppStore((s) => s.communityPostSaveCounts);
   const showToast = useAppStore((s) => s.showToast);
-  const markPostDeleted = useAppStore((s) => s.markPostDeleted);
+  const queryClient = useQueryClient();
   const { trackGlazeSavedFromCommunity } = useAnalytics();
 
   const recipePayload = React.useMemo(
@@ -177,8 +178,7 @@ export function FeedPostCard({ post, onDeleted }: Props) {
     setDeleting(true);
     try {
       await apiDeletePost(post.id);
-      removeCachedProfilePost(post.id);
-      markPostDeleted();
+      removeCommunityPostFromCaches(queryClient, post.id);
       setDeleted(true);
       setDeleteConfirmOpen(false);
       onDeleted?.(post.id);

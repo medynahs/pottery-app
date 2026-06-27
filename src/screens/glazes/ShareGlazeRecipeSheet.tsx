@@ -32,11 +32,14 @@ import {
   embedGlazePayloadInContent,
 } from '@/src/screens/glazes/shareGlazeRecipe/glazePostPayload';
 import { ShareGlazeFeedPreview } from '@/src/screens/glazes/shareGlazeRecipe/ShareGlazeFeedPreview';
+import { resolveCommunityPostError } from '@/src/screens/community/utils/postErrorMessage';
+import { prependCommunityPost } from '@/src/screens/community/utils/communityCacheUpdates';
 import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
-import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
+import { uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAnalytics } from '@/src/hooks/useAnalytics';
 import { useAppStore } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
+import { useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import { Bookmark, Copy, RotateCcw } from 'lucide-react-native';
 import React from 'react';
@@ -101,6 +104,7 @@ export function ShareGlazeRecipeSheet({
 
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
+  const queryClient = useQueryClient();
   const { trackCommunityPostCreated } = useAnalytics();
   const [posting, setPosting] = React.useState(false);
   const [draft, setDraft] = React.useState<ShareGlazeDraft | null>(null);
@@ -178,6 +182,7 @@ export function ShareGlazeRecipeSheet({
         assetIds,
       );
 
+      prependCommunityPost(queryClient, created);
       await clearShareDraft(glaze.id);
       markPostCreated();
       trackCommunityPostCreated({
@@ -192,10 +197,7 @@ export function ShareGlazeRecipeSheet({
         console.debug('[ShareGlaze] post created', created.id);
       }
     } catch (err) {
-      const message =
-        err instanceof CommunityUploadError
-          ? err.message
-          : 'Could not share, check your connection';
+      const message = resolveCommunityPostError(err);
       showToast(message, 'error');
     } finally {
       setPosting(false);
