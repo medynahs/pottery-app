@@ -5,6 +5,9 @@ import type { NotificationPrefs } from '../store/appStore';
 import { registerPushToken } from './api';
 import { configureNotificationRuntime } from './notifications';
 
+/** Kill-switch — re-enable once push-token sync loop is fixed on the client. */
+export const PUSH_NOTIFICATIONS_ENABLED = false;
+
 export function hasEnabledNotificationPrefs(prefs: NotificationPrefs): boolean {
   return Object.values(prefs).some(Boolean);
 }
@@ -42,6 +45,7 @@ export async function syncPushTokenWithBackend(
   
     prefs: NotificationPrefs,
 ): Promise<void> {
+  if (!PUSH_NOTIFICATIONS_ENABLED) return;
   if (!hasEnabledNotificationPrefs(prefs)) return;
 
   const permission = await Notifications.getPermissionsAsync();

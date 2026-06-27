@@ -42,9 +42,7 @@ import { AccountDeletedGate } from '@/src/components/AccountDeletedGate';
 import { configureRevenueCat } from '@/src/hooks/useEntitlements';
 import { useMeSessionEffects } from '@/src/hooks/useCurrentUser';
 import { useEntitlementSync } from '@/src/hooks/useEntitlementSync';
-import { useNotificationTriggers } from '@/src/hooks/useNotificationTriggers';
 import { usePreferencesSync } from '@/src/hooks/usePreferencesSync';
-import { usePushTokenSync } from '@/src/hooks/usePushTokenSync';
 import { useRhythmSync } from '@/src/hooks/useRhythmSync';
 import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 import { useGlazesSync } from '@/src/screens/library/useGlazesSync';
@@ -131,8 +129,9 @@ function AppShell() {
   useOfflineSync();
   usePiecesSync();
   useGlazesSync();
-  useNotificationTriggers();
-  usePushTokenSync();
+  // Push notifications disabled — see PUSH_NOTIFICATIONS_ENABLED in pushTokens.ts
+  // useNotificationTriggers();
+  // usePushTokenSync();
 
   // Initialise RevenueCat SDK early so offerings are prefetched
   useEffect(() => {
