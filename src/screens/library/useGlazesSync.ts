@@ -137,6 +137,24 @@ function applyGlazeSyncResponse(response: SyncGlazesResponse) {
     pendingGlazeDeletions: state.pendingGlazeDeletions.filter((g) => !clientRefMap[String(g.id)]),
     pendingGlazeTestDeletions: state.pendingGlazeTestDeletions.filter((t) => !clientRefMap[String(t.id)]),
   });
+
+  // A piece synced before its glaze had a backendId pushed glaze_id = null.
+  // Now that these glazes are mapped, re-dirty their pieces so the queryable
+  // glaze_id projection catches up (the flushPiecesSync right after picks it up).
+  const newlyMapped = new Set(
+    state.glazes.filter((g) => !g.backendId && clientRefMap[String(g.id)]).map((g) => g.id),
+  );
+  if (newlyMapped.size > 0) {
+    const { pieces } = useAppStore.getState();
+    const next = pieces.map((p) =>
+      p.glazeId && newlyMapped.has(p.glazeId) && !p.syncDirty && !p.deleted
+        ? { ...p, syncDirty: true }
+        : p,
+    );
+    if (next.some((p, i) => p !== pieces[i])) {
+      useAppStore.setState({ pieces: next });
+    }
+  }
 }
 
 // ─── Image reconciliation ────────────────────────────────────────────────────

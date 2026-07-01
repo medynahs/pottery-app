@@ -1107,7 +1107,6 @@ export const useAppStore = create<AppState>()(
       batchSize: undefined,
       backendId: undefined,
       coverAssetId: undefined,
-      photoAssetIds: undefined,
       deleted: undefined,
       syncDirty: true,
     };
@@ -1126,7 +1125,6 @@ export const useAppStore = create<AppState>()(
       batchId: newBatchId,
       backendId: undefined,
       coverAssetId: undefined,
-      photoAssetIds: undefined,
       deleted: undefined,
       syncDirty: true,
     }));
@@ -1138,6 +1136,7 @@ export const useAppStore = create<AppState>()(
         if (p.id !== pieceId) return p;
         return {
           ...p,
+          syncDirty: true,
           timeline: p.timeline.map((entry, i) => (i === entryIndex ? { ...entry, ...patch } : entry)),
         };
       }),

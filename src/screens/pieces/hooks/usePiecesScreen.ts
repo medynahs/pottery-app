@@ -241,6 +241,7 @@ export function usePiecesScreen() {
             }
           : prev
       );
+      schedulePiecesSync();
       schedulePiecePhotoSync(pieceId);
     },
     [updateJournalEntry]

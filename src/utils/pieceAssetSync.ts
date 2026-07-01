@@ -1,27 +1,28 @@
 /**
- * Piece photo cloud sync. Photos are keyed on a stable backend asset UUID
- * (`PiecePhoto.assetId`), never on the uri:
+ * Piece photo cloud sync ("shoebox"). The backend registry stores only blobs;
+ * which entry (or the cover slot) a photo belongs to lives in the piece doc as
+ * assetId refs. Photos are keyed on the stable asset UUID (`PiecePhoto.assetId`),
+ * never on the uri:
  *   - sync-up uploads any local photo that has no assetId yet, then stamps the
- *     assetId onto it and re-syncs the piece so the backend timeline JSON picks
- *     up the ref (see `timelineForBackend` in usePiecesSync).
+ *     assetId onto it and re-syncs the piece so the backend doc picks up the ref.
  *   - a photo that already has an assetId is backed up, so it's skipped (this is
  *     what stops downloaded files from being re-uploaded).
- *   - delete-reconcile diffs assetId sets, so it survives url rotation.
+ *   - orphan reconcile diffs assetId sets against the bulk asset list, so it
+ *     survives url rotation.
  *   - hydrate resolves each ref's fresh url and downloads it to a local file so
  *     the image survives presigned-url expiry on a second device.
  *
  * The cover (`piece.photo` render string + `coverAssetId` backup id) follows the
  * same rules: it stays a local file, backs up once, and hydrates by download.
  * Picking/replacing/removing the cover clears `coverAssetId` so sync re-backs-up
- * (new) or reconcile deletes the orphan (removed).
+ * (new) or reconcile deletes the orphan (removed). `coverAssetId` rides in the
+ * synced doc, so a fresh device knows which asset is the cover.
  */
 import * as FileSystem from 'expo-file-system/legacy';
 import {
-  LOCAL_STAGE_TO_API,
   apiDeletePieceAsset,
-  apiListPieceAssets,
+  apiListAllPieceAssets,
   apiUploadPieceAsset,
-  type ApiPieceStatus,
   type BackendPieceAsset,
 } from '../services/pieces';
 import { schedulePiecesSync } from '../screens/pieces/hooks/usePiecesSync';
@@ -46,10 +47,6 @@ function localImageFileFromUri(uri: string): { uri: string; name: string; type: 
   const base = uri.split('/').pop()?.split('?')[0];
   const name = base && base.includes('.') ? base : `piece-photo.${ext}`;
   return { uri, name, type: mime };
-}
-
-function localStageToApiStatus(stage: string): ApiPieceStatus {
-  return LOCAL_STAGE_TO_API[stage] ?? 'idea';
 }
 
 const ASSET_DIR = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? ''}piece-assets/`;
@@ -92,13 +89,14 @@ export function pieceHasPendingLocalPhotos(piece: Piece): boolean {
   );
 }
 
-function timelineAssetIds(piece: Piece): Set<string> {
+function referencedAssetIds(piece: Piece): Set<string> {
   const ids = new Set<string>();
   for (const entry of piece.timeline) {
     for (const photo of entry.photos ?? []) {
       if (photo.assetId) ids.add(photo.assetId);
     }
   }
+  if (piece.coverAssetId) ids.add(piece.coverAssetId);
   return ids;
 }
 
@@ -137,12 +135,7 @@ async function uploadTimelinePhotos(piece: Piece): Promise<{ piece: Piece; uploa
       if (!canSyncPiecePhotoToCloud({ ...piece, timeline }, false)) continue; // free-tier cap
 
       const file = localImageFileFromUri(photo.uri);
-      const asset = await apiUploadPieceAsset(
-        piece.backendId,
-        file,
-        localStageToApiStatus(entry.stage),
-        entry.stage,
-      );
+      const asset = await apiUploadPieceAsset(piece.backendId, file);
       entry.photos[pi] = { ...photo, assetId: asset.id }; // keep local uri, add the id
       uploaded += 1;
     }
@@ -151,40 +144,60 @@ async function uploadTimelinePhotos(piece: Piece): Promise<{ piece: Piece; uploa
   return uploaded > 0 ? { piece: { ...piece, timeline }, uploaded } : { piece, uploaded: 0 };
 }
 
-// ─── Delete-reconcile (against the live backend asset list) ───────────────────
+// ─── Orphan reconcile (global, against the bulk asset list) ───────────────────
+
+let reconcileTimer: ReturnType<typeof setTimeout> | null = null;
+let reconcileInFlight = false;
+const RECONCILE_DEBOUNCE_MS = 5000;
 
 /**
- * Delete any backend asset this piece no longer references (cover or timeline).
- * Reconciling against the live list (not the pre-flush local state) is what
- * catches editor deletes/replaces, which mutate the store before this sync runs.
+ * Delete backend assets no local piece references anymore (photo deletes and
+ * replacements mutate the store before sync; this is the cleanup pass). One
+ * bulk list call for the whole account. Pieces that are locally dirty, deleted
+ * or unknown are skipped — don't judge mid-edit or mid-pull state.
  *
- * ponytail: "not referenced by my local timeline" = orphan. Ceiling: a photo
+ * ponytail: "not referenced by my local piece" = orphan. Ceiling: a photo
  * added on another device in the narrow window before this device pulls its
- * timeline ref could look orphaned here. Acceptable for a local-first,
- * single-user journal; upgrade path = per-photo tombstones if concurrent
- * multi-device photo editing ever matters.
+ * doc ref could look orphaned here. Acceptable for a local-first, single-user
+ * journal; upgrade path = per-photo tombstones if concurrent multi-device
+ * photo editing ever matters.
  */
-async function reconcileBackendAssets(piece: Piece): Promise<void> {
-  if (!piece.backendId) return;
+async function reconcileCloudAssets(): Promise<void> {
+  if (!useAppStore.getState().isSignedIn || reconcileInFlight) return;
+  reconcileInFlight = true;
 
-  let assets: BackendPieceAsset[];
   try {
-    assets = await apiListPieceAssets(piece.backendId);
-  } catch {
-    return; // can't list right now, retry on the next flush
-  }
+    const assets = await apiListAllPieceAssets();
+    if (!assets.length) return;
 
-  const referenced = timelineAssetIds(piece);
-  if (piece.coverAssetId) referenced.add(piece.coverAssetId);
-
-  for (const asset of assets) {
-    if (referenced.has(asset.id)) continue;
-    try {
-      await apiDeletePieceAsset(piece.backendId, asset.id);
-    } catch {
-      // suppress — retry on the next reconcile
+    const referencedByPiece = new Map<string, Set<string>>();
+    for (const piece of useAppStore.getState().pieces) {
+      if (!piece.backendId || piece.deleted || piece.syncDirty) continue;
+      referencedByPiece.set(piece.backendId, referencedAssetIds(piece));
     }
+
+    for (const asset of assets) {
+      const referenced = referencedByPiece.get(asset.piece_id);
+      if (!referenced || referenced.has(asset.id)) continue;
+      try {
+        await apiDeletePieceAsset(asset.piece_id, asset.id);
+      } catch {
+        // suppress — retry on the next reconcile
+      }
+    }
+  } catch {
+    // can't list right now, retry on the next schedule
+  } finally {
+    reconcileInFlight = false;
   }
+}
+
+function scheduleAssetReconcile(): void {
+  if (reconcileTimer) clearTimeout(reconcileTimer);
+  reconcileTimer = setTimeout(() => {
+    reconcileTimer = null;
+    void reconcileCloudAssets();
+  }, RECONCILE_DEBOUNCE_MS);
 }
 
 // ─── Push flush ───────────────────────────────────────────────────────────────
@@ -208,17 +221,17 @@ export async function flushPiecePhotoSync(pieceId: number): Promise<void> {
     current = timeline.piece;
     uploaded += timeline.uploaded;
 
-    await reconcileBackendAssets(current);
-
     if (JSON.stringify(current) !== JSON.stringify(before)) {
-      // New/removed assetIds must reach the backend timeline JSON, so mark the
-      // piece dirty and re-sync it.
+      // New assetIds must reach the backend doc, so mark the piece dirty and
+      // re-sync it.
       const next: Piece = { ...current, syncDirty: true };
       setPiecesIfChanged(
         useAppStore.getState().pieces.map((p) => (p.id === pieceId ? next : p)),
       );
       schedulePiecesSync();
     }
+
+    scheduleAssetReconcile();
 
     if (uploaded > 0) {
       useAppStore.getState().showToast('Photo backed up to the cloud', 'success');
@@ -352,11 +365,21 @@ export async function hydrateAllPieceAssetsFromCloud(): Promise<void> {
 
   hydrateInFlight = true;
   try {
+    // One bulk list for the whole account, then per-piece downloads.
+    const all = await apiListAllPieceAssets();
+    if (!all.length) return;
+    const byPiece = new Map<string, BackendPieceAsset[]>();
+    for (const asset of all) {
+      const list = byPiece.get(asset.piece_id);
+      if (list) list.push(asset);
+      else byPiece.set(asset.piece_id, [asset]);
+    }
+
     const updates = new Map<number, Piece>();
 
     await runWithConcurrency(targets, HYDRATE_CONCURRENCY, async (piece) => {
       try {
-        const assets = await apiListPieceAssets(piece.backendId!);
+        const assets = byPiece.get(piece.backendId!) ?? [];
         if (!assets.length) return;
         const merged = await hydratePieceFromAssets(piece, assets);
         if (merged !== piece) updates.set(piece.id, merged);
@@ -371,6 +394,8 @@ export async function hydrateAllPieceAssetsFromCloud(): Promise<void> {
       );
       if (__DEV__) console.log(`[pieces:asset:hydrate] hydrated ${updates.size} piece(s)`);
     }
+  } catch (err) {
+    if (__DEV__) console.warn('[pieces:asset:hydrate] failed:', err);
   } finally {
     hydrateInFlight = false;
   }
