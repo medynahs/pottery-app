@@ -17,12 +17,6 @@ import { RefreshControl, ScrollView, TouchableOpacity, View, useWindowDimensions
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { MainTabHeader } from '../../components/MainTabHeader';
 import type { Piece, PieceVisibility } from '../../types/pieces';
-
-const VISIBILITY_LABEL: Record<PieceVisibility, string> = {
-  private: 'Private',
-  friends: 'Friends',
-  public: 'Public',
-};
 import {
   CEMETERY_ACCENT,
   CEMETERY_BORDER_SUBTLE,
@@ -54,6 +48,12 @@ import { StageAdvanceCelebrationModal, type StageAdvanceCelebration } from './mo
 import { StageAdvanceFlowModal } from './modals/StageAdvanceFlowModal';
 import { STAGE_LABEL } from './utils/constants';
 import { collectPiecePhotos } from './utils/piecePhotos';
+
+const VISIBILITY_LABEL: Record<PieceVisibility, string> = {
+  private: 'Private',
+  friends: 'Friends',
+  public: 'Public',
+};
 
 const itemLayout = LinearTransition
   .duration(420)

@@ -26,8 +26,9 @@ function addMediaUri(uris: Set<string>, uri: string | undefined | null): void {
 }
 
 function collectPieceMediaUris(piece: Piece, uris: Set<string>): void {
-  addMediaUri(uris, piece.photo);
-  addMediaUri(uris, piece.imgUrl);
+  // Dedup the cover by its stable assetId so the same backed-up photo isn't
+  // counted twice across devices (each device hydrates it under a local uri).
+  addMediaUri(uris, piece.coverAssetId ?? piece.photo ?? piece.imgUrl);
   for (const entry of piece.timeline) {
     for (const photo of entry.photos ?? []) {
       // Dedup uploaded photos by their stable assetId, pending ones by uri.
