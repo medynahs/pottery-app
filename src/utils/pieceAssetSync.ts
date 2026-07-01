@@ -73,6 +73,7 @@ async function downloadAssetToLocal(assetId: string, url: string): Promise<strin
     const info = await FileSystem.getInfoAsync(target);
     if (info.exists) return info.uri;
     const res = await FileSystem.downloadAsync(url, target);
+    if (res.status < 200 || res.status >= 300) return null;
     return res.uri;
   } catch {
     return null;
