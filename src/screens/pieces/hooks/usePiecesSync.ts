@@ -206,6 +206,18 @@ function mergeBackendPiecesIntoLocal(
       continue;
     }
 
+    if (bp.is_deleted) {
+      if (existing) {
+        replaced.set(existing.id, {
+          ...existing,
+          backendId: bp.id,
+          deleted: true,
+          syncDirty: false,
+        });
+      }
+      continue;
+    }
+
     const merged = pieceFromDoc(bp, existing);
     if (!merged) continue;
     if (existing) replaced.set(existing.id, merged);

@@ -283,7 +283,7 @@ export function countPiecePhotos(piece: Piece): number {
   let count = piece.photo || piece.imgUrl ? 1 : 0;
   for (const entry of piece.timeline) {
     if (entry.photos?.length) {
-      count += entry.photos.filter((p) => p.uri).length;
+      count += entry.photos.filter((p) => p.assetId || p.uri).length;
     }
   }
   return count;
