@@ -42,7 +42,6 @@ import {
 import { migrateStudioRituals } from '../screens/overview/studioRythm/studioRhythmIcons';
 import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
-import { fetchUsers, type BackendUser } from '../services';
 import { sessionExists, signOut } from '../services/auth';
 import { markSessionBootstrap } from '../services/sessionBootstrap';
 import type { Firing, FiringState, FiringStatusOverride, Kiln, KilnChecklist, KilnType, LogFiringPayload } from '../types/kiln';
@@ -438,10 +437,6 @@ interface AppState {
     linkedStudioCode?: string;
   };
   setUser: (patch: Partial<AppState['user']>) => void;
-  backendUsers: BackendUser[];
-  backendUsersStatus: 'idle' | 'loading' | 'success' | 'error';
-  backendUsersError: string | null;
-  loadBackendUsers: () => Promise<void>;
   kilnkinCompanion: KilnkinCompanion;
   setKilnkinCompanion: (companion: KilnkinCompanion) => void;
   renameKilnkinCompanion: (name: string) => void;
@@ -832,30 +827,6 @@ export const useAppStore = create<AppState>()(
   // ── User ──────────────────────────────────────────────────────
   user: { name: '', avatarInitial: '', studioName: '', location: '', bio: '' },
   setUser: (patch) => set((state) => ({ user: { ...state.user, ...patch } })),
-  backendUsers: [],
-  backendUsersStatus: 'idle',
-  backendUsersError: null,
-  loadBackendUsers: async () => {
-    if (get().backendUsersStatus === 'loading') {
-      return;
-    }
-
-    set({ backendUsersStatus: 'loading', backendUsersError: null });
-
-    try {
-      const users = await fetchUsers();
-      set({
-        backendUsers: users,
-        backendUsersStatus: 'success',
-        backendUsersError: null,
-      });
-    } catch (error) {
-      set({
-        backendUsersStatus: 'error',
-        backendUsersError: error instanceof Error ? error.message : 'Unable to load users',
-      });
-    }
-  },
   kilnkinCompanion: DEFAULT_KILNKIN_COMPANION,
   setKilnkinCompanion: (companion) => set({ kilnkinCompanion: companion }),
   renameKilnkinCompanion: (name) =>
