@@ -1,6 +1,7 @@
 // Community API, /users/me/feed, /users/me/posts
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
+import type { PieceVisibility } from '../types/pieces';
 import { API_BASE_URL as API_BASE } from './index';
 import { isNetworkFailure, networkFailureMessage } from '@/src/utils/networkErrors';
 
@@ -16,6 +17,10 @@ export interface BackendFeedPost {
   id: string;
   user_id: string;
   content: string;
+  /** Wrapped journal piece, when the post is a shared piece rather than a standalone post. */
+  piece_id?: string | null;
+  title?: string | null;
+  visibility?: PieceVisibility;
   assets: BackendPostAsset[] | null;
   asset_ids: string[];
   created_at: string;
@@ -69,9 +74,15 @@ async function parseCommunityError(res: Response, endpoint: string): Promise<nev
 // ─── Request payloads ────────────────────────────────────────────────────────
 
 export interface CreatePostPayload {
-  content: string;
+  /** Optional now, a post can be a piece and/or images with no text. */
+  content?: string;
   /** UUIDs returned by POST /uploads before creating the post. */
   asset_ids?: string[];
+  /** Wrap a journal piece; the post inherits the piece's visibility. */
+  piece_id?: string;
+  title?: string;
+  /** Standalone-post visibility (ignored by the server when piece_id is set). */
+  visibility?: PieceVisibility;
 }
 
 function normalizePostAsset(raw: unknown): BackendPostAsset | null {

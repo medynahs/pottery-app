@@ -58,9 +58,6 @@ function applyProfileToStore(profile: Parameters<typeof userPatchFromBackendProf
   if (profile.profile_public !== undefined) {
     setPrivacyPref('profilePublic', profile.profile_public);
   }
-  if (profile.pieces_public !== undefined) {
-    setPrivacyPref('piecesPublic', profile.pieces_public);
-  }
 }
 
 function syncDeletionGraceFromProfile(profile: BackendProfile) {

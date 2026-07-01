@@ -1,21 +1,37 @@
 /**
- * Piece photo cloud sync — uploads local journal/cover photos to the assets API
- * and hydrates remote URLs when pulling pieces on a new device.
+ * Piece photo cloud sync. Photos are keyed on a stable backend asset UUID
+ * (`PiecePhoto.assetId`), never on the uri:
+ *   - sync-up uploads any local photo that has no assetId yet, then stamps the
+ *     assetId onto it and re-syncs the piece so the backend timeline JSON picks
+ *     up the ref (see `timelineForBackend` in usePiecesSync).
+ *   - a photo that already has an assetId is backed up, so it's skipped (this is
+ *     what stops downloaded files from being re-uploaded).
+ *   - delete-reconcile diffs assetId sets, so it survives url rotation.
+ *   - hydrate resolves each ref's fresh url and downloads it to a local file so
+ *     the image survives presigned-url expiry on a second device.
+ *
+ * The cover (`piece.photo` render string + `coverAssetId` backup id) follows the
+ * same rules: it stays a local file, backs up once, and hydrates by download.
+ * Picking/replacing/removing the cover clears `coverAssetId` so sync re-backs-up
+ * (new) or reconcile deletes the orphan (removed).
  */
+import * as FileSystem from 'expo-file-system/legacy';
 import {
   LOCAL_STAGE_TO_API,
   apiDeletePieceAsset,
   apiListPieceAssets,
-  apiUpdatePieceAsset,
   apiUploadPieceAsset,
   type ApiPieceStatus,
   type BackendPieceAsset,
 } from '../services/pieces';
+import { schedulePiecesSync } from '../screens/pieces/hooks/usePiecesSync';
 import { setPiecesIfChanged, useAppStore } from '../store/appStore';
-import type { Piece, TimelineEntry } from '../types/pieces';
-import { canSyncPiecePhotoToCloud, isLocalMediaUri, isRemoteMediaUri } from './cloudStorage';
+import type { Piece } from '../types/pieces';
+import { canSyncPiecePhotoToCloud, isLocalMediaUri } from './cloudStorage';
 
 const ASSET_SYNC_DEBOUNCE_MS = 600;
+
+// ─── File helpers ─────────────────────────────────────────────────────────────
 
 function guessMimeType(uri: string): string {
   const lower = uri.split('?')[0].split('#')[0].toLowerCase();
@@ -36,266 +52,172 @@ function localStageToApiStatus(stage: string): ApiPieceStatus {
   return LOCAL_STAGE_TO_API[stage] ?? 'idea';
 }
 
-function timelineEntryMatchesApiStatus(entryStage: string, apiStatus: ApiPieceStatus): boolean {
-  return localStageToApiStatus(entryStage) === apiStatus;
+const ASSET_DIR = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? ''}piece-assets/`;
+
+async function ensureAssetDir(): Promise<void> {
+  try {
+    const info = await FileSystem.getInfoAsync(ASSET_DIR);
+    if (!info.exists) await FileSystem.makeDirectoryAsync(ASSET_DIR, { intermediates: true });
+  } catch {
+    // best-effort; download will fall back to the remote url
+  }
 }
 
-function findTimelineEntryIndex(
-  timeline: TimelineEntry[],
-  apiStatus: ApiPieceStatus,
-  assetCreatedAt: string,
-): number {
-  const candidates = timeline
-    .map((entry, index) => ({ entry, index }))
-    .filter(({ entry }) => timelineEntryMatchesApiStatus(entry.stage, apiStatus));
-
-  if (candidates.length === 0) return -1;
-  if (candidates.length === 1) return candidates[0].index;
-
-  const assetTime = new Date(assetCreatedAt).getTime();
-  let best = candidates[0];
-  let bestDelta = Math.abs(new Date(best.entry.timestamp).getTime() - assetTime);
-  for (const candidate of candidates.slice(1)) {
-    const delta = Math.abs(new Date(candidate.entry.timestamp).getTime() - assetTime);
-    if (delta < bestDelta) {
-      best = candidate;
-      bestDelta = delta;
-    }
+/**
+ * Download a remote asset url to a stable local file named by assetId. Returns
+ * the local uri, or null if the download failed (caller falls back to the url).
+ */
+async function downloadAssetToLocal(assetId: string, url: string): Promise<string | null> {
+  try {
+    await ensureAssetDir();
+    const mime = guessMimeType(url);
+    const ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
+    const target = `${ASSET_DIR}${assetId}.${ext}`;
+    const info = await FileSystem.getInfoAsync(target);
+    if (info.exists) return info.uri;
+    const res = await FileSystem.downloadAsync(url, target);
+    return res.uri;
+  } catch {
+    return null;
   }
-  return best.index;
 }
 
-function collectRemoteUris(piece: Piece): Set<string> {
-  const uris = new Set<string>();
-  const cover = piece.photo ?? piece.imgUrl;
-  if (cover && isRemoteMediaUri(cover)) uris.add(cover);
-  for (const entry of piece.timeline) {
-    for (const photo of entry.photos ?? []) {
-      if (isRemoteMediaUri(photo)) uris.add(photo);
-    }
-  }
-  return uris;
-}
-
-/** Merge backend assets into a local piece without clobbering pending local uploads. */
-export function mergeAssetsIntoPiece(piece: Piece, assets: BackendPieceAsset[]): Piece {
-  if (!assets.length) return piece;
-
-  const sorted = [...assets].sort((a, b) => a.created_at.localeCompare(b.created_at));
-  const coverAssets = sorted.filter((asset) => !asset.status);
-  const stageAssets = sorted.filter((asset) => asset.status);
-
-  let updated: Piece = { ...piece };
-  const photoAssetIds = { ...(piece.photoAssetIds ?? {}) };
-
-  const cover = piece.photo ?? piece.imgUrl;
-  const canApplyCover = !cover || isRemoteMediaUri(cover);
-  const latestCover = coverAssets[coverAssets.length - 1];
-  if (canApplyCover && latestCover?.url) {
-    updated = {
-      ...updated,
-      photo: latestCover.url,
-      imgUrl: latestCover.url,
-      coverAssetId: latestCover.id,
-    };
-    photoAssetIds[latestCover.url] = latestCover.id;
-  }
-
-  const timeline = piece.timeline.map((entry) => ({
-    ...entry,
-    photos: [...(entry.photos ?? [])],
-  }));
-
-  for (const asset of stageAssets) {
-    if (!asset.status || !asset.url) continue;
-    const entryIndex = findTimelineEntryIndex(timeline, asset.status, asset.created_at);
-    if (entryIndex < 0) continue;
-
-    const entry = timeline[entryIndex];
-    const photos = [...(entry.photos ?? [])];
-    const hasLocalOnly = photos.some(isLocalMediaUri);
-    if (hasLocalOnly && !photos.includes(asset.url)) {
-      // Pending local uploads take priority; remote will merge after upload.
-      continue;
-    }
-    if (!photos.includes(asset.url)) {
-      photos.push(asset.url);
-      timeline[entryIndex] = { ...entry, photos };
-      photoAssetIds[asset.url] = asset.id;
-    } else if (!photoAssetIds[asset.url]) {
-      photoAssetIds[asset.url] = asset.id;
-    }
-  }
-
-  updated = { ...updated, timeline, photoAssetIds };
-  return updated;
-}
+// ─── Pending / identity helpers ───────────────────────────────────────────────
 
 export function pieceHasPendingLocalPhotos(piece: Piece): boolean {
   const cover = piece.photo ?? piece.imgUrl;
-  if (cover && isLocalMediaUri(cover)) return true;
-  return piece.timeline.some((entry) => entry.photos?.some(isLocalMediaUri));
+  if (cover && isLocalMediaUri(cover) && !piece.coverAssetId) return true;
+  return piece.timeline.some((entry) =>
+    entry.photos?.some((photo) => !photo.assetId && isLocalMediaUri(photo.uri)),
+  );
 }
 
-function applyCoverFromAsset(piece: Piece, asset: BackendPieceAsset): Piece {
-  const photoAssetIds = { ...(piece.photoAssetIds ?? {}) };
-  photoAssetIds[asset.url] = asset.id;
-  return {
-    ...piece,
-    photo: asset.url,
-    imgUrl: asset.url,
-    coverAssetId: asset.id,
-    photoAssetIds,
-  };
+function timelineAssetIds(piece: Piece): Set<string> {
+  const ids = new Set<string>();
+  for (const entry of piece.timeline) {
+    for (const photo of entry.photos ?? []) {
+      if (photo.assetId) ids.add(photo.assetId);
+    }
+  }
+  return ids;
 }
 
-function applyTimelinePhotoFromAsset(
-  piece: Piece,
-  entryIndex: number,
-  photoIndex: number,
-  previousUri: string,
-  asset: BackendPieceAsset,
-): Piece {
-  const timeline = piece.timeline.map((entry, index) => {
-    if (index !== entryIndex) return entry;
-    const photos = [...(entry.photos ?? [])];
-    photos[photoIndex] = asset.url;
-    return { ...entry, photos };
-  });
-  const photoAssetIds = { ...(piece.photoAssetIds ?? {}) };
-  delete photoAssetIds[previousUri];
-  photoAssetIds[asset.url] = asset.id;
-  return { ...piece, timeline, photoAssetIds };
-}
+// ─── Cover (re-keyed on coverAssetId, stays a local file) ─────────────────────
 
-async function uploadCoverPhoto(
-  piece: Piece,
-): Promise<Piece> {
+async function uploadCoverPhoto(piece: Piece): Promise<{ piece: Piece; uploaded: number }> {
   const coverUri = piece.photo ?? piece.imgUrl;
-  if (!coverUri || !piece.backendId || !isLocalMediaUri(coverUri)) return piece;
-
-  if (!canSyncPiecePhotoToCloud(piece, !!piece.coverAssetId)) return piece;
+  // Upload only a local cover that isn't backed up yet. Picking/replacing the
+  // cover clears coverAssetId, so a set id means "already backed up, skip".
+  if (!coverUri || !piece.backendId || !isLocalMediaUri(coverUri) || piece.coverAssetId) {
+    return { piece, uploaded: 0 };
+  }
+  // ponytail: cover is the piece's single primary photo, always backable (bytes
+  // permitting). The per-piece free cap governs extra timeline photos.
+  if (!canSyncPiecePhotoToCloud(piece, true)) return { piece, uploaded: 0 };
 
   const file = localImageFileFromUri(coverUri);
-  const asset = piece.coverAssetId
-    ? await apiUpdatePieceAsset(piece.backendId, piece.coverAssetId, { file })
-    : await apiUploadPieceAsset(piece.backendId, file);
-
-  return applyCoverFromAsset(piece, asset);
+  const asset = await apiUploadPieceAsset(piece.backendId, file);
+  // Keep the local uri for rendering; just stamp the backup id.
+  return { piece: { ...piece, coverAssetId: asset.id }, uploaded: 1 };
 }
 
-async function deleteOrphanedAssets(
-  piece: Piece,
-  before: Piece,
-): Promise<Piece> {
-  if (!piece.backendId) return piece;
+// ─── Timeline upload (re-keyed on assetId) ────────────────────────────────────
 
-  let current = piece;
-  const beforeCover = before.photo ?? before.imgUrl;
-  const afterCover = current.photo ?? current.imgUrl;
+async function uploadTimelinePhotos(piece: Piece): Promise<{ piece: Piece; uploaded: number }> {
+  if (!piece.backendId) return { piece, uploaded: 0 };
 
-  if (before.coverAssetId && beforeCover && !afterCover) {
+  let uploaded = 0;
+  const timeline = piece.timeline.map((entry) => ({ ...entry, photos: [...(entry.photos ?? [])] }));
+
+  for (const entry of timeline) {
+    for (let pi = 0; pi < entry.photos.length; pi += 1) {
+      const photo = entry.photos[pi];
+      if (photo.assetId) continue; // already backed up
+      if (!isLocalMediaUri(photo.uri)) continue; // remote/empty, nothing local to push
+      if (!canSyncPiecePhotoToCloud({ ...piece, timeline }, false)) continue; // free-tier cap
+
+      const file = localImageFileFromUri(photo.uri);
+      const asset = await apiUploadPieceAsset(
+        piece.backendId,
+        file,
+        localStageToApiStatus(entry.stage),
+        entry.stage,
+      );
+      entry.photos[pi] = { ...photo, assetId: asset.id }; // keep local uri, add the id
+      uploaded += 1;
+    }
+  }
+
+  return uploaded > 0 ? { piece: { ...piece, timeline }, uploaded } : { piece, uploaded: 0 };
+}
+
+// ─── Delete-reconcile (against the live backend asset list) ───────────────────
+
+/**
+ * Delete any backend asset this piece no longer references (cover or timeline).
+ * Reconciling against the live list (not the pre-flush local state) is what
+ * catches editor deletes/replaces, which mutate the store before this sync runs.
+ *
+ * ponytail: "not referenced by my local timeline" = orphan. Ceiling: a photo
+ * added on another device in the narrow window before this device pulls its
+ * timeline ref could look orphaned here. Acceptable for a local-first,
+ * single-user journal; upgrade path = per-photo tombstones if concurrent
+ * multi-device photo editing ever matters.
+ */
+async function reconcileBackendAssets(piece: Piece): Promise<void> {
+  if (!piece.backendId) return;
+
+  let assets: BackendPieceAsset[];
+  try {
+    assets = await apiListPieceAssets(piece.backendId);
+  } catch {
+    return; // can't list right now, retry on the next flush
+  }
+
+  const referenced = timelineAssetIds(piece);
+  if (piece.coverAssetId) referenced.add(piece.coverAssetId);
+
+  for (const asset of assets) {
+    if (referenced.has(asset.id)) continue;
     try {
-      await apiDeletePieceAsset(piece.backendId, before.coverAssetId);
+      await apiDeletePieceAsset(piece.backendId, asset.id);
     } catch {
-      // suppress — local state still cleared
+      // suppress — retry on the next reconcile
     }
-    const photoAssetIds = { ...(current.photoAssetIds ?? {}) };
-    if (beforeCover) delete photoAssetIds[beforeCover];
-    current = { ...current, coverAssetId: undefined, photoAssetIds };
   }
-
-  const beforeRemote = collectRemoteUris(before);
-  const afterRemote = collectRemoteUris(current);
-  const photoAssetIds = { ...(current.photoAssetIds ?? {}) };
-
-  for (const uri of beforeRemote) {
-    if (afterRemote.has(uri)) continue;
-    const assetId = before.photoAssetIds?.[uri];
-    if (!assetId) continue;
-    try {
-      await apiDeletePieceAsset(piece.backendId, assetId);
-    } catch {
-      // suppress
-    }
-    delete photoAssetIds[uri];
-  }
-
-  return { ...current, photoAssetIds };
 }
 
-async function uploadTimelinePhotos(
-  piece: Piece,
-): Promise<Piece> {
-  if (!piece.backendId) return piece;
-
-  let current = piece;
-
-  for (let entryIndex = 0; entryIndex < current.timeline.length; entryIndex += 1) {
-    const entry = current.timeline[entryIndex];
-    const photos = entry.photos ?? [];
-
-    for (let photoIndex = 0; photoIndex < photos.length; photoIndex += 1) {
-      const uri = photos[photoIndex];
-      if (!isLocalMediaUri(uri)) continue;
-      if (!canSyncPiecePhotoToCloud(current, !!current.photoAssetIds?.[uri])) continue;
-
-      const file = localImageFileFromUri(uri);
-      const apiStatus = localStageToApiStatus(entry.stage);
-      const existingId = current.photoAssetIds?.[uri];
-
-      const asset = existingId
-        ? await apiUpdatePieceAsset(piece.backendId, existingId, {
-            file,
-            status: apiStatus,
-          })
-        : await apiUploadPieceAsset(piece.backendId, file, apiStatus);
-
-      current = applyTimelinePhotoFromAsset(current, entryIndex, photoIndex, uri, asset);
-    }
-  }
-
-  return current;
-}
+// ─── Push flush ───────────────────────────────────────────────────────────────
 
 export async function flushPiecePhotoSync(pieceId: number): Promise<void> {
-  const isSignedIn = useAppStore.getState().isSignedIn;
-  if (!isSignedIn) return;
+  if (!useAppStore.getState().isSignedIn) return;
 
   const piece = useAppStore.getState().pieces.find((p) => p.id === pieceId);
-  if (!piece || piece.deleted) return;
-
-  if (!piece.backendId) {
-    return;
-  }
+  if (!piece || piece.deleted || !piece.backendId) return;
 
   const before = piece;
   let current = piece;
   let uploaded = 0;
 
   try {
-    const coverBefore = current.photo ?? current.imgUrl;
-    if (coverBefore && isLocalMediaUri(coverBefore)) {
-      const next = await uploadCoverPhoto(current);
-      if ((next.photo ?? next.imgUrl) !== coverBefore && isRemoteMediaUri(next.photo ?? next.imgUrl)) {
-        uploaded += 1;
-      }
-      current = next;
-    }
+    const cover = await uploadCoverPhoto(current);
+    current = cover.piece;
+    uploaded += cover.uploaded;
 
-    const timelineBefore = JSON.stringify(current.timeline);
-    current = await uploadTimelinePhotos(current);
-    if (JSON.stringify(current.timeline) !== timelineBefore) {
-      uploaded += 1;
-    }
+    const timeline = await uploadTimelinePhotos(current);
+    current = timeline.piece;
+    uploaded += timeline.uploaded;
 
-    current = await deleteOrphanedAssets(current, before);
+    await reconcileBackendAssets(current);
 
-    const changed = JSON.stringify(current) !== JSON.stringify(before);
-    if (changed) {
+    if (JSON.stringify(current) !== JSON.stringify(before)) {
+      // New/removed assetIds must reach the backend timeline JSON, so mark the
+      // piece dirty and re-sync it.
+      const next: Piece = { ...current, syncDirty: true };
       setPiecesIfChanged(
-        useAppStore.getState().pieces.map((p) => (p.id === pieceId ? current : p)),
+        useAppStore.getState().pieces.map((p) => (p.id === pieceId ? next : p)),
       );
+      schedulePiecesSync();
     }
 
     if (uploaded > 0) {
@@ -308,6 +230,8 @@ export async function flushPiecePhotoSync(pieceId: number): Promise<void> {
     }
   }
 }
+
+// ─── Debounced scheduling ─────────────────────────────────────────────────────
 
 const syncTimers = new Map<number, ReturnType<typeof setTimeout>>();
 const syncInFlight = new Set<number>();
@@ -336,8 +260,9 @@ export function scheduleAllPendingPiecePhotoSync(): void {
   }
 }
 
-let hydrateInFlight = false;
+// ─── Hydrate (pull + download) ────────────────────────────────────────────────
 
+let hydrateInFlight = false;
 const HYDRATE_CONCURRENCY = 2;
 
 async function runWithConcurrency<T>(
@@ -357,12 +282,72 @@ async function runWithConcurrency<T>(
   await Promise.all(runners);
 }
 
-/** Pull cloud asset URLs for all backend-linked pieces (e.g. after sign-in on a new device). */
+function pieceNeedsHydrate(piece: Piece): boolean {
+  const cover = piece.photo ?? piece.imgUrl;
+  if (piece.coverAssetId && !isLocalMediaUri(cover)) return true;
+  return piece.timeline.some((entry) =>
+    (entry.photos ?? []).some((photo) => photo.assetId && !isLocalMediaUri(photo.uri)),
+  );
+}
+
+/** Resolve each ref's fresh url, download it to a local file, and stamp it in. */
+async function hydratePieceFromAssets(piece: Piece, assets: BackendPieceAsset[]): Promise<Piece> {
+  const urlByAssetId = new Map<string, string>();
+  for (const asset of assets) urlByAssetId.set(asset.id, asset.url);
+
+  let changed = false;
+
+  const timeline = await Promise.all(
+    piece.timeline.map(async (entry) => {
+      const photos = await Promise.all(
+        (entry.photos ?? []).map(async (photo) => {
+          if (!photo.assetId) return photo; // pending local upload, leave it
+          if (isLocalMediaUri(photo.uri)) return photo; // already have a local file
+          const url = urlByAssetId.get(photo.assetId);
+          if (!url) return photo; // asset not found this pull, try again later
+
+          const localUri = await downloadAssetToLocal(photo.assetId, url);
+          if (localUri) {
+            changed = true;
+            return { ...photo, uri: localUri };
+          }
+          // Download failed: only stamp a remote url if we have nothing to show.
+          if (!photo.uri) {
+            changed = true;
+            return { ...photo, uri: url };
+          }
+          return photo;
+        }),
+      );
+      return { ...entry, photos };
+    }),
+  );
+
+  let coverPatch: Partial<Piece> = {};
+  const cover = piece.photo ?? piece.imgUrl;
+  if (piece.coverAssetId && !isLocalMediaUri(cover)) {
+    const url = urlByAssetId.get(piece.coverAssetId);
+    if (url) {
+      const localUri = await downloadAssetToLocal(piece.coverAssetId, url);
+      if (localUri) {
+        coverPatch = { photo: localUri, imgUrl: localUri };
+        changed = true;
+      } else if (!cover) {
+        coverPatch = { photo: url, imgUrl: url };
+        changed = true;
+      }
+    }
+  }
+
+  return changed ? { ...piece, timeline, ...coverPatch } : piece;
+}
+
+/** Pull cloud asset files for backend-linked pieces (e.g. after sign-in on a new device). */
 export async function hydrateAllPieceAssetsFromCloud(): Promise<void> {
   const { pieces, isSignedIn } = useAppStore.getState();
   if (!isSignedIn || hydrateInFlight) return;
 
-  const targets = pieces.filter((piece) => piece.backendId && !piece.deleted);
+  const targets = pieces.filter((piece) => piece.backendId && !piece.deleted && pieceNeedsHydrate(piece));
   if (targets.length === 0) return;
 
   hydrateInFlight = true;
@@ -373,10 +358,8 @@ export async function hydrateAllPieceAssetsFromCloud(): Promise<void> {
       try {
         const assets = await apiListPieceAssets(piece.backendId!);
         if (!assets.length) return;
-        const merged = mergeAssetsIntoPiece(piece, assets);
-        if (JSON.stringify(merged) !== JSON.stringify(piece)) {
-          updates.set(piece.id, merged);
-        }
+        const merged = await hydratePieceFromAssets(piece, assets);
+        if (merged !== piece) updates.set(piece.id, merged);
       } catch (err) {
         if (__DEV__) console.warn(`[pieces:asset:hydrate] failed for ${piece.backendId}:`, err);
       }
@@ -386,7 +369,7 @@ export async function hydrateAllPieceAssetsFromCloud(): Promise<void> {
       setPiecesIfChanged(
         useAppStore.getState().pieces.map((piece) => updates.get(piece.id) ?? piece),
       );
-      if (__DEV__) console.log(`[pieces:asset:hydrate] merged photos for ${updates.size} piece(s)`);
+      if (__DEV__) console.log(`[pieces:asset:hydrate] hydrated ${updates.size} piece(s)`);
     }
   } finally {
     hydrateInFlight = false;

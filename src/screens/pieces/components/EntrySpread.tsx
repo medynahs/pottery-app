@@ -44,7 +44,7 @@ export function EntrySpread({
 }) {
     const keyboardBottomOffset = useKeyboardBottomOffset({ extra: 24 });
     const captureTiles = getEntryCaptureTiles(entry, piece);
-    const hasPhotos = Boolean(draft.photos?.[0] || draft.photos?.[1]);
+    const hasPhotos = Boolean(draft.photos?.[0]?.uri || draft.photos?.[1]?.uri);
     const hasNotes = draft.notes.trim().length > 0;
 
     const stageFacts = [
@@ -118,8 +118,8 @@ export function EntrySpread({
                     }}
                 >
                     <PolaroidPhotoPicker
-                        photo={draft.photos?.[0]}
-                        onPress={canAddMorePhotos || draft.photos?.[0] ? () => onPickPhoto(0) : undefined}
+                        photo={draft.photos?.[0]?.uri}
+                        onPress={canAddMorePhotos || draft.photos?.[0]?.uri ? () => onPickPhoto(0) : undefined}
                         accent={accent}
                         width={200}
                         height={compact ? 180 : 240}
@@ -128,8 +128,8 @@ export function EntrySpread({
                         style={{ alignSelf: 'flex-end', marginRight: compact ? -4 : -32 }}
                     />
                     <PolaroidPhotoPicker
-                        photo={draft.photos?.[1]}
-                        onPress={canAddMorePhotos || draft.photos?.[1] ? () => onPickPhoto(1) : undefined}
+                        photo={draft.photos?.[1]?.uri}
+                        onPress={canAddMorePhotos || draft.photos?.[1]?.uri ? () => onPickPhoto(1) : undefined}
                         accent={accent}
                         width={100}
                         height={100}

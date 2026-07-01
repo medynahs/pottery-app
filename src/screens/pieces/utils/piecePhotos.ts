@@ -18,7 +18,7 @@ export function collectPiecePhotos(
   }
 
   for (const entry of piece.timeline) {
-    const photos = entry.photos?.filter(Boolean) ?? [];
+    const photos = (entry.photos ?? []).filter((p) => p.uri);
     if (photos.length === 0) continue;
 
     const stageLabel = stageLabels[entry.stage] ?? entry.stage;
@@ -28,10 +28,10 @@ export function collectPiecePhotos(
       year: 'numeric',
     });
 
-    photos.forEach((uri, index) => {
+    photos.forEach((photo, index) => {
       const suffix = photos.length > 1 ? ` · ${index + 1}/${photos.length}` : '';
       items.push({
-        uri,
+        uri: photo.uri,
         caption: `${stageLabel} · ${dateLabel}${suffix}`,
       });
     });

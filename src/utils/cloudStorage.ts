@@ -30,7 +30,8 @@ function collectPieceMediaUris(piece: Piece, uris: Set<string>): void {
   addMediaUri(uris, piece.imgUrl);
   for (const entry of piece.timeline) {
     for (const photo of entry.photos ?? []) {
-      addMediaUri(uris, photo);
+      // Dedup uploaded photos by their stable assetId, pending ones by uri.
+      addMediaUri(uris, photo.assetId ?? photo.uri);
     }
   }
 }
@@ -112,11 +113,10 @@ export function formatCloudStorageLabel(snapshot = getCloudStorageSnapshot()): s
 }
 
 export function countPieceCloudBackedPhotos(piece: Piece): number {
-  let count = 0;
-  if (isRemoteMediaUri(piece.photo) || isRemoteMediaUri(piece.imgUrl)) count += 1;
+  let count = piece.coverAssetId ? 1 : 0;
   for (const entry of piece.timeline) {
     for (const photo of entry.photos ?? []) {
-      if (isRemoteMediaUri(photo) || isLocalMediaUri(photo)) count += 1;
+      if (photo.assetId) count += 1;
     }
   }
   return count;

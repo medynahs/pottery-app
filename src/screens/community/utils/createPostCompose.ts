@@ -57,7 +57,7 @@ export function resolvePieceJournalPhoto(piece: Piece): string | undefined {
   for (let i = piece.timeline.length - 1; i >= 0; i -= 1) {
     const photos = piece.timeline[i].photos;
     if (photos?.length) {
-      return photos[photos.length - 1];
+      return photos[photos.length - 1].uri;
     }
   }
   return piece.photo ?? piece.imgUrl ?? undefined;

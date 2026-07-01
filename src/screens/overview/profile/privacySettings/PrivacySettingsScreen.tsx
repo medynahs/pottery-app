@@ -14,7 +14,6 @@ import {
     BarChart2,
     ChevronDown,
     Eye,
-    Image,
     Sparkles,
 } from 'lucide-react-native';
 import React from 'react';
@@ -37,10 +36,10 @@ export default function PrivacySettingsScreen() {
   const { trackPrivacyAnalyticsToggled } = useAnalytics();
   const savePrivacy = useUpdatePrivacy();
   const [exporting, setExporting] = React.useState(false);
-  const [syncingKey, setSyncingKey] = React.useState<'profilePublic' | 'piecesPublic' | null>(null);
+  const [syncingKey, setSyncingKey] = React.useState<'profilePublic' | null>(null);
 
   const syncCommunityVisibility = async (
-    key: 'profilePublic' | 'piecesPublic',
+    key: 'profilePublic',
     nextValue: boolean,
   ) => {
     const previousValue = privacyPrefs[key];
@@ -53,7 +52,6 @@ export default function PrivacySettingsScreen() {
     try {
       await savePrivacy({
         profile_public: nextPrefs.profilePublic,
-        pieces_public: nextPrefs.piecesPublic,
       });
     } catch {
       setPrivacyPref(key, previousValue);
@@ -149,22 +147,13 @@ export default function PrivacySettingsScreen() {
             value={privacyPrefs.profilePublic}
             disabled={syncingKey === 'profilePublic'}
             onToggle={() => void syncCommunityVisibility('profilePublic', !privacyPrefs.profilePublic)}
-          />
-          <ToggleRow
-            icon={Image}
-            iconColor="hsl(39 57% 51%)"
-            iconBg="bg-primary/10"
-            label="Show Pieces Publicly"
-            value={privacyPrefs.piecesPublic}
-            disabled={syncingKey === 'piecesPublic'}
-            onToggle={() => void syncCommunityVisibility('piecesPublic', !privacyPrefs.piecesPublic)}
             isLast
           />
         </View>
 
         <View className="mx-6 mb-5 rounded-2xl border border-border bg-muted/40 px-4 py-3">
           <Text className="text-xs text-muted-foreground leading-5">
-            A public profile is discoverable via your share link. Turning off piece visibility hides your posts from your public grid while keeping your profile visible.
+            A public profile is discoverable via your share link. Each piece has its own visibility (private, friends, or public) that you set when you share it, so only the pieces you choose appear on your public grid.
           </Text>
         </View>
 

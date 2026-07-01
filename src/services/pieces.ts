@@ -1,6 +1,7 @@
 // Pieces API, /users/me/pieces
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
+import type { PieceVisibility } from '../types/pieces';
 import { API_BASE_URL as API_BASE } from './index';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ export interface BackendPiece {
   updated_at: string;
   client_ref?: string;
   is_deleted?: boolean;
+  visibility?: PieceVisibility;
   glaze_id?: string | null;
   glaze_outcome?: ApiGlazeOutcome | null;
   local_stage?: string | null;
@@ -73,7 +75,10 @@ export interface SyncPiecesResponse {
 export interface BackendPieceAsset {
   id: string;           // UUID
   piece_id: string;
-  path: string;
+  /** Stable, content-versioned storage key. Cache/dedup on this, not on url. */
+  object_key: string;
+  /** Resolved link for this viewer: stable public URL, or a short-lived presigned URL
+   *  for private/friends. Transient, a one-shot download ticket, never persist it. */
   url: string;
   status: ApiPieceStatus | null;
   local_stage?: string | null;
@@ -278,6 +283,24 @@ export async function apiUpdatePiece(
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`updatePiece failed (${res.status})`);
+  return res.json() as Promise<BackendPiece>;
+}
+
+/**
+ * PUT /users/me/pieces/{piece_id}/visibility, change a piece's sharing scope. The server
+ * reconciles the public-bucket mirror (publish/revoke) before committing, so this needs
+ * connectivity, it is not part of the offline sync.
+ */
+export async function apiSetPieceVisibility(
+    pieceId: string,
+  visibility: PieceVisibility,
+): Promise<BackendPiece> {
+  const res = await authedFetch(`${API_BASE}/users/me/pieces/${pieceId}/visibility`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ visibility }),
+  });
+  if (!res.ok) throw new Error(`setPieceVisibility failed (${res.status})`);
   return res.json() as Promise<BackendPiece>;
 }
 

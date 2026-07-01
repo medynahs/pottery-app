@@ -69,7 +69,6 @@ export interface BackendProfile {
   cover_url: string | null;
   role: string;
   profile_public?: boolean;
-  pieces_public?: boolean;
   created_at: string;
   updated_at: string;
   /** When the account was soft-deleted; hard purge runs 30 days later. */
@@ -90,7 +89,6 @@ export type UpdateMePayload = UpdateProfilePayload;
 
 export interface UpdatePrivacyPayload {
   profile_public?: boolean;
-  pieces_public?: boolean;
 }
 
 type UserStorePatch = {
@@ -177,7 +175,7 @@ export async function updateProfile(payload: UpdateProfilePayload): Promise<Back
 /** @deprecated Use updateProfile */
 export const updateMe = updateProfile;
 
-/** PUT /users/me/privacy — profile_public and pieces_public enforcement on share. */
+/** PUT /users/me/privacy — profile_public toggle (whole-profile discoverability). */
 export async function updatePrivacy(payload: UpdatePrivacyPayload): Promise<BackendProfile> {
   const res = await authedJson('/users/me/privacy', {
     method: 'PUT',

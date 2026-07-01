@@ -225,12 +225,18 @@ export function useAddPieceForm(
     const wholesalePriceTarget = parseNumericInput(form.wholesalePriceTarget) ?? pricingSnapshot.wholesalePrice;
     const activePrice = form.salePriceMode === 'wholesale' ? wholesalePriceTarget : retailPriceTarget;
 
+    // Drop the cover backup id if the cover photo changed, so sync re-uploads the
+    // new one and reconcile cleans up the old asset.
+    const nextPhoto = form.photo || undefined;
+    const coverAssetId = nextPhoto === basePiece.photo ? basePiece.coverAssetId : undefined;
+
     return {
       ...basePiece,
       name: basePiece.name?.trim() || form.name.trim(),
       clay: form.clay.trim(),
       stage: form.stage,
-      photo: form.photo || undefined,
+      photo: nextPhoto,
+      coverAssetId,
       location: form.location.trim() || undefined,
       formingMethod: form.formingMethod || undefined,
       form: form.form || undefined,

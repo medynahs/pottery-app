@@ -9,10 +9,10 @@
  */
 
 import { setPiecesIfChanged, useAppStore } from '@/src/store';
-import type { Piece } from '@/src/types/pieces';
+import type { Piece, PiecePhoto, TimelineEntry } from '@/src/types/pieces';
 import { useIsFetching, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
-import { canSyncPiecePhotoToCloud } from '@/src/utils/cloudStorage';
+import { canSyncPiecePhotoToCloud, isLocalMediaUri } from '@/src/utils/cloudStorage';
 import {
   scheduleAllPendingPiecePhotoSync,
 } from '@/src/utils/pieceAssetSync';
@@ -62,6 +62,59 @@ function localStageToApiStatus(stage: string): ApiPieceStatus {
 
 function apiStatusMatchesLocalStage(localStage: string, apiStatus: ApiPieceStatus | string): boolean {
   return localStageToApiStatus(localStage) === apiStatus;
+}
+
+type BackendPhotoRef = { assetId?: string; uri?: string };
+
+/**
+ * The backend `timeline` JSON stores photos as stable `{ assetId }` refs, never
+ * device-local uris. Photos still pending upload (no assetId) are omitted until
+ * their upload fills the id and the piece re-syncs.
+ */
+function timelineForBackend(timeline: TimelineEntry[]): unknown[] {
+  return timeline.map((entry) => ({
+    ...entry,
+    photos: (entry.photos ?? [])
+      .filter((photo) => photo.assetId)
+      .map((photo) => ({ assetId: photo.assetId })),
+  }));
+}
+
+/**
+ * Merge the backend timeline (photos as `{ assetId }` refs) into the local one:
+ * recover each device's own local file by assetId, and keep local-only photos
+ * that are still pending upload. Photos with no local file yet get an empty uri
+ * and are filled in later by the asset hydrate/download pass.
+ */
+function mergeTimeline(
+  backend: TimelineEntry[] | undefined,
+  existing: TimelineEntry[] | undefined,
+): TimelineEntry[] {
+  if (!backend?.length) return existing ?? [];
+  const local = existing ?? [];
+
+  const localUriByAssetId = new Map<string, string>();
+  for (const entry of local) {
+    for (const photo of entry.photos ?? []) {
+      if (photo.assetId && isLocalMediaUri(photo.uri)) {
+        localUriByAssetId.set(photo.assetId, photo.uri);
+      }
+    }
+  }
+
+  const merged = backend.map((entry, i) => {
+    const refs = ((entry as { photos?: BackendPhotoRef[] }).photos ?? [])
+      .filter((ref) => ref.assetId)
+      .map<PiecePhoto>((ref) => ({
+        assetId: ref.assetId,
+        uri: localUriByAssetId.get(ref.assetId!) ?? '',
+      }));
+    const pending = (local[i]?.photos ?? []).filter((photo) => !photo.assetId);
+    return { ...entry, photos: [...refs, ...pending] };
+  });
+
+  // Keep locally-added entries the backend hasn't caught up with yet.
+  return local.length > backend.length ? [...merged, ...local.slice(backend.length)] : merged;
 }
 
 function buildPieceMetadata(piece: Piece): Record<string, unknown> | undefined {
@@ -135,7 +188,7 @@ function pieceToSnapshot(piece: Piece): PieceSyncSnapshot {
   if (piece.description) snapshot.description = piece.description;
   if (piece.deleted) snapshot.deleted = true;
   if (piece.status) snapshot.outcome_status = piece.status;
-  if (piece.timeline?.length) snapshot.timeline = piece.timeline as unknown[];
+  if (piece.timeline?.length) snapshot.timeline = timelineForBackend(piece.timeline);
   const meta = buildPieceMetadata(piece);
   if (meta) snapshot.metadata = meta;
   if (piece.epitaph) snapshot.epitaph = piece.epitaph;
@@ -221,7 +274,8 @@ function backendToLocalPatch(bp: BackendPiece, existing?: Piece): Piece {
     stage,
     description: bp.description ?? undefined,
     status: bp.outcome_status ?? existing?.status ?? undefined,
-    timeline: (bp.timeline?.length ? bp.timeline : existing?.timeline) as Piece['timeline'],
+    visibility: bp.visibility ?? existing?.visibility,
+    timeline: mergeTimeline(bp.timeline as TimelineEntry[] | undefined, existing?.timeline),
     clay: (meta?.clay as string | undefined) ?? existing?.clay ?? '',
     location: (meta?.location as string | undefined) ?? existing?.location,
     formingMethod: (meta?.formingMethod as string | undefined) ?? existing?.formingMethod,
@@ -387,7 +441,7 @@ async function pushDirtyBackendPiece(
       local_stage: piece.stage,
       description: piece.description,
       outcome_status: piece.status,
-      timeline: piece.timeline?.length ? (piece.timeline as unknown[]) : undefined,
+      timeline: piece.timeline?.length ? timelineForBackend(piece.timeline) : undefined,
       metadata: meta,
       epitaph: piece.epitaph,
       cause_of_death: piece.causeOfDeath,

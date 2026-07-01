@@ -46,7 +46,7 @@ import { fetchUsers, type BackendUser } from '../services';
 import { sessionExists, signOut } from '../services/auth';
 import { markSessionBootstrap } from '../services/sessionBootstrap';
 import type { Firing, FiringState, FiringStatusOverride, Kiln, KilnChecklist, KilnType, LogFiringPayload } from '../types/kiln';
-import type { GlazeOutcome, Piece, TimelineEntry } from '../types/pieces';
+import type { GlazeOutcome, Piece, PiecePhoto, TimelineEntry } from '../types/pieces';
 import {
   applyPricingUserTypePreset,
   buildDefaultPricingSettings,
@@ -251,14 +251,12 @@ export type PrivacyPrefs = {
   analyticsEnabled: boolean;
   personalizedSuggestions: boolean;
   profilePublic: boolean;
-  piecesPublic: boolean;
 };
 
 const DEFAULT_PRIVACY_PREFS: PrivacyPrefs = {
   analyticsEnabled: true,
   personalizedSuggestions: true,
   profilePublic: true,
-  piecesPublic: true,
 };
 
 const DEFAULT_STUDIO_GOALS: StudioRhythmGoal[] = [
@@ -496,7 +494,7 @@ interface AppState {
     patch: {
       notes?: string;
       photo?: string;
-      photos?: string[];
+      photos?: PiecePhoto[];
       bisqueTemp?: string;
       glazeTemp?: string;
       status?: string;
@@ -2131,7 +2129,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'pottery-life-store',
-      version: 9,
+      version: 10,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
@@ -2220,9 +2218,31 @@ export const useAppStore = create<AppState>()(
           pricingSettings = normalizedSettings;
         }
 
+        // v10: journal photos moved from `string[]` (+ a uri→assetId side map)
+        // to `PiecePhoto[]` carrying the assetId inline. Fold the old map into
+        // each photo, then drop it.
+        let pieces = state.pieces;
+        if (version < 10) {
+          pieces = (pieces ?? []).map((piece) => {
+            const legacy = piece as Piece & { photoAssetIds?: Record<string, string> };
+            const assetIdByUri = legacy.photoAssetIds ?? {};
+            const timeline = (legacy.timeline ?? []).map((entry) => {
+              const rawPhotos = (entry as { photos?: unknown }).photos;
+              if (!Array.isArray(rawPhotos)) return entry;
+              const photos: PiecePhoto[] = rawPhotos.map((ph) =>
+                typeof ph === 'string' ? { uri: ph, assetId: assetIdByUri[ph] } : (ph as PiecePhoto),
+              );
+              return { ...entry, photos };
+            });
+            const { photoAssetIds: _drop, ...rest } = legacy;
+            return { ...rest, timeline } as Piece;
+          });
+        }
+
         const migratedEnabledModules = normalizeModuleList(state.enabledModules);
         return {
           ...state,
+          pieces,
           onboardingProfile,
           enabledModules: migratedEnabledModules.length > 0 ? migratedEnabledModules : onboardingProfile.activeModules,
           notificationPrefs,

@@ -19,7 +19,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Piece } from '../../../types/pieces';
+import type { Piece, PiecePhoto } from '../../../types/pieces';
 import { parseNumericInput, type PricingSaleMode } from '../../../types/pricing';
 import { JournalBook, type JournalBookHandle } from '../components/JournalBook';
 import { JournalBookShell } from '../components/JournalBookShell';
@@ -45,7 +45,7 @@ interface PieceJournalModalProps {
   onUpdateEntry: (
     pieceId: number,
     entryIndex: number,
-    patch: { notes?: string; photos?: string[] }
+    patch: { notes?: string; photos?: PiecePhoto[] }
   ) => void;
 }
 
@@ -168,12 +168,16 @@ export function PieceJournalModal({
     }
     openPickSheet(
       (uri) => {
-        const updated = { ...piece, photo: uri };
+        // New cover: clear the backup id so sync re-uploads it (the old asset,
+        // if any, becomes unreferenced and reconcile deletes it).
+        const updated = { ...piece, photo: uri, coverAssetId: undefined };
         onUpdatePiece(updated);
         notifyLocalOnlyPhoto(updated, isReplacing);
         maybePromptPieceShare(isReplacing);
       },
-      heroImage ? () => onUpdatePiece({ ...piece, photo: undefined, imgUrl: undefined }) : undefined,
+      heroImage
+        ? () => onUpdatePiece({ ...piece, photo: undefined, imgUrl: undefined, coverAssetId: undefined })
+        : undefined,
     );
   }, [piece, onUpdatePiece, openPickSheet, requestAccess, notifyLocalOnlyPhoto, maybePromptPieceShare]);
 
@@ -184,7 +188,7 @@ export function PieceJournalModal({
 
   const pickPhoto = React.useCallback((entryIndex: number, photoIndex: number) => {
     if (!piece) return;
-    const existingUri = drafts[entryIndex]?.photos?.[photoIndex];
+    const existingUri = drafts[entryIndex]?.photos?.[photoIndex]?.uri;
     const isReplacing = !!existingUri;
     if (!isReplacing && !canUploadBytesToCloud() && getCloudStorageSnapshot().atLimit) {
       requestAccess(PremiumFeature.CloudStorage);
@@ -194,7 +198,7 @@ export function PieceJournalModal({
       (uri) => {
         updatePhotoAt(entryIndex, photoIndex, uri);
         const currentPhotos = [...(drafts[entryIndex]?.photos ?? [])];
-        currentPhotos[photoIndex] = uri;
+        currentPhotos[photoIndex] = { uri };
         onUpdateEntry(piece.id, entryIndex, { photos: currentPhotos });
         notifyLocalOnlyPhoto(piece, isReplacing);
         maybePromptPieceShare(isReplacing);

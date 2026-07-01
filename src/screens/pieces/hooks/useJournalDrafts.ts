@@ -1,11 +1,11 @@
 import { EntryDraft } from '@/src/types/journal';
-import type { Piece } from '@/src/types/pieces';
+import type { Piece, PiecePhoto } from '@/src/types/pieces';
 import { useCallback, useEffect, useState } from 'react';
 
 /** Migrate a legacy single-photo entry to the photos array. */
-function initPhotos(entry: { photo?: string; photos?: string[] }): string[] {
+function initPhotos(entry: { photo?: string; photos?: PiecePhoto[] }): PiecePhoto[] {
   if (entry.photos && entry.photos.length > 0) return entry.photos;
-  if (entry.photo) return [entry.photo];
+  if (entry.photo) return [{ uri: entry.photo }];
   return [];
 }
 
@@ -29,13 +29,14 @@ export function useJournalDrafts(piece: Piece | null, visible: boolean) {
     });
   }, []);
 
-  /** Update a single slot in the photos array for the given entry. */
+  /** Update a single slot in the photos array for the given entry. A freshly
+   *  picked image has no assetId yet, so sync-up will upload it. */
   const updatePhotoAt = useCallback((entryIndex: number, photoIndex: number, uri: string) => {
     setDrafts(prev => {
       const next = [...prev];
       const current = next[entryIndex];
       const photos = [...(current.photos ?? [])];
-      photos[photoIndex] = uri;
+      photos[photoIndex] = { uri };
       next[entryIndex] = { ...current, photos };
       return next;
     });
