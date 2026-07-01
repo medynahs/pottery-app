@@ -32,11 +32,17 @@ function fdiBody(formFields: FdiFormField[]): string {
 }
 
 async function fdiPost(path: string, body: string): Promise<Response> {
-  return fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  });
+  const url = `${API_BASE}${path}`;
+  try {
+    return await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Unknown network error';
+    throw new AuthError(`Cannot reach server at ${API_BASE}. ${reason}`);
+  }
 }
 
 function firstFieldError(data: { formFields?: { id: string; error?: string }[] }): string | undefined {

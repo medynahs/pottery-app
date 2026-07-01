@@ -16,6 +16,8 @@
       "env": {
         "APP_ENV": "development",
         "APP_VARIANT": "development",
+        "EXPO_PUBLIC_APP_ENV": "development",
+        "EXPO_PUBLIC_API_URL": "https://kilnkins.onrender.com",
         "EXPO_PUBLIC_FORCE_PREMIUM": "true"
       },
       "channel": "development"
@@ -32,6 +34,8 @@
       "env": {
         "APP_ENV": "preview",
         "APP_VARIANT": "preview",
+        "EXPO_PUBLIC_APP_ENV": "preview",
+        "EXPO_PUBLIC_API_URL": "https://kilnkins.onrender.com",
         "EXPO_PUBLIC_FORCE_PREMIUM": "true"
       }
     },
@@ -47,7 +51,10 @@
       "autoIncrement": true,
       "env": {
         "APP_ENV": "production",
-        "APP_VARIANT": "production"
+        "APP_VARIANT": "production",
+        "EXPO_PUBLIC_API_URL": "https://api.pottery-life.app",
+        "EXPO_PUBLIC_ENABLE_ANALYTICS": "true",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://eu.i.posthog.com"
       }
     }
   },

@@ -12,7 +12,12 @@ import {
 import { type AnalyticsPeriodId } from '@/src/utils/analyticsPeriods';
 import { buildStudioExportPayload, shareStudioExport, summarizeExport } from '@/src/utils/exportStudioData';
 import { checkPremium, PremiumFeature } from '@/src/utils/premiumGate';
-import { getAnalyticsLens, getDefaultAnalyticsTab, getPricingCopy } from '@/src/utils/roleBasedUx';
+import { trackAnalyticsOpened, trackExportAttempted } from '@/src/utils/productAnalytics';
+import {
+  getAnalyticsLens,
+  getDefaultAnalyticsTab,
+  getPricingCopy,
+} from '@/src/utils/roleBasedUx';
 import { useRouter } from 'expo-router';
 import {
   Coins,
@@ -37,6 +42,7 @@ import {
   MetricGrid,
   MetricTile,
 } from './components/AnalyticsCards';
+import { AnalyticsLockedPreview } from './components/AnalyticsLockedPreview';
 import { AnalyticsHeroBanner, AnalyticsStickyChrome, type DashboardStat } from './components/AnalyticsDashboardShell';
 import { SegmentedControl } from './components/AnalyticsControls';
 import { AnalyticsTabBar, type AnalyticsTab, type AnalyticsTabId } from './components/AnalyticsTabBar';
@@ -88,19 +94,13 @@ export default function AnalyticsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { requestAccess, PaywallGate } = usePremiumGate();
-  const isPremium = useAppStore((s) => s.isPremium);
+  const isPremium = checkPremium(PremiumFeature.Analytics);
   const analyticsHiddenTabs = useAppStore((s) => s.analyticsHiddenTabs);
   const setAnalyticsTabHidden = useAppStore((s) => s.setAnalyticsTabHidden);
   const visibleAnalyticsTabs = React.useMemo(
     () => ANALYTICS_TABS.filter((tab) => !analyticsHiddenTabs.includes(tab.id)),
     [analyticsHiddenTabs],
   );
-
-  React.useEffect(() => {
-    if (!checkPremium(PremiumFeature.Analytics)) {
-      requestAccess(PremiumFeature.Analytics);
-    }
-  }, [requestAccess]);
 
   const pieces = useVisiblePieces();
   const firings = useAppStore((s) => s.firings);
@@ -129,6 +129,7 @@ export default function AnalyticsScreen() {
   const [glazeUsageFamilyKey, setGlazeUsageFamilyKey] = React.useState<string | null>(null);
 
   const handleExport = async () => {
+    trackExportAttempted({ source: 'analytics' });
     if (!requestAccess(PremiumFeature.Export)) return;
     setExporting(true);
     try {
@@ -294,11 +295,31 @@ export default function AnalyticsScreen() {
     [router],
   );
 
+  React.useEffect(() => {
+    if (!isPremium) return;
+    trackAnalyticsOpened({ user_type: userType, is_premium: true });
+  }, [isPremium, userType]);
+
   if (!isPremium) {
-    return <>{PaywallGate}</>;
+    return (
+      <AnalyticsLockedPreview
+        paddingTop={insets.top}
+        paddingBottom={insets.bottom}
+        periodLabel={stats.period.label}
+        headline={dashboard.headline}
+        headlineSub={dashboard.headlineSub}
+        ringValue={dashboard.ringValue}
+        ringLabel={dashboard.ringLabel}
+        ringSub={dashboard.ringSub}
+        stats={dashboard.stats}
+        userType={userType}
+      />
+    );
   }
 
   return (
+    <>
+      {PaywallGate}
     <View className="flex-1" style={{ backgroundColor: ANALYTICS_THEME.pageBg }}>
       <AnalyticsStickyChrome
         paddingTop={insets.top}
@@ -723,6 +744,7 @@ export default function AnalyticsScreen() {
         onClose={() => setGlazeUsageFamilyKey(null)}
       />
     </View>
+    </>
   );
 }
 

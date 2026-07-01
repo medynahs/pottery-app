@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 import { useClayFriendStatus } from './hooks/useClayFriendStatus';
 import { useProfileShareMenu } from './hooks/useProfileShareMenu';
+import { trackPublicProfileViewed } from '@/src/utils/productAnalytics';
 
 const GRID_GAP = 1;
 const GRID_COLUMNS = 3;
@@ -134,6 +135,11 @@ export default function PublicUserProfileScreen({ userId }: PublicUserProfileScr
     }
     void load();
   }, [friendStatus, load, router]);
+
+  useEffect(() => {
+    if (!profile) return;
+    trackPublicProfileViewed({ viewer_is_owner: friendStatus === 'self' });
+  }, [profile, friendStatus]);
 
   const photoPosts = useMemo(
     () => (profile?.posts ?? []).filter((post) => post.image_url),

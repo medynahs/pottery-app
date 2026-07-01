@@ -5,8 +5,15 @@ import type { NotificationPrefs } from '../store/appStore';
 import { registerPushToken } from './api';
 import { configureNotificationRuntime } from './notifications';
 
-/** Kill-switch — re-enable once push-token sync loop is fixed on the client. */
+/** Set true once verified on device — sync is deduped to prevent registration loops. */
 export const PUSH_NOTIFICATIONS_ENABLED = false;
+
+let lastRegisteredToken: string | null = null;
+let syncInFlight = false;
+
+export function resetPushTokenRegistration(): void {
+  lastRegisteredToken = null;
+}
 
 export function hasEnabledNotificationPrefs(prefs: NotificationPrefs): boolean {
   return Object.values(prefs).some(Boolean);
@@ -42,18 +49,25 @@ export async function resolveExpoPushToken(): Promise<string | null> {
  * notifications are permitted, and at least one notification toggle is on.
  */
 export async function syncPushTokenWithBackend(
-  
-    prefs: NotificationPrefs,
+  prefs: NotificationPrefs,
+  knownToken?: string | null,
 ): Promise<void> {
   if (!PUSH_NOTIFICATIONS_ENABLED) return;
   if (!hasEnabledNotificationPrefs(prefs)) return;
+  if (syncInFlight) return;
 
   const permission = await Notifications.getPermissionsAsync();
   if (!permission.granted) return;
 
-  const token = await resolveExpoPushToken();
-  if (!token) return;
+  syncInFlight = true;
+  try {
+    const token = knownToken ?? await resolveExpoPushToken();
+    if (!token || token === lastRegisteredToken) return;
 
-  const platform = Platform.OS === 'ios' ? 'ios' : 'android';
-  await registerPushToken(token, platform);
+    const platform = Platform.OS === 'ios' ? 'ios' : 'android';
+    await registerPushToken(token, platform);
+    lastRegisteredToken = token;
+  } finally {
+    syncInFlight = false;
+  }
 }

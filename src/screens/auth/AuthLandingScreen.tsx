@@ -10,7 +10,7 @@ export function AuthLandingScreen() {
       icon={UserRound}
       title="Make your studio yours"
       description="Create an account to back up your pieces, track your journey across devices, and join the potter community."
-      features={['Cloud backup', 'Badges & XP', 'Friends & studios', 'Sync across devices']}
+      features={['Cloud backup', 'Achievements', 'Friends & studios', 'Sync across devices']}
     />
   );
 }

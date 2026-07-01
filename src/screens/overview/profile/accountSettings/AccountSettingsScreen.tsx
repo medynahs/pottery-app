@@ -10,6 +10,7 @@ import { SettingsRow } from '@/src/components/SettingsRow';
 import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
 import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
+import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from '@/src/constants/legal';
 import { ME_QUERY_KEY } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { deleteAccount, ApiError } from '@/src/services/api';
@@ -19,11 +20,13 @@ import { useAppStore } from '@/src/store';
 import { PremiumFeature } from '@/src/utils/premiumGate';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { Linking } from 'react-native';
 import {
   Bell,
   Clock,
   Crown,
   Flame,
+  FileText,
   Hammer,
   Lock,
   LogOut,
@@ -237,6 +240,25 @@ export default function AccountSettingsScreen() {
           </View>
         )}
 
+        <SectionLabel title="Legal" />
+        <SettingsGroup>
+          <SettingsRow
+            icon={FileText}
+            iconColor="hsl(213 80% 55%)"
+            iconBg="bg-blue-50"
+            label="Privacy Policy"
+            onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
+          />
+          <SettingsRow
+            icon={FileText}
+            iconColor="hsl(24 30% 45%)"
+            iconBg="bg-stone-100"
+            label="Terms of Service"
+            isLast
+            onPress={() => void Linking.openURL(TERMS_OF_SERVICE_URL)}
+          />
+        </SettingsGroup>
+
         <SectionLabel title="Notifications" />
         <View className="mx-6 bg-card rounded-2xl border border-border px-4 mb-4">
           <ToggleRow icon={Flame} iconColor="hsl(39 57% 51%)" iconBg="bg-primary/10" label="Kiln Finished" value={notificationPrefs.kilnFinished} onToggle={() => void toggleNotificationPref('kilnFinished')} />
@@ -250,7 +272,7 @@ export default function AccountSettingsScreen() {
           </Text>
         </View>
 
-        <NotificationDebugPanel />
+        {__DEV__ ? <NotificationDebugPanel /> : null}
 
         <SettingsGroup>
           {isAuthenticated ? (

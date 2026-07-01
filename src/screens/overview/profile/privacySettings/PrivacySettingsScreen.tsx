@@ -3,6 +3,8 @@ import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
 import { useUpdatePrivacy } from '@/src/hooks/useCurrentUser';
+import { syncAnalyticsConsent, useAnalytics } from '@/src/hooks/useAnalytics';
+import { trackExportAttempted } from '@/src/utils/productAnalytics';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useAppStore } from '@/src/store';
 import { buildStudioExportPayload, shareStudioExport } from '@/src/utils/exportStudioData';
@@ -32,6 +34,7 @@ export default function PrivacySettingsScreen() {
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const showToast = useAppStore((s) => s.showToast);
   const { requestAccess, PaywallGate } = usePremiumGate();
+  const { trackPrivacyAnalyticsToggled } = useAnalytics();
   const savePrivacy = useUpdatePrivacy();
   const [exporting, setExporting] = React.useState(false);
   const [syncingKey, setSyncingKey] = React.useState<'profilePublic' | 'piecesPublic' | null>(null);
@@ -61,6 +64,7 @@ export default function PrivacySettingsScreen() {
   };
 
   const handleExport = async () => {
+    trackExportAttempted({ source: 'privacy_settings' });
     if (!requestAccess(PremiumFeature.Export)) return;
 
     setExporting(true);
@@ -106,7 +110,17 @@ export default function PrivacySettingsScreen() {
             iconBg="bg-blue-50"
             label="Analytics & Crash Reports"
             value={privacyPrefs.analyticsEnabled}
-            onToggle={() => setPrivacyPref('analyticsEnabled', !privacyPrefs.analyticsEnabled)}
+            onToggle={() => {
+              const next = !privacyPrefs.analyticsEnabled;
+              if (!next) {
+                trackPrivacyAnalyticsToggled(false);
+              }
+              setPrivacyPref('analyticsEnabled', next);
+              syncAnalyticsConsent(next);
+              if (next) {
+                trackPrivacyAnalyticsToggled(true);
+              }
+            }}
           />
           <ToggleRow
             icon={Sparkles}

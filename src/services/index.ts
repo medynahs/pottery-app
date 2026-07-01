@@ -1,6 +1,7 @@
 // API / backend integration helpers
 
-const DEFAULT_API_BASE_URL = 'https://kilnkins.onrender.com';
+const DEV_API_BASE_URL = 'https://kilnkins.onrender.com';
+const PRODUCTION_API_BASE_URL = 'https://api.pottery-life.app';
 const LOCAL_API_ALLOWED = process.env.EXPO_PUBLIC_ALLOW_LOCAL_API === 'true';
 
 function isLocalHostUrl(value: string): boolean {
@@ -14,14 +15,31 @@ function isLocalHostUrl(value: string): boolean {
 
 function resolveApiBaseUrl(): string {
   const raw = (process.env.EXPO_PUBLIC_API_BASE_URL ?? process.env.EXPO_PUBLIC_API_URL ?? '').trim();
-  const normalized = raw.replace(/\/+$/, '');
+  let normalized = raw.replace(/\/+$/, '');
+  const appEnv = process.env.EXPO_PUBLIC_APP_ENV;
+  const productionApiLive = process.env.EXPO_PUBLIC_USE_PRODUCTION_API === 'true';
+
+  // Production hostname is not live yet — OTA/dev builds must not use it or every fetch fails.
+  if (normalized === PRODUCTION_API_BASE_URL && !productionApiLive) {
+    normalized = DEV_API_BASE_URL;
+  }
+
+  if (__DEV__ || appEnv === 'development' || appEnv === 'preview') {
+    if (!normalized) {
+      return DEV_API_BASE_URL;
+    }
+    if (!LOCAL_API_ALLOWED && isLocalHostUrl(normalized)) {
+      return DEV_API_BASE_URL;
+    }
+    return normalized;
+  }
 
   if (!normalized) {
-    return DEFAULT_API_BASE_URL;
+    return productionApiLive ? PRODUCTION_API_BASE_URL : DEV_API_BASE_URL;
   }
 
   if (!LOCAL_API_ALLOWED && isLocalHostUrl(normalized)) {
-    return DEFAULT_API_BASE_URL;
+    return productionApiLive ? PRODUCTION_API_BASE_URL : DEV_API_BASE_URL;
   }
 
   return normalized;

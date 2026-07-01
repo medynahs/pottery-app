@@ -18,7 +18,7 @@ import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native
 import { MainTabHeader } from '../../components/MainTabHeader';
 import { CreatePostSheet } from './components/CreatePostSheet';
 import { FilterBar } from './components/FilterBar';
-import { ChallengesTab } from './tabs/FestivalsTab';
+import { ChallengesTab } from './tabs/ChallengesTab';
 import { HallOfFameTab } from './tabs/HallOfFameTab';
 import { ForYouFeed } from './tabs/ForYouFeed';
 import type { FilterTab } from './types';

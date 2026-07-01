@@ -10,7 +10,10 @@ import {
   PREMIUM_MONTHLY_PRICE_EUR,
   premiumDisplayPrice,
 } from '@/src/constants/premium';
+import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from '@/src/constants/legal';
 import { openSubscriptionManagement, useEntitlements } from '@/src/hooks/useEntitlements';
+import { useAnalytics } from '@/src/hooks/useAnalytics';
+import { trackPaywallDismissed } from '@/src/utils/productAnalytics';
 import { openPlatformSubscriptionSettings } from '@/src/utils/subscriptionSettings';
 import { useAppStore } from '@/src/store';
 import {
@@ -43,6 +46,7 @@ import {
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -213,16 +217,18 @@ export default function PremiumUpgradeScreen({
 }) {
   const router = useRouter();
   const showToast = useAppStore((s) => s.showToast);
+  const userType = useAppStore((s) => s.onboardingProfile?.userType ?? 'not-sure');
 
   /** Always leave the paywall route — avoids dismiss/back getting stuck on modal stacks. */
   const closePaywall = useCallback(() => {
+    trackPaywallDismissed({ feature: triggerFeature ?? null, user_type: userType });
     router.replace('/(tabs)/overview' as never);
-  }, [router]);
+  }, [router, triggerFeature, userType]);
 
-  const userType = useAppStore((s) => s.onboardingProfile?.userType ?? 'not-sure');
   const personaHeadline = getPremiumUpgradeHeadline(userType);
   const studioFootnote = getStudioOwnerPaywallFootnote(userType);
   const { isPremium, offering, purchase, restore, isLoading, error } = useEntitlements();
+  const { trackPaywallViewed, trackPremiumPurchaseStarted } = useAnalytics();
   const [selected, setSelected] = useState<PlanKey>('annual');
   const [busy, setBusy] = useState(false);
   const [managing, setManaging] = useState(false);
@@ -269,8 +275,17 @@ export default function PremiumUpgradeScreen({
   const otherIncluded = PAYWALL_INCLUDED_FEATURES.filter((f) => f.key !== highlightedFeature?.key);
   const otherComingSoon = PAYWALL_COMING_SOON_FEATURES.filter((f) => f.key !== highlightedFeature?.key);
 
+  React.useEffect(() => {
+    if (isPremium) return;
+    trackPaywallViewed({
+      feature: triggerFeature ?? null,
+      user_type: userType,
+    });
+  }, [isPremium, triggerFeature, trackPaywallViewed, userType]);
+
   async function handlePurchase() {
     if (!selectedPlan?.pkg) return;
+    trackPremiumPurchaseStarted({ plan: selected });
     setBusy(true);
     try {
       await purchase(selectedPlan.pkg);
@@ -485,8 +500,21 @@ export default function PremiumUpgradeScreen({
           ) : null}
 
           <Text style={{ fontSize: 11, color: 'hsl(24 20% 62%)', textAlign: 'center', marginTop: 16, lineHeight: 16 }}>
-            {PREMIUM_MONTHLY_PRICE_EUR}/month · {PREMIUM_ANNUAL_PRICE_EUR}/year. Subscriptions renew automatically, cancel anytime from your subscription settings.
+            {PREMIUM_MONTHLY_PRICE_EUR}/month · {PREMIUM_ANNUAL_PRICE_EUR}/year. Subscriptions renew automatically, cancel anytime from your subscription settings. Billing is through Pottery Nook Pro on the App Store or Google Play.
           </Text>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 10 }}>
+            <TouchableOpacity onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)} activeOpacity={0.7}>
+              <Text style={{ fontSize: 11, color: 'hsl(24 20% 55%)', textDecorationLine: 'underline' }}>
+                Privacy Policy
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => void Linking.openURL(TERMS_OF_SERVICE_URL)} activeOpacity={0.7}>
+              <Text style={{ fontSize: 11, color: 'hsl(24 20% 55%)', textDecorationLine: 'underline' }}>
+                Terms of Service
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity onPress={closePaywall} activeOpacity={0.6} style={{ alignItems: 'center', paddingVertical: 16 }}>
             <Text style={{ fontSize: 14, color: 'hsl(24 20% 60%)' }}>Maybe later</Text>

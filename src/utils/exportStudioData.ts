@@ -49,7 +49,7 @@ export async function shareStudioExport(payload: StudioExportPayload): Promise<v
   const summary = summarizeExport(payload);
 
   await Share.share({
-    title: 'Pottery Life Studio Export',
-    message: `Pottery Life export (${summary})\n\n${json}`,
+    title: 'Pottery Nook Studio Export',
+    message: `Pottery Nook export (${summary})\n\n${json}`,
   });
 }

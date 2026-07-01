@@ -14,6 +14,8 @@ import Purchases, {
     type PurchasesPackage,
 } from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
+import { AnalyticsEvents } from '@/src/constants/analytics';
+import { captureAnalyticsEvent } from '@/src/hooks/useAnalytics';
 import { isForcePremiumEnabled, resolvePremiumFromEntitlement } from '../utils/forcePremium';
 import { planLabelFromProductId, openPlatformSubscriptionSettings } from '../utils/subscriptionSettings';
 import { useAppStore } from '../store/appStore';
@@ -146,14 +148,25 @@ export function useEntitlements() {
     if (!rcConfigured) return false;
     setIsLoading(true);
     setError(null);
+    const wasPremium = useAppStore.getState().isPremium;
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
-      setIsPremium(resolvePremiumFromEntitlement(!!customerInfo.entitlements.active[ENTITLEMENT_ID]));
-      return true;
+      const nowPremium = resolvePremiumFromEntitlement(!!customerInfo.entitlements.active[ENTITLEMENT_ID]);
+      setIsPremium(nowPremium);
+      if (nowPremium && !wasPremium) {
+        captureAnalyticsEvent(AnalyticsEvents.PREMIUM_PURCHASE_COMPLETED, {
+          plan: pkg.packageType,
+          product_id: pkg.product.identifier,
+        });
+      }
+      return nowPremium;
     } catch (e: unknown) {
       const rcError = e as { userCancelled?: boolean };
       if (!rcError?.userCancelled) {
         setError('Purchase failed. Please try again.');
+        captureAnalyticsEvent(AnalyticsEvents.PREMIUM_PURCHASE_FAILED, { cancelled: false });
+      } else {
+        captureAnalyticsEvent(AnalyticsEvents.PREMIUM_PURCHASE_FAILED, { cancelled: true });
       }
       return false;
     } finally {
@@ -166,9 +179,14 @@ export function useEntitlements() {
     if (!rcConfigured) return;
     setIsLoading(true);
     setError(null);
+    const wasPremium = useAppStore.getState().isPremium;
     try {
       const customerInfo = await Purchases.restorePurchases();
-      setIsPremium(resolvePremiumFromEntitlement(!!customerInfo.entitlements.active[ENTITLEMENT_ID]));
+      const nowPremium = resolvePremiumFromEntitlement(!!customerInfo.entitlements.active[ENTITLEMENT_ID]);
+      setIsPremium(nowPremium);
+      if (nowPremium && !wasPremium) {
+        captureAnalyticsEvent(AnalyticsEvents.PREMIUM_RESTORE_COMPLETED);
+      }
     } catch {
       setError('Restore failed. Please try again.');
     } finally {

@@ -62,6 +62,15 @@ import type { AppNotification, Studio, StudioMember } from '../types/studio';
 import { clearSecureEmail, loadSecureEmail, saveSecureEmail } from './secureStorage';
 import { zustandStorage } from './storage';
 import { resolvePremiumFromEntitlement } from '../utils/forcePremium';
+import {
+  trackDailyMissionCompleted,
+  trackFiringCompleted,
+  trackOnboardingCompleted,
+  trackPieceStageAdvanced,
+  trackPiecesAdded,
+  trackSetupQuestCompleted,
+  trackStudioRhythmConfiguredIfNeeded,
+} from '../utils/productAnalytics';
 
 // ── Sync queue ────────────────────────────────────────────────────────────────
 export type SyncOperationType =
@@ -717,23 +726,28 @@ export const useAppStore = create<AppState>()(
       },
     };
     }),
-  completeGeneralOnboarding: (profile) =>
+  completeGeneralOnboarding: (profile) => {
     set((state) => {
       const currentProfile = normalizeOnboardingProfile(state.onboardingProfile);
       return {
-      generalOnboardingCompleted: true,
-      studioCreatedAt: state.studioCreatedAt ?? new Date().toISOString(),
-      onboardingProfile: {
-        ...currentProfile,
-        ...profile,
-        activeModules:
-          profile?.activeModules === undefined
-            ? currentProfile.activeModules
-            : normalizeModuleList(profile.activeModules),
-      },
-      textScale: profile?.textScale ?? currentProfile.textScale ?? state.textScale,
-    };
-    }),
+        generalOnboardingCompleted: true,
+        studioCreatedAt: state.studioCreatedAt ?? new Date().toISOString(),
+        onboardingProfile: {
+          ...currentProfile,
+          ...profile,
+          activeModules:
+            profile?.activeModules === undefined
+              ? currentProfile.activeModules
+              : normalizeModuleList(profile.activeModules),
+        },
+        textScale: profile?.textScale ?? currentProfile.textScale ?? state.textScale,
+      };
+    });
+    trackOnboardingCompleted({
+      user_type: profile?.userType ?? get().onboardingProfile.userType,
+      companion_element: profile?.kilnkinId ?? undefined,
+    });
+  },
   reopenGeneralOnboarding: () => set({ generalOnboardingCompleted: false }),
   markCeremonyAsSeen: (key) => set((state) => ({
     seenCeremonies: state.seenCeremonies.includes(key) ? state.seenCeremonies : [...state.seenCeremonies, key],
@@ -907,7 +921,12 @@ export const useAppStore = create<AppState>()(
       },
     })),
   dailyMissionCompletion: {},
-  toggleDailyMissionCompletion: (dateKey, missionType) =>
+  toggleDailyMissionCompletion: (dateKey, missionType) => {
+    const prior = get().dailyMissionCompletion[dateKey] ?? [];
+    const adding = !prior.includes(missionType);
+    if (adding) {
+      trackDailyMissionCompleted({ mission_type: missionType, date_key: dateKey });
+    }
     set((state) => {
       const existing = state.dailyMissionCompletion[dateKey] ?? [];
       const hasMission = existing.includes(missionType);
@@ -915,7 +934,6 @@ export const useAppStore = create<AppState>()(
         ? existing.filter((type) => type !== missionType)
         : [...existing, missionType];
 
-      // Prune keys older than 60 days to prevent unbounded growth
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - 60);
       const pruned: DailyMissionCompletion = {};
@@ -929,20 +947,27 @@ export const useAppStore = create<AppState>()(
           [dateKey]: nextForDate,
         },
       };
-    }),
+    });
+  },
 
   // ── Studio Rhythm v2 ──────────────────────────────────────────
   studioRhythm: DEFAULT_STUDIO_RHYTHM,
-  setStudioRhythmType: (type) =>
+  setStudioRhythmType: (type) => {
     set((state) => ({
       studioRhythm: {
         ...state.studioRhythm,
         type,
       },
-    })),
-  setStudioRhythmStageDays: (stageDays) =>
-    set((state) => ({ studioRhythm: { ...state.studioRhythm, stageDays: normalizeStudioRhythmStageDays(stageDays) } })),
-  toggleStageDayDay: (stage, day) =>
+    }));
+    trackStudioRhythmConfiguredIfNeeded();
+  },
+  setStudioRhythmStageDays: (stageDays) => {
+    set((state) => ({
+      studioRhythm: { ...state.studioRhythm, stageDays: normalizeStudioRhythmStageDays(stageDays) },
+    }));
+    trackStudioRhythmConfiguredIfNeeded();
+  },
+  toggleStageDayDay: (stage, day) => {
     set((state) => {
       const stageDays = normalizeStudioRhythmStageDays(state.studioRhythm.stageDays);
       return {
@@ -955,7 +980,9 @@ export const useAppStore = create<AppState>()(
           ),
         },
       };
-    }),
+    });
+    trackStudioRhythmConfiguredIfNeeded();
+  },
   setStudioRhythmDryingTimers: (patch) =>
     set((state) => ({
       studioRhythm: {
@@ -1044,8 +1071,10 @@ export const useAppStore = create<AppState>()(
   pieces: [],
   setPieces: (pieces) => set({ pieces }),
   addPieces: (newPieces) => {
+    const previousActiveCount = get().pieces.filter((p) => !p.deleted).length;
     const marked = newPieces.map((p) => ({ ...p, syncDirty: true }));
     set((state) => ({ pieces: [...marked, ...state.pieces] }));
+    trackPiecesAdded(newPieces, previousActiveCount);
   },
   updatePiece: (piece) => {
     set((state) => ({
@@ -1167,6 +1196,15 @@ export const useAppStore = create<AppState>()(
         };
       }),
     }));
+
+    if (advancedCount > 0) {
+      trackPieceStageAdvanced({
+        from_stage: fromStage,
+        to_stage: toStage,
+        piece_count: advancedCount,
+        has_photo: Boolean(entryPatch?.photos?.length),
+      });
+    }
 
     return advancedCount;
   },
@@ -1347,9 +1385,13 @@ export const useAppStore = create<AppState>()(
   // ── Setup progress ────────────────────────────────────────────
   setupProgress: DEFAULT_SETUP_PROGRESS,
   markSetupProgress: (key) =>
-    set((state) => ({
-      setupProgress: { ...state.setupProgress, [key]: true },
-    })),
+    set((state) => {
+      if (state.setupProgress[key]) return state;
+      trackSetupQuestCompleted(key);
+      return {
+        setupProgress: { ...state.setupProgress, [key]: true },
+      };
+    }),
   completeSetupChecklist: () =>
     set((state) => ({
       setupProgress: Object.fromEntries(
@@ -1843,6 +1885,12 @@ export const useAppStore = create<AppState>()(
         k.id === firing.kilnId ? { ...k, lastFiredAt: now } : k
       ),
     }));
+
+    trackFiringCompleted({
+      firing_type: firing.type,
+      piece_count: firing.pieceIds.length,
+      result: result ?? null,
+    });
   },
   logFiring: (kilnId, payload) => {
     const state = get();

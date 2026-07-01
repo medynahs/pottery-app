@@ -6,6 +6,10 @@ import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { useAppStore } from '@/src/store/appStore';
 import { canUploadBytesToCloud, getCloudStorageSnapshot } from '@/src/utils/cloudStorage';
 import { canBackupPiecePhotoToCloud, PremiumFeature } from '@/src/utils/premiumGate';
+import {
+  trackCloudBackupLimitHit,
+  trackCloudPhotoSavedLocalOnly,
+} from '@/src/utils/productAnalytics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PackageCheck } from 'lucide-react-native';
 import React, { useMemo } from 'react';
@@ -92,10 +96,14 @@ export function PieceJournalModal({
 
   const notifyLocalOnlyPhoto = React.useCallback((updatedPiece: Piece, isReplacing: boolean) => {
     if (canBackupPiecePhotoToCloud(updatedPiece, isReplacing)) return;
-    if (getCloudStorageSnapshot().atLimit) {
+    const snapshot = getCloudStorageSnapshot();
+    if (snapshot.atLimit) {
+      trackCloudBackupLimitHit({ limit_type: 'storage_mb', screen: 'piece_journal' });
       showToast('Saved on this device · Cloud storage is full', 'error');
       return;
     }
+    trackCloudBackupLimitHit({ limit_type: 'per_piece', screen: 'piece_journal' });
+    trackCloudPhotoSavedLocalOnly({ is_replacing: isReplacing });
     showToast('Saved on this device · Premium backs up photos to the cloud', 'success');
   }, [showToast]);
 

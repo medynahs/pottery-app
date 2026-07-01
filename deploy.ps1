@@ -2,7 +2,7 @@ param(
     [ValidateSet("update", "build")]
     [string]$Action = "update",
 
-    [ValidateSet("preview", "production")]
+    [ValidateSet("development", "preview", "production")]
     [string]$Profile = "preview",
 
     [ValidateSet("android", "ios", "all")]
@@ -13,6 +13,7 @@ param(
 
 # Examples:
 #   .\deploy.ps1                                    OTA update -> preview channel
+#   .\deploy.ps1 -Profile development               OTA update -> dev client channel
 #   .\deploy.ps1 -Profile production                OTA update -> production channel
 #   .\deploy.ps1 -Action build -Platform android    cloud-build the preview APK
 #   .\deploy.ps1 -Action build -Profile production -Platform all
@@ -71,7 +72,7 @@ try {
 
         Write-Host "Pushing OTA update to '$Profile' channel: $Message" -ForegroundColor Cyan
         Invoke-CheckedCommand `
-            -Command { & $easExe @easArgs update --channel $Profile --message $Message } `
+            -Command { & $easExe @easArgs update --channel $Profile --environment $Profile --message $Message } `
             -ErrorMessage "EAS update failed."
         Write-Host "OTA update published to '$Profile'." -ForegroundColor Green
     }

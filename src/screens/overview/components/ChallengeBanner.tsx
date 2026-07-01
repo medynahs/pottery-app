@@ -1,9 +1,13 @@
 import { Text } from '@/src/components/ui/text';
-import { ACTIVE_FESTIVAL } from '@/src/screens/community/data';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
+import { useChallengesQuery } from '@/src/screens/community/hooks/useChallengesQuery';
+import {
+  pickPrimaryChallenge,
+  toChallengeDisplay,
+} from '@/src/screens/community/utils/challengeDisplay';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Sparkles, Trophy } from 'lucide-react-native';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 
 type ChallengeBannerProps = {
@@ -11,6 +15,29 @@ type ChallengeBannerProps = {
 };
 
 export function ChallengeBanner({ onPress }: ChallengeBannerProps) {
+  const challengesQuery = useChallengesQuery();
+
+  const challenge = useMemo(() => {
+    const primary = pickPrimaryChallenge(challengesQuery.data ?? []);
+    if (!primary) return null;
+    return toChallengeDisplay(primary);
+  }, [challengesQuery.data]);
+
+  if (challengesQuery.isLoading && !challengesQuery.data) {
+    return null;
+  }
+
+  if (!challenge) {
+    return null;
+  }
+
+  const emoji = challenge.emoji ?? '🏆';
+  const daysLeft = challenge.daysLeft ?? 0;
+  const participantLabel =
+    challenge.participantCount > 0
+      ? `${challenge.participantCount} potter${challenge.participantCount === 1 ? '' : 's'} joined`
+      : 'Be the first to join';
+
   return (
     <View
       className="mb-4 rounded-[22px] overflow-hidden"
@@ -48,13 +75,14 @@ export function ChallengeBanner({ onPress }: ChallengeBannerProps) {
                 Community challenge
               </Text>
               <Text className="font-serif text-[17px] leading-6 mt-1" style={{ color: '#F8FFF0' }}>
-                {ACTIVE_FESTIVAL.emoji} {ACTIVE_FESTIVAL.name}
+                {emoji} {challenge.title}
               </Text>
               <Text className="text-xs mt-1 leading-5" style={{ color: 'rgba(244, 255, 232, 0.86)' }}>
-                {ACTIVE_FESTIVAL.tagline}
+                {challenge.description}
               </Text>
               <Text className="text-[11px] mt-2 font-medium" style={{ color: 'rgba(244, 255, 232, 0.72)' }}>
-                {ACTIVE_FESTIVAL.daysLeft} days left · {ACTIVE_FESTIVAL.totalParticipants} potters joined
+                {daysLeft > 0 ? `${daysLeft} days left · ` : ''}
+                {participantLabel}
               </Text>
             </View>
           </View>

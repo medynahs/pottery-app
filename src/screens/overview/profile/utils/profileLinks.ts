@@ -23,10 +23,10 @@ export function buildProfileShareMessage(input: {
 
   // Keep the payload to one https URL — WhatsApp/iMessage only unfurl the first link,
   // and rich previews come from that page's Open Graph tags (not inline text).
-  const message = `View ${displayName}'s pottery profile on Pottery Life\n${webUrl}`;
+  const message = `View ${displayName}'s pottery profile on Pottery Nook\n${webUrl}`;
 
   return {
-    title: `${displayName} · Pottery Life`,
+    title: `${displayName} · Pottery Nook`,
     message,
     url: webUrl,
   };

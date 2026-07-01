@@ -3,6 +3,7 @@ import { LabeledInput } from '@/src/components/LabeledInput';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
 import { markSessionBootstrap, refreshMeAfterSignIn } from '@/src/hooks/useCurrentUser';
+import { useAnalytics } from '@/src/hooks/useAnalytics';
 import { detectAccountDeletionGrace } from '@/src/services/accountGrace';
 import { googleSignIn, isExpoGo, signIn, UserCancelledError } from '@/src/services/auth';
 import { useAppStore } from '@/src/store';
@@ -35,8 +36,9 @@ export default function LoginScreen({ onSuccess }: Props) {
   const [loading, setLoading]       = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError]           = useState<string | null>(null);
+  const { trackSignIn } = useAnalytics();
 
-  async function handleDone(mail: string) {
+  async function handleDone(mail: string, method: 'email' | 'google') {
     markSessionBootstrap();
     setSignedIn(mail);
     const profile = await refreshMeAfterSignIn(queryClient);
@@ -53,6 +55,7 @@ export default function LoginScreen({ onSuccess }: Props) {
         }
       }
     }
+    trackSignIn(method);
     if (onSuccess) onSuccess();
     else router.back();
   }
@@ -62,7 +65,7 @@ export default function LoginScreen({ onSuccess }: Props) {
     setGoogleLoading(true);
     try {
       const mail = await googleSignIn();
-      await handleDone(mail);
+      await handleDone(mail, 'google');
     } catch (e) {
       if (e instanceof UserCancelledError) return;
       setError(e instanceof Error ? e.message : 'Google sign-in failed.');
@@ -83,7 +86,7 @@ export default function LoginScreen({ onSuccess }: Props) {
     setLoading(true);
     try {
       await signIn(email, password);
-      await handleDone(email.trim());
+      await handleDone(email.trim(), 'email');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sign in failed. Please try again.');
     } finally {

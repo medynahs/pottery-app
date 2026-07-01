@@ -1,4 +1,4 @@
-﻿// src/screens/community/components/FestivalSignUpSheet.tsx
+// src/screens/community/components/ChallengeSignUpSheet.tsx
 import {
   ModalCard,
   ModalFormScrollView,
@@ -86,7 +86,7 @@ function TrackOption({
   );
 }
 
-export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose, submitting = false }: Props) {
+export function ChallengeSignUpSheet({ visible, festival, onConfirm, onClose, submitting = false }: Props) {
   const sheetHeight = useModalSheetHeight(0.88);
   const hasTrackStep = festival.tracks.length > 1;
   const totalSteps = hasTrackStep ? 2 : 1;
@@ -181,7 +181,7 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose, sub
             <ModalSheetFooter>
               <ModalSheetActions>
                 <SheetButton
-                  label="Next: Review Rules"
+                  label="Next: Review rules"
                   onPress={() => setStep('rules')}
                   variant="confirm"
                   disabled={!selectedTrack}
@@ -267,7 +267,7 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose, sub
                   lineHeight: 24,
                 }}
               >
-                Festival rules
+                Challenge rules
               </Text>
               <Text
                 style={{
@@ -326,7 +326,7 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose, sub
                   <Square size={20} color="#C9B48C" />
                 )}
                 <Text style={{ fontSize: 13, color: '#3a2a1a', fontWeight: '600', flex: 1 }}>
-                  I&apos;ve read and accept the festival rules
+                  I&apos;ve read and accept the challenge rules
                 </Text>
               </TouchableOpacity>
             </ModalFormScrollView>
@@ -334,7 +334,7 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose, sub
             <ModalSheetFooter>
               <ModalSheetActions>
                 <SheetButton
-                  label={submitting ? 'Joining…' : 'Join Festival'}
+                  label={submitting ? 'Joining…' : 'Join challenge'}
                   onPress={handleConfirm}
                   variant="confirm"
                   disabled={!rulesAccepted || submitting}
@@ -348,3 +348,6 @@ export function FestivalSignUpSheet({ visible, festival, onConfirm, onClose, sub
     </ModalShell>
   );
 }
+
+/** @deprecated Use ChallengeSignUpSheet */
+export const FestivalSignUpSheet = ChallengeSignUpSheet;

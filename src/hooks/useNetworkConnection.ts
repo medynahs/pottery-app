@@ -10,6 +10,16 @@ interface NetworkState {
   type: NetInfoStateType | null;
 }
 
+/** NetInfo returns null when reachability is unknown — treat as online if connected. */
+function normalizeInternetReachable(
+  isConnected: boolean | null,
+  isInternetReachable: boolean | null,
+): boolean {
+  if (isConnected === false) return false;
+  if (isInternetReachable === null) return true;
+  return isInternetReachable;
+}
+
 export function useNetworkConnection() {
   const [networkState, setNetworkState] = useState<NetworkState>({
     isConnected: true,
@@ -18,21 +28,17 @@ export function useNetworkConnection() {
   });
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
+    const applyState = (state: NetInfoState) => {
+      const isConnected = state.isConnected ?? false;
       setNetworkState({
-        isConnected: state.isConnected ?? false,
-        isInternetReachable: state.isInternetReachable ?? false,
+        isConnected,
+        isInternetReachable: normalizeInternetReachable(isConnected, state.isInternetReachable),
         type: state.type ?? null,
       });
-    });
+    };
 
-    NetInfo.fetch().then((state: NetInfoState) => {
-      setNetworkState({
-        isConnected: state.isConnected ?? false,
-        isInternetReachable: state.isInternetReachable ?? false,
-        type: state.type ?? null,
-      });
-    });
+    const unsubscribe = NetInfo.addEventListener(applyState);
+    void NetInfo.fetch().then(applyState);
 
     return () => {
       unsubscribe();
@@ -42,12 +48,14 @@ export function useNetworkConnection() {
   const checkConnection = async () => {
     try {
       const state = await NetInfo.fetch();
+      const isConnected = state.isConnected ?? false;
+      const isInternetReachable = normalizeInternetReachable(isConnected, state.isInternetReachable);
       setNetworkState({
-        isConnected: state.isConnected ?? false,
-        isInternetReachable: state.isInternetReachable ?? false,
+        isConnected,
+        isInternetReachable,
         type: state.type ?? null,
       });
-      return state.isConnected && state.isInternetReachable;
+      return isConnected && isInternetReachable;
     } catch (error) {
       console.warn("Failed to check network:", error);
       return false;

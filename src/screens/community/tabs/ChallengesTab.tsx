@@ -1,4 +1,4 @@
-﻿// Exported as ChallengesTab, monthly challenge hub
+﻿// Challenges tab — monthly community challenge hub
 import { InlineErrorCard } from '@/src/components/InlineErrorCard';
 import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
 import { ConfirmSheet } from '@/src/components/AppSheets';
@@ -6,7 +6,7 @@ import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
 import { ACTIVE_FESTIVAL } from '@/src/screens/community/data';
-import { FestivalSignUpSheet } from '@/src/screens/community/components/FestivalSignUpSheet';
+import { ChallengeSignUpSheet } from '@/src/screens/community/components/ChallengeSignUpSheet';
 import { SubmitPieceSheet, type SubmitPiecePayload } from '@/src/screens/community/components/SubmitPieceSheet';
 import {
   ChallengePhaseChip,
@@ -49,6 +49,10 @@ import {
 import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
 import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAppStore } from '@/src/store';
+import {
+  trackChallengeEntrySubmitted,
+  trackChallengeJoined,
+} from '@/src/utils/productAnalytics';
 import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -446,7 +450,7 @@ function MockTrackCards({
         className="text-xs font-bold uppercase tracking-widest"
         style={{ color: COMMUNITY_THEME.inkMuted }}
       >
-        Festival tracks
+        Challenge tracks
       </Text>
       {ACTIVE_FESTIVAL.tracks.map((track) => {
         const isEnrolled = enrolledTrackId === track.id;
@@ -532,9 +536,9 @@ export function ChallengesTab({
   );
   const loading = challengesQuery.isLoading && !challengesQuery.data;
   const error =
-    __DEV__ && challengesQuery.error instanceof Error
+    challengesQuery.error instanceof Error
       ? challengesQuery.error.message
-      : __DEV__ && challengesQuery.error
+      : challengesQuery.error
         ? 'Failed to load challenges'
         : null;
   const [submitting, setSubmitting] = useState(false);
@@ -547,7 +551,7 @@ export function ChallengesTab({
   const challenge = useMemo(() => {
     if (challengeApi) return toChallengeDisplay(challengeApi);
     if (__DEV__) {
-      console.warn('[FestivalsTab] No active challenge from API — falling back to mock data');
+      console.warn('[ChallengesTab] No active challenge from API — falling back to mock data');
       return MOCK_UNDERWATER_CHALLENGE;
     }
     return buildPreviewChallengeDisplay();
@@ -621,6 +625,11 @@ export function ChallengesTab({
       }
       mock.join(trackId);
       setSignUpOpen(false);
+      trackChallengeJoined({
+        challenge_id: challenge.id,
+        track_id: trackId,
+        is_mock: true,
+      });
       showToast('You joined the preview challenge!', 'success');
       return;
     }
@@ -634,7 +643,7 @@ export function ChallengesTab({
     try {
       const entry = await apiSubmitChallengeEntry(challengeApi.id, {
         ...(trackId ? { track_id: trackId } : {}),
-        note: 'Joined from Pottery Life app',
+        note: 'Joined from Pottery Nook app',
       });
       patchChallengesCache(challengeApi.id, {
         is_joined: true,
@@ -643,6 +652,11 @@ export function ChallengesTab({
         has_submitted: false,
       });
       setSignUpOpen(false);
+      trackChallengeJoined({
+        challenge_id: challengeApi.id,
+        track_id: trackId ?? entry.track_id ?? null,
+        is_mock: false,
+      });
       showToast('You joined the challenge!', 'success');
       refreshChallenges();
     } catch (err) {
@@ -697,6 +711,11 @@ export function ChallengesTab({
     if (isMock) {
       mock.submit(payload.note);
       setSubmitOpen(false);
+      trackChallengeEntrySubmitted({
+        challenge_id: challenge.id,
+        has_photo: Boolean(payload.photoUri),
+        is_mock: true,
+      });
       onEntrySubmitted?.({ emoji: challenge.emoji ?? '🏆', challengeName: challenge.title });
       return;
     }
@@ -741,6 +760,11 @@ export function ChallengesTab({
         has_submitted: true,
       });
       markChallengeEntrySubmitted();
+      trackChallengeEntrySubmitted({
+        challenge_id: challengeApi.id,
+        has_photo: true,
+        is_mock: false,
+      });
       setSubmitOpen(false);
       onEntrySubmitted?.({ emoji: challenge.emoji ?? '🏆', challengeName: challenge.title });
       refreshChallenges();
@@ -807,7 +831,7 @@ export function ChallengesTab({
     );
   }
 
-  if (error && isMock) {
+  if (error) {
     return <InlineErrorCard message={error} onRetry={() => { void challengesQuery.refetch(); }} />;
   }
 
@@ -915,7 +939,7 @@ export function ChallengesTab({
       {isMock && phase === 'open' ? <MockTrackCards enrolledTrackId={mock.joinedTrackId} /> : null}
 
       {signUpFestival ? (
-        <FestivalSignUpSheet
+        <ChallengeSignUpSheet
           visible={signUpOpen}
           festival={signUpFestival}
           submitting={submitting}

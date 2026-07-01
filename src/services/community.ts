@@ -345,18 +345,22 @@ export interface BackendHallOfFameLeaderboardEntry {
  * Returns null when the endpoint is missing or returns an unsupported shape.
  */
 export async function apiGetHallOfFameArchive(
-  ): Promise<BackendHallOfFameResponse | null> {
+  ): Promise<BackendHallOfFameResponse> {
   const res = await authedFetch(`${API_BASE}/hall-of-fame`);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    throw new Error(`Hall of Fame request failed (${res.status})`);
+  }
 
   const data = await res.json().catch(() => null);
-  if (!data || typeof data !== 'object') return null;
+  if (!data || typeof data !== 'object') {
+    throw new Error('Hall of Fame returned an invalid response');
+  }
 
   if (Array.isArray((data as BackendHallOfFameResponse).cycles)) {
     return data as BackendHallOfFameResponse;
   }
 
-  return null;
+  throw new Error('Hall of Fame returned an unsupported shape');
 }
 
 /**

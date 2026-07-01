@@ -1,4 +1,5 @@
 import { useAnalytics } from '@/src/hooks/useAnalytics';
+import { trackFirstGlazeAdded } from '@/src/utils/productAnalytics';
 import { glazeDraftToItem } from '@/src/screens/glazes/glazeItemHelpers';
 import { useAppStore } from '@/src/store';
 import React from 'react';
@@ -65,6 +66,10 @@ export function useGlazeAtlas() {
     trackGlazeCreated({
       source: 'atlas',
       hasRecipe: hasValidRecipeIngredients(draft.recipeIngredients),
+    });
+    trackFirstGlazeAdded({
+      has_recipe: hasValidRecipeIngredients(draft.recipeIngredients),
+      source: 'atlas',
     });
     scheduleGlazesSync();
     setAddOpen(false);

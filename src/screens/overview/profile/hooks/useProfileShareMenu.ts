@@ -1,5 +1,6 @@
 import { type PickSheetOption } from '@/src/components/AppSheets';
 import { useAppStore } from '@/src/store/appStore';
+import { trackProfileShared } from '@/src/utils/productAnalytics';
 import { useCallback, useMemo, useState } from 'react';
 import { copyProfileLink, shareProfileLink } from '../utils/profileShareActions';
 
@@ -49,6 +50,10 @@ export function useProfileShareMenu({
             const result = await shareProfileLink({ userId, name: displayName });
             if (result === 'failed') {
               showToast('Could not open share sheet', 'error');
+            } else {
+              trackProfileShared({
+                source: userIdProp ? 'public_profile' : 'profile',
+              });
             }
           })();
         },
@@ -64,7 +69,7 @@ export function useProfileShareMenu({
         },
       },
     ];
-  }, [closeShareMenu, name, showToast, userId]);
+  }, [closeShareMenu, name, showToast, userId, userIdProp]);
 
   return {
     shareMenuVisible: visible,

@@ -1,4 +1,5 @@
 import { Text } from '@/src/components/ui/text';
+import { useAnalytics } from '@/src/hooks/useAnalytics';
 import {
   getPremiumFeatureDescription,
   getPremiumLimitLine,
@@ -40,8 +41,13 @@ export function AnalyticsLockedPreview({
   userType,
 }: AnalyticsLockedPreviewProps) {
   const router = useRouter();
+  const { trackAnalyticsPreviewViewed } = useAnalytics();
   const description = getPremiumFeatureDescription(PremiumFeature.Analytics, userType);
   const limitLine = getPremiumLimitLine(PremiumFeature.Analytics);
+
+  React.useEffect(() => {
+    trackAnalyticsPreviewViewed({ user_type: userType });
+  }, [trackAnalyticsPreviewViewed, userType]);
 
   return (
     <View className="flex-1" style={{ backgroundColor: ANALYTICS_THEME.pageBg, paddingTop }}>

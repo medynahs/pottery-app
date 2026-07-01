@@ -27,6 +27,7 @@ import {
   type BackendChallenge,
 } from '@/src/services/challenges';
 import { useAppStore } from '@/src/store';
+import { trackChallengeVoteCast } from '@/src/utils/productAnalytics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -147,6 +148,13 @@ export default function ChallengeGalleryScreen() {
 
     if (isMock) {
       const ok = mock.vote(activeTrackId, entryId);
+      if (ok) {
+        trackChallengeVoteCast({
+          challenge_id: challengeId,
+          track_id: activeTrackId,
+          is_mock: true,
+        });
+      }
       showToast(ok ? 'Vote recorded' : 'Already your pick in this track', ok ? 'success' : 'error');
       return;
     }
@@ -155,6 +163,11 @@ export default function ChallengeGalleryScreen() {
 
     try {
       await apiVoteChallengeEntry(challengeId, entryId);
+      trackChallengeVoteCast({
+        challenge_id: challengeId,
+        track_id: activeTrackId,
+        is_mock: false,
+      });
       setApiVotesByTrack((prev) => ({ ...prev, [activeTrackId]: entryId }));
       setApiEntries((prev) =>
         prev.map((entry) => {

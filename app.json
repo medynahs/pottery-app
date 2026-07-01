@@ -52,6 +52,7 @@
     },
     "plugins": [
       "expo-router",
+      "posthog-react-native/expo",
       [
         "expo-splash-screen",
         {
@@ -75,7 +76,8 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.431375939143-e0puarac123gua0cbuph6ouq5s55nkdn"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

@@ -2,6 +2,10 @@ import SuperTokens from 'supertokens-react-native';
 import { API_BASE_URL } from '@/src/services';
 SuperTokens.init({ apiDomain: API_BASE_URL, apiBasePath: '/auth' });
 
+if (__DEV__) {
+  console.log('[config] API_BASE_URL =', API_BASE_URL);
+}
+
 import { isExpoGo } from '@/src/services/auth';
 // Native Google Sign-In is a native module Expo Go can't load, so configure it only
 // outside Expo Go (the app still boots there for email/password). webClientId MUST
@@ -39,7 +43,9 @@ import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
 import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
 import { ToastOverlay } from '@/src/components/ui/toast-overlay';
 import { AccountDeletedGate } from '@/src/components/AccountDeletedGate';
+import { PostHogAppProvider } from '@/src/components/PostHogBridge';
 import { configureRevenueCat } from '@/src/hooks/useEntitlements';
+import { usePremiumAnalyticsEffects } from '@/src/hooks/usePremiumAnalyticsEffects';
 import { useMeSessionEffects } from '@/src/hooks/useCurrentUser';
 import { useEntitlementSync } from '@/src/hooks/useEntitlementSync';
 import { usePreferencesSync } from '@/src/hooks/usePreferencesSync';
@@ -124,6 +130,7 @@ function useAuthInitialization(hydrated: boolean) {
 function AppShell() {
   useMeSessionEffects();
   useEntitlementSync();
+  usePremiumAnalyticsEffects();
   usePreferencesSync();
   useRhythmSync();
   useOfflineSync();
@@ -235,7 +242,9 @@ export default function RootLayout() {
                 <PhotoPickerProvider>
                   <View style={{ flex: 1, backgroundColor: '#FBF0E0' }}>
                     <TextScaleRoot style={{ flex: 1 }}>
-                      <AppShell />
+                      <PostHogAppProvider>
+                        <AppShell />
+                      </PostHogAppProvider>
                     </TextScaleRoot>
                     <AccountDeletedGate />
                     {nativeSplashHidden && showAnimatedSplash ? (

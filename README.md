@@ -1,4 +1,4 @@
-# Pottery Life
+# Pottery Nook
 
 Expo / React Native app for studio pottery tracking — pieces, kiln, glazes, community, and profile.
 

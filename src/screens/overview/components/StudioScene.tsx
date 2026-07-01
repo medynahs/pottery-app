@@ -143,7 +143,7 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
     pieceSlot: 'dryingShelf',
     quickActions: [
       { label: 'Open Pieces', route: '/(tabs)/pieces?stage=drying' },
-      { label: 'My Journey', route: '/(tabs)/profile' },
+      { label: 'My profile', route: '/(tabs)/profile' },
     ],
     popoverLeft: '10%',
     popoverTop: '29%',
@@ -190,7 +190,7 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
     height: '18%',
     quickActions: [
       { label: 'Open Pieces', route: '/(tabs)/pieces?stage=trimming' },
-      { label: 'My Journey', route: '/(tabs)/profile' },
+      { label: 'My profile', route: '/(tabs)/profile' },
     ],
     popoverLeft: '50%',
     popoverTop: '62%',
@@ -206,7 +206,7 @@ function getStudioHotspots(companionName: string): StudioHotspot[] {
     pieceSlot: 'finishedCabinet',
     quickActions: [
       { label: 'Open Pieces', route: '/(tabs)/pieces?stage=finished' },
-      { label: 'My Journey', route: '/(tabs)/profile' },
+      { label: 'My profile', route: '/(tabs)/profile' },
     ],
     popoverLeft: '62%',
     popoverTop: '9%',
