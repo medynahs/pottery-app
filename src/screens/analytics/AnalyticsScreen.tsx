@@ -312,6 +312,12 @@ export default function AnalyticsScreen() {
         ringLabel={dashboard.ringLabel}
         ringSub={dashboard.ringSub}
         stats={dashboard.stats}
+        studioStats={stats}
+        money={money}
+        costDonutSegments={costDonutSegments}
+        showCostDonut={!isStudioOwner && !isMemberLens && stats.costs.productionTotal > 0}
+        showRevenueTiles={!isStudioOwner && !isMemberLens}
+        revenueLabel={pricingCopy.revenueLabel}
         userType={userType}
       />
     );

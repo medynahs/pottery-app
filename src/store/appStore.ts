@@ -61,7 +61,7 @@ import {
 import type { AppNotification, Studio, StudioMember } from '../types/studio';
 import { clearSecureEmail, loadSecureEmail, saveSecureEmail } from './secureStorage';
 import { zustandStorage } from './storage';
-import { resolvePremiumFromEntitlement } from '../utils/forcePremium';
+import { isForcePremiumEnabled, resolvePremiumFromEntitlement, setDevPremiumOverride } from '@/src/utils/forcePremium';
 import {
   trackDailyMissionCompleted,
   trackFiringCompleted,
@@ -424,6 +424,8 @@ interface AppState {
   clearSession: () => void;
   setBackendUserId: (id: string | null) => void;
   setIsPremium: (v: boolean) => void;
+  /** Dev only — bypasses RevenueCat / FORCE_PREMIUM for local tier testing. */
+  setPremiumDevOverride: (premium: boolean) => void;
   initializeAuth: () => Promise<void>;
 
   // ── User ──────────────────────────────────────────────────────
@@ -812,6 +814,11 @@ export const useAppStore = create<AppState>()(
   },
   setBackendUserId: (id) => set({ backendUserId: id }),
   setIsPremium: (v) => set({ isPremium: resolvePremiumFromEntitlement(v) }),
+  setPremiumDevOverride: (premium) => {
+    if (!__DEV__) return;
+    setDevPremiumOverride(premium);
+    set({ isPremium: premium });
+  },
   initializeAuth: async () => {
     try {
       const exists = await sessionExists();
@@ -2258,7 +2265,8 @@ export const useAppStore = create<AppState>()(
             state.communityPostsCreated ?? 0,
             state.hasCreatedPost ? 1 : 0,
           ),
-          isPremium: resolvePremiumFromEntitlement(!!(state.isPremium ?? currentState.isPremium)),
+          // Never restore premium from disk — always re-sync from RevenueCat / backend on launch.
+          isPremium: isForcePremiumEnabled() ? true : false,
         };
       },
       storage: zustandStorage,
@@ -2312,7 +2320,6 @@ export const useAppStore = create<AppState>()(
         privacyPrefs: state.privacyPrefs,
         lastSyncedAt: state.lastSyncedAt,
         backendUserId: state.backendUserId,
-        isPremium: state.isPremium,
         accountDeletionScheduledAt: state.accountDeletionScheduledAt,
       }),
     }

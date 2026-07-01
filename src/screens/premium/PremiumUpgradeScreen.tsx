@@ -219,9 +219,12 @@ export default function PremiumUpgradeScreen({
   const showToast = useAppStore((s) => s.showToast);
   const userType = useAppStore((s) => s.onboardingProfile?.userType ?? 'not-sure');
 
-  /** Always leave the paywall route — avoids dismiss/back getting stuck on modal stacks. */
   const closePaywall = useCallback(() => {
     trackPaywallDismissed({ feature: triggerFeature ?? null, user_type: userType });
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
     router.replace('/(tabs)/overview' as never);
   }, [router, triggerFeature, userType]);
 

@@ -9,6 +9,7 @@ import {
   useEntitlements,
   type SubscriptionDetails,
 } from '@/src/hooks/useEntitlements';
+import { isDevPremiumOverrideActive } from '@/src/utils/forcePremium';
 import {
   formatSubscriptionDate,
 } from '@/src/utils/subscriptionSettings';
@@ -42,7 +43,9 @@ export default function ManageSubscriptionScreen() {
   const loadDetails = useCallback(async () => {
     setLoadingDetails(true);
     try {
-      await syncCustomerInfo();
+      if (!isDevPremiumOverrideActive()) {
+        await syncCustomerInfo();
+      }
       setDetails(await getSubscriptionDetails());
     } finally {
       setLoadingDetails(false);
@@ -52,12 +55,6 @@ export default function ManageSubscriptionScreen() {
   useEffect(() => {
     void loadDetails();
   }, [loadDetails]);
-
-  useEffect(() => {
-    if (!loadingDetails && !isPremium) {
-      router.replace('/premium');
-    }
-  }, [isPremium, loadingDetails, router]);
 
   async function handleManageSubscription() {
     setActionError(null);
@@ -93,7 +90,46 @@ export default function ManageSubscriptionScreen() {
             ? 'Google Play'
             : null;
 
-  if (!isPremium && !loadingDetails) {
+  if (!loadingDetails && !isPremium) {
+    return (
+      <View className="flex-1 bg-background">
+        <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-border">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="w-10 h-10 items-center justify-center rounded-full bg-muted/60 mr-3"
+          >
+            <ChevronDown size={20} color="hsl(24 30% 40%)" style={{ transform: [{ rotate: '90deg' }] }} />
+          </TouchableOpacity>
+          <View className="flex-1">
+            <Text className="text-lg font-bold text-foreground">Subscription</Text>
+            <Text className="text-xs text-muted-foreground mt-0.5">Free plan</Text>
+          </View>
+        </View>
+        <View className="flex-1 px-6 justify-center">
+          <Text className="text-base font-serif font-bold text-foreground text-center mb-2">
+            You&apos;re on the free plan
+          </Text>
+          <Text className="text-sm text-muted-foreground text-center leading-6 mb-6">
+            Upgrade to Pottery Nook Pro for unlimited cloud backup, analytics, export, and more.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.replace('/premium')}
+            activeOpacity={0.85}
+            className="rounded-2xl bg-primary py-3.5 items-center mb-3"
+          >
+            <Text className="text-sm font-bold text-white">View Premium plans</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} className="py-2 items-center">
+            <Text className="text-sm text-muted-foreground">Go back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const isDevSimulated = isDevPremiumOverrideActive() && !details;
+
+  if (!isPremium && loadingDetails) {
     return (
       <View className="flex-1 bg-background items-center justify-center">
         <ActivityIndicator color={GOLD} />
@@ -124,7 +160,9 @@ export default function ManageSubscriptionScreen() {
             </View>
             <View className="flex-1">
               <Text className="text-base font-bold text-foreground">Pottery Nook Pro</Text>
-              <Text className="text-xs text-muted-foreground mt-0.5">Active subscription</Text>
+              <Text className="text-xs text-muted-foreground mt-0.5">
+                {isDevSimulated ? 'Premium access (dev testing)' : 'Active subscription'}
+              </Text>
             </View>
             <View className="rounded-full bg-amber-100 px-3 py-1">
               <Text className="text-[11px] font-bold uppercase tracking-wide" style={{ color: GOLD }}>
@@ -135,6 +173,10 @@ export default function ManageSubscriptionScreen() {
 
           {loadingDetails ? (
             <ActivityIndicator color={GOLD} style={{ marginTop: 8 }} />
+          ) : isDevSimulated ? (
+            <Text className="text-sm text-muted-foreground leading-5 mt-1">
+              Premium gates are unlocked via the dev testing panel in Account Settings. No App Store subscription is linked to this device.
+            </Text>
           ) : (
             <View className="gap-1.5 mt-1">
               {details?.planLabel ? (

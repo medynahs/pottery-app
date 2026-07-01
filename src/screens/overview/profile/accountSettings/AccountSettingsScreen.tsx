@@ -1,6 +1,7 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
 import { ProfileDeletionGraceBanner } from '@/src/screens/overview/profile/components/ProfileDeletionGraceBanner';
 import { NotificationDebugPanel } from '@/src/components/dev/NotificationDebugPanel';
+import { DevPremiumPanel } from '@/src/components/dev/DevPremiumPanel';
 import { KilnkinCompanionPickerSheet } from '@/src/components/KilnkinCompanionPickerSheet';
 import { PracticeTypePickerSheet } from '@/src/components/PracticeTypePickerSheet';
 import { SectionLabel } from '@/src/components/SectionLabel';
@@ -18,6 +19,7 @@ import { ensureNotificationPermission } from '@/src/services/notifications';
 import { syncPushTokenWithBackend } from '@/src/services/pushTokens';
 import { useAppStore } from '@/src/store';
 import { PremiumFeature } from '@/src/utils/premiumGate';
+import { getDevPremiumOverride } from '@/src/utils/forcePremium';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Linking } from 'react-native';
@@ -51,6 +53,7 @@ export default function AccountSettingsScreen() {
   const clearSession  = useAppStore((s) => s.clearSession);
   const showToast     = useAppStore((s) => s.showToast);
   const isPremium     = useAppStore((s) => s.isPremium);
+  const devPremiumOverride = __DEV__ ? getDevPremiumOverride() : null;
   const isAuthenticated = isSignedIn;
   const { requestAccess, PaywallGate } = usePremiumGate();
 
@@ -187,7 +190,13 @@ export default function AccountSettingsScreen() {
             iconColor="hsl(39 57% 51%)"
             iconBg="bg-amber-50"
             label={isPremium ? 'Manage Subscription' : 'Upgrade to Premium'}
-            value={isPremium ? 'Premium' : undefined}
+            value={
+              isPremium
+                ? devPremiumOverride !== null
+                  ? 'Premium (dev)'
+                  : 'Premium'
+                : 'Free'
+            }
             onPress={() => router.push(isPremium ? '/manage-subscription' : '/premium')}
           />
         </SettingsGroup>
@@ -272,6 +281,7 @@ export default function AccountSettingsScreen() {
           </Text>
         </View>
 
+        {__DEV__ ? <DevPremiumPanel /> : null}
         {__DEV__ ? <NotificationDebugPanel /> : null}
 
         <SettingsGroup>

@@ -16,7 +16,7 @@ import Purchases, {
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { AnalyticsEvents } from '@/src/constants/analytics';
 import { captureAnalyticsEvent } from '@/src/hooks/useAnalytics';
-import { isForcePremiumEnabled, resolvePremiumFromEntitlement } from '../utils/forcePremium';
+import { isDevPremiumOverrideActive, isForcePremiumEnabled, resolvePremiumFromEntitlement } from '../utils/forcePremium';
 import { planLabelFromProductId, openPlatformSubscriptionSettings } from '../utils/subscriptionSettings';
 import { useAppStore } from '../store/appStore';
 
@@ -40,6 +40,21 @@ export interface SubscriptionDetails {
 
 export function isRevenueCatConfigured(): boolean {
   return rcConfigured;
+}
+
+/** Re-read RevenueCat and update store tier (skipped when dev override / force premium). */
+export async function refreshPremiumEntitlementFromSdk(): Promise<void> {
+  if (isDevPremiumOverrideActive() || isForcePremiumEnabled()) return;
+  if (!rcConfigured) {
+    useAppStore.getState().setIsPremium(false);
+    return;
+  }
+  try {
+    const info = await Purchases.getCustomerInfo();
+    useAppStore.getState().setIsPremium(!!info.entitlements.active[ENTITLEMENT_ID]);
+  } catch {
+    useAppStore.getState().setIsPremium(false);
+  }
 }
 
 export async function getSubscriptionDetails(): Promise<SubscriptionDetails | null> {
@@ -75,12 +90,14 @@ export function configureRevenueCat(): void {
     // Keep isPremium in sync whenever RC notifies us of a customer info change -
     // this covers purchases from the native paywall, restores, expirations, etc.
     Purchases.addCustomerInfoUpdateListener((info) => {
+      if (isDevPremiumOverrideActive()) return;
       useAppStore.getState().setIsPremium(
         resolvePremiumFromEntitlement(!!info.entitlements.active[ENTITLEMENT_ID]),
       );
     });
 
     rcConfigured = true;
+    void refreshPremiumEntitlementFromSdk();
   } catch {
     // Native module not available (e.g. Expo Go), silently skip
   }
@@ -134,7 +151,7 @@ export function useEntitlements() {
 
   /** Re-fetch and sync the latest customer info from RC. */
   const syncCustomerInfo = useCallback(async () => {
-    if (!rcConfigured) return;
+    if (!rcConfigured || isDevPremiumOverrideActive()) return;
     try {
       const info = await Purchases.getCustomerInfo();
       setIsPremium(resolvePremiumFromEntitlement(!!info.entitlements.active[ENTITLEMENT_ID]));

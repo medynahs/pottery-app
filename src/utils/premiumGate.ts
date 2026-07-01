@@ -8,7 +8,6 @@ import {
   FREE_CLOUD_STORAGE_MB,
   getCloudStorageSnapshot,
 } from './cloudStorage';
-import { resolvePremiumFromEntitlement } from './forcePremium';
 
 /**
  * Enum of all premium-gated features.
@@ -276,7 +275,7 @@ export function getPremiumFeatureDescription(
  * Returns `true` if the user has an active premium entitlement.
  */
 export function checkPremium(_feature: PremiumFeature): boolean {
-  return resolvePremiumFromEntitlement(useAppStore.getState().isPremium);
+  return useAppStore.getState().isPremium;
 }
 
 /** Count all photos stored on a piece (cover + journal entries). */
