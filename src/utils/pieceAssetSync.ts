@@ -134,10 +134,15 @@ async function uploadTimelinePhotos(piece: Piece): Promise<{ piece: Piece; uploa
       if (!isLocalMediaUri(photo.uri)) continue; // remote/empty, nothing local to push
       if (!canSyncPiecePhotoToCloud({ ...piece, timeline }, false)) continue; // free-tier cap
 
-      const file = localImageFileFromUri(photo.uri);
-      const asset = await apiUploadPieceAsset(piece.backendId, file);
-      entry.photos[pi] = { ...photo, assetId: asset.id }; // keep local uri, add the id
-      uploaded += 1;
+      try {
+        const file = localImageFileFromUri(photo.uri);
+        const asset = await apiUploadPieceAsset(piece.backendId, file);
+        entry.photos[pi] = { ...photo, assetId: asset.id }; // keep local uri, add the id
+        uploaded += 1;
+      } catch {
+        const nextPiece = uploaded > 0 ? { ...piece, timeline } : piece;
+        return { piece: nextPiece, uploaded };
+      }
     }
   }
 

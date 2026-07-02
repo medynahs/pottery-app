@@ -152,14 +152,27 @@ function pieceFromDoc(bp: BackendPiece, existing?: Piece): Piece | null {
   }
 
   const timeline: TimelineEntry[] = (doc.timeline as TimelineEntry[]).map((entry, i) => {
+    const existingPhotos = existing?.timeline[i]?.photos ?? [];
+    const pendingByIndex = new Map<number, PiecePhoto>();
+    existingPhotos.forEach((ph, idx) => { if (!ph.assetId) pendingByIndex.set(idx, ph); });
+
     const refs = ((entry.photos ?? []) as BackendPhotoRef[])
       .filter((ref) => ref.assetId)
       .map<PiecePhoto>((ref) => ({
         assetId: ref.assetId,
         uri: localUriByAssetId.get(ref.assetId!) ?? '',
       }));
-    const pending = (existing?.timeline[i]?.photos ?? []).filter((photo) => !photo.assetId);
-    return { ...entry, photos: [...refs, ...pending] };
+
+    const photos: PiecePhoto[] = [];
+    let ri = 0;
+    const max = Math.max(existingPhotos.length, refs.length);
+    for (let idx = 0; idx < max; idx += 1) {
+      const p = pendingByIndex.get(idx) ?? refs[ri++];
+      if (p) photos[idx] = p;
+    }
+    while (ri < refs.length) photos.push(refs[ri++]);
+
+    return { ...entry, photos };
   });
 
   const piece: Piece = {
