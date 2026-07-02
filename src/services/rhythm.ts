@@ -10,18 +10,18 @@ export interface BackendRhythmRow {
   updated_at?: string | null;
 }
 
-/** GET /users/me/rythm — returns zero or more rhythm rows. */
+/** GET /me/rhythm — returns zero or more rhythm rows. */
 export async function fetchRhythm(): Promise<BackendRhythmRow[]> {
-  const res = await fetch(`${API_BASE_URL}/users/me/rythm`, {
+  const res = await fetch(`${API_BASE_URL}/me/rhythm`, {
     headers: { Accept: 'application/json' },
   });
   if (!res.ok) throw await apiErrorFromResponse(res, 'fetchRhythm failed');
   return res.json() as Promise<BackendRhythmRow[]>;
 }
 
-/** POST /users/me/rythm — upserts studio rhythm JSON. Sprint/freeform require premium. */
+/** POST /me/rhythm — upserts studio rhythm JSON. Sprint/freeform require premium. */
 export async function upsertRhythm(rhythm: StudioRhythm): Promise<BackendRhythmRow> {
-  const res = await fetch(`${API_BASE_URL}/users/me/rythm`, {
+  const res = await fetch(`${API_BASE_URL}/me/rhythm`, {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify(rhythm),

@@ -1,4 +1,4 @@
-// Friends API, /users/me/friends
+// Friends API, /me/friends
 // All endpoints require Authorization: Bearer <token> (SuperTokens session token).
 
 import { API_BASE_URL as API_BASE } from './index';
@@ -78,113 +78,113 @@ async function parseError(res: Response, endpoint: string): Promise<never> {
 // ─── API functions ────────────────────────────────────────────────────────────
 
 /**
- * GET /users/me/friends
+ * GET /me/friends
  * Returns the current user's confirmed friends.
  */
 export async function apiListFriends(
     ): Promise<BackendUser[]> {
-  const res = await authedFetch(`${API_BASE}/users/me/friends`);
-  if (!res.ok) return parseError(res, 'GET /users/me/friends');
+  const res = await authedFetch(`${API_BASE}/me/friends`);
+  if (!res.ok) return parseError(res, 'GET /me/friends');
   return res.json() as Promise<BackendUser[]>;
 }
 
 /**
- * DELETE /users/me/friends/{friend_id}
+ * DELETE /me/friends/{friend_id}
  * Removes a friend. Returns 204 on success.
  */
 export async function apiRemoveFriend(
     friendId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    `${API_BASE}/users/me/friends/${friendId}`,
+    `${API_BASE}/me/friends/${friendId}`,
     { method: 'DELETE' },
   );
-  if (!res.ok) return parseError(res, `DELETE /users/me/friends/${friendId}`);
+  if (!res.ok) return parseError(res, `DELETE /me/friends/${friendId}`);
 }
 
 /**
- * POST /users/me/friends/requests
+ * POST /me/friends/requests
  * Sends a friend request to another user.
  */
 export async function apiSendFriendRequest(
     userId: string,
 ): Promise<BackendFriendRequest> {
-  const res = await authedFetch(`${API_BASE}/users/me/friends/requests`, {
+  const res = await authedFetch(`${API_BASE}/me/friends/requests`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_id: userId }),
   });
-  if (!res.ok) return parseError(res, 'POST /users/me/friends/requests');
+  if (!res.ok) return parseError(res, 'POST /me/friends/requests');
   return res.json() as Promise<BackendFriendRequest>;
 }
 
 /**
- * GET /users/me/friends/requests/incoming
+ * GET /me/friends/requests/incoming
  * Lists pending friend requests received by the current user.
  */
 export async function apiListIncomingFriendRequests(
   ): Promise<BackendFriendRequest[]> {
   const res = await authedFetch(
-    `${API_BASE}/users/me/friends/requests/incoming`,
+    `${API_BASE}/me/friends/requests/incoming`,
   );
-  if (!res.ok) return parseError(res, 'GET /users/me/friends/requests/incoming');
+  if (!res.ok) return parseError(res, 'GET /me/friends/requests/incoming');
   return res.json() as Promise<BackendFriendRequest[]>;
 }
 
 /**
- * GET /users/me/friends/requests/outgoing
+ * GET /me/friends/requests/outgoing
  * Lists pending friend requests sent by the current user.
  */
 export async function apiListOutgoingFriendRequests(
   ): Promise<BackendFriendRequest[]> {
   const res = await authedFetch(
-    `${API_BASE}/users/me/friends/requests/outgoing`,
+    `${API_BASE}/me/friends/requests/outgoing`,
   );
-  if (!res.ok) return parseError(res, 'GET /users/me/friends/requests/outgoing');
+  if (!res.ok) return parseError(res, 'GET /me/friends/requests/outgoing');
   return res.json() as Promise<BackendFriendRequest[]>;
 }
 
 /**
- * POST /users/me/friends/requests/{request_id}/accept
+ * POST /me/friends/requests/{request_id}/accept
  * Accepts an incoming friend request. Only the addressee may call this.
  */
 export async function apiAcceptFriendRequest(
     requestId: string,
 ): Promise<BackendFriendRequest> {
   const res = await authedFetch(
-    `${API_BASE}/users/me/friends/requests/${requestId}/accept`,
+    `${API_BASE}/me/friends/requests/${requestId}/accept`,
     { method: 'POST' },
   );
-  if (!res.ok) return parseError(res, `POST /users/me/friends/requests/${requestId}/accept`);
+  if (!res.ok) return parseError(res, `POST /me/friends/requests/${requestId}/accept`);
   return res.json() as Promise<BackendFriendRequest>;
 }
 
 /**
- * POST /users/me/friends/requests/{request_id}/decline
+ * POST /me/friends/requests/{request_id}/decline
  * Declines an incoming friend request. Only the addressee may call this.
  */
 export async function apiDeclineFriendRequest(
     requestId: string,
 ): Promise<BackendFriendRequest> {
   const res = await authedFetch(
-    `${API_BASE}/users/me/friends/requests/${requestId}/decline`,
+    `${API_BASE}/me/friends/requests/${requestId}/decline`,
     { method: 'POST' },
   );
-  if (!res.ok) return parseError(res, `POST /users/me/friends/requests/${requestId}/decline`);
+  if (!res.ok) return parseError(res, `POST /me/friends/requests/${requestId}/decline`);
   return res.json() as Promise<BackendFriendRequest>;
 }
 
 /**
- * POST /users/me/friends/requests/{request_id}/cancel
+ * POST /me/friends/requests/{request_id}/cancel
  * Cancels an outgoing friend request. Only the requester may call this.
  */
 export async function apiCancelFriendRequest(
     requestId: string,
 ): Promise<BackendFriendRequest> {
   const res = await authedFetch(
-    `${API_BASE}/users/me/friends/requests/${requestId}/cancel`,
+    `${API_BASE}/me/friends/requests/${requestId}/cancel`,
     { method: 'POST' },
   );
-  if (!res.ok) return parseError(res, `POST /users/me/friends/requests/${requestId}/cancel`);
+  if (!res.ok) return parseError(res, `POST /me/friends/requests/${requestId}/cancel`);
   return res.json() as Promise<BackendFriendRequest>;
 }

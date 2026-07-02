@@ -52,7 +52,7 @@ export type Piece = {
   backendId?: string;
   /** Tombstone, hidden from UI until the delete is confirmed by sync. */
   deleted?: boolean;
-  /** Local edits not yet pushed via POST /users/me/pieces/sync. */
+  /** Local edits not yet pushed via POST /me/pieces/sync. */
   syncDirty?: boolean;
   name: string;
   stage: string;          // physical state (Stage)

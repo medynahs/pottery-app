@@ -15,17 +15,17 @@ async function fetchDiscoverJson<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** GET /glazes/discover/recipes — public, no auth. */
+/** GET /public/discover/recipes — public, no auth. */
 export async function fetchDiscoverRecipes(): Promise<DiscoverRecipesResponse> {
-  const data = await fetchDiscoverJson<DiscoverRecipesResponse>('/glazes/discover/recipes');
+  const data = await fetchDiscoverJson<DiscoverRecipesResponse>('/public/discover/recipes');
   return {
     version: data.version ?? '',
     recipes: Array.isArray(data.recipes) ? data.recipes : [],
   };
 }
 
-/** GET /glazes/discover/inspirations — public, no auth. */
+/** GET /public/discover/inspirations — public, no auth. */
 export async function fetchDiscoverInspirations(): Promise<DiscoverInspiration[]> {
-  const data = await fetchDiscoverJson<DiscoverInspiration[]>('/glazes/discover/inspirations');
+  const data = await fetchDiscoverJson<DiscoverInspiration[]>('/public/discover/inspirations');
   return Array.isArray(data) ? data : [];
 }

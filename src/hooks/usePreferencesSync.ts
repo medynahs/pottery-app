@@ -1,5 +1,5 @@
 /**
- * Offline-first bridge for GET/PUT /users/me/preferences.
+ * Offline-first bridge for GET/PUT /me/preferences.
  * Pull on sign-in; debounced push when customization fields change.
  */
 

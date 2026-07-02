@@ -26,7 +26,7 @@ const FOR_YOU_STALE_MS = 10 * 60 * 1000;
 const SPARSE_FEED_THRESHOLD = 5;
 
 export async function fetchFriendsFeedPage(cursor?: string): Promise<FeedPage> {
-  return fetchFeedPageSafe('GET /users/me/feed', () => apiGetFeed({ limit: 20, cursor }));
+  return fetchFeedPageSafe('GET /me/feed', () => apiGetFeed({ limit: 20, cursor }));
 }
 
 function isFeedServerError(error: unknown): boolean {
@@ -66,7 +66,7 @@ export async function fetchForYouFeedFirstPage(
 
   let myPosts = getMyPostsFromCache(queryClient);
   if (myPosts.length === 0) {
-    const myPage = await fetchFeedPageSafe('GET /users/me/posts', () =>
+    const myPage = await fetchFeedPageSafe('GET /me/posts', () =>
       apiListMyPosts({ limit: 20 }),
     );
     myPosts = myPage.items ?? myPage.posts ?? [];

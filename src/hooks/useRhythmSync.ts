@@ -1,5 +1,5 @@
 /**
- * Offline-first bridge for GET/POST /users/me/rythm.
+ * Offline-first bridge for GET/POST /me/rhythm.
  * Pull on sign-in; debounced push when studioRhythm changes.
  */
 

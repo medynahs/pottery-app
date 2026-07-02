@@ -1,4 +1,4 @@
-// Pieces API, /users/me/pieces — the "notebook + shoebox" sync surface.
+// Pieces API, /me/pieces — the "notebook + shoebox" sync surface.
 // FE is the source of truth: the backend stores each piece as an opaque `doc`
 // backup plus a few queryable projections (name, stage, glaze_id, visibility),
 // and piece assets as a dumb blob registry keyed by asset UUID.
@@ -26,7 +26,7 @@ export interface BackendPiece {
   updated_at?: string;
 }
 
-/** Snapshot sent to POST /users/me/pieces/sync, identity is client_ref only. */
+/** Snapshot sent to POST /me/pieces/sync, identity is client_ref only. */
 export interface PieceSyncSnapshot {
   client_ref: string;
   name: string;
@@ -42,7 +42,7 @@ export interface SyncPiecesRequest {
 
 export interface SyncPiecesResponse {
   /** client_ref → backend UUID for every synced item, deleted ones included.
-   *  Authoritative state is pulled separately via GET /users/me/pieces. */
+   *  Authoritative state is pulled separately via GET /me/pieces. */
   client_ref_map: Record<string, string>;
 }
 
@@ -115,22 +115,22 @@ async function authedFetch(url: string,
 
 // ─── Pieces ───────────────────────────────────────────────────────────────────
 
-/** GET /users/me/pieces, list all piece backups for the authenticated user. */
+/** GET /me/pieces, list all piece backups for the authenticated user. */
 export async function apiListPieces(
     ): Promise<BackendPiece[]> {
-  const res = await authedFetch(`${API_BASE}/users/me/pieces`);
+  const res = await authedFetch(`${API_BASE}/me/pieces`);
   if (!res.ok) throw new Error(`listPieces failed (${res.status})`);
   return res.json() as Promise<BackendPiece[]>;
 }
 
 /**
- * POST /users/me/pieces/sync — the ONE push path. Full snapshots of new,
+ * POST /me/pieces/sync — the ONE push path. Full snapshots of new,
  * edited and deleted pieces, keyed on client_ref; idempotent to retry.
  */
 export async function apiSyncPieces(
     payload: SyncPiecesRequest,
 ): Promise<SyncPiecesResponse> {
-  const res = await authedFetch(`${API_BASE}/users/me/pieces/sync`, {
+  const res = await authedFetch(`${API_BASE}/me/pieces/sync`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -140,7 +140,7 @@ export async function apiSyncPieces(
 }
 
 /**
- * PUT /users/me/pieces/{piece_id}/visibility, change a piece's sharing scope. The server
+ * PUT /me/pieces/{piece_id}/visibility, change a piece's sharing scope. The server
  * reconciles the public-bucket mirror (publish/revoke) before committing, so this needs
  * connectivity, it is not part of the offline sync.
  */
@@ -148,7 +148,7 @@ export async function apiSetPieceVisibility(
     pieceId: string,
   visibility: PieceVisibility,
 ): Promise<BackendPiece> {
-  const res = await authedFetch(`${API_BASE}/users/me/pieces/${pieceId}/visibility`, {
+  const res = await authedFetch(`${API_BASE}/me/pieces/${pieceId}/visibility`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ visibility }),
@@ -160,18 +160,18 @@ export async function apiSetPieceVisibility(
 // ─── Piece assets ─────────────────────────────────────────────────────────────
 
 /**
- * GET /users/me/piece-assets, every asset across all the user's pieces in one
+ * GET /me/piece-assets, every asset across all the user's pieces in one
  * call. Used by hydrate (fresh-device restore) and orphan reconcile.
  */
 export async function apiListAllPieceAssets(
     ): Promise<BackendPieceAsset[]> {
-  const res = await authedFetch(`${API_BASE}/users/me/piece-assets`);
+  const res = await authedFetch(`${API_BASE}/me/piece-assets`);
   if (!res.ok) throw new Error(`listAllPieceAssets failed (${res.status})`);
   return res.json() as Promise<BackendPieceAsset[]>;
 }
 
 /**
- * POST /users/me/pieces/{piece_id}/assets, upload an image blob. Which entry
+ * POST /me/pieces/{piece_id}/assets, upload an image blob. Which entry
  * (or the cover slot) it belongs to lives in the piece doc as an assetId ref.
  * The file must be a local URI (e.g. from expo-image-picker).
  */
@@ -182,7 +182,7 @@ export async function apiUploadPieceAsset(
   const form = new FormData();
   form.append('file', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
 
-  const res = await authedFetch(`${API_BASE}/users/me/pieces/${pieceId}/assets`, {
+  const res = await authedFetch(`${API_BASE}/me/pieces/${pieceId}/assets`, {
     method: 'POST',
     // Do NOT set Content-Type, let fetch inject the multipart boundary.
     body: form as unknown as BodyInit_,
@@ -191,13 +191,13 @@ export async function apiUploadPieceAsset(
   return res.json() as Promise<BackendPieceAsset>;
 }
 
-/** DELETE /users/me/pieces/{piece_id}/assets/{asset_id}, permanently remove an asset. */
+/** DELETE /me/pieces/{piece_id}/assets/{asset_id}, permanently remove an asset. */
 export async function apiDeletePieceAsset(
     pieceId: string,
   assetId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    `${API_BASE}/users/me/pieces/${pieceId}/assets/${assetId}`,
+    `${API_BASE}/me/pieces/${pieceId}/assets/${assetId}`,
     { method: 'DELETE' },
   );
   if (!res.ok) throw new Error(`deletePieceAsset failed (${res.status})`);

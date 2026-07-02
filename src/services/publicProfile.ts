@@ -23,7 +23,7 @@ export class PublicProfileApiError extends Error {
     readonly status: number,
     readonly details: string | null = null,
   ) {
-    super(`GET /users/:id/profile → ${status}${details ? `: ${details}` : ''}`);
+    super(`GET /public/users/:id/profile → ${status}${details ? `: ${details}` : ''}`);
     this.name = 'PublicProfileApiError';
   }
 }
@@ -78,14 +78,14 @@ function normalizeProfile(body: Record<string, unknown>): PublicProfile {
 }
 
 /**
- * GET /users/:userId/profile
+ * GET /public/users/:userId/profile
  * Public read-only profile for share links. Auth optional.
  */
 export async function apiGetPublicProfile(
   userId: string,
 ): Promise<PublicProfile> {
   const res = await authedFetch(
-    `${API_BASE}/users/${encodeURIComponent(userId)}/profile`,
+    `${API_BASE}/public/users/${encodeURIComponent(userId)}/profile`,
   );
 
   if (!res.ok) {

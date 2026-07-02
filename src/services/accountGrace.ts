@@ -96,7 +96,7 @@ export function daysRemainingInDeletionGrace(scheduledAt: string): number {
 
 /**
  * Returns true when the backend user is in the soft-delete grace window.
- * During grace, only POST /users/me/revive is allowed — studio APIs return 403.
+ * During grace, only POST /me/revive is allowed — studio APIs return 403.
  */
 export async function detectAccountDeletionGrace(): Promise<boolean> {
   try {

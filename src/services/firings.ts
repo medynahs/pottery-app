@@ -1,4 +1,4 @@
-// Firings API, /users/me/firings
+// Firings API, /me/firings
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
 import { API_BASE_URL as API_BASE } from './index';
@@ -103,65 +103,65 @@ function authedFetch(url: string,
   });
 }
 
-/** GET /users/me/firings */
+/** GET /me/firings */
 export async function apiListFirings(): Promise<BackendFiring[]> {
-  const res = await authedFetch(`${API_BASE}/users/me/firings`);
+  const res = await authedFetch(`${API_BASE}/me/firings`);
   if (!res.ok) {
-    throw new Error(`GET /users/me/firings -> ${res.status}`);
+    throw new Error(`GET /me/firings -> ${res.status}`);
   }
   return res.json() as Promise<BackendFiring[]>;
 }
 
-/** POST /users/me/firings */
+/** POST /me/firings */
 export async function apiCreateFiring(
     payload: CreateFiringPayload,
 ): Promise<BackendFiring> {
-  const res = await authedFetch(`${API_BASE}/users/me/firings`, {
+  const res = await authedFetch(`${API_BASE}/me/firings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(`POST /users/me/firings -> ${res.status}`);
+    throw new Error(`POST /me/firings -> ${res.status}`);
   }
   return res.json() as Promise<BackendFiring>;
 }
 
-/** GET /users/me/firings/{id} */
+/** GET /me/firings/{id} */
 export async function apiGetFiring(
     firingId: string,
 ): Promise<BackendFiring> {
-  const res = await authedFetch(`${API_BASE}/users/me/firings/${firingId}`);
+  const res = await authedFetch(`${API_BASE}/me/firings/${firingId}`);
   if (!res.ok) {
-    throw new Error(`GET /users/me/firings/${firingId} -> ${res.status}`);
+    throw new Error(`GET /me/firings/${firingId} -> ${res.status}`);
   }
   return res.json() as Promise<BackendFiring>;
 }
 
-/** PATCH /users/me/firings/{id} */
+/** PATCH /me/firings/{id} */
 export async function apiUpdateFiring(
     firingId: string,
   payload: UpdateFiringPayload,
 ): Promise<BackendFiring> {
-  const res = await authedFetch(`${API_BASE}/users/me/firings/${firingId}`, {
+  const res = await authedFetch(`${API_BASE}/me/firings/${firingId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(`PATCH /users/me/firings/${firingId} -> ${res.status}`);
+    throw new Error(`PATCH /me/firings/${firingId} -> ${res.status}`);
   }
   return res.json() as Promise<BackendFiring>;
 }
 
-/** DELETE /users/me/firings/{id} */
+/** DELETE /me/firings/{id} */
 export async function apiDeleteFiring(
     firingId: string,
 ): Promise<void> {
-  const res = await authedFetch(`${API_BASE}/users/me/firings/${firingId}`, {
+  const res = await authedFetch(`${API_BASE}/me/firings/${firingId}`, {
     method: 'DELETE',
   });
   if (!res.ok) {
-    throw new Error(`DELETE /users/me/firings/${firingId} -> ${res.status}`);
+    throw new Error(`DELETE /me/firings/${firingId} -> ${res.status}`);
   }
 }

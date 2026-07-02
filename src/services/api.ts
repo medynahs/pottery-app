@@ -101,7 +101,7 @@ type UserStorePatch = {
   coverImageUri?: string;
 };
 
-/** Map GET/PUT /users/me response fields into local Zustand user shape. */
+/** Map GET/PUT /me response fields into local Zustand user shape. */
 export function userPatchFromBackendProfile(
   profile: BackendProfile,
   emailFallback?: string,
@@ -150,14 +150,14 @@ function authedJson(path: string, init?: RequestInit): Promise<Response> {
 }
 
 export async function fetchMe(): Promise<BackendProfile> {
-  const res = await authedJson('/users/me');
+  const res = await authedJson('/me');
   if (!res.ok) throw await apiErrorFromResponse(res, 'fetchMe failed');
   return res.json() as Promise<BackendProfile>;
 }
 
-/** PUT /users/me — partial update of name, studio, location, bio. */
+/** PUT /me — partial update of name, studio, location, bio. */
 export async function updateProfile(payload: UpdateProfilePayload): Promise<BackendProfile> {
-  const res = await authedJson('/users/me', {
+  const res = await authedJson('/me', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -175,9 +175,9 @@ export async function updateProfile(payload: UpdateProfilePayload): Promise<Back
 /** @deprecated Use updateProfile */
 export const updateMe = updateProfile;
 
-/** PUT /users/me/privacy — profile_public toggle (whole-profile discoverability). */
+/** PUT /me/privacy — profile_public toggle (whole-profile discoverability). */
 export async function updatePrivacy(payload: UpdatePrivacyPayload): Promise<BackendProfile> {
-  const res = await authedJson('/users/me/privacy', {
+  const res = await authedJson('/me/privacy', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -193,7 +193,7 @@ export async function updatePrivacy(payload: UpdatePrivacyPayload): Promise<Back
 }
 
 export async function deleteAccount(): Promise<void> {
-  const res = await fetch(`${API_BASE}/users/me`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/me`, { method: 'DELETE' });
   if (!res.ok) throw await apiErrorFromResponse(res, 'Account deletion failed');
 }
 
@@ -211,7 +211,7 @@ async function uploadUserImage(
     type: mimeType,
   } as unknown as Blob);
 
-  const res = await fetch(`${API_BASE}/users/me/${kind}`, {
+  const res = await fetch(`${API_BASE}/me/${kind}`, {
     method: 'POST',
     body: form as unknown as BodyInit_,
   });
@@ -231,7 +231,7 @@ export async function uploadCover(imageUri: string, mimeType = 'image/jpeg'): Pr
 }
 
 export async function registerPushToken(token: string, platform: 'ios' | 'android'): Promise<void> {
-  const res = await fetch(`${API_BASE}/users/me/push-tokens`, {
+  const res = await fetch(`${API_BASE}/me/push-tokens`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, platform }),
@@ -240,6 +240,6 @@ export async function registerPushToken(token: string, platform: 'ios' | 'androi
 }
 
 export async function reviveAccount(): Promise<void> {
-  const res = await fetch(`${API_BASE}/users/me/revive`, { method: 'POST' });
+  const res = await fetch(`${API_BASE}/me/revive`, { method: 'POST' });
   if (!res.ok) throw new ApiError(`reviveAccount failed (${res.status})`, res.status);
 }

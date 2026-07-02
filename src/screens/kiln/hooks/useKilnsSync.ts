@@ -1,5 +1,5 @@
 /**
- * useKilnsSync, React Query hooks that bridge /users/me/kilns with the
+ * useKilnsSync, React Query hooks that bridge /me/kilns with the
  * local Zustand store.
  *
  * Responsibilities:

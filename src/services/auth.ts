@@ -90,7 +90,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
 }
 
 export async function changePassword(newPassword: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/users/me/change-password`, {
+  const res = await fetch(`${API_BASE}/me/change-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password: newPassword }),

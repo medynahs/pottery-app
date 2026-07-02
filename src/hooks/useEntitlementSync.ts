@@ -1,5 +1,5 @@
 /**
- * Hydrates `appStore.isPremium` from GET /users/me/entitlement.
+ * Hydrates `appStore.isPremium` from GET /me/entitlement.
  * Merges with RevenueCat — never downgrades an already-premium RC session.
  */
 

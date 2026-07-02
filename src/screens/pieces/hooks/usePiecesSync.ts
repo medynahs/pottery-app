@@ -1,14 +1,14 @@
 /**
- * usePiecesSync — bridge between /users/me/pieces and the local Zustand store.
+ * usePiecesSync — bridge between /me/pieces and the local Zustand store.
  *
  * FE is the source of truth; the backend keeps one opaque doc per piece.
  *
- * Push: ONE path — POST /users/me/pieces/sync with full snapshots of every
+ * Push: ONE path — POST /me/pieces/sync with full snapshots of every
  * piece that is dirty, unlinked or tombstoned. The response is just a
  * client_ref → backend id map; a piece's dirty flag clears only if its store
  * object is still the exact one snapshotted (no edit landed mid-flight).
  *
- * Pull: GET /users/me/pieces on sign-in. Locally-dirty pieces are never
+ * Pull: GET /me/pieces on sign-in. Locally-dirty pieces are never
  * touched (whole-piece last-write-wins: their next push overwrites the row);
  * clean pieces are replaced wholesale from the doc, re-attaching this device's
  * photo files by assetId and keeping not-yet-uploaded photos.

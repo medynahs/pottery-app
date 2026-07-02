@@ -1,5 +1,5 @@
 /**
- * useFiringsSync, React Query hooks that bridge /users/me/firings with the
+ * useFiringsSync, React Query hooks that bridge /me/firings with the
  * local Zustand store.
  */
 

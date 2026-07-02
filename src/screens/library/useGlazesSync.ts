@@ -1,10 +1,10 @@
 /**
- * useGlazesSync, React Query hooks bridging /users/me/glazes with the local
+ * useGlazesSync, React Query hooks bridging /me/glazes with the local
  * Zustand store, following the same offline-first model as usePiecesSync.
  *
- * Pull: GET /users/me/glazes (+ /tests) on sign-in, merged by client_ref /
+ * Pull: GET /me/glazes (+ /tests) on sign-in, merged by client_ref /
  * backendId.
- * Push: POST /users/me/glazes/sync with device snapshots of dirty glazes/tests
+ * Push: POST /me/glazes/sync with device snapshots of dirty glazes/tests
  * and any parked deletions (debounced).
  * Images are uploaded separately through the image mutations.
  */

@@ -1,6 +1,6 @@
 import type { BackendFeedPost } from '@/src/services/community';
 
-/** Session cache for posts created while GET /users/me/posts is broken server-side. */
+/** Session cache for posts created while GET /me/posts is broken server-side. */
 let cachedPosts: BackendFeedPost[] = [];
 
 export function cacheProfilePost(post: BackendFeedPost): void {

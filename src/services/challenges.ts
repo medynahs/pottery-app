@@ -156,33 +156,33 @@ function toJsonOrNull<T>(res: Response): Promise<T | null> {
     .catch(() => null);
 }
 
-/** GET /challenges */
+/** GET /public/challenges */
 export async function apiListChallenges(
   ): Promise<BackendChallenge[]> {
-  const res = await authedFetch(`${API_BASE}/challenges`);
+  const res = await authedFetch(`${API_BASE}/public/challenges`);
   if (!res.ok) {
-    console.warn(`[challenges] GET /challenges -> HTTP ${res.status}`);
-    throw new Error(`GET /challenges -> ${res.status}`);
+    console.warn(`[challenges] GET /public/challenges -> HTTP ${res.status}`);
+    throw new Error(`GET /public/challenges -> ${res.status}`);
   }
   const data = await toJsonOrNull<BackendChallenge[] | { items?: BackendChallenge[] }>(res);
   if (!data) {
-    console.warn('[challenges] GET /challenges -> 200 but response body was empty/unparseable');
+    console.warn('[challenges] GET /public/challenges -> 200 but response body was empty/unparseable');
     return [];
   }
   const items = Array.isArray(data) ? data : (data.items ?? []);
   if (items.length === 0) {
-    console.warn('[challenges] GET /challenges -> 200 but list is empty (no active challenges in DB)');
+    console.warn('[challenges] GET /public/challenges -> 200 but list is empty (no active challenges in DB)');
   }
   return items;
 }
 
-/** GET /challenges/{id} */
+/** GET /public/challenges/{id} */
 export async function apiGetChallenge(
     challengeId: string,
 ): Promise<BackendChallenge> {
-  const res = await authedFetch(`${API_BASE}/challenges/${challengeId}`);
+  const res = await authedFetch(`${API_BASE}/public/challenges/${challengeId}`);
   if (!res.ok) {
-    throw new Error(`GET /challenges/${challengeId} -> ${res.status}`);
+    throw new Error(`GET /public/challenges/${challengeId} -> ${res.status}`);
   }
   return res.json() as Promise<BackendChallenge>;
 }
@@ -237,17 +237,17 @@ export async function apiWithdrawChallengeEntry(
   }
 }
 
-/** GET /challenges/{id}/entries */
+/** GET /public/challenges/{id}/entries */
 export async function apiGetChallengeEntries(
     challengeId: string,
   trackId?: string,
 ): Promise<BackendChallengeEntry[]> {
   const query = trackId ? `?track_id=${encodeURIComponent(trackId)}` : '';
   const res = await authedFetch(
-    `${API_BASE}/challenges/${challengeId}/entries${query}`,
+    `${API_BASE}/public/challenges/${challengeId}/entries${query}`,
   );
   if (!res.ok) {
-    throw new Error(`GET /challenges/${challengeId}/entries -> ${res.status}`);
+    throw new Error(`GET /public/challenges/${challengeId}/entries -> ${res.status}`);
   }
 
   const data = await toJsonOrNull<BackendChallengeEntry[] | { items?: BackendChallengeEntry[]; entries?: BackendChallengeEntry[] }>(res);
@@ -271,13 +271,13 @@ export async function apiVoteChallengeEntry(
   }
 }
 
-/** GET /challenges/{id}/leaderboard */
+/** GET /public/challenges/{id}/leaderboard */
 export async function apiGetChallengeLeaderboard(
     challengeId: string,
 ): Promise<BackendChallengeLeaderboardEntry[]> {
-  const res = await authedFetch(`${API_BASE}/challenges/${challengeId}/leaderboard`);
+  const res = await authedFetch(`${API_BASE}/public/challenges/${challengeId}/leaderboard`);
   if (!res.ok) {
-    throw new Error(`GET /challenges/${challengeId}/leaderboard -> ${res.status}`);
+    throw new Error(`GET /public/challenges/${challengeId}/leaderboard -> ${res.status}`);
   }
 
   const data = await toJsonOrNull<BackendChallengeLeaderboardEntry[] | { entries?: BackendChallengeLeaderboardEntry[] }>(res);

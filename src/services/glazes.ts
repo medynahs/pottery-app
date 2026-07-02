@@ -1,4 +1,4 @@
-// Glazes API, /users/me/glazes
+// Glazes API, /me/glazes
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 //
 // The backend stores a glaze's images in a child table tagged by gallery type;
@@ -367,31 +367,31 @@ async function authedFetch(url: string, init?: RequestInit): Promise<Response> {
 
 // ─── Glaze CRUD ─────────────────────────────────────────────────────────────
 
-/** GET /users/me/glazes, list live glazes (each with its images). */
+/** GET /me/glazes, list live glazes (each with its images). */
 export async function apiListGlazes(
     ): Promise<BackendGlaze[]> {
-  const res = await authedFetch(`${API_BASE_URL}/users/me/glazes`);
+  const res = await authedFetch(`${API_BASE_URL}/me/glazes`);
   if (!res.ok) throw new Error(`listGlazes failed (${res.status})`);
   const rows = (await res.json()) as RawBackendGlaze[];
   return rows.map(normalizeBackendGlaze);
 }
 
-/** GET /users/me/glazes/tests, list live test tiles across all glazes. */
+/** GET /me/glazes/tests, list live test tiles across all glazes. */
 export async function apiListGlazeTests(
     ): Promise<BackendGlazeTest[]> {
-  const res = await authedFetch(`${API_BASE_URL}/users/me/glazes/tests`);
+  const res = await authedFetch(`${API_BASE_URL}/me/glazes/tests`);
   if (!res.ok) throw new Error(`listGlazeTests failed (${res.status})`);
   return res.json() as Promise<BackendGlazeTest[]>;
 }
 
 /**
- * POST /users/me/glazes/sync, push device snapshots of glazes and tests; the
+ * POST /me/glazes/sync, push device snapshots of glazes and tests; the
  * server returns the authoritative live lists plus a client_ref → backend id map.
  */
 export async function apiSyncGlazes(
     payload: SyncGlazesRequest,
 ): Promise<SyncGlazesResponse> {
-  const res = await authedFetch(`${API_BASE_URL}/users/me/glazes/sync`, {
+  const res = await authedFetch(`${API_BASE_URL}/me/glazes/sync`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -404,7 +404,7 @@ export async function apiSyncGlazes(
   };
 }
 
-/** POST /users/me/glazes/:glaze_id/images, upload an image under a gallery type. */
+/** POST /me/glazes/:glaze_id/images, upload an image under a gallery type. */
 export async function apiUploadGlazeImage(
     glazeBackendId: string,
   file: { uri: string; name: string; type: string },
@@ -415,7 +415,7 @@ export async function apiUploadGlazeImage(
   form.append('type', imageType);
 
   const res = await authedFetch(
-    `${API_BASE_URL}/users/me/glazes/${glazeBackendId}/images`,
+    `${API_BASE_URL}/me/glazes/${glazeBackendId}/images`,
     {
       method: 'POST',
       // Do NOT set Content-Type, let fetch inject the multipart boundary.
@@ -426,13 +426,13 @@ export async function apiUploadGlazeImage(
   return res.json() as Promise<GlazeImageUploadResponse>;
 }
 
-/** DELETE /users/me/glazes/:glaze_id/images/:image_id, remove an image record. */
+/** DELETE /me/glazes/:glaze_id/images/:image_id, remove an image record. */
 export async function apiDeleteGlazeImage(
     glazeBackendId: string,
   imageId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    `${API_BASE_URL}/users/me/glazes/${glazeBackendId}/images/${imageId}`,
+    `${API_BASE_URL}/me/glazes/${glazeBackendId}/images/${imageId}`,
     { method: 'DELETE' },
   );
   if (!res.ok) throw new Error(`deleteGlazeImage failed (${res.status})`);

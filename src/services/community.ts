@@ -1,4 +1,4 @@
-// Community API, /users/me/feed, /users/me/posts
+// Community API, /me/feed, /me/posts
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
 import type { PieceVisibility } from '../types/pieces';
@@ -202,7 +202,7 @@ export async function apiGetDiscoverFeed(
 }
 
 /**
- * GET /users/me/feed
+ * GET /me/feed
  * Returns posts from friends ordered by creation date desc.
  * Supports cursor pagination: `cursor` is an RFC3339Nano|post_uuid string.
  */
@@ -213,14 +213,14 @@ export async function apiGetFeed(
   if (opts?.limit !== undefined) params.set('limit', String(opts.limit));
   if (opts?.cursor) params.set('cursor', opts.cursor);
   const qs = params.size > 0 ? `?${params.toString()}` : '';
-  const res = await authedFetch(`${API_BASE}/users/me/feed${qs}`);
-  if (!res.ok) throw new Error(`GET /users/me/feed → ${res.status}`);
+  const res = await authedFetch(`${API_BASE}/me/feed${qs}`);
+  if (!res.ok) throw new Error(`GET /me/feed → ${res.status}`);
   const page = (await res.json()) as FeedPage;
   return normalizeFeedPage(page);
 }
 
 /**
- * GET /users/me/posts
+ * GET /me/posts
  * Lists the authenticated user's own posts, newest first.
  */
 export async function apiListMyPosts(
@@ -230,25 +230,25 @@ export async function apiListMyPosts(
   if (opts?.limit !== undefined) params.set('limit', String(opts.limit));
   if (opts?.cursor) params.set('cursor', opts.cursor);
   const qs = params.size > 0 ? `?${params.toString()}` : '';
-  const res = await authedFetch(`${API_BASE}/users/me/posts${qs}`);
-  if (!res.ok) await parseCommunityError(res, 'GET /users/me/posts');
+  const res = await authedFetch(`${API_BASE}/me/posts${qs}`);
+  if (!res.ok) await parseCommunityError(res, 'GET /me/posts');
   const page = (await res.json()) as FeedPage;
   return normalizeFeedPage(page);
 }
 
 /**
- * POST /users/me/posts
+ * POST /me/posts
  * Creates a new social post. Upload photos first via POST /uploads, then pass asset_ids.
  */
 export async function apiCreatePost(
     payload: CreatePostPayload,
 ): Promise<BackendFeedPost> {
-  const res = await authedFetch(`${API_BASE}/users/me/posts`, {
+  const res = await authedFetch(`${API_BASE}/me/posts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) await parseCommunityError(res, 'POST /users/me/posts');
+  if (!res.ok) await parseCommunityError(res, 'POST /me/posts');
   const post = (await res.json()) as BackendFeedPost;
   return normalizeFeedPost(post);
 }
@@ -351,13 +351,13 @@ export interface BackendHallOfFameLeaderboardEntry {
 }
 
 /**
- * GET /hall-of-fame
+ * GET /public/hall-of-fame
  * Winner archive: `{ cycles: [{ challenge_id, title, winners[] }] }`.
  * Returns null when the endpoint is missing or returns an unsupported shape.
  */
 export async function apiGetHallOfFameArchive(
   ): Promise<BackendHallOfFameResponse> {
-  const res = await authedFetch(`${API_BASE}/hall-of-fame`);
+  const res = await authedFetch(`${API_BASE}/public/hall-of-fame`);
   if (!res.ok) {
     throw new Error(`Hall of Fame request failed (${res.status})`);
   }
@@ -375,13 +375,13 @@ export async function apiGetHallOfFameArchive(
 }
 
 /**
- * GET /hall-of-fame/winners/:id
+ * GET /public/hall-of-fame/winners/:id
  * Winner detail for deep links from Hall of Fame cards.
  */
 export async function apiGetHallOfFameWinner(
     winnerId: string,
 ): Promise<BackendHallOfFameWinnerDetail | null> {
-  const res = await authedFetch(`${API_BASE}/hall-of-fame/winners/${winnerId}`);
+  const res = await authedFetch(`${API_BASE}/public/hall-of-fame/winners/${winnerId}`);
   if (res.status === 404) return null;
   if (!res.ok) return null;
 
@@ -410,13 +410,13 @@ export interface BackendPoll {
 }
 
 /**
- * GET /polls
+ * GET /public/polls
  * Returns active polls for the community.
  */
 export async function apiGetPolls(
     ): Promise<BackendPoll[]> {
-  const res = await authedFetch(`${API_BASE}/polls`);
-  if (!res.ok) throw new Error(`GET /polls → ${res.status}`);
+  const res = await authedFetch(`${API_BASE}/public/polls`);
+  if (!res.ok) throw new Error(`GET /public/polls → ${res.status}`);
   return res.json() as Promise<BackendPoll[]>;
 }
 

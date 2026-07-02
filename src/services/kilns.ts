@@ -1,4 +1,4 @@
-// Kilns API, /users/me/kilns
+// Kilns API, /me/kilns
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
 import type { Kiln, KilnPricingModel, KilnType } from '../types/kiln';
@@ -114,22 +114,22 @@ export function backendKilnToLocal(b: BackendKiln, existing?: Kiln): Kiln {
 
 
 export async function apiListKilns(): Promise<BackendKiln[]> {
-  const response = await fetch(`${API_BASE_URL}/users/me/kilns`, {
+  const response = await fetch(`${API_BASE_URL}/me/kilns`, {
     headers: { 'Content-Type': 'application/json' },
   });
-  if (!response.ok) throw new Error(`GET /users/me/kilns → ${response.status}`);
+  if (!response.ok) throw new Error(`GET /me/kilns → ${response.status}`);
   return response.json() as Promise<BackendKiln[]>;
 }
 
 export async function apiUpsertKiln(
   payload: UpsertKilnPayload,
 ): Promise<BackendKiln> {
-  const response = await fetch(`${API_BASE_URL}/users/me/kilns`, {
+  const response = await fetch(`${API_BASE_URL}/me/kilns`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!response.ok) throw new Error(`POST /users/me/kilns → ${response.status}`);
+  if (!response.ok) throw new Error(`POST /me/kilns → ${response.status}`);
   return response.json() as Promise<BackendKiln>;
 }
 
@@ -137,8 +137,8 @@ export async function apiDeleteKiln(
   backendId: string,
 ): Promise<void> {
   const response = await fetch(
-    `${API_BASE_URL}/users/me/kilns/${encodeURIComponent(backendId)}`,
+    `${API_BASE_URL}/me/kilns/${encodeURIComponent(backendId)}`,
     { method: 'DELETE' },
   );
-  if (!response.ok) throw new Error(`DELETE /users/me/kilns/${backendId} → ${response.status}`);
+  if (!response.ok) throw new Error(`DELETE /me/kilns/${backendId} → ${response.status}`);
 }

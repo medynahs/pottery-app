@@ -2272,7 +2272,7 @@ export const useAppStore = create<AppState>()(
         role: state.role,
         enabledModules: state.enabledModules,
         // avatarImageUri / coverImageUri are excluded — fetched fresh from
-        // /users/me on login. Persisting them can leak one user's media to the
+        // /me on login. Persisting them can leak one user's media to the
         // next account that signs in on the same device.
         user: (({ avatarImageUri, coverImageUri, ...rest }) => rest)(state.user),
         kilnkinCompanion: state.kilnkinCompanion,
