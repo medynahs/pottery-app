@@ -114,7 +114,9 @@ export function formatCloudStorageLabel(snapshot = getCloudStorageSnapshot()): s
 }
 
 export function countPieceCloudBackedPhotos(piece: Piece): number {
-  let count = piece.coverAssetId ? 1 : 0;
+  // Cover is not counted: it always backs up free (see uploadCoverPhoto). This
+  // cap governs timeline extras only.
+  let count = 0;
   for (const entry of piece.timeline) {
     for (const photo of entry.photos ?? []) {
       if (photo.assetId) count += 1;
@@ -123,7 +125,7 @@ export function countPieceCloudBackedPhotos(piece: Piece): number {
   return count;
 }
 
-/** Free tier: one cloud-backed photo slot per piece (local-only extras allowed). */
+/** Free tier: one cloud-backed timeline photo per piece; the cover backs up free (local-only extras allowed). */
 export function canSyncPiecePhotoToCloud(
   piece: Piece,
   isReplacing: boolean,

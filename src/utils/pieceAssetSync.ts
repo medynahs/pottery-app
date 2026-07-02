@@ -25,7 +25,6 @@ import {
   apiUploadPieceAsset,
   type BackendPieceAsset,
 } from '../services/pieces';
-import { schedulePiecesSync } from '../screens/pieces/hooks/usePiecesSync';
 import { setPiecesIfChanged, useAppStore } from '../store/appStore';
 import type { Piece } from '../types/pieces';
 import { canSyncPiecePhotoToCloud, isLocalMediaUri } from './cloudStorage';
@@ -229,6 +228,11 @@ export async function flushPiecePhotoSync(pieceId: number): Promise<void> {
       setPiecesIfChanged(
         useAppStore.getState().pieces.map((p) => (p.id === pieceId ? next : p)),
       );
+      // ponytail: lazy require breaks the genuine pieceAssetSync <-> usePiecesSync
+      // cycle (push sync schedules photo sync and vice-versa). A static import
+      // would trip Metro's require-cycle warning.
+      const { schedulePiecesSync } =
+        require('../screens/pieces/hooks/usePiecesSync') as typeof import('../screens/pieces/hooks/usePiecesSync');
       schedulePiecesSync();
     }
 
