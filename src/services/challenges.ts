@@ -96,7 +96,6 @@ export interface BackendChallengeEntry {
   piece_title?: string | null;
   process_note?: string | null;
   image_url?: string | null;
-  piece_id?: string | null;
   note?: string | null;
   vote_count?: number;
   rank?: number;
@@ -104,24 +103,8 @@ export interface BackendChallengeEntry {
   created_at?: string;
 }
 
-export interface BackendChallengeLeaderboardEntry {
-  user_id: string;
-  user_name?: string;
-  score: number;
-  rank?: number;
-  wins?: number;
-}
-
 export interface SubmitChallengeEntryPayload {
   track_id?: string;
-  piece_id?: string;
-  note?: string;
-  post_id?: string;
-}
-
-export interface UpdateChallengeEntryPayload {
-  track_id?: string;
-  piece_id?: string;
   note?: string;
   post_id?: string;
 }
@@ -203,26 +186,6 @@ export async function apiSubmitChallengeEntry(
   return res.json() as Promise<BackendChallengeEntry>;
 }
 
-/** PUT /challenges/{id}/entries/{entryId} — marks entry submitted (`submitted_at`). */
-export async function apiUpdateChallengeEntry(
-  challengeId: string,
-  entryId: string,
-  payload: UpdateChallengeEntryPayload,
-): Promise<BackendChallengeEntry> {
-  const res = await authedFetch(
-    `${API_BASE}/challenges/${challengeId}/entries/${entryId}`,
-    {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    },
-  );
-  if (!res.ok) {
-    throw await apiErrorFromResponse(res, `PUT /challenges/${challengeId}/entries/${entryId} failed`);
-  }
-  return res.json() as Promise<BackendChallengeEntry>;
-}
-
 /** DELETE /challenges/{id}/entries/{entryId} */
 export async function apiWithdrawChallengeEntry(
     challengeId: string,
@@ -269,19 +232,4 @@ export async function apiVoteChallengeEntry(
   if (!res.ok) {
     throw await apiErrorFromResponse(res, `POST /challenges/${challengeId}/votes failed`);
   }
-}
-
-/** GET /public/challenges/{id}/leaderboard */
-export async function apiGetChallengeLeaderboard(
-    challengeId: string,
-): Promise<BackendChallengeLeaderboardEntry[]> {
-  const res = await authedFetch(`${API_BASE}/public/challenges/${challengeId}/leaderboard`);
-  if (!res.ok) {
-    throw await apiErrorFromResponse(res, `GET /public/challenges/${challengeId}/leaderboard failed`);
-  }
-
-  const data = await toJsonOrNull<BackendChallengeLeaderboardEntry[] | { entries?: BackendChallengeLeaderboardEntry[] }>(res);
-  if (!data) return [];
-  if (Array.isArray(data)) return data;
-  return data.entries ?? [];
 }

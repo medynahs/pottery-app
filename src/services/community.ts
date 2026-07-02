@@ -306,11 +306,11 @@ export async function apiRemoveReaction(
 
 export interface BackendHallOfFameWinner {
   id: string;
-  track_id: string;
-  track_title: string;
+  track_id?: string | null;
+  track_title?: string | null;
   artist_name?: string | null;
   studio_name?: string | null;
-  piece_title: string;
+  piece_title?: string | null;
   process_note?: string | null;
   image_url?: string | null;
   hero_image_url?: string | null;
@@ -333,7 +333,7 @@ export interface BackendHallOfFameCycle {
   title: string;
   label?: string | null;
   emoji?: string | null;
-  closed_at: string;
+  won_at?: string;
   winners: BackendHallOfFameWinner[];
 }
 
