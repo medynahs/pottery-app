@@ -1,16 +1,19 @@
 /**
- * useFiringsSync, React Query hooks that bridge /me/firings with the
- * local Zustand store.
+ * useFiringsSync — bridge between /me/firings and the local Zustand store.
+ *
+ * Same model as usePiecesSync: FE is the source of truth, the backend keeps
+ * one opaque doc per firing keyed on client_ref (the local firing id).
+ * Push: every mutation sends a full snapshot through POST /me/firings/sync.
+ * Pull: GET /me/firings on sign-in; local firings are replaced wholesale
+ * from their doc (whole-firing last-write-wins).
  */
 
 import {
-  apiCreateFiring,
-  apiDeleteFiring,
   apiListFirings,
-  apiUpdateFiring,
-  firingLogFieldsForApi,
+  apiSyncFirings,
+  docForBackend,
   type BackendFiring,
-  type CreateFiringPayload,
+  type FiringSyncSnapshot,
 } from '@/src/services/firings';
 import { useAppStore } from '@/src/store';
 import type { Firing } from '@/src/types/kiln';
@@ -20,96 +23,68 @@ import { useEffect } from 'react';
 export const FIRINGS_QUERY_KEY = ['firings'] as const;
 export const firingsQueryKey = (userId: string) => [...FIRINGS_QUERY_KEY, userId] as const;
 
-function toLocalFiring(backend: BackendFiring, existing?: Firing): Firing {
-  const firedDate = backend.fired_date ?? backend.scheduled_date ?? existing?.firedDate;
-  const hasLogData =
-    backend.peak_temp_c != null
-    || backend.hold_time_minutes != null
-    || Boolean(backend.photo_uri);
-  const logSource = existing?.logSource ?? (hasLogData ? 'manual' : undefined);
-
+function firingToSnapshot(firing: Firing, deleted = false): FiringSyncSnapshot {
   return {
-    ...(existing ?? {
-      id: `firing-${backend.id}`,
-      kilnId: backend.kiln_id ?? '',
-      name: backend.name,
-      type: (backend.type as Firing['type']) ?? 'bisque',
-      cone: backend.cone,
-      state: backend.state,
-      pieceIds: [],
-      notes: backend.notes ?? '',
-      createdAt: backend.created_at,
-    }),
-    backendId: backend.id,
-    kilnId: backend.kiln_id ?? existing?.kilnId ?? '',
-    studioId: backend.studio_id ?? existing?.studioId,
-    name: backend.name,
-    type: (backend.type as Firing['type']) ?? existing?.type ?? 'bisque',
-    cone: backend.cone,
-    state: backend.state,
-    notes: backend.notes ?? existing?.notes ?? '',
-    submissionDate: backend.scheduled_date ?? existing?.submissionDate,
-    scheduledDate: backend.scheduled_date ?? existing?.scheduledDate,
-    startedAt: backend.started_at ?? existing?.startedAt,
-    completedAt: backend.completed_at ?? existing?.completedAt,
-    firedDate,
-    peakTempC: backend.peak_temp_c ?? existing?.peakTempC,
-    holdTimeMinutes: backend.hold_time_minutes ?? existing?.holdTimeMinutes,
-    photoUri: backend.photo_uri ?? existing?.photoUri,
-    logSource,
-    statusOverride: existing?.statusOverride,
-    result: existing?.result,
-    resultNotes: existing?.resultNotes,
-    pieceIds: existing?.pieceIds ?? [],
-    createdAt: backend.created_at ?? existing?.createdAt ?? new Date().toISOString(),
+    client_ref: String(firing.id),
+    ...(deleted ? { deleted: true } : {}),
+    doc: docForBackend(firing),
   };
 }
 
-function firingToApiPayload(firing: Firing): CreateFiringPayload {
-  const logFields = firingLogFieldsForApi(firing);
-  return {
-    kiln_id: firing.kilnId || undefined,
-    studio_id: firing.studioId,
-    name: firing.name,
-    type: firing.type,
-    cone: firing.cone,
-    state: firing.state,
-    notes: firing.notes || firing.resultNotes,
-    scheduled_date: firing.firedDate ?? firing.submissionDate ?? firing.scheduledDate,
-    started_at: firing.startedAt,
-    completed_at: firing.completedAt,
-    fired_date: logFields.fired_date,
-    peak_temp_c: logFields.peak_temp_c ?? undefined,
-    hold_time_minutes: logFields.hold_time_minutes ?? undefined,
-    photo_uri: logFields.photo_uri ?? undefined,
-  };
+async function pushFiring(firing: Firing, deleted = false): Promise<string | null> {
+  const { client_ref_map: refMap } = await apiSyncFirings({
+    firings: [firingToSnapshot(firing, deleted)],
+  });
+  return refMap[String(firing.id)] ?? null;
 }
 
-function mergeFiringsIntoStore(backendFirings: BackendFiring[]) {
-  const state = useAppStore.getState();
-  const localFirings = state.firings;
+/** Returns null for an empty/legacy doc — unrestorable; the owning device's
+ *  next push refills it. */
+function firingFromDoc(bf: BackendFiring): Firing | null {
+  const doc = bf.doc;
+  if (!doc || typeof doc.id !== 'string' || !doc.name) return null;
+  return { ...(doc as Firing), backendId: bf.id };
+}
 
-  const byBackendId = new Map(localFirings.filter((f) => f.backendId).map((f) => [f.backendId!, f]));
-  const byLocalId = new Map(localFirings.map((f) => [f.id, f]));
+function mergeBackendFiringsIntoLocal(
+  backendFirings: BackendFiring[],
+  localFirings: Firing[],
+): Firing[] {
+  const byClientRef = new Map(localFirings.map((f) => [String(f.id), f]));
+  const byBackendId = new Map(
+    localFirings.filter((f) => f.backendId).map((f) => [f.backendId!, f]),
+  );
 
-  const mergedByLocalId = new Map<string, Firing>();
+  const replaced = new Map<string, Firing>();
+  const removed = new Set<string>();
+  const added: Firing[] = [];
 
-  for (const backend of backendFirings) {
-    const existingByBackend = byBackendId.get(backend.id);
-    const existingByLocal = byLocalId.get(`firing-${backend.id}`);
-    const existing = existingByBackend ?? existingByLocal;
-    const next = toLocalFiring(backend, existing);
-    mergedByLocalId.set(next.id, next);
+  for (const bf of backendFirings) {
+    const existing =
+      (bf.client_ref ? byClientRef.get(bf.client_ref) : undefined) ??
+      byBackendId.get(bf.id);
+
+    if (bf.is_deleted) {
+      if (existing) removed.add(existing.id);
+      continue;
+    }
+
+    const merged = firingFromDoc(bf);
+    if (!merged) continue;
+    if (existing) replaced.set(existing.id, merged);
+    else added.push(merged);
   }
 
-  const retainedLocalOnly = localFirings.filter((f) => !f.backendId || !backendFirings.some((b) => b.id === f.backendId));
-  useAppStore.setState({ firings: [...retainedLocalOnly, ...Array.from(mergedByLocalId.values())] });
+  return [
+    ...added,
+    ...localFirings
+      .filter((f) => !removed.has(f.id))
+      .map((f) => replaced.get(f.id) ?? f),
+  ];
 }
 
 export function useFiringsSync() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
-
-  
 
   const query = useQuery({
     queryKey: firingsQueryKey('me'),
@@ -121,7 +96,9 @@ export function useFiringsSync() {
 
   useEffect(() => {
     if (!query.data) return;
-    mergeFiringsIntoStore(query.data);
+    useAppStore.setState({
+      firings: mergeBackendFiringsIntoLocal(query.data, useAppStore.getState().firings),
+    });
   }, [query.data]);
 
   return query;
@@ -136,12 +113,12 @@ export function useCreateFiringMutation() {
   return useMutation({
     mutationFn: async (firing: Firing) => {
       if (!isSignedIn) return null;
-      const backend = await apiCreateFiring(firingToApiPayload(firing));
-      return { firing, backend };
+      const backendId = await pushFiring(firing);
+      return { firing, backendId };
     },
     onSuccess: (result) => {
-      if (!result) return;
-      updateFiring({ ...result.firing, backendId: result.backend.id });
+      if (!result?.backendId) return;
+      updateFiring({ ...result.firing, backendId: result.backendId });
       void queryClient.invalidateQueries({ queryKey: FIRINGS_QUERY_KEY });
     },
     onError: () => {
@@ -153,11 +130,10 @@ export function useCreateFiringMutation() {
 export function useUpdateFiringMutation() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
 
-
   return useMutation({
     mutationFn: async (firing: Firing) => {
-      if (!isSignedIn || !firing.backendId) return;
-      await apiUpdateFiring(firing.backendId, firingToApiPayload(firing));
+      if (!isSignedIn) return;
+      await pushFiring(firing);
     },
     onError: () => {
       useAppStore.getState().showToast('Could not update firing', 'error');
@@ -168,11 +144,10 @@ export function useUpdateFiringMutation() {
 export function useDeleteFiringMutation() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
 
-
   return useMutation({
     mutationFn: async (firing: Firing) => {
-      if (!isSignedIn || !firing.backendId) return;
-      await apiDeleteFiring(firing.backendId);
+      if (!isSignedIn) return;
+      await pushFiring(firing, true);
     },
     onError: () => {
       useAppStore.getState().showToast('Could not delete firing on server', 'error');
