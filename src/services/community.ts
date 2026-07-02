@@ -3,6 +3,7 @@
 
 import type { PieceVisibility } from '../types/pieces';
 import { API_BASE_URL as API_BASE } from './index';
+import { apiErrorFromResponse } from './api';
 import { isNetworkFailure, networkFailureMessage } from '@/src/utils/networkErrors';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
@@ -214,7 +215,7 @@ export async function apiGetFeed(
   if (opts?.cursor) params.set('cursor', opts.cursor);
   const qs = params.size > 0 ? `?${params.toString()}` : '';
   const res = await authedFetch(`${API_BASE}/me/feed${qs}`);
-  if (!res.ok) throw new Error(`GET /me/feed → ${res.status}`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'GET /me/feed failed');
   const page = (await res.json()) as FeedPage;
   return normalizeFeedPage(page);
 }
@@ -281,7 +282,7 @@ export async function apiAddReaction(
   });
   // 409 means already reacted, treat as success
   if (!res.ok && res.status !== 409) {
-    throw new Error(`POST /posts/${postId}/reactions → ${res.status}`);
+    throw await apiErrorFromResponse(res, `POST /posts/${postId}/reactions failed`);
   }
 }
 
@@ -297,7 +298,7 @@ export async function apiRemoveReaction(
   });
   // 404 means reaction didn't exist, treat as success
   if (!res.ok && res.status !== 404) {
-    throw new Error(`DELETE /posts/${postId}/reactions → ${res.status}`);
+    throw await apiErrorFromResponse(res, `DELETE /posts/${postId}/reactions failed`);
   }
 }
 
@@ -359,7 +360,7 @@ export async function apiGetHallOfFameArchive(
   ): Promise<BackendHallOfFameResponse> {
   const res = await authedFetch(`${API_BASE}/public/hall-of-fame`);
   if (!res.ok) {
-    throw new Error(`Hall of Fame request failed (${res.status})`);
+    throw await apiErrorFromResponse(res, 'Hall of Fame request failed');
   }
 
   const data = await res.json().catch(() => null);
@@ -416,7 +417,7 @@ export interface BackendPoll {
 export async function apiGetPolls(
     ): Promise<BackendPoll[]> {
   const res = await authedFetch(`${API_BASE}/public/polls`);
-  if (!res.ok) throw new Error(`GET /public/polls → ${res.status}`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'GET /public/polls failed');
   return res.json() as Promise<BackendPoll[]>;
 }
 
@@ -435,7 +436,7 @@ export async function apiVotePoll(
     body: JSON.stringify({ option_id: optionId }),
   });
   if (!res.ok && res.status !== 409) {
-    throw new Error(`POST /polls/${pollId}/vote → ${res.status}`);
+    throw await apiErrorFromResponse(res, `POST /polls/${pollId}/vote failed`);
   }
   return res.json() as Promise<BackendPoll>;
 }

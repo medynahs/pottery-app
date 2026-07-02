@@ -2,6 +2,7 @@
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
 import { API_BASE_URL as API_BASE } from './index';
+import { apiErrorFromResponse } from './api';
 
 export type BackendFiringState =
   | 'scheduled'
@@ -107,7 +108,7 @@ function authedFetch(url: string,
 export async function apiListFirings(): Promise<BackendFiring[]> {
   const res = await authedFetch(`${API_BASE}/me/firings`);
   if (!res.ok) {
-    throw new Error(`GET /me/firings -> ${res.status}`);
+    throw await apiErrorFromResponse(res, 'GET /me/firings failed');
   }
   return res.json() as Promise<BackendFiring[]>;
 }
@@ -122,7 +123,7 @@ export async function apiCreateFiring(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(`POST /me/firings -> ${res.status}`);
+    throw await apiErrorFromResponse(res, 'POST /me/firings failed');
   }
   return res.json() as Promise<BackendFiring>;
 }
@@ -133,7 +134,7 @@ export async function apiGetFiring(
 ): Promise<BackendFiring> {
   const res = await authedFetch(`${API_BASE}/me/firings/${firingId}`);
   if (!res.ok) {
-    throw new Error(`GET /me/firings/${firingId} -> ${res.status}`);
+    throw await apiErrorFromResponse(res, `GET /me/firings/${firingId} failed`);
   }
   return res.json() as Promise<BackendFiring>;
 }
@@ -149,7 +150,7 @@ export async function apiUpdateFiring(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(`PATCH /me/firings/${firingId} -> ${res.status}`);
+    throw await apiErrorFromResponse(res, `PATCH /me/firings/${firingId} failed`);
   }
   return res.json() as Promise<BackendFiring>;
 }
@@ -162,6 +163,6 @@ export async function apiDeleteFiring(
     method: 'DELETE',
   });
   if (!res.ok) {
-    throw new Error(`DELETE /me/firings/${firingId} -> ${res.status}`);
+    throw await apiErrorFromResponse(res, `DELETE /me/firings/${firingId} failed`);
   }
 }

@@ -3,6 +3,7 @@
 
 import type { Kiln, KilnPricingModel, KilnType } from '../types/kiln';
 import { API_BASE_URL } from './index';
+import { apiErrorFromResponse } from './api';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
 
@@ -117,7 +118,7 @@ export async function apiListKilns(): Promise<BackendKiln[]> {
   const response = await fetch(`${API_BASE_URL}/me/kilns`, {
     headers: { 'Content-Type': 'application/json' },
   });
-  if (!response.ok) throw new Error(`GET /me/kilns → ${response.status}`);
+  if (!response.ok) throw await apiErrorFromResponse(response, 'GET /me/kilns failed');
   return response.json() as Promise<BackendKiln[]>;
 }
 
@@ -129,7 +130,7 @@ export async function apiUpsertKiln(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!response.ok) throw new Error(`POST /me/kilns → ${response.status}`);
+  if (!response.ok) throw await apiErrorFromResponse(response, 'POST /me/kilns failed');
   return response.json() as Promise<BackendKiln>;
 }
 
@@ -140,5 +141,5 @@ export async function apiDeleteKiln(
     `${API_BASE_URL}/me/kilns/${encodeURIComponent(backendId)}`,
     { method: 'DELETE' },
   );
-  if (!response.ok) throw new Error(`DELETE /me/kilns/${backendId} → ${response.status}`);
+  if (!response.ok) throw await apiErrorFromResponse(response, `DELETE /me/kilns/${backendId} failed`);
 }

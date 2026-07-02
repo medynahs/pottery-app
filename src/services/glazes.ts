@@ -20,6 +20,7 @@ import type {
   GlazeThickness,
 } from '../screens/glazes/types';
 import { API_BASE_URL } from './index';
+import { apiErrorFromResponse } from './api';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
 
@@ -142,9 +143,7 @@ export interface GlazeSyncItem {
   versionNumber?: number;
   rootGlazeId?: string;
   parentGlazeId?: string;
-  /** Client-side discover provenance, server may ignore until BE-10. */
-  discoverSourceRecipeId?: string;
-  discoverSavedAt?: string;
+  sourceDiscoverRecipeId?: string;
 }
 
 export interface GlazeTestSyncItem {
@@ -259,6 +258,11 @@ export function backendGlazeToLocal(b: BackendGlaze, existing?: GlazeLibraryItem
   });
 }
 
+function toRfc3339(d: string | undefined): string | undefined {
+  if (!d || d.includes('T')) return d;
+  return `${d}T00:00:00Z`;
+}
+
 export function localGlazeToSyncItem(g: GlazeLibraryItem, deleted = false): GlazeSyncItem {
   return {
     clientRef: String(g.id),
@@ -281,10 +285,10 @@ export function localGlazeToSyncItem(g: GlazeLibraryItem, deleted = false): Glaz
     clayBodiesUsed: g.clayBodiesUsed ?? [],
     kilnTypesUsed: g.kilnTypesUsed ?? [],
     conesTested: g.conesTested ?? [],
-    lastTestedAt: g.lastTestedAt,
+    lastTestedAt: toRfc3339(g.lastTestedAt),
     ingredientsText: g.ingredientsText,
     batchId: g.batchId,
-    dateMixed: g.dateMixed,
+    dateMixed: toRfc3339(g.dateMixed),
     status: g.status,
     bestClayType: g.bestClayType,
     bestFiringTempC: g.bestFiringTempC,
@@ -292,8 +296,7 @@ export function localGlazeToSyncItem(g: GlazeLibraryItem, deleted = false): Glaz
     versionNumber: g.versionNumber,
     rootGlazeId: g.rootGlazeId,
     parentGlazeId: g.parentGlazeId,
-    discoverSourceRecipeId: g.discoverSourceRecipeId,
-    discoverSavedAt: g.discoverSavedAt,
+    sourceDiscoverRecipeId: g.discoverSourceRecipeId,
     ...(deleted ? { deleted: true } : {}),
   };
 }
@@ -343,7 +346,7 @@ export function localTestToSyncItem(
     thickness: t.thickness,
     layeredWith: t.layeredWith ?? [],
     shelfPosition: t.shelfPosition,
-    firingDate: t.firingDate,
+    firingDate: toRfc3339(t.firingDate) ?? '',
     photoUri: t.photoUri,
     notes: t.notes,
     resultRating: t.resultRating,
@@ -371,7 +374,7 @@ async function authedFetch(url: string, init?: RequestInit): Promise<Response> {
 export async function apiListGlazes(
     ): Promise<BackendGlaze[]> {
   const res = await authedFetch(`${API_BASE_URL}/me/glazes`);
-  if (!res.ok) throw new Error(`listGlazes failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'listGlazes failed');
   const rows = (await res.json()) as RawBackendGlaze[];
   return rows.map(normalizeBackendGlaze);
 }
@@ -380,7 +383,7 @@ export async function apiListGlazes(
 export async function apiListGlazeTests(
     ): Promise<BackendGlazeTest[]> {
   const res = await authedFetch(`${API_BASE_URL}/me/glazes/tests`);
-  if (!res.ok) throw new Error(`listGlazeTests failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'listGlazeTests failed');
   return res.json() as Promise<BackendGlazeTest[]>;
 }
 
@@ -396,7 +399,7 @@ export async function apiSyncGlazes(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`syncGlazes failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'syncGlazes failed');
   const data = (await res.json()) as SyncGlazesResponse;
   return {
     ...data,
@@ -422,7 +425,7 @@ export async function apiUploadGlazeImage(
       body: form as unknown as BodyInit_,
     },
   );
-  if (!res.ok) throw new Error(`uploadGlazeImage failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'uploadGlazeImage failed');
   return res.json() as Promise<GlazeImageUploadResponse>;
 }
 
@@ -435,5 +438,5 @@ export async function apiDeleteGlazeImage(
     `${API_BASE_URL}/me/glazes/${glazeBackendId}/images/${imageId}`,
     { method: 'DELETE' },
   );
-  if (!res.ok) throw new Error(`deleteGlazeImage failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'deleteGlazeImage failed');
 }

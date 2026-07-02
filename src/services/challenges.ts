@@ -162,7 +162,7 @@ export async function apiListChallenges(
   const res = await authedFetch(`${API_BASE}/public/challenges`);
   if (!res.ok) {
     console.warn(`[challenges] GET /public/challenges -> HTTP ${res.status}`);
-    throw new Error(`GET /public/challenges -> ${res.status}`);
+    throw await apiErrorFromResponse(res, 'GET /public/challenges failed');
   }
   const data = await toJsonOrNull<BackendChallenge[] | { items?: BackendChallenge[] }>(res);
   if (!data) {
@@ -182,7 +182,7 @@ export async function apiGetChallenge(
 ): Promise<BackendChallenge> {
   const res = await authedFetch(`${API_BASE}/public/challenges/${challengeId}`);
   if (!res.ok) {
-    throw new Error(`GET /public/challenges/${challengeId} -> ${res.status}`);
+    throw await apiErrorFromResponse(res, `GET /public/challenges/${challengeId} failed`);
   }
   return res.json() as Promise<BackendChallenge>;
 }
@@ -218,7 +218,7 @@ export async function apiUpdateChallengeEntry(
     },
   );
   if (!res.ok) {
-    throw new Error(`PUT /challenges/${challengeId}/entries/${entryId} -> ${res.status}`);
+    throw await apiErrorFromResponse(res, `PUT /challenges/${challengeId}/entries/${entryId} failed`);
   }
   return res.json() as Promise<BackendChallengeEntry>;
 }
@@ -233,7 +233,7 @@ export async function apiWithdrawChallengeEntry(
     { method: 'DELETE' },
   );
   if (!res.ok) {
-    throw new Error(`DELETE /challenges/${challengeId}/entries/${entryId} -> ${res.status}`);
+    throw await apiErrorFromResponse(res, `DELETE /challenges/${challengeId}/entries/${entryId} failed`);
   }
 }
 
@@ -247,7 +247,7 @@ export async function apiGetChallengeEntries(
     `${API_BASE}/public/challenges/${challengeId}/entries${query}`,
   );
   if (!res.ok) {
-    throw new Error(`GET /public/challenges/${challengeId}/entries -> ${res.status}`);
+    throw await apiErrorFromResponse(res, `GET /public/challenges/${challengeId}/entries failed`);
   }
 
   const data = await toJsonOrNull<BackendChallengeEntry[] | { items?: BackendChallengeEntry[]; entries?: BackendChallengeEntry[] }>(res);
@@ -267,7 +267,7 @@ export async function apiVoteChallengeEntry(
     body: JSON.stringify({ entry_id: entryId } satisfies VoteChallengePayload),
   });
   if (!res.ok) {
-    throw new Error(`POST /challenges/${challengeId}/votes -> ${res.status}`);
+    throw await apiErrorFromResponse(res, `POST /challenges/${challengeId}/votes failed`);
   }
 }
 
@@ -277,7 +277,7 @@ export async function apiGetChallengeLeaderboard(
 ): Promise<BackendChallengeLeaderboardEntry[]> {
   const res = await authedFetch(`${API_BASE}/public/challenges/${challengeId}/leaderboard`);
   if (!res.ok) {
-    throw new Error(`GET /public/challenges/${challengeId}/leaderboard -> ${res.status}`);
+    throw await apiErrorFromResponse(res, `GET /public/challenges/${challengeId}/leaderboard failed`);
   }
 
   const data = await toJsonOrNull<BackendChallengeLeaderboardEntry[] | { entries?: BackendChallengeLeaderboardEntry[] }>(res);

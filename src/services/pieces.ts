@@ -6,6 +6,7 @@
 
 import type { Piece, PieceVisibility, TimelineEntry } from '../types/pieces';
 import { API_BASE_URL as API_BASE } from './index';
+import { apiErrorFromResponse } from './api';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
 
@@ -119,7 +120,7 @@ async function authedFetch(url: string,
 export async function apiListPieces(
     ): Promise<BackendPiece[]> {
   const res = await authedFetch(`${API_BASE}/me/pieces`);
-  if (!res.ok) throw new Error(`listPieces failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'listPieces failed');
   return res.json() as Promise<BackendPiece[]>;
 }
 
@@ -135,7 +136,7 @@ export async function apiSyncPieces(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`syncPieces failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'syncPieces failed');
   return res.json() as Promise<SyncPiecesResponse>;
 }
 
@@ -153,7 +154,7 @@ export async function apiSetPieceVisibility(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ visibility }),
   });
-  if (!res.ok) throw new Error(`setPieceVisibility failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'setPieceVisibility failed');
   return res.json() as Promise<BackendPiece>;
 }
 
@@ -166,7 +167,7 @@ export async function apiSetPieceVisibility(
 export async function apiListAllPieceAssets(
     ): Promise<BackendPieceAsset[]> {
   const res = await authedFetch(`${API_BASE}/me/piece-assets`);
-  if (!res.ok) throw new Error(`listAllPieceAssets failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'listAllPieceAssets failed');
   return res.json() as Promise<BackendPieceAsset[]>;
 }
 
@@ -187,7 +188,7 @@ export async function apiUploadPieceAsset(
     // Do NOT set Content-Type, let fetch inject the multipart boundary.
     body: form as unknown as BodyInit_,
   });
-  if (!res.ok) throw new Error(`uploadPieceAsset failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'uploadPieceAsset failed');
   return res.json() as Promise<BackendPieceAsset>;
 }
 
@@ -200,5 +201,5 @@ export async function apiDeletePieceAsset(
     `${API_BASE}/me/pieces/${pieceId}/assets/${assetId}`,
     { method: 'DELETE' },
   );
-  if (!res.ok) throw new Error(`deletePieceAsset failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'deletePieceAsset failed');
 }
