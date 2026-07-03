@@ -66,7 +66,7 @@ export function applySyncAck<T extends DomainRecord>(
 /**
  * Merge backend rows into the local collection. `fromBackend` materializes a
  * local record from a row (given the current local copy, if any); returning
- * null skips the row (empty/legacy doc — the owning device's next push
+ * null skips the row (empty doc — the owning device's next push
  * refills it).
  */
 export function mergeBackendRows<L extends DomainRecord, B extends BackendSyncRow>(

@@ -11,8 +11,7 @@ export interface BackendKiln {
   id: string;           // UUID
   /** Device-local kiln id; sync upserts are keyed on it. */
   client_ref?: string;
-  /** The device kiln document, stored verbatim. Legacy rows hold the old
-   *  flat kiln blob; the owning device's next push replaces it. */
+  /** The device kiln document, stored verbatim. */
   doc?: Partial<Kiln> | null;
   is_deleted?: boolean;
   created_at: string;
@@ -22,8 +21,6 @@ export interface BackendKiln {
 /** Snapshot sent to POST /me/kilns/sync, identity is client_ref only. */
 export interface KilnSyncSnapshot {
   client_ref: string;
-  /** Re-links a kiln that synced before client_ref existed to its old row. */
-  backend_id?: string;
   deleted?: boolean;
   doc?: Record<string, unknown>;
 }
