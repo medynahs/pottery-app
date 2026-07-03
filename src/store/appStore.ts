@@ -43,6 +43,7 @@ import { migrateStudioRituals } from '../screens/overview/studioRythm/studioRhyt
 import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
 import { sessionExists, signOut } from '../services/auth';
+import { apiUnsavePost } from '../services/community';
 import { markSessionBootstrap } from '../services/sessionBootstrap';
 import type { Firing, FiringState, FiringStatusOverride, Kiln, KilnChecklist, KilnType, LogFiringPayload } from '../types/kiln';
 import type { GlazeOutcome, Piece, PiecePhoto, TimelineEntry } from '../types/pieces';
@@ -546,8 +547,6 @@ export interface AppState {
   communityFeedRevision: number;
   /** Pre-fill community composer when opening from journal, kiln, etc. */
   communityPostComposerPreset: CommunityPostComposerPreset | null;
-  /** Local stub for BE-8.5 until server returns save_count. */
-  communityPostSaveCounts: Record<string, number>;
   markPostCreated: () => void;
   markChallengeEntrySubmitted: () => void;
   markChallengeWin: () => void;
@@ -555,7 +554,6 @@ export interface AppState {
   markPostDeleted: () => void;
   openCommunityPostComposer: (preset: CommunityPostComposerPreset) => void;
   clearCommunityPostComposerPreset: () => void;
-  recordCommunityPostSave: (postId: string) => void;
 
   // ── Pricing Rules ───────────────────────────────────────────
   pricingSettings: PricingSettings;
@@ -1355,7 +1353,6 @@ export const useAppStore = create<AppState>()(
   markCommunityPieceShareHintShown: () => set({ communityPieceShareHintShown: true }),
   communityFeedRevision: 0,
   communityPostComposerPreset: null,
-  communityPostSaveCounts: {},
   markPostCreated: () =>
     set((state) => ({
       hasCreatedPost: true,
@@ -1373,13 +1370,6 @@ export const useAppStore = create<AppState>()(
   markPostDeleted: () => set({}),
   openCommunityPostComposer: (preset) => set({ communityPostComposerPreset: preset }),
   clearCommunityPostComposerPreset: () => set({ communityPostComposerPreset: null }),
-  recordCommunityPostSave: (postId) =>
-    set((state) => ({
-      communityPostSaveCounts: {
-        ...state.communityPostSaveCounts,
-        [postId]: (state.communityPostSaveCounts[postId] ?? 0) + 1,
-      },
-    })),
 
   // ── Pricing Rules ───────────────────────────────────────────
   pricingSettings: buildDefaultPricingSettings(),
@@ -1598,6 +1588,10 @@ export const useAppStore = create<AppState>()(
       glazes: state.glazes.map((item) => (item.id === glaze.id ? { ...glaze, syncDirty: true } : item)),
     })),
   deleteGlaze: (id) => {
+    const sourcePostId = get().glazes.find((g) => g.id === id)?.communitySourcePostId;
+    if (sourcePostId) {
+      apiUnsavePost(sourcePostId).catch(() => {});
+    }
     set((state) => ({
       // Only items the server already knows about (have a backendId) need a
       // tombstone; local-only ones just drop.

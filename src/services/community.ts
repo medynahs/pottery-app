@@ -20,7 +20,6 @@ export interface BackendFeedPost {
   content: string;
   /** Wrapped journal piece, when the post is a shared piece rather than a standalone post. */
   piece_id?: string | null;
-  title?: string | null;
   visibility?: PieceVisibility;
   assets: BackendPostAsset[] | null;
   asset_ids: string[];
@@ -28,11 +27,12 @@ export interface BackendFeedPost {
   reaction_count: number;
   comment_count: number;
   has_reacted: boolean;
-  /** Server-side save count for glaze recipe posts (BE-8.5). */
+  /** How many potters saved this recipe post to their atlas. */
   save_count?: number;
+  /** Whether the viewer has saved this post server-side. */
+  has_saved?: boolean;
   user_name?: string | null;
   user_avatar_url?: string | null;
-  user_cover_url?: string | null;
 }
 
 export interface FeedPage {
@@ -81,7 +81,6 @@ export interface CreatePostPayload {
   asset_ids?: string[];
   /** Wrap a journal piece; the post inherits the piece's visibility. */
   piece_id?: string;
-  title?: string;
   /** Standalone-post visibility (ignored by the server when piece_id is set). */
   visibility?: PieceVisibility;
 }
@@ -299,6 +298,36 @@ export async function apiRemoveReaction(
   // 404 means reaction didn't exist, treat as success
   if (!res.ok && res.status !== 404) {
     throw await apiErrorFromResponse(res, `DELETE /posts/${postId}/reactions failed`);
+  }
+}
+
+/**
+ * POST /posts/{post_id}/save
+ * Marks the post saved by the current user. Idempotent, returns 201.
+ */
+export async function apiSavePost(
+    postId: string,
+): Promise<void> {
+  const res = await authedFetch(`${API_BASE}/posts/${postId}/save`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    throw await apiErrorFromResponse(res, `POST /posts/${postId}/save failed`);
+  }
+}
+
+/**
+ * DELETE /posts/{post_id}/save
+ * Removes the current user's save. Idempotent, returns 204.
+ */
+export async function apiUnsavePost(
+    postId: string,
+): Promise<void> {
+  const res = await authedFetch(`${API_BASE}/posts/${postId}/save`, {
+    method: 'DELETE',
+  });
+  if (!res.ok && res.status !== 404) {
+    throw await apiErrorFromResponse(res, `DELETE /posts/${postId}/save failed`);
   }
 }
 
