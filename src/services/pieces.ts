@@ -5,8 +5,8 @@
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
 import type { Piece, PieceVisibility, TimelineEntry } from '../types/pieces';
-import { API_BASE_URL as API_BASE } from './index';
 import { apiErrorFromResponse } from './api';
+import { API_BASE_URL as API_BASE } from './index';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
 
@@ -50,8 +50,6 @@ export interface SyncPiecesResponse {
 export interface BackendPieceAsset {
   id: string;           // UUID
   piece_id: string;
-  /** Stable storage key. Cache/dedup on this, not on url. */
-  object_key: string;
   /** Resolved link for this viewer: stable public URL, or a short-lived presigned URL
    *  for private/friends. Transient, a one-shot download ticket, never persist it. */
   url: string;
@@ -118,7 +116,7 @@ async function authedFetch(url: string,
 
 /** GET /me/pieces, list all piece backups for the authenticated user. */
 export async function apiListPieces(
-    ): Promise<BackendPiece[]> {
+): Promise<BackendPiece[]> {
   const res = await authedFetch(`${API_BASE}/me/pieces`);
   if (!res.ok) throw await apiErrorFromResponse(res, 'listPieces failed');
   return res.json() as Promise<BackendPiece[]>;
@@ -129,7 +127,7 @@ export async function apiListPieces(
  * edited and deleted pieces, keyed on client_ref; idempotent to retry.
  */
 export async function apiSyncPieces(
-    payload: SyncPiecesRequest,
+  payload: SyncPiecesRequest,
 ): Promise<SyncPiecesResponse> {
   const res = await authedFetch(`${API_BASE}/me/pieces/sync`, {
     method: 'POST',
@@ -146,7 +144,7 @@ export async function apiSyncPieces(
  * connectivity, it is not part of the offline sync.
  */
 export async function apiSetPieceVisibility(
-    pieceId: string,
+  pieceId: string,
   visibility: PieceVisibility,
 ): Promise<BackendPiece> {
   const res = await authedFetch(`${API_BASE}/me/pieces/${pieceId}/visibility`, {
@@ -165,7 +163,7 @@ export async function apiSetPieceVisibility(
  * call. Used by hydrate (fresh-device restore) and orphan reconcile.
  */
 export async function apiListAllPieceAssets(
-    ): Promise<BackendPieceAsset[]> {
+): Promise<BackendPieceAsset[]> {
   const res = await authedFetch(`${API_BASE}/me/piece-assets`);
   if (!res.ok) throw await apiErrorFromResponse(res, 'listAllPieceAssets failed');
   return res.json() as Promise<BackendPieceAsset[]>;
@@ -177,7 +175,7 @@ export async function apiListAllPieceAssets(
  * The file must be a local URI (e.g. from expo-image-picker).
  */
 export async function apiUploadPieceAsset(
-    pieceId: string,
+  pieceId: string,
   file: { uri: string; name: string; type: string },
 ): Promise<BackendPieceAsset> {
   const form = new FormData();
@@ -194,7 +192,7 @@ export async function apiUploadPieceAsset(
 
 /** DELETE /me/pieces/{piece_id}/assets/{asset_id}, permanently remove an asset. */
 export async function apiDeletePieceAsset(
-    pieceId: string,
+  pieceId: string,
   assetId: string,
 ): Promise<void> {
   const res = await authedFetch(
