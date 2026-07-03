@@ -1,33 +1,17 @@
 // src/screens/kiln/hooks/useKilnScreen.ts
-import { useVisiblePieces, useAppStore } from '@/src/store';
+import { useVisibleFirings, useVisibleKilns, useVisiblePieces, useAppStore } from '@/src/store';
 import React from 'react';
 import type { Firing, Kiln } from '../../../types/kiln';
-import {
-    useCreateFiringMutation,
-    useFiringsSync,
-} from './useFiringsSync';
-import {
-    useDeleteKilnMutation,
-    useKilnsSync,
-    useUpsertKilnMutation,
-} from './useKilnsSync';
 
 export function useKilnScreen() {
-  const kilns = useAppStore((s) => s.kilns);
-  const firings = useAppStore((s) => s.firings);
+  const kilns = useVisibleKilns();
+  const firings = useVisibleFirings();
   const pieces = useVisiblePieces();
 
   const addKiln = useAppStore((s) => s.addKiln);
   const updateKiln = useAppStore((s) => s.updateKiln);
   const deleteKiln = useAppStore((s) => s.deleteKiln);
   const addFiring = useAppStore((s) => s.addFiring);
-
-  // Sync kilns from the backend on mount (no-op when signed out)
-  useKilnsSync();
-  useFiringsSync();
-  const upsertKilnMutation = useUpsertKilnMutation();
-  const deleteKilnMutation = useDeleteKilnMutation();
-  const createFiringMutation = useCreateFiringMutation();
 
   // ── Modal state ────────────────────────────────────────────────
   const [addKilnOpen, setAddKilnOpen] = React.useState(false);
@@ -102,8 +86,6 @@ export function useKilnScreen() {
     }
     setEditKiln(undefined);
     setAddKilnOpen(false);
-    // Fire-and-forget, store is already updated optimistically above
-    upsertKilnMutation.mutate(kiln);
   };
 
   const handleStartFiringFromKiln = (kilnId: string) => {
@@ -113,13 +95,10 @@ export function useKilnScreen() {
 
   const handleDeleteKiln = (kiln: Kiln) => {
     deleteKiln(kiln.id);
-    // Fire-and-forget, store is already updated optimistically above
-    deleteKilnMutation.mutate(kiln);
   };
 
   const handleCreateFiring = (firing: Firing) => {
     addFiring(firing);
-    createFiringMutation.mutate(firing);
   };
 
   return {

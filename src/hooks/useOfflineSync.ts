@@ -1,49 +1,25 @@
 import { useEffect, useRef } from 'react';
+import { flushFiringsSync, hasPendingFiringsSync } from '../screens/kiln/hooks/useFiringsSync';
+import { flushKilnsSync, hasPendingKilnsSync } from '../screens/kiln/hooks/useKilnsSync';
 import { flushGlazesSync, hasPendingGlazesSync } from '../screens/library/useGlazesSync';
 import { flushPiecesSync, hasPendingPiecesSync } from '../screens/pieces/hooks/usePiecesSync';
-import { useAppStore } from '../store/appStore';
 import { useNetworkConnection } from './useNetworkConnection';
 
+/** Flushes every synced domain's pending records when the device comes back online. */
 export function useOfflineSync() {
   const { isConnected, isInternetReachable } = useNetworkConnection();
   const isOnline = isConnected && isInternetReachable;
 
-  const pendingSyncOps = useAppStore((s) => s.pendingSyncOps);
-  const clearSyncQueue = useAppStore((s) => s.clearSyncQueue);
-  const setLastSyncedAt = useAppStore((s) => s.setLastSyncedAt);
-
   const prevOnline = useRef(isOnline);
-
-  const flushQueue = async () => {
-    const hasPieces = hasPendingPiecesSync();
-    const hasGlazes = hasPendingGlazesSync();
-    const hasLegacyOps = pendingSyncOps.length > 0;
-    if (!hasPieces && !hasGlazes && !hasLegacyOps) return;
-
-    if (hasPieces) {
-      await flushPiecesSync();
-    }
-    if (hasGlazes) {
-      await flushGlazesSync();
-    }
-    if (hasLegacyOps && !hasPendingPiecesSync()) {
-      clearSyncQueue();
-      setLastSyncedAt(new Date().toISOString());
-    }
-  };
 
   useEffect(() => {
     const cameOnline = !prevOnline.current && isOnline;
     prevOnline.current = isOnline;
+    if (!cameOnline) return;
 
-    if (cameOnline && (hasPendingPiecesSync() || hasPendingGlazesSync() || pendingSyncOps.length > 0)) {
-      void flushQueue();
-    }
+    if (hasPendingPiecesSync()) void flushPiecesSync();
+    if (hasPendingGlazesSync()) void flushGlazesSync();
+    if (hasPendingFiringsSync()) void flushFiringsSync();
+    if (hasPendingKilnsSync()) void flushKilnsSync();
   }, [isOnline]);
-
-  useEffect(() => {
-    if (isOnline && pendingSyncOps.length > 0) {
-      void flushQueue();
-    }
-  }, [pendingSyncOps.length]);
 }

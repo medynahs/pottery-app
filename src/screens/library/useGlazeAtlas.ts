@@ -1,7 +1,7 @@
 import { useAnalytics } from '@/src/hooks/useAnalytics';
 import { trackFirstGlazeAdded } from '@/src/utils/productAnalytics';
 import { glazeDraftToItem } from '@/src/screens/glazes/glazeItemHelpers';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleGlazes, useVisibleGlazeTests } from '@/src/store';
 import React from 'react';
 import { deriveCustomCollectionNames, sanitizeCustomCollections } from './atlas/collections';
 import { hasValidRecipeIngredients } from './atlas/GlazeRecipeBuilder';
@@ -10,8 +10,8 @@ import type { GlazeDraft, TestDraft } from './atlas/types';
 import { scheduleGlazesSync } from './useGlazesSync';
 
 export function useGlazeAtlas() {
-  const glazes = useAppStore((state) => state.glazes);
-  const glazeTests = useAppStore((state) => state.glazeTests);
+  const glazes = useVisibleGlazes();
+  const glazeTests = useVisibleGlazeTests();
   const glazeCollectionNames = useAppStore((state) => state.glazeCollectionNames);
   const clayBodies = useAppStore((state) => state.clayBodies);
   const defaultGlazeTemp = useAppStore((state) => state.defaultGlazeTemp);

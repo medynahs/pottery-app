@@ -2,7 +2,7 @@ import { DropdownField } from '@/src/components/DropdownField';
 import { Text } from '@/src/components/ui/text';
 import { KILN_TYPE_LABELS } from '@/src/screens/kiln/constants';
 import type { Kiln } from '@/src/types/kiln';
-import { useAppStore } from '@/src/store';
+import { useVisibleKilns } from '@/src/store';
 import { ChevronDown, FlameKindling } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
@@ -46,7 +46,7 @@ function KilnRow({
 }
 
 export function KilnPickerField({ value, onChange }: KilnPickerFieldProps) {
-  const kilns = useAppStore((s) => s.kilns);
+  const kilns = useVisibleKilns();
 
   const selectedKiln = React.useMemo(
     () => kilns.find((kiln) => kiln.name === value),

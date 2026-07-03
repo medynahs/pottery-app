@@ -67,6 +67,7 @@ export function estimateCloudBytesUsedFromState(state?: {
     collectPieceMediaUris(piece, uris);
   }
   for (const glaze of snapshot.glazes) {
+    if (glaze.deleted) continue;
     collectGlazeMediaUris(glaze, uris);
   }
   addMediaUri(uris, snapshot.avatarImageUri);

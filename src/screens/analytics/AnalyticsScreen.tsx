@@ -2,7 +2,7 @@ import { SectionLabel } from '@/src/components/SectionLabel';
 import { Text } from '@/src/components/ui/text';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { formatGlazeUsageHint } from '@/src/screens/glazes/glazeUsageAnalytics';
-import { useVisiblePieces, useAppStore } from '@/src/store';
+import { useVisibleFirings, useVisibleGlazeTests, useVisibleGlazes, useVisibleKilns, useVisiblePieces, useAppStore } from '@/src/store';
 import {
   computeStudioStats,
   type CostBreakdown,
@@ -103,10 +103,10 @@ export default function AnalyticsScreen() {
   );
 
   const pieces = useVisiblePieces();
-  const firings = useAppStore((s) => s.firings);
-  const glazeTests = useAppStore((s) => s.glazeTests);
-  const glazes = useAppStore((s) => s.glazes);
-  const kilns = useAppStore((s) => s.kilns);
+  const firings = useVisibleFirings();
+  const glazeTests = useVisibleGlazeTests();
+  const glazes = useVisibleGlazes();
+  const kilns = useVisibleKilns();
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const showToast = useAppStore((s) => s.showToast);
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);

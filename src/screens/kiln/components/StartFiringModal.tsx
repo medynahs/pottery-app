@@ -12,7 +12,7 @@ import { Button } from '@/src/components/ui/button';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { useVisiblePieces, useAppStore } from '@/src/store';
+import { useVisibleFirings, useVisibleKilns, useVisiblePieces, useAppStore } from '@/src/store';
 import React from 'react';
 import {
     View
@@ -45,9 +45,9 @@ export function StartFiringModal({ visible, onClose, onStart, defaultKilnId }: S
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
 
-  const kilns = useAppStore((s) => s.kilns);
+  const kilns = useVisibleKilns();
   const pieces = useVisiblePieces();
-  const firings = useAppStore((s) => s.firings);
+  const firings = useVisibleFirings();
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
   const kilnChecklist = useAppStore((s) => s.kilnChecklist);
   const toggleKilnChecklistItem = useAppStore((s) => s.toggleKilnChecklistItem);

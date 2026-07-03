@@ -35,10 +35,10 @@ export interface SyncFiringsResponse {
   client_ref_map: Record<string, string>;
 }
 
-/** The synced firing document: the local firing verbatim minus the backend link. */
+/** The synced firing document: the local firing verbatim minus sync-transient fields. */
 export function docForBackend(firing: Firing): Record<string, unknown> {
-  const { backendId, ...doc } = firing;
-  void backendId;
+  const { backendId, syncDirty, deleted, ...doc } = firing;
+  void backendId; void syncDirty; void deleted;
   return doc;
 }
 

@@ -121,7 +121,7 @@ interface ActiveFiringCardProps {
 }
 
 export function ActiveFiringCard({ firing, onPress }: ActiveFiringCardProps) {
-  const kiln = useAppStore((s) => s.kilns.find((k) => k.id === firing.kilnId));
+  const kiln = useAppStore((s) => s.kilns.find((k) => !k.deleted && k.id === firing.kilnId));
   const liveFiring = useAppStore((s) => s.firings.find((f) => f.id === firing.id)) ?? firing;
 
   const autoStatus = getAutoFiringStatus(liveFiring, kiln);

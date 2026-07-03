@@ -62,7 +62,7 @@ export function FiringSessionCard({
   variant = 'compact',
   onPress,
 }: FiringSessionCardProps) {
-  const kiln = useAppStore((s) => s.kilns.find((k) => k.id === firing.kilnId));
+  const kiln = useAppStore((s) => s.kilns.find((k) => !k.deleted && k.id === firing.kilnId));
   const statusLabel = getFiringSessionLabel(firing, kiln);
   const statusColors = STATUS_COLORS[statusLabel] ?? STATUS_COLORS.Scheduled;
   const expectedReady = getExpectedReadyAt(firing, kiln);

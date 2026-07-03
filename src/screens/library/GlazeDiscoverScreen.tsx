@@ -3,7 +3,7 @@ import { InlineErrorCard } from '@/src/components/InlineErrorCard';
 import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
 import { Text } from '@/src/components/ui/text';
 import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleGlazes } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import React from 'react';
@@ -30,7 +30,7 @@ import {
 
 export default function GlazeDiscoverScreen() {
   const router = useRouter();
-  const glazes = useAppStore((s) => s.glazes);
+  const glazes = useVisibleGlazes();
   const user = useAppStore((s) => s.user);
   const devDiscoverGlazeIds = useAppStore((s) => s.devDiscoverGlazeIds);
 

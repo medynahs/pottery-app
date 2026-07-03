@@ -51,6 +51,8 @@ import { useEntitlementSync } from '@/src/hooks/useEntitlementSync';
 import { usePreferencesSync } from '@/src/hooks/usePreferencesSync';
 import { useRhythmSync } from '@/src/hooks/useRhythmSync';
 import { useOfflineSync } from '@/src/hooks/useOfflineSync';
+import { useFiringsSync } from '@/src/screens/kiln/hooks/useFiringsSync';
+import { useKilnsSync } from '@/src/screens/kiln/hooks/useKilnsSync';
 import { useGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { usePiecesSync } from '@/src/screens/pieces/hooks/usePiecesSync';
 import { StageConfigProvider } from '@/src/hooks/useStageConfig';
@@ -136,6 +138,8 @@ function AppShell() {
   useOfflineSync();
   usePiecesSync();
   useGlazesSync();
+  useFiringsSync();
+  useKilnsSync();
   // Push notifications disabled — see PUSH_NOTIFICATIONS_ENABLED in pushTokens.ts
   // useNotificationTriggers();
   // usePushTokenSync();

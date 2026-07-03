@@ -3,7 +3,7 @@ import { Text } from '@/src/components/ui/text';
 import { Kilnkin } from '@/src/screens/overview/components/Kilnkin';
 import { getStudioSignals } from '@/src/screens/overview/utils/getStudioSignals';
 import { mapPiecesToStudioPositions, type StudioPiecePositions } from '@/src/screens/overview/utils/mapPiecesToStudioPositions';
-import { useVisiblePieces, useAppStore } from '@/src/store';
+import { useVisibleFirings, useVisiblePieces, useAppStore } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -236,7 +236,7 @@ export function StudioScene({ height }: StudioSceneProps) {
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
   const pieces = useVisiblePieces();
-  const firings = useAppStore((state) => state.firings);
+  const firings = useVisibleFirings();
   const studioHotspots = useMemo(() => getStudioHotspots(kilnkinCompanion.name), [kilnkinCompanion.name]);
   const studioPiecePositions = useMemo(() => mapPiecesToStudioPositions(pieces), [pieces]);
   const studioSignals = useMemo(() => getStudioSignals({ pieces, firings }), [firings, pieces]);

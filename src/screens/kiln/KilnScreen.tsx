@@ -7,7 +7,7 @@ import { Text } from '@/src/components/ui/text';
 import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import { BrandColors } from '@/src/constants/theme';
 import { parseKilnSectionParam } from '@/src/screens/overview/utils/kilnNavigation';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleFirings } from '@/src/store';
 import { countOpenSessionsForKiln, kilnHasOpenSessions } from '@/src/utils/firingSessionLabels';
 import { getDefaultKilnSection, type KilnSectionMode } from '@/src/utils/roleBasedUx';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -90,7 +90,7 @@ export default function KilnScreen() {
   const [logFiringKilnId, setLogFiringKilnId] = React.useState<string | undefined>(undefined);
   const [needKilnForLogOpen, setNeedKilnForLogOpen] = React.useState(false);
   const [firingEntryOpen, setFiringEntryOpen] = React.useState(false);
-  const firings = useAppStore((s) => s.firings);
+  const firings = useVisibleFirings();
   const visibleSessionRows = showAllSessions ? sessionRows : sessionRows.slice(0, 4);
   const hiddenSessionCount = Math.max(0, sessionRows.length - visibleSessionRows.length);
   const hasOpenSessionContent = featuredOpenFiring !== null || sessionRows.length > 0;

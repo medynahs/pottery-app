@@ -27,7 +27,7 @@ import { removeCommunityPostFromCaches } from '@/src/screens/community/utils/com
 import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { apiDeletePost } from '@/src/services/community';
 import { apiSendFriendRequest } from '@/src/services/friends';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleGlazes } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Bookmark, Check, MoreHorizontal, Trash2, Users } from 'lucide-react-native';
@@ -59,7 +59,7 @@ export function FeedPostCard({ post, onDeleted }: Props) {
   const router = useRouter();
   const backendUserId = useAppStore((s) => s.backendUserId);
   const user = useAppStore((s) => s.user);
-  const glazes = useAppStore((s) => s.glazes);
+  const glazes = useVisibleGlazes();
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const addGlaze = useAppStore((s) => s.addGlaze);
   const registerGlazeCollections = useAppStore((s) => s.registerGlazeCollections);

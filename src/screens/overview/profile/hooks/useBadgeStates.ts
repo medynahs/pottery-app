@@ -1,4 +1,4 @@
-import { useVisiblePieces, useAppStore } from '@/src/store/appStore';
+import { useVisibleFirings, useVisibleGlazeTests, useVisibleGlazes, useVisibleKilns, useVisiblePieces, useAppStore } from '@/src/store/appStore';
 import { useMemo } from 'react';
 import {
   buildBadgeContext,
@@ -9,10 +9,10 @@ import {
 
 export function useBadgeContext(): BadgeContext {
   const pieces = useVisiblePieces();
-  const firings = useAppStore((s) => s.firings);
-  const glazes = useAppStore((s) => s.glazes);
-  const glazeTests = useAppStore((s) => s.glazeTests);
-  const kilns = useAppStore((s) => s.kilns);
+  const firings = useVisibleFirings();
+  const glazes = useVisibleGlazes();
+  const glazeTests = useVisibleGlazeTests();
+  const kilns = useVisibleKilns();
   const dailyMissionCompletion = useAppStore((s) => s.dailyMissionCompletion);
   const communityPostsCreated = useAppStore((s) => s.communityPostsCreated);
   const challengeEntriesSubmitted = useAppStore((s) => s.challengeEntriesSubmitted);

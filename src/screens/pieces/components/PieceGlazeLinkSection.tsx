@@ -1,6 +1,6 @@
 import { Text } from '@/src/components/ui/text';
 import type { Piece } from '@/src/types/pieces';
-import { useAppStore } from '@/src/store';
+import { useVisibleGlazes } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
@@ -18,7 +18,7 @@ export function PieceGlazeLinkSection({
   compact?: boolean;
 }) {
   const router = useRouter();
-  const glazes = useAppStore((state) => state.glazes);
+  const glazes = useVisibleGlazes();
   const link = React.useMemo(
     () => resolvePieceGlazeJournalLink(piece, glazes),
     [piece, glazes],

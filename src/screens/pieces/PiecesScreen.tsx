@@ -7,7 +7,7 @@ import { StudioTabScreen } from '@/src/components/StudioTabScreen';
 import { Text } from '@/src/components/ui/text';
 import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleGlazes } from '@/src/store';
 import { countPiecePhotos } from '@/src/utils/premiumGate';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -88,7 +88,7 @@ export default function PiecesScreen() {
   const [visibilitySheetPiece, setVisibilitySheetPiece] = React.useState<Piece | null>(null);
   const isSignedIn = useAppStore((s) => s.isSignedIn);
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
-  const glazes = useAppStore((s) => s.glazes);
+  const glazes = useVisibleGlazes();
   const piecesCompactCards = useAppStore((s) => s.piecesCompactCards);
   const markCeremonyAsSeen = useAppStore((s) => s.markCeremonyAsSeen);
 

@@ -18,7 +18,7 @@ import {
 import { ACTIVE_FIRING_STATES } from '@/src/screens/overview/utils/oneThingCard';
 import { buildPersonaOneThingCard } from '@/src/screens/overview/utils/personaPulseCard';
 import { getPetMood, PAT_REACTIONS } from '@/src/screens/overview/utils/petMood';
-import { useAppStore, useVisiblePieces } from '@/src/store';
+import { useAppStore, useVisiblePieces, useVisibleFirings, useVisibleKilns, useVisibleGlazes, useVisibleGlazeTests } from '@/src/store';
 import { DEFAULT_SETUP_PROGRESS, useNormalizedEnabledModules } from '@/src/store/appStore';
 import { resolveKilnDestination } from '@/src/screens/overview/utils/kilnNavigation';
 import {
@@ -48,20 +48,20 @@ export function useOverviewPage() {
   const isSignedIn = useAppStore((state) => state.isSignedIn);
   const isPremium = useAppStore((state) => state.isPremium);
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
-  const kilns = useAppStore((state) => state.kilns) ?? [];
+  const kilns = useVisibleKilns() ?? [];
   const onboardingProfile = useAppStore((state) => state.onboardingProfile);
   const { hasLinkedStudio, loading: studioLinkLoading } = useStudioLinkStatus();
   const userType = onboardingProfile.userType;
   const setupProgress = useAppStore((state) => state.setupProgress) ?? DEFAULT_SETUP_PROGRESS;
   const completeSetupChecklist = useAppStore((state) => state.completeSetupChecklist);
   const pricingOnboardingCompleted = useAppStore((state) => state.pricingOnboardingCompleted);
-  const glazes = useAppStore((state) => state.glazes) ?? [];
-  const glazeTests = useAppStore((state) => state.glazeTests) ?? [];
+  const glazes = useVisibleGlazes() ?? [];
+  const glazeTests = useVisibleGlazeTests() ?? [];
   const pieces = useVisiblePieces() ?? [];
   const enabledModules = useNormalizedEnabledModules();
   const hasKilnTab = enabledModules.includes('kiln');
   const hasCommunityTab = enabledModules.includes('community');
-  const firings = useAppStore((state) => state.firings) ?? [];
+  const firings = useVisibleFirings() ?? [];
   const rhythm = normalizeStudioRhythm(useAppStore((state) => state.studioRhythm));
   const studioDataFetching = useIsFetching({
     predicate: (query) =>

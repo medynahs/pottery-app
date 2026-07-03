@@ -41,7 +41,7 @@ import {
 } from '@/src/screens/glazes/glazeVersionUtils';
 import { GLAZE_OUTCOME_LABELS } from '@/src/screens/pieces/utils/constants';
 import { formatDateShort } from '@/src/utils/dates';
-import { useAppStore, useVisiblePieces } from '@/src/store';
+import { useAppStore, useVisiblePieces, useVisibleGlazes, useVisibleGlazeTests } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, GitBranchPlus, Pencil, Share2, Sparkles, Star, Trash2, ArrowLeftRight } from 'lucide-react-native';
@@ -126,8 +126,8 @@ function BatchDetailsCard({ glaze }: { glaze: GlazeLibraryItem }) {
 export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const glazes = useAppStore((s) => s.glazes);
-  const glazeTests = useAppStore((s) => s.glazeTests);
+  const glazes = useVisibleGlazes();
+  const glazeTests = useVisibleGlazeTests();
   const pieces = useVisiblePieces();
   const clayBodies = useAppStore((s) => s.clayBodies);
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
