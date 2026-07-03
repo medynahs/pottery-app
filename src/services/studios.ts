@@ -11,7 +11,6 @@ export interface BackendStudio {
   avatar_url: string | null;
   owner_id: string;
   created_at: string;
-  updated_at: string | null;
 }
 
 export type StudioInviteStatus = 'pending' | 'accepted' | 'rejected';
