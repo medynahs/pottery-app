@@ -10,7 +10,6 @@ import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
 export const DISCOVER_CATALOG_QUERY_KEY = ['discover', 'catalog'] as const;
 
 export type DiscoverCatalog = {
-  version: string;
   recipes: DiscoverRecipe[];
   inspirations: DiscoverInspiration[];
   items: DiscoverItem[];
@@ -40,14 +39,12 @@ export function useDiscoverCatalog(options?: {
   return useQuery({
     queryKey: [...DISCOVER_CATALOG_QUERY_KEY, devDiscoverGlazeIds.join(',')],
     queryFn: async (): Promise<DiscoverCatalog> => {
-      const [recipesRes, inspirations] = await Promise.all([
+      const [recipes, inspirations] = await Promise.all([
         fetchDiscoverRecipes(),
         fetchDiscoverInspirations(),
       ]);
       const devRecipes = buildDevDiscoverRecipes(glazes, devDiscoverGlazeIds, authorName);
-      const recipes = recipesRes.recipes;
       return {
-        version: recipesRes.version,
         recipes,
         inspirations,
         items: buildCatalogItems(recipes, inspirations, devRecipes),

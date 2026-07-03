@@ -2,11 +2,6 @@ import type { DiscoverInspiration, DiscoverRecipe } from '@/src/screens/library/
 import { API_BASE_URL } from './index';
 import { apiErrorFromResponse } from './api';
 
-export type DiscoverRecipesResponse = {
-  version: string;
-  recipes: DiscoverRecipe[];
-};
-
 async function fetchDiscoverJson<T>(path: string): Promise<T> {
   const url = `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
   const res = await fetch(url, { headers: { Accept: 'application/json' } });
@@ -17,12 +12,9 @@ async function fetchDiscoverJson<T>(path: string): Promise<T> {
 }
 
 /** GET /public/discover/recipes — public, no auth. */
-export async function fetchDiscoverRecipes(): Promise<DiscoverRecipesResponse> {
-  const data = await fetchDiscoverJson<DiscoverRecipesResponse>('/public/discover/recipes');
-  return {
-    version: data.version ?? '',
-    recipes: Array.isArray(data.recipes) ? data.recipes : [],
-  };
+export async function fetchDiscoverRecipes(): Promise<DiscoverRecipe[]> {
+  const data = await fetchDiscoverJson<DiscoverRecipe[]>('/public/discover/recipes');
+  return Array.isArray(data) ? data : [];
 }
 
 /** GET /public/discover/inspirations — public, no auth. */
