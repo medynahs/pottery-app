@@ -407,7 +407,6 @@ export interface BackendPoll {
   options: BackendPollOption[];
   total_votes: number;
   voted_option_id: string | null; // null = not yet voted
-  created_at: string;
 }
 
 /**

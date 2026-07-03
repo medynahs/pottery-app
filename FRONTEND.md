@@ -152,7 +152,7 @@ All tracked in [`BACKEND-TASKS.md`](./BACKEND-TASKS.md) P0-6 through P1-7.
 | 16 | 🔶 | Post + feed API |
 | 17 | 🔶 | Reaction API |
 | 18 | 🔶 | Challenge API (+ tracks/voting: P0-8/9) |
-| 19 | 🔶 | Polls API |
+| 19 | ✅ | Polls API |
 | 20 | 🔶 | Hall of Fame (winner archive: P1-6) |
 | 21 | 🔶 | Admin news API |
 | 22 | 🔶 | Media upload | Server-side `POST /uploads` (multipart) — FE wired |
