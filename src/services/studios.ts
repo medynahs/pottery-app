@@ -13,27 +13,21 @@ export interface BackendStudio {
   created_at: string;
 }
 
-export type StudioInviteStatus = 'pending' | 'accepted' | 'rejected';
-
+// Invites and join requests only exist while pending: responding deletes the
+// row server-side, so there is no status field.
 export interface BackendStudioInvite {
   id: string;
   studio_id: string;
   inviter_id: string;
   invitee_id: string;
-  status: StudioInviteStatus;
   created_at: string;
-  responded_at: string | null;
 }
-
-export type StudioJoinRequestStatus = 'pending' | 'accepted' | 'rejected';
 
 export interface BackendStudioJoinRequest {
   id: string;
   studio_id: string;
   requester_id: string;
-  status: StudioJoinRequestStatus;
   created_at: string;
-  responded_at: string | null;
 }
 
 // Re-export BackendUser from friends so callers only need one import.
@@ -224,32 +218,30 @@ export async function apiListIncomingStudioInvites(
 
 /**
  * POST /me/studios/invites/{invite_id}/accept
- * Accepts a studio invite.
+ * Accepts a studio invite (204; the invite row is deleted).
  */
 export async function apiAcceptStudioInvite(
     inviteId: string,
-): Promise<BackendStudioInvite> {
+): Promise<void> {
   const res = await authedFetch(
     `${API_BASE}/me/studios/invites/${inviteId}/accept`,
     { method: 'POST' },
   );
   if (!res.ok) return parseError(res, `POST /me/studios/invites/${inviteId}/accept`);
-  return res.json() as Promise<BackendStudioInvite>;
 }
 
 /**
  * POST /me/studios/invites/{invite_id}/reject
- * Rejects a studio invite.
+ * Rejects a studio invite (204; the invite row is deleted).
  */
 export async function apiRejectStudioInvite(
     inviteId: string,
-): Promise<BackendStudioInvite> {
+): Promise<void> {
   const res = await authedFetch(
     `${API_BASE}/me/studios/invites/${inviteId}/reject`,
     { method: 'POST' },
   );
   if (!res.ok) return parseError(res, `POST /me/studios/invites/${inviteId}/reject`);
-  return res.json() as Promise<BackendStudioInvite>;
 }
 
 // ─── Studio join requests ─────────────────────────────────────────────────────
@@ -284,30 +276,28 @@ export async function apiListIncomingJoinRequests(
 
 /**
  * POST /me/studios/join-requests/{request_id}/accept
- * Accepts a join request. Owner only.
+ * Accepts a join request. Owner only (204; the request row is deleted).
  */
 export async function apiAcceptJoinRequest(
     requestId: string,
-): Promise<BackendStudioJoinRequest> {
+): Promise<void> {
   const res = await authedFetch(
     `${API_BASE}/me/studios/join-requests/${requestId}/accept`,
     { method: 'POST' },
   );
   if (!res.ok) return parseError(res, `POST /me/studios/join-requests/${requestId}/accept`);
-  return res.json() as Promise<BackendStudioJoinRequest>;
 }
 
 /**
  * POST /me/studios/join-requests/{request_id}/reject
- * Rejects a join request. Owner only.
+ * Rejects a join request. Owner only (204; the request row is deleted).
  */
 export async function apiRejectJoinRequest(
     requestId: string,
-): Promise<BackendStudioJoinRequest> {
+): Promise<void> {
   const res = await authedFetch(
     `${API_BASE}/me/studios/join-requests/${requestId}/reject`,
     { method: 'POST' },
   );
   if (!res.ok) return parseError(res, `POST /me/studios/join-requests/${requestId}/reject`);
-  return res.json() as Promise<BackendStudioJoinRequest>;
 }

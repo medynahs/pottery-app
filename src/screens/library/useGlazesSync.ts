@@ -121,7 +121,7 @@ export async function reconcileGlazeImages(): Promise<void> {
         }
         try {
           const res = await apiUploadGlazeImage(glaze.backendId, fileFromUri(uri, type), type);
-          replaceGlazePhotoUri(glaze.id, uri, res.image.url);
+          replaceGlazePhotoUri(glaze.id, uri, res.url);
         } catch (err) {
           if (__DEV__) console.warn(`[glazes:image] upload failed for glaze ${glaze.id}:`, err);
           // Leave the local URI in place; retried on the next reconcile pass.

@@ -48,7 +48,7 @@ export function useClayFriendStatus(
       }
 
       const pendingOutgoing = (outgoing ?? []).some(
-        (request) => request.addressee_id === targetUserId && request.status === 'pending',
+        (request) => request.addressee_id === targetUserId,
       );
       if (pendingOutgoing) {
         setStatus('pending_outgoing');

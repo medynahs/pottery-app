@@ -21,15 +21,13 @@ export interface BackendUser {
   updated_at: string | null;
 }
 
-export type FriendRequestStatus = 'pending' | 'accepted' | 'declined' | 'canceled';
-
+// A request only exists while pending: responding (accept/decline/cancel)
+// deletes it server-side, so there is no status field.
 export interface BackendFriendRequest {
   id: string;
   requester_id: string;
   addressee_id: string;
-  status: FriendRequestStatus;
   created_at: string;
-  responded_at: string | null;
 }
 
 export interface ErrorResponse {
@@ -146,45 +144,42 @@ export async function apiListOutgoingFriendRequests(
 
 /**
  * POST /me/friends/requests/{request_id}/accept
- * Accepts an incoming friend request. Only the addressee may call this.
+ * Accepts an incoming friend request (204; the request row is deleted).
  */
 export async function apiAcceptFriendRequest(
     requestId: string,
-): Promise<BackendFriendRequest> {
+): Promise<void> {
   const res = await authedFetch(
     `${API_BASE}/me/friends/requests/${requestId}/accept`,
     { method: 'POST' },
   );
   if (!res.ok) return parseError(res, `POST /me/friends/requests/${requestId}/accept`);
-  return res.json() as Promise<BackendFriendRequest>;
 }
 
 /**
  * POST /me/friends/requests/{request_id}/decline
- * Declines an incoming friend request. Only the addressee may call this.
+ * Declines an incoming friend request (204; the request row is deleted).
  */
 export async function apiDeclineFriendRequest(
     requestId: string,
-): Promise<BackendFriendRequest> {
+): Promise<void> {
   const res = await authedFetch(
     `${API_BASE}/me/friends/requests/${requestId}/decline`,
     { method: 'POST' },
   );
   if (!res.ok) return parseError(res, `POST /me/friends/requests/${requestId}/decline`);
-  return res.json() as Promise<BackendFriendRequest>;
 }
 
 /**
  * POST /me/friends/requests/{request_id}/cancel
- * Cancels an outgoing friend request. Only the requester may call this.
+ * Cancels an outgoing friend request (204; the request row is deleted).
  */
 export async function apiCancelFriendRequest(
     requestId: string,
-): Promise<BackendFriendRequest> {
+): Promise<void> {
   const res = await authedFetch(
     `${API_BASE}/me/friends/requests/${requestId}/cancel`,
     { method: 'POST' },
   );
   if (!res.ok) return parseError(res, `POST /me/friends/requests/${requestId}/cancel`);
-  return res.json() as Promise<BackendFriendRequest>;
 }

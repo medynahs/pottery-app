@@ -184,12 +184,6 @@ export interface SyncGlazesResponse {
   client_ref_map: Record<string, string>;
 }
 
-export interface GlazeImageUploadResponse {
-  message: string;
-  glazeId: string;
-  image: BackendGlazeImage;
-}
-
 // ─── Mappers ──────────────────────────────────────────────────────────────────
 
 /** Split a backend image list into the app's four photo fields. */
@@ -421,7 +415,7 @@ export async function apiUploadGlazeImage(
     glazeBackendId: string,
   file: { uri: string; name: string; type: string },
   imageType: GlazeImageType,
-): Promise<GlazeImageUploadResponse> {
+): Promise<BackendGlazeImage> {
   const form = new FormData();
   form.append('file', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
   form.append('type', imageType);
@@ -435,7 +429,7 @@ export async function apiUploadGlazeImage(
     },
   );
   if (!res.ok) throw await apiErrorFromResponse(res, 'uploadGlazeImage failed');
-  return res.json() as Promise<GlazeImageUploadResponse>;
+  return res.json() as Promise<BackendGlazeImage>;
 }
 
 /** DELETE /me/glazes/:glaze_id/images/:image_id, remove an image record. */

@@ -94,12 +94,7 @@ function normalizePostAsset(raw: unknown): BackendPostAsset | null {
       : typeof record.asset_id === 'string'
         ? record.asset_id
         : null;
-  const url =
-    typeof record.url === 'string'
-      ? record.url
-      : typeof record.public_url === 'string'
-        ? record.public_url
-        : null;
+  const url = typeof record.url === 'string' ? record.url : null;
   if (!id || !url) return null;
   return {
     id,
