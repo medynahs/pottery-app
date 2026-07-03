@@ -14,7 +14,7 @@ export interface BackendStudio {
   updated_at: string | null;
 }
 
-export type StudioInviteStatus = 'pending' | 'accepted' | 'rejected' | 'canceled';
+export type StudioInviteStatus = 'pending' | 'accepted' | 'rejected';
 
 export interface BackendStudioInvite {
   id: string;
@@ -26,7 +26,7 @@ export interface BackendStudioInvite {
   responded_at: string | null;
 }
 
-export type StudioJoinRequestStatus = 'pending' | 'accepted' | 'rejected' | 'canceled';
+export type StudioJoinRequestStatus = 'pending' | 'accepted' | 'rejected';
 
 export interface BackendStudioJoinRequest {
   id: string;
@@ -66,9 +66,9 @@ function authedFetch(url: string,
   init?: RequestInit,
 ): Promise<Response> {
   return fetch(url, {
-    ...init,
+    ...init,
     headers: {
-      Accept: 'application/json',
+      Accept: 'application/json',
       ...(init?.headers ?? {}),
     },
   });
