@@ -65,6 +65,9 @@ export interface BackendGlaze {
   bestClayType?: GlazeLibraryItem['bestClayType'];
   bestFiringTempC?: number;
   atmosphere?: GlazeLibraryItem['atmosphere'];
+  versionNumber: number;
+  rootGlazeId?: string;
+  parentGlazeId?: string;
 }
 
 type RawBackendGlaze = BackendGlaze & {
@@ -145,7 +148,6 @@ export interface GlazeSyncItem {
   versionNumber?: number;
   rootGlazeId?: string;
   parentGlazeId?: string;
-  sourceDiscoverRecipeId?: string;
 }
 
 export interface GlazeTestSyncItem {
@@ -212,8 +214,15 @@ function imagesToPhotoFields(images: BackendGlazeImage[]): Pick<
  * an existing local glaze they are preserved, because images aren't part of the
  * sync round-trip, overwriting them would wipe a freshly-picked, not-yet-
  * uploaded photo the moment the text sync returns.
+ *
+ * Lineage ids arrive as backend UUIDs (the server resolves client_refs on
+ * push); `localIdByBackendId` translates them back to device-local ids.
  */
-export function backendGlazeToLocal(b: BackendGlaze, existing?: GlazeLibraryItem): GlazeLibraryItem {
+export function backendGlazeToLocal(
+  b: BackendGlaze,
+  existing: GlazeLibraryItem | undefined,
+  localIdByBackendId: Map<string, string>,
+): GlazeLibraryItem {
   const id = existing?.id ?? b.client_ref ?? b.id;
   const photos = existing
     ? {
@@ -257,6 +266,9 @@ export function backendGlazeToLocal(b: BackendGlaze, existing?: GlazeLibraryItem
     bestClayType: b.bestClayType,
     bestFiringTempC: b.bestFiringTempC,
     atmosphere: b.atmosphere,
+    versionNumber: b.versionNumber,
+    rootGlazeId: (b.rootGlazeId && localIdByBackendId.get(b.rootGlazeId)) || existing?.rootGlazeId,
+    parentGlazeId: (b.parentGlazeId && localIdByBackendId.get(b.parentGlazeId)) || existing?.parentGlazeId,
   });
 }
 
@@ -298,7 +310,6 @@ export function localGlazeToSyncItem(g: GlazeLibraryItem, deleted = false): Glaz
     versionNumber: g.versionNumber,
     rootGlazeId: g.rootGlazeId,
     parentGlazeId: g.parentGlazeId,
-    sourceDiscoverRecipeId: g.discoverSourceRecipeId,
     ...(deleted ? { deleted: true } : {}),
   };
 }

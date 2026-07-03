@@ -55,7 +55,6 @@ export function hasPendingGlazesSync(): boolean {
 
 // ─── Pull merge ─────────────────────────────────────────────────────────────
 
-const glazeFromBackend = backendGlazeToLocal;
 const testFromBackend = backendTestToLocal;
 
 // ─── Image reconciliation ────────────────────────────────────────────────────
@@ -238,8 +237,13 @@ export function useGlazesSync() {
       );
     }
     const { glazes, glazeTests } = useAppStore.getState();
+    const localIdByBackendId = new Map(
+      query.data.glazes.map((g) => [g.id, String(g.client_ref ?? g.id)]),
+    );
     useAppStore.setState({
-      glazes: mergeBackendRows(query.data.glazes, glazes, glazeFromBackend),
+      glazes: mergeBackendRows(query.data.glazes, glazes, (row, existing) =>
+        backendGlazeToLocal(row, existing, localIdByBackendId),
+      ),
       glazeTests: mergeBackendRows(query.data.tests, glazeTests, testFromBackend),
     });
     // Upload any photos left local from a previous session (glaze already synced).
