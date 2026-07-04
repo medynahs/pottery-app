@@ -1,6 +1,30 @@
 import { useAppStore } from '@/src/store';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+
+const MAX_UPLOAD_EDGE_PX = 2048;
+
+// Mirrors the server-side cap in pottery-api util/compress.go; shrinking here too
+// saves the upload bandwidth, not just the stored bytes.
+async function shrinkForUpload(asset: ImagePicker.ImagePickerAsset): Promise<string> {
+  const { uri, width, height, mimeType } = asset;
+  if (!width || !height || (width <= MAX_UPLOAD_EDGE_PX && height <= MAX_UPLOAD_EDGE_PX)) return uri;
+  if (mimeType && mimeType !== 'image/jpeg' && mimeType !== 'image/png') return uri;
+  try {
+    const context = ImageManipulator.manipulate(uri);
+    context.resize(width >= height ? { width: MAX_UPLOAD_EDGE_PX } : { height: MAX_UPLOAD_EDGE_PX });
+    const rendered = await context.renderAsync();
+    const saved = await rendered.saveAsync({
+      compress: 0.8,
+      format: mimeType === 'image/png' ? SaveFormat.PNG : SaveFormat.JPEG,
+    });
+    return saved.uri;
+  } catch (e) {
+    if (__DEV__) console.warn('[PhotoPickerProvider] shrinkForUpload error', e);
+    return uri;
+  }
+}
 
 export interface UsePhotoPickerOptions {
   aspect?: [number, number];
@@ -55,7 +79,7 @@ export function PhotoPickerProvider({ children }: { children: React.ReactNode })
     };
     try {
       const result = await ImagePicker.launchImageLibraryAsync(opts);
-      if (!result.canceled) pendingCallback.current?.(result.assets[0].uri);
+      if (!result.canceled) pendingCallback.current?.(await shrinkForUpload(result.assets[0]));
     } catch (e) {
       if (__DEV__) console.warn('[PhotoPickerProvider] launchLibrary error', e);
     }
@@ -78,7 +102,7 @@ export function PhotoPickerProvider({ children }: { children: React.ReactNode })
     };
     try {
       const result = await ImagePicker.launchCameraAsync(opts);
-      if (!result.canceled) pendingCallback.current?.(result.assets[0].uri);
+      if (!result.canceled) pendingCallback.current?.(await shrinkForUpload(result.assets[0]));
     } catch (e) {
       if (__DEV__) console.warn('[PhotoPickerProvider] launchCamera error', e);
     }
