@@ -28,6 +28,7 @@ import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { apiDeletePost, apiSavePost } from '@/src/services/community';
 import { apiSendFriendRequest } from '@/src/services/friends';
 import { useAppStore, useVisibleGlazes } from '@/src/store';
+import { remoteImageSource } from '@/src/utils/imageSource';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Bookmark, Check, MoreHorizontal, Trash2, Users } from 'lucide-react-native';
@@ -272,7 +273,7 @@ export function FeedPostCard({ post, onDeleted }: Props) {
         {/* Image */}
         {firstAsset && (
           <Image
-            source={{ uri: firstAsset.url }}
+            source={remoteImageSource(firstAsset.url)}
             style={{ height: 200, borderRadius: 12, marginBottom: 10 }}
             contentFit="cover"
             cachePolicy="memory-disk"

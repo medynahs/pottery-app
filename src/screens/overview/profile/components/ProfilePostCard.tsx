@@ -7,6 +7,7 @@ import {
 } from '@/src/screens/community/utils/feedDisplayContent';
 import { parseCommunityPostMeta } from '@/src/screens/community/utils/communityPostPayload';
 import type { BackendFeedPost } from '@/src/services/community';
+import { remoteImageSource } from '@/src/utils/imageSource';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Heart, MessageCircle } from 'lucide-react-native';
@@ -83,7 +84,7 @@ export function ProfilePostCard({
       <Card className="rounded-2xl overflow-hidden">
         {firstAsset ? (
           <Image
-            source={{ uri: firstAsset.url }}
+            source={remoteImageSource(firstAsset.url)}
             style={{ width: '100%', height: 168 }}
             contentFit="cover"
             cachePolicy="memory-disk"
@@ -171,7 +172,7 @@ export function ProfilePostGridTile({
   const tile = (
     <View style={{ width: size, height: size }}>
       <Image
-        source={{ uri: imageUri }}
+        source={remoteImageSource(imageUri)}
         style={{ width: '100%', height: '100%' }}
         contentFit="cover"
         cachePolicy="memory-disk"

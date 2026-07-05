@@ -1,3 +1,4 @@
+import { remoteImageSource } from '@/src/utils/imageSource';
 import { Image } from 'expo-image';
 import { X } from 'lucide-react-native';
 import React from 'react';
@@ -71,7 +72,7 @@ function LightboxContent({
         }}
       >
         <Image
-          source={{ uri }}
+          source={remoteImageSource(uri)}
           style={{ width: width - 24, height: imageHeight }}
           contentFit="contain"
         />
