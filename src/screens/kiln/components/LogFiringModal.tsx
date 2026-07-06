@@ -16,14 +16,13 @@ import { Select } from '@/src/components/ui/select';
 import { Text } from '@/src/components/ui/text';
 import { FormField, FormFieldRow } from '@/src/screens/library/atlas/FormField';
 import { Pill } from '@/src/screens/library/atlas/Pill';
-import { useVisiblePieces, useAppStore } from '@/src/store';
+import { useVisibleKilns, useVisiblePieces, useAppStore } from '@/src/store';
 import type { Firing, FiringType, Kiln } from '@/src/types/kiln';
 import { todayIso } from '@/src/utils/dates';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { FIRING_SOURCE_STAGE, KILN_TYPE_LABELS } from '../constants';
 import { buildFiringCostBreakdown } from '../firingEstimations';
-import { useCreateFiringMutation } from '../hooks/useFiringsSync';
 import { trimOrEmpty } from '../utils/kilnHelpers';
 import { formatMoney } from '../utils/kilnUtils';
 import { FiringPieceRow } from './FiringPieceRow';
@@ -68,11 +67,10 @@ interface LogFiringModalProps {
 
 export function LogFiringModal({ visible, kiln: kilnProp, onClose, onSaved }: LogFiringModalProps) {
   const sheetHeight = useModalSheetHeight();
-  const kilns = useAppStore((s) => s.kilns);
+  const kilns = useVisibleKilns();
   const pieces = useVisiblePieces();
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
   const logFiring = useAppStore((s) => s.logFiring);
-  const createFiringMutation = useCreateFiringMutation();
 
   const [selectedKilnId, setSelectedKilnId] = React.useState('');
   const [form, setForm] = React.useState<LogFiringForm>(EMPTY_FORM);
@@ -161,7 +159,6 @@ export function LogFiringModal({ visible, kiln: kilnProp, onClose, onSaved }: Lo
       pieceIds: Array.from(selectedPieceIds),
     });
 
-    createFiringMutation.mutate(firing);
     onSaved?.(firing);
     onClose();
   };

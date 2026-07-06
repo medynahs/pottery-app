@@ -7,7 +7,7 @@ import {
 import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { GLAZE_FINISH_LABELS } from '@/src/screens/glazes/types';
 import type { GlazeFinish } from '@/src/screens/glazes/types';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleGlazes } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Check } from 'lucide-react-native';
@@ -23,7 +23,7 @@ import { SaveCollectionSheet } from './SaveCollectionSheet';
 export default function DiscoverRecipeScreen({ recipeId }: { recipeId: string }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const glazes = useAppStore((s) => s.glazes);
+  const glazes = useVisibleGlazes();
   const user = useAppStore((s) => s.user);
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const addGlaze = useAppStore((s) => s.addGlaze);

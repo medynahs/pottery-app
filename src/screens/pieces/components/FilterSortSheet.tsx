@@ -8,7 +8,7 @@ import {
 } from '@/src/components/AppSheets';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
-import { useAppStore } from '@/src/store/appStore';
+import { useAppStore, useVisibleGlazes } from '@/src/store/appStore';
 import { Pill } from '@/src/screens/library/atlas/Pill';
 import { Search, X } from 'lucide-react-native';
 import React from 'react';
@@ -93,7 +93,7 @@ export function FilterSortSheet({
 }: FilterSortSheetProps) {
   const sheetHeight = useModalSheetHeight(0.88);
   const clayBodies = useAppStore((s) => s.clayBodies);
-  const glazes = useAppStore((s) => s.glazes);
+  const glazes = useVisibleGlazes();
   const piecesCompactCards = useAppStore((s) => s.piecesCompactCards);
   const setPiecesCompactCards = useAppStore((s) => s.setPiecesCompactCards);
   const [glazeQuery, setGlazeQuery] = React.useState('');

@@ -10,6 +10,10 @@ export type Kiln = {
   id: string;
   /** UUID issued by the backend after the kiln is first synced. */
   backendId?: string;
+  /** Local edits not yet pushed via POST /me/kilns/sync. */
+  syncDirty?: boolean;
+  /** Deleted locally, awaiting sync confirmation. */
+  deleted?: boolean;
   name: string;
   imageUri?: string;
   type: KilnType;
@@ -93,6 +97,10 @@ export type Firing = {
   createdAt: string;
   /** UUID issued by the backend after the firing is first synced. */
   backendId?: string;
+  /** Local edits not yet pushed via POST /me/firings/sync. */
+  syncDirty?: boolean;
+  /** Deleted locally, awaiting sync confirmation. */
+  deleted?: boolean;
   /** Studio this firing belongs to (for shared-studio firings). */
   studioId?: string;
   /** How many active days the firing ran (backend-calculated). */

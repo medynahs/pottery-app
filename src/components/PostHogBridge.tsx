@@ -68,8 +68,8 @@ export function PostHogBridge() {
   const isPremium = useAppStore((s) => s.isPremium);
   const analyticsEnabled = useAppStore((s) => s.privacyPrefs.analyticsEnabled);
   const pieceCount = useAppStore((s) => s.pieces.filter((p) => !p.deleted).length);
-  const glazeCount = useAppStore((s) => s.glazes.length);
-  const firingCount = useAppStore((s) => s.firings.filter((f) => f.state === 'completed').length);
+  const glazeCount = useAppStore((s) => s.glazes.filter((g) => !g.deleted).length);
+  const firingCount = useAppStore((s) => s.firings.filter((f) => !f.deleted && f.state === 'completed').length);
 
   useEffect(() => {
     if (!posthog) {

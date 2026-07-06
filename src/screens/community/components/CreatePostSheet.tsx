@@ -361,9 +361,17 @@ export function CreatePostSheet({
       });
       const finalContent = embedCommunityPostMeta(postBody, meta);
 
+      // Wrap a synced journal piece as a real container: the backend attaches the piece's
+      // assets and the post inherits the piece's visibility. Only reach for a manual photo
+      // upload when there's no piece FK, or the user picked a custom image.
+      const pieceIdForPost =
+        postKind === 'piece_journal' && linkedPiece?.backendId
+          ? linkedPiece.backendId
+          : undefined;
+
       let uploadedPhoto: { assetId: string; publicUrl?: string } | null = null;
 
-      if (photoUri) {
+      if (photoUri && (!pieceIdForPost || photoIsCustom)) {
         uploadedPhoto = await uploadPostPhotoAsset(photoUri);
         assetIds.push(uploadedPhoto.assetId);
       }
@@ -371,6 +379,7 @@ export function CreatePostSheet({
       const created = await apiCreatePost({
         content: finalContent,
         asset_ids: assetIds.length > 0 ? assetIds : undefined,
+        piece_id: pieceIdForPost,
       });
 
       prependCommunityPost(

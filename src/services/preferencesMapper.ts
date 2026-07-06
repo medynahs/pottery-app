@@ -1,6 +1,6 @@
 /**
- * Maps Zustand customization state ↔ GET/PUT /users/me/preferences blob (version 1).
- * Studio rhythm is synced separately via /users/me/rythm.
+ * Maps Zustand customization state ↔ GET/PUT /me/preferences blob (version 1).
+ * Studio rhythm is synced separately via /me/rhythm.
  */
 
 import type { TextScale } from '@/src/constants/typography';

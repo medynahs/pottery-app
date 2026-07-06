@@ -7,16 +7,16 @@ import { StudioTabScreen } from '@/src/components/StudioTabScreen';
 import { Text } from '@/src/components/ui/text';
 import { TAB_SCROLL_BOTTOM_PADDING } from '@/src/constants/tabScreenLayout';
 import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleGlazes } from '@/src/store';
 import { countPiecePhotos } from '@/src/utils/premiumGate';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { BookOpen, CheckSquare, ChevronUp, Copy, Edit3, Images, Layers, Plus, Share2, SlidersHorizontal, Tag, Trash2 } from 'lucide-react-native';
+import { BookOpen, CheckSquare, ChevronUp, Copy, Edit3, Globe, Images, Layers, Lock, Plus, Share2, SlidersHorizontal, Tag, Trash2, Users } from 'lucide-react-native';
 import React from 'react';
 import { RefreshControl, ScrollView, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { MainTabHeader } from '../../components/MainTabHeader';
-import type { Piece } from '../../types/pieces';
+import type { Piece, PieceVisibility } from '../../types/pieces';
 import {
   CEMETERY_ACCENT,
   CEMETERY_BORDER_SUBTLE,
@@ -49,6 +49,12 @@ import { StageAdvanceFlowModal } from './modals/StageAdvanceFlowModal';
 import { STAGE_LABEL } from './utils/constants';
 import { collectPiecePhotos } from './utils/piecePhotos';
 
+const VISIBILITY_LABEL: Record<PieceVisibility, string> = {
+  private: 'Private',
+  friends: 'Friends',
+  public: 'Public',
+};
+
 const itemLayout = LinearTransition
   .duration(420)
   .easing(Easing.inOut(Easing.cubic));
@@ -79,9 +85,10 @@ export default function PiecesScreen() {
   const [selectedPieceIds, setSelectedPieceIds] = React.useState<Set<number>>(() => new Set());
   const [galleryPiece, setGalleryPiece] = React.useState<Piece | null>(null);
   const [statusSheetPiece, setStatusSheetPiece] = React.useState<Piece | null>(null);
+  const [visibilitySheetPiece, setVisibilitySheetPiece] = React.useState<Piece | null>(null);
   const isSignedIn = useAppStore((s) => s.isSignedIn);
   const seenCeremonies = useAppStore((s) => s.seenCeremonies);
-  const glazes = useAppStore((s) => s.glazes);
+  const glazes = useVisibleGlazes();
   const piecesCompactCards = useAppStore((s) => s.piecesCompactCards);
   const markCeremonyAsSeen = useAppStore((s) => s.markCeremonyAsSeen);
 
@@ -131,6 +138,7 @@ export default function PiecesScreen() {
     handleSendToCemetery,
     handleConfirmSendToCemetery,
     handleSharePiece,
+    handleSetPieceVisibility,
   } = usePiecesScreen();
 
   const exitSelectionMode = React.useCallback(() => {
@@ -343,6 +351,14 @@ export default function PiecesScreen() {
       });
     }
 
+    if (isSignedIn && piece.backendId) {
+      options.push({
+        label: `Visibility: ${VISIBILITY_LABEL[piece.visibility ?? 'private']}`,
+        icon: Globe,
+        onPress: () => setVisibilitySheetPiece(piece),
+      });
+    }
+
     if (isSignedIn) {
       options.push({
         label: 'Share to community',
@@ -371,6 +387,20 @@ export default function PiecesScreen() {
     handleDelete,
     enterSelectionWith,
   ]);
+
+  const visibilityOptions = React.useMemo((): PickSheetOption[] => {
+    if (!visibilitySheetPiece) return [];
+    const piece = visibilitySheetPiece;
+    const choose = (visibility: PieceVisibility) => {
+      setVisibilitySheetPiece(null);
+      void handleSetPieceVisibility(piece, visibility);
+    };
+    return [
+      { label: 'Private — only you', icon: Lock, onPress: () => choose('private') },
+      { label: 'Friends — people you follow each other', icon: Users, onPress: () => choose('friends') },
+      { label: 'Public — anyone', icon: Globe, onPress: () => choose('public') },
+    ];
+  }, [visibilitySheetPiece, handleSetPieceVisibility]);
 
   const batchActionOptions = React.useMemo((): PickSheetOption[] => {
     if (!batchActionPieces?.length) return [];
@@ -794,6 +824,18 @@ export default function PiecesScreen() {
         layout="list"
         options={pieceActionOptions}
         onCancel={() => setActionSheetPiece(null)}
+      />
+      <PickSheet
+        visible={visibilitySheetPiece !== null}
+        title="Piece visibility"
+        body={
+          visibilitySheetPiece
+            ? `Who can see "${visibilitySheetPiece.name}" when you share it`
+            : undefined
+        }
+        layout="list"
+        options={visibilityOptions}
+        onCancel={() => setVisibilitySheetPiece(null)}
       />
       <PickSheet
         visible={batchActionPieces !== null}

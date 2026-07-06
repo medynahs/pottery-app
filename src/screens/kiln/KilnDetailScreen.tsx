@@ -5,7 +5,7 @@ import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleFirings, useVisibleKilns } from '@/src/store';
 import { countOpenSessionsForKiln, kilnHasOpenSessions } from '@/src/utils/firingSessionLabels';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Clock, FlameKindling, Pencil, Plus, Thermometer, Trash2 } from 'lucide-react-native';
@@ -27,8 +27,6 @@ import { StartFiringModal } from './components/StartFiringModal';
 import { KilnProfileHeader } from './components/KilnProfileHeader';
 import { KilnSubScreenHeader } from './components/KilnSubScreenHeader';
 import { KILN_TYPE_LABELS } from './constants';
-import { useCreateFiringMutation } from './hooks/useFiringsSync';
-import { useDeleteKilnMutation, useUpsertKilnMutation } from './hooks/useKilnsSync';
 import type { Firing, Kiln } from '@/src/types/kiln';
 import { getKilnMaxTempLabel, getKilnPerformanceStats, getLastFiredLabel } from './utils/kilnHelpers';
 
@@ -45,17 +43,14 @@ export default function KilnDetailScreen() {
   const { kilnId: kilnIdParam } = useLocalSearchParams<{ kilnId?: string | string[] }>();
   const resolvedKilnId = resolveKilnIdParam(kilnIdParam);
 
-  const kilns = useAppStore((s) => s.kilns);
-  const firings = useAppStore((s) => s.firings);
+  const kilns = useVisibleKilns();
+  const firings = useVisibleFirings();
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
   const addFiring = useAppStore((s) => s.addFiring);
   const updateKiln = useAppStore((s) => s.updateKiln);
   const deleteKiln = useAppStore((s) => s.deleteKiln);
   const addKilnMaintenanceLog = useAppStore((s) => s.addKilnMaintenanceLog);
   const removeKilnMaintenanceLog = useAppStore((s) => s.removeKilnMaintenanceLog);
-  const upsertKilnMutation = useUpsertKilnMutation();
-  const deleteKilnMutation = useDeleteKilnMutation();
-  const createFiringMutation = useCreateFiringMutation();
 
   const kiln = React.useMemo(
     () =>
@@ -96,25 +91,22 @@ export default function KilnDetailScreen() {
       if (existing) {
         updateKiln(nextKiln);
       }
-      upsertKilnMutation.mutate(nextKiln);
     },
-    [kilns, updateKiln, upsertKilnMutation],
+    [kilns, updateKiln],
   );
 
   const handleDeleteKiln = React.useCallback(
     (target: Kiln) => {
       deleteKiln(target.id);
-      deleteKilnMutation.mutate(target);
     },
-    [deleteKiln, deleteKilnMutation],
+    [deleteKiln],
   );
 
   const handleCreateFiring = React.useCallback(
     (firing: Firing) => {
       addFiring(firing);
-      createFiringMutation.mutate(firing);
     },
-    [addFiring, createFiringMutation],
+    [addFiring],
   );
 
   if (!kiln) {

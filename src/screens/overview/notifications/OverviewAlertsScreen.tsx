@@ -2,7 +2,7 @@ import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { getStudioAlerts } from '@/src/screens/overview/notifications/getStudioAlerts';
-import { useVisiblePieces, useAppStore } from '@/src/store';
+import { useVisiblePieces, useAppStore, useVisibleFirings } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { BellRing, CalendarDays, Flame, Gift, PackageOpen } from 'lucide-react-native';
 import React from 'react';
@@ -21,7 +21,7 @@ export default function OverviewAlertsScreen() {
   const insets = useSafeAreaInsets();
   const companion = useAppStore((state) => state.kilnkinCompanion);
   const pieces = useVisiblePieces();
-  const firings = useAppStore((state) => state.firings);
+  const firings = useVisibleFirings();
   const studioRhythmConfig = useAppStore((state) => state.studioRhythmConfig);
 
   const alerts = React.useMemo(

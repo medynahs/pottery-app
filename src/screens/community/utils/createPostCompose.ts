@@ -56,11 +56,13 @@ export const ASK_TOPIC_OPTIONS: Array<{ id: AskTopic; label: string }> = [
 export function resolvePieceJournalPhoto(piece: Piece): string | undefined {
   for (let i = piece.timeline.length - 1; i >= 0; i -= 1) {
     const photos = piece.timeline[i].photos;
-    if (photos?.length) {
-      return photos[photos.length - 1];
+    if (!photos?.length) continue;
+    for (let j = photos.length - 1; j >= 0; j -= 1) {
+      const uri = photos[j].uri?.trim();
+      if (uri) return uri;
     }
   }
-  return piece.photo ?? piece.imgUrl ?? undefined;
+  return piece.photo?.trim() || piece.imgUrl?.trim() || undefined;
 }
 
 export function buildPieceJournalCaption(

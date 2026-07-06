@@ -4,7 +4,7 @@ import {
   getCloudStorageSnapshot,
 } from '@/src/utils/cloudStorage';
 import { PremiumFeature, premiumRouteForFeature, profilePremiumTeaser } from '@/src/utils/premiumGate';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleGlazes } from '@/src/store';
 import { Cloud, Crown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -19,7 +19,7 @@ export function ProfileFreeTierPromo() {
   const isPremium = useAppStore((s) => s.isPremium);
   const userType = useAppStore((s) => s.onboardingProfile.userType);
   const pieces = useAppStore((s) => s.pieces);
-  const glazes = useAppStore((s) => s.glazes);
+  const glazes = useVisibleGlazes();
   const avatarImageUri = useAppStore((s) => s.user.avatarImageUri);
   const coverImageUri = useAppStore((s) => s.user.coverImageUri);
 

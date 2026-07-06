@@ -280,10 +280,10 @@ export function checkPremium(_feature: PremiumFeature): boolean {
 
 /** Count all photos stored on a piece (cover + journal entries). */
 export function countPiecePhotos(piece: Piece): number {
-  let count = piece.photo || piece.imgUrl ? 1 : 0;
+  let count = piece.coverAssetId || piece.photo || piece.imgUrl ? 1 : 0;
   for (const entry of piece.timeline) {
     if (entry.photos?.length) {
-      count += entry.photos.filter(Boolean).length;
+      count += entry.photos.filter((p) => p.assetId || p.uri).length;
     }
   }
   return count;

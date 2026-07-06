@@ -26,11 +26,13 @@ function addMediaUri(uris: Set<string>, uri: string | undefined | null): void {
 }
 
 function collectPieceMediaUris(piece: Piece, uris: Set<string>): void {
-  addMediaUri(uris, piece.photo);
-  addMediaUri(uris, piece.imgUrl);
+  // Dedup the cover by its stable assetId so the same backed-up photo isn't
+  // counted twice across devices (each device hydrates it under a local uri).
+  addMediaUri(uris, piece.coverAssetId ?? piece.photo ?? piece.imgUrl);
   for (const entry of piece.timeline) {
     for (const photo of entry.photos ?? []) {
-      addMediaUri(uris, photo);
+      // Dedup uploaded photos by their stable assetId, pending ones by uri.
+      addMediaUri(uris, photo.assetId ?? photo.uri);
     }
   }
 }
@@ -65,6 +67,7 @@ export function estimateCloudBytesUsedFromState(state?: {
     collectPieceMediaUris(piece, uris);
   }
   for (const glaze of snapshot.glazes) {
+    if (glaze.deleted) continue;
     collectGlazeMediaUris(glaze, uris);
   }
   addMediaUri(uris, snapshot.avatarImageUri);
@@ -112,17 +115,18 @@ export function formatCloudStorageLabel(snapshot = getCloudStorageSnapshot()): s
 }
 
 export function countPieceCloudBackedPhotos(piece: Piece): number {
+  // Cover is not counted: it always backs up free (see uploadCoverPhoto). This
+  // cap governs timeline extras only.
   let count = 0;
-  if (isRemoteMediaUri(piece.photo) || isRemoteMediaUri(piece.imgUrl)) count += 1;
   for (const entry of piece.timeline) {
     for (const photo of entry.photos ?? []) {
-      if (isRemoteMediaUri(photo) || isLocalMediaUri(photo)) count += 1;
+      if (photo.assetId) count += 1;
     }
   }
   return count;
 }
 
-/** Free tier: one cloud-backed photo slot per piece (local-only extras allowed). */
+/** Free tier: one cloud-backed timeline photo per piece; the cover backs up free (local-only extras allowed). */
 export function canSyncPiecePhotoToCloud(
   piece: Piece,
   isReplacing: boolean,

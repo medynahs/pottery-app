@@ -1,6 +1,8 @@
 import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
 import { useVisiblePieces, useAppStore } from '@/src/store';
+import { apiSetPieceVisibility } from '@/src/services/pieces';
+import type { PieceVisibility, PiecePhoto } from '../../../types/pieces';
 import { buildPieceSharePreset } from '../utils/sharePieceToCommunity';
 import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
@@ -227,7 +229,7 @@ export function usePiecesScreen() {
   }, [duplicateBatch]);
 
   const handleUpdateJournalEntry = React.useCallback(
-    (pieceId: number, entryIndex: number, patch: { notes?: string; photos?: string[] }) => {
+    (pieceId: number, entryIndex: number, patch: { notes?: string; photos?: PiecePhoto[] }) => {
       updateJournalEntry(pieceId, entryIndex, patch);
       setJournalPiece(prev =>
         prev?.id === pieceId
@@ -239,6 +241,7 @@ export function usePiecesScreen() {
             }
           : prev
       );
+      schedulePiecesSync();
       schedulePiecePhotoSync(pieceId);
     },
     [updateJournalEntry]
@@ -354,7 +357,7 @@ export function usePiecesScreen() {
     const notes = capture.notes?.trim();
     const entryPatch = {
       notes: notes || undefined,
-      photos: capture.photo ? [capture.photo] : undefined,
+      photos: capture.photo ? [{ uri: capture.photo }] : undefined,
       bisqueTemp: toStage === 'bisque' && capture.bisqueTemp ? capture.bisqueTemp : undefined,
       glazeTemp: toStage === 'glaze-fired' && capture.glazeTemp ? capture.glazeTemp : undefined,
       status: toStage === FINISHED_STAGE_ID && capture.status ? capture.status : undefined,
@@ -437,6 +440,19 @@ export function usePiecesScreen() {
     shareToCommunity(buildPieceSharePreset(piece));
   }, [shareToCommunity]);
 
+  const handleSetPieceVisibility = React.useCallback(async (piece: Piece, visibility: PieceVisibility) => {
+    // Visibility is server-authoritative (the backend reconciles storage buckets), so it
+    // goes straight through the endpoint, not the offline sync. Reflect it locally after.
+    if (!piece.backendId || piece.visibility === visibility) return;
+    try {
+      await apiSetPieceVisibility(piece.backendId, visibility);
+      updatePiece({ ...piece, visibility });
+      showToast(`Piece is now ${visibility}`, 'success');
+    } catch {
+      showToast('Could not update visibility. Try again.', 'error');
+    }
+  }, [updatePiece, showToast]);
+
   return {
     pieces,
     filteredPieces,
@@ -483,5 +499,6 @@ export function usePiecesScreen() {
     handleSendToCemetery,
     handleConfirmSendToCemetery,
     handleSharePiece,
+    handleSetPieceVisibility,
     };
 }

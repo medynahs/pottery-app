@@ -42,11 +42,11 @@ import {
 import { migrateStudioRituals } from '../screens/overview/studioRythm/studioRhythmIcons';
 import { STAGES } from '../screens/pieces/utils/constants';
 import { getConfiguredNextStage } from '../screens/pieces/utils/stageFlow';
-import { fetchUsers, type BackendUser } from '../services';
 import { sessionExists, signOut } from '../services/auth';
+import { apiUnsavePost } from '../services/community';
 import { markSessionBootstrap } from '../services/sessionBootstrap';
 import type { Firing, FiringState, FiringStatusOverride, Kiln, KilnChecklist, KilnType, LogFiringPayload } from '../types/kiln';
-import type { GlazeOutcome, Piece, TimelineEntry } from '../types/pieces';
+import type { GlazeOutcome, Piece, PiecePhoto, TimelineEntry } from '../types/pieces';
 import {
   applyPricingUserTypePreset,
   buildDefaultPricingSettings,
@@ -71,29 +71,6 @@ import {
   trackSetupQuestCompleted,
   trackStudioRhythmConfiguredIfNeeded,
 } from '../utils/productAnalytics';
-
-// ── Sync queue ────────────────────────────────────────────────────────────────
-export type SyncOperationType =
-  | 'addPieces'
-  | 'updatePiece'
-  | 'deletePiece'
-  | 'advancePiece'
-  | 'advancePieceIds'
-  | 'advanceBatch'
-  | 'sendToCemetery'
-  | 'duplicatePiece'
-  | 'duplicateBatch'
-  | 'updateJournalEntry'
-  | 'updateStageConfig'
-  | 'updateUser'
-  | 'updateTask';
-
-export type SyncOperation = {
-  id: string;
-  type: SyncOperationType;
-  payload: unknown;
-  timestamp: string;
-};
 
 export type PracticeMode = 'home' | 'studio' | 'both';
 export type UserRole = 'owner' | 'member';
@@ -251,14 +228,12 @@ export type PrivacyPrefs = {
   analyticsEnabled: boolean;
   personalizedSuggestions: boolean;
   profilePublic: boolean;
-  piecesPublic: boolean;
 };
 
 const DEFAULT_PRIVACY_PREFS: PrivacyPrefs = {
   analyticsEnabled: true,
   personalizedSuggestions: true,
   profilePublic: true,
-  piecesPublic: true,
 };
 
 const DEFAULT_STUDIO_GOALS: StudioRhythmGoal[] = [
@@ -370,7 +345,7 @@ function buildDefaultStages(): StageConfig[] {
   }));
 }
 
-interface AppState {
+export interface AppState {
   // ── App settings ──────────────────────────────────────────────
   generalOnboardingCompleted: boolean;
   onboardingProfile: OnboardingProfile;
@@ -440,10 +415,6 @@ interface AppState {
     linkedStudioCode?: string;
   };
   setUser: (patch: Partial<AppState['user']>) => void;
-  backendUsers: BackendUser[];
-  backendUsersStatus: 'idle' | 'loading' | 'success' | 'error';
-  backendUsersError: string | null;
-  loadBackendUsers: () => Promise<void>;
   kilnkinCompanion: KilnkinCompanion;
   setKilnkinCompanion: (companion: KilnkinCompanion) => void;
   renameKilnkinCompanion: (name: string) => void;
@@ -496,7 +467,7 @@ interface AppState {
     patch: {
       notes?: string;
       photo?: string;
-      photos?: string[];
+      photos?: PiecePhoto[];
       bisqueTemp?: string;
       glazeTemp?: string;
       status?: string;
@@ -576,8 +547,6 @@ interface AppState {
   communityFeedRevision: number;
   /** Pre-fill community composer when opening from journal, kiln, etc. */
   communityPostComposerPreset: CommunityPostComposerPreset | null;
-  /** Local stub for BE-8.5 until server returns save_count. */
-  communityPostSaveCounts: Record<string, number>;
   markPostCreated: () => void;
   markChallengeEntrySubmitted: () => void;
   markChallengeWin: () => void;
@@ -585,7 +554,6 @@ interface AppState {
   markPostDeleted: () => void;
   openCommunityPostComposer: (preset: CommunityPostComposerPreset) => void;
   clearCommunityPostComposerPreset: () => void;
-  recordCommunityPostSave: (postId: string) => void;
 
   // ── Pricing Rules ───────────────────────────────────────────
   pricingSettings: PricingSettings;
@@ -608,10 +576,6 @@ interface AppState {
   glazeTests: GlazeTestTile[];
   /** User-created collection names (including empty collections). */
   glazeCollectionNames: string[];
-  /** Synced glazes/tests deleted locally, parked until a sync pushes the
-   *  tombstone. Kept out of `glazes`/`glazeTests` so the UI stays live-only. */
-  pendingGlazeDeletions: GlazeLibraryItem[];
-  pendingGlazeTestDeletions: GlazeTestTile[];
   addGlaze: (glaze: GlazeLibraryItem) => void;
   updateGlaze: (glaze: GlazeLibraryItem) => void;
   deleteGlaze: (id: string) => void;
@@ -657,14 +621,10 @@ interface AppState {
   removeKilnMaintenanceLog: (kilnId: string, logId: string) => void;
 
   // ── Offline / Sync ────────────────────────────────────────────
-  /** Operations queued while offline, waiting to sync to the server. */
-  pendingSyncOps: SyncOperation[];
   /** True while a sync flush is in progress. Not persisted. */
   isSyncing: boolean;
   /** ISO timestamp of the most recent successful sync. */
   lastSyncedAt: string | null;
-  enqueueSyncOp: (op: Omit<SyncOperation, 'id' | 'timestamp'>) => void;
-  clearSyncQueue: () => void;
   setIsSyncing: (v: boolean) => void;
   setLastSyncedAt: (ts: string) => void;
   toast: { message: string; variant: 'success' | 'error' } | null;
@@ -834,30 +794,6 @@ export const useAppStore = create<AppState>()(
   // ── User ──────────────────────────────────────────────────────
   user: { name: '', avatarInitial: '', studioName: '', location: '', bio: '' },
   setUser: (patch) => set((state) => ({ user: { ...state.user, ...patch } })),
-  backendUsers: [],
-  backendUsersStatus: 'idle',
-  backendUsersError: null,
-  loadBackendUsers: async () => {
-    if (get().backendUsersStatus === 'loading') {
-      return;
-    }
-
-    set({ backendUsersStatus: 'loading', backendUsersError: null });
-
-    try {
-      const users = await fetchUsers();
-      set({
-        backendUsers: users,
-        backendUsersStatus: 'success',
-        backendUsersError: null,
-      });
-    } catch (error) {
-      set({
-        backendUsersStatus: 'error',
-        backendUsersError: error instanceof Error ? error.message : 'Unable to load users',
-      });
-    }
-  },
   kilnkinCompanion: DEFAULT_KILNKIN_COMPANION,
   setKilnkinCompanion: (companion) => set({ kilnkinCompanion: companion }),
   renameKilnkinCompanion: (name) =>
@@ -1109,7 +1045,6 @@ export const useAppStore = create<AppState>()(
       batchSize: undefined,
       backendId: undefined,
       coverAssetId: undefined,
-      photoAssetIds: undefined,
       deleted: undefined,
       syncDirty: true,
     };
@@ -1128,7 +1063,6 @@ export const useAppStore = create<AppState>()(
       batchId: newBatchId,
       backendId: undefined,
       coverAssetId: undefined,
-      photoAssetIds: undefined,
       deleted: undefined,
       syncDirty: true,
     }));
@@ -1140,6 +1074,7 @@ export const useAppStore = create<AppState>()(
         if (p.id !== pieceId) return p;
         return {
           ...p,
+          syncDirty: true,
           timeline: p.timeline.map((entry, i) => (i === entryIndex ? { ...entry, ...patch } : entry)),
         };
       }),
@@ -1418,7 +1353,6 @@ export const useAppStore = create<AppState>()(
   markCommunityPieceShareHintShown: () => set({ communityPieceShareHintShown: true }),
   communityFeedRevision: 0,
   communityPostComposerPreset: null,
-  communityPostSaveCounts: {},
   markPostCreated: () =>
     set((state) => ({
       hasCreatedPost: true,
@@ -1436,13 +1370,6 @@ export const useAppStore = create<AppState>()(
   markPostDeleted: () => set({}),
   openCommunityPostComposer: (preset) => set({ communityPostComposerPreset: preset }),
   clearCommunityPostComposerPreset: () => set({ communityPostComposerPreset: null }),
-  recordCommunityPostSave: (postId) =>
-    set((state) => ({
-      communityPostSaveCounts: {
-        ...state.communityPostSaveCounts,
-        [postId]: (state.communityPostSaveCounts[postId] ?? 0) + 1,
-      },
-    })),
 
   // ── Pricing Rules ───────────────────────────────────────────
   pricingSettings: buildDefaultPricingSettings(),
@@ -1652,8 +1579,6 @@ export const useAppStore = create<AppState>()(
   glazes: [],
   glazeTests: [],
   glazeCollectionNames: [],
-  pendingGlazeDeletions: [],
-  pendingGlazeTestDeletions: [],
   addGlaze: (glaze) =>
     set((state) => ({
       glazes: [{ ...glaze, syncDirty: true }, ...state.glazes],
@@ -1662,23 +1587,25 @@ export const useAppStore = create<AppState>()(
     set((state) => ({
       glazes: state.glazes.map((item) => (item.id === glaze.id ? { ...glaze, syncDirty: true } : item)),
     })),
-  deleteGlaze: (id) =>
-    set((state) => {
-      const removed = state.glazes.find((glaze) => glaze.id === id);
-      const orphanedTests = state.glazeTests.filter((test) => test.glazeId === id);
-      return {
-        glazes: state.glazes.filter((glaze) => glaze.id !== id),
-        glazeTests: state.glazeTests.filter((test) => test.glazeId !== id),
-        // Only items the server already knows about (have a backendId) need a tombstone.
-        pendingGlazeDeletions: removed?.backendId
-          ? [...state.pendingGlazeDeletions, removed]
-          : state.pendingGlazeDeletions,
-        pendingGlazeTestDeletions: [
-          ...state.pendingGlazeTestDeletions,
-          ...orphanedTests.filter((test) => test.backendId),
-        ],
-      };
-    }),
+  deleteGlaze: (id) => {
+    const sourcePostId = get().glazes.find((g) => g.id === id)?.communitySourcePostId;
+    if (sourcePostId) {
+      apiUnsavePost(sourcePostId).catch(() => {});
+    }
+    set((state) => ({
+      // Only items the server already knows about (have a backendId) need a
+      // tombstone; local-only ones just drop.
+      glazes: state.glazes.flatMap((glaze) => {
+        if (glaze.id !== id) return [glaze];
+        return glaze.backendId ? [{ ...glaze, deleted: true, syncDirty: true }] : [];
+      }),
+      glazeTests: state.glazeTests.flatMap((test) => {
+        if (test.glazeId !== id) return [test];
+        return test.backendId ? [{ ...test, deleted: true, syncDirty: true }] : [];
+      }),
+    }));
+    scheduleGlazesSyncSoon();
+  },
   toggleFavoriteGlaze: (id) =>
     set((state) => ({
       glazes: state.glazes.map((glaze) => (
@@ -1715,16 +1642,15 @@ export const useAppStore = create<AppState>()(
         };
       }),
     })),
-  deleteGlazeTest: (id) =>
-    set((state) => {
-      const removed = state.glazeTests.find((test) => test.id === id);
-      return {
-        glazeTests: state.glazeTests.filter((test) => test.id !== id),
-        pendingGlazeTestDeletions: removed?.backendId
-          ? [...state.pendingGlazeTestDeletions, removed]
-          : state.pendingGlazeTestDeletions,
-      };
-    }),
+  deleteGlazeTest: (id) => {
+    set((state) => ({
+      glazeTests: state.glazeTests.flatMap((test) => {
+        if (test.id !== id) return [test];
+        return test.backendId ? [{ ...test, deleted: true, syncDirty: true }] : [];
+      }),
+    }));
+    scheduleGlazesSyncSoon();
+  },
 
   addGlazeCollection: (name) =>
     set((state) => {
@@ -1760,24 +1686,42 @@ export const useAppStore = create<AppState>()(
   firings: [],
   kilnChecklist: DEFAULT_CHECKLIST,
   setKilns: (kilns) => set({ kilns }),
-  addKiln: (kiln) => set((state) => ({ kilns: [normalizeKiln(kiln), ...state.kilns] })),
-  updateKiln: (kiln) =>
-    set((state) => ({ kilns: state.kilns.map((k) => (k.id === kiln.id ? normalizeKiln(kiln) : k)) })),
-  deleteKiln: (id) =>
+  addKiln: (kiln) => {
+    set((state) => ({ kilns: [normalizeKiln({ ...kiln, syncDirty: true }), ...state.kilns] }));
+    scheduleKilnsSyncSoon();
+  },
+  updateKiln: (kiln) => {
     set((state) => ({
-      kilns: state.kilns.filter((k) => k.id !== id),
-      firings: state.firings.filter((f) => f.kilnId !== id),
-    })),
-  addFiring: (firing) =>
+      kilns: state.kilns.map((k) => (k.id === kiln.id ? normalizeKiln({ ...kiln, syncDirty: true }) : k)),
+    }));
+    scheduleKilnsSyncSoon();
+  },
+  deleteKiln: (id) => {
+    set((state) => ({
+      // Only items the server already knows about (have a backendId) need a
+      // tombstone; local-only ones just drop.
+      kilns: state.kilns.flatMap((k) => {
+        if (k.id !== id) return [k];
+        return k.backendId ? [{ ...k, deleted: true, syncDirty: true }] : [];
+      }),
+      firings: state.firings.flatMap((f) => {
+        if (f.kilnId !== id) return [f];
+        return f.backendId ? [{ ...f, deleted: true, syncDirty: true }] : [];
+      }),
+    }));
+    scheduleKilnsSyncSoon();
+    scheduleFiringsSyncSoon();
+  },
+  addFiring: (firing) => {
     set((state) => {
       const nextPieceIds = Array.from(new Set(firing.pieceIds));
       const nextPieceIdSet = new Set(nextPieceIds);
 
       return {
         firings: [
-          { ...firing, pieceIds: nextPieceIds },
+          { ...firing, pieceIds: nextPieceIds, syncDirty: true },
           ...state.firings.map((existingFiring) => {
-            if (existingFiring.state === 'completed') {
+            if (existingFiring.state === 'completed' || existingFiring.deleted) {
               return existingFiring;
             }
 
@@ -1789,16 +1733,30 @@ export const useAppStore = create<AppState>()(
             return {
               ...existingFiring,
               pieceIds: existingFiring.pieceIds.filter((pieceId) => !nextPieceIdSet.has(pieceId)),
+              syncDirty: true,
             };
           }),
         ],
       };
-    }),
-  updateFiring: (firing) =>
-    set((state) => ({ firings: state.firings.map((f) => (f.id === firing.id ? firing : f)) })),
-  deleteFiring: (id) =>
-    set((state) => ({ firings: state.firings.filter((f) => f.id !== id) })),
-  updateFiringState: (firingId, firingState) =>
+    });
+    scheduleFiringsSyncSoon();
+  },
+  updateFiring: (firing) => {
+    set((state) => ({
+      firings: state.firings.map((f) => (f.id === firing.id ? { ...firing, syncDirty: true } : f)),
+    }));
+    scheduleFiringsSyncSoon();
+  },
+  deleteFiring: (id) => {
+    set((state) => ({
+      firings: state.firings.flatMap((f) => {
+        if (f.id !== id) return [f];
+        return f.backendId ? [{ ...f, deleted: true, syncDirty: true }] : [];
+      }),
+    }));
+    scheduleFiringsSyncSoon();
+  },
+  updateFiringState: (firingId, firingState) => {
     set((state) => ({
       firings: state.firings.map((f) => {
         if (f.id !== firingId) return f;
@@ -1807,20 +1765,27 @@ export const useAppStore = create<AppState>()(
           ...f,
           state: firingState,
           startedAt: firingState === 'firing' && !f.startedAt ? now : f.startedAt,
+          syncDirty: true,
         };
       }),
-    })),
-  assignPiecesToFiring: (firingId, pieceIds) =>
+    }));
+    scheduleFiringsSyncSoon();
+  },
+  assignPiecesToFiring: (firingId, pieceIds) => {
     set((state) => {
       const incomingPieceIdSet = new Set(pieceIds);
 
       return {
         firings: state.firings.map((firing) => {
           if (firing.id === firingId) {
-            return { ...firing, pieceIds: Array.from(new Set([...firing.pieceIds, ...pieceIds])) };
+            return {
+              ...firing,
+              pieceIds: Array.from(new Set([...firing.pieceIds, ...pieceIds])),
+              syncDirty: true,
+            };
           }
 
-          if (firing.state === 'completed') {
+          if (firing.state === 'completed' || firing.deleted) {
             return firing;
           }
 
@@ -1832,10 +1797,13 @@ export const useAppStore = create<AppState>()(
           return {
             ...firing,
             pieceIds: firing.pieceIds.filter((pieceId) => !incomingPieceIdSet.has(pieceId)),
+            syncDirty: true,
           };
         }),
       };
-    }),
+    });
+    scheduleFiringsSyncSoon();
+  },
   completeFiring: (firingId, result, resultNotes, glazeOutcome) => {
     const state = get();
     const firing = state.firings.find((f) => f.id === firingId);
@@ -1886,12 +1854,16 @@ export const useAppStore = create<AppState>()(
               estimatedCostPerPiece: economics.costPerPiece ?? f.estimatedCostPerPiece,
               pieceReceipts: economics.pieceReceipts ?? f.pieceReceipts,
               clayBodiesUsed: economics.clayBodiesUsed ?? f.clayBodiesUsed,
+              syncDirty: true,
             }
       ),
       kilns: s.kilns.map((k) =>
-        k.id === firing.kilnId ? { ...k, lastFiredAt: now } : k
+        k.id === firing.kilnId ? { ...k, lastFiredAt: now, syncDirty: true } : k
       ),
     }));
+    scheduleFiringsSyncSoon();
+    scheduleKilnsSyncSoon();
+    schedulePiecesSyncSoon();
 
     trackFiringCompleted({
       firing_type: firing.type,
@@ -1936,6 +1908,7 @@ export const useAppStore = create<AppState>()(
       result: payload.result,
       resultNotes: payload.resultNotes?.trim() || undefined,
       createdAt: now,
+      syncDirty: true,
     };
 
     if (targetStage && pieceIds.length > 0) {
@@ -1958,9 +1931,12 @@ export const useAppStore = create<AppState>()(
     set((s) => ({
       firings: [firing, ...s.firings],
       kilns: s.kilns.map((k) =>
-        k.id === kilnId ? { ...k, lastFiredAt: firedAtIso } : k
+        k.id === kilnId ? { ...k, lastFiredAt: firedAtIso, syncDirty: true } : k
       ),
     }));
+    scheduleFiringsSyncSoon();
+    scheduleKilnsSyncSoon();
+    schedulePiecesSyncSoon();
 
     return firing;
   },
@@ -2021,16 +1997,21 @@ export const useAppStore = create<AppState>()(
               estimatedCostPerPiece: economics.costPerPiece ?? undefined,
               pieceReceipts: economics.pieceReceipts,
               clayBodiesUsed: economics.clayBodiesUsed,
+              syncDirty: true,
             }
       ),
     }));
+    scheduleFiringsSyncSoon();
+    schedulePiecesSyncSoon();
   },
-  setFiringStatusOverride: (firingId, statusOverride) =>
+  setFiringStatusOverride: (firingId, statusOverride) => {
     set((s) => ({
       firings: s.firings.map((f) =>
-        f.id !== firingId ? f : { ...f, statusOverride },
+        f.id !== firingId ? f : { ...f, statusOverride, syncDirty: true },
       ),
-    })),
+    }));
+    scheduleFiringsSyncSoon();
+  },
   toggleKilnChecklistItem: (id) =>
     set((state) => ({
       kilnChecklist: state.kilnChecklist.map((item) =>
@@ -2052,7 +2033,7 @@ export const useAppStore = create<AppState>()(
     set((state) => ({
       kilnChecklist: state.kilnChecklist.map((item) => ({ ...item, checked: false })),
     })),
-  addKilnMaintenanceLog: (kilnId, payload) =>
+  addKilnMaintenanceLog: (kilnId, payload) => {
     set((state) => ({
       kilns: state.kilns.map((kiln) => {
         if (kiln.id !== kilnId) return kiln;
@@ -2067,10 +2048,13 @@ export const useAppStore = create<AppState>()(
         return normalizeKiln({
           ...kiln,
           maintenanceLogs: [entry, ...(kiln.maintenanceLogs ?? [])],
+          syncDirty: true,
         });
       }),
-    })),
-  removeKilnMaintenanceLog: (kilnId, logId) =>
+    }));
+    scheduleKilnsSyncSoon();
+  },
+  removeKilnMaintenanceLog: (kilnId, logId) => {
     set((state) => ({
       kilns: state.kilns.map((kiln) =>
         kiln.id !== kilnId
@@ -2078,29 +2062,16 @@ export const useAppStore = create<AppState>()(
           : normalizeKiln({
               ...kiln,
               maintenanceLogs: (kiln.maintenanceLogs ?? []).filter((log) => log.id !== logId),
+              syncDirty: true,
             })
       ),
-    })),
+    }));
+    scheduleKilnsSyncSoon();
+  },
 
   // ── Offline / Sync ────────────────────────────────────────────
-  pendingSyncOps: [],
   isSyncing: false,
   lastSyncedAt: null,
-  enqueueSyncOp: (op) =>
-    set((state) => {
-      const MAX_SYNC_OPS = 500;
-      const next = [
-        ...state.pendingSyncOps,
-        {
-          ...op,
-          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          timestamp: new Date().toISOString(),
-        },
-      ];
-      // Drop oldest ops if the queue exceeds the cap (e.g. sync never succeeds)
-      return { pendingSyncOps: next.length > MAX_SYNC_OPS ? next.slice(-MAX_SYNC_OPS) : next };
-    }),
-  clearSyncQueue: () => set({ pendingSyncOps: [] }),
   setIsSyncing: (v) => set({ isSyncing: v }),
   setLastSyncedAt: (ts) => set({ lastSyncedAt: ts }),
 
@@ -2131,7 +2102,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'pottery-life-store',
-      version: 9,
+      version: 11,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
@@ -2220,9 +2191,53 @@ export const useAppStore = create<AppState>()(
           pricingSettings = normalizedSettings;
         }
 
+        // v10: journal photos moved from `string[]` (+ a uri→assetId side map)
+        // to `PiecePhoto[]` carrying the assetId inline. Fold the old map into
+        // each photo, then drop it.
+        let pieces = state.pieces;
+        if (version < 10) {
+          pieces = (pieces ?? []).map((piece) => {
+            const legacy = piece as Piece & { photoAssetIds?: Record<string, string> };
+            const assetIdByUri = legacy.photoAssetIds ?? {};
+            const timeline = (legacy.timeline ?? []).map((entry) => {
+              const rawPhotos = (entry as { photos?: unknown }).photos;
+              if (!Array.isArray(rawPhotos)) return entry;
+              const photos: PiecePhoto[] = rawPhotos.map((ph) =>
+                typeof ph === 'string' ? { uri: ph, assetId: assetIdByUri[ph] } : (ph as PiecePhoto),
+              );
+              return { ...entry, photos };
+            });
+            const { photoAssetIds: _drop, ...rest } = legacy;
+            return { ...rest, timeline } as Piece;
+          });
+        }
+
+        // v11: parked glaze deletion queues folded into the collections as
+        // tombstones (deleted + syncDirty records, hidden by the visible
+        // selectors, dropped once a sync acks them).
+        if (version < 11) {
+          const legacy = state as {
+            pendingGlazeDeletions?: GlazeLibraryItem[];
+            pendingGlazeTestDeletions?: GlazeTestTile[];
+          };
+          if (legacy.pendingGlazeDeletions?.length) {
+            glazes = [
+              ...(glazes ?? []),
+              ...legacy.pendingGlazeDeletions.map((g) => ({ ...g, deleted: true, syncDirty: true })),
+            ];
+          }
+          if (legacy.pendingGlazeTestDeletions?.length) {
+            glazeTests = [
+              ...(glazeTests ?? []),
+              ...legacy.pendingGlazeTestDeletions.map((t) => ({ ...t, deleted: true, syncDirty: true })),
+            ];
+          }
+        }
+
         const migratedEnabledModules = normalizeModuleList(state.enabledModules);
         return {
           ...state,
+          pieces,
           onboardingProfile,
           enabledModules: migratedEnabledModules.length > 0 ? migratedEnabledModules : onboardingProfile.activeModules,
           notificationPrefs,
@@ -2282,7 +2297,7 @@ export const useAppStore = create<AppState>()(
         role: state.role,
         enabledModules: state.enabledModules,
         // avatarImageUri / coverImageUri are excluded — fetched fresh from
-        // /users/me on login. Persisting them can leak one user's media to the
+        // /me on login. Persisting them can leak one user's media to the
         // next account that signs in on the same device.
         user: (({ avatarImageUri, coverImageUri, ...rest }) => rest)(state.user),
         kilnkinCompanion: state.kilnkinCompanion,
@@ -2301,10 +2316,7 @@ export const useAppStore = create<AppState>()(
         glazes: state.glazes,
         glazeTests: state.glazeTests,
         glazeCollectionNames: state.glazeCollectionNames,
-        pendingGlazeDeletions: state.pendingGlazeDeletions,
-        pendingGlazeTestDeletions: state.pendingGlazeTestDeletions,
         devDiscoverGlazeIds: state.devDiscoverGlazeIds,
-        pendingSyncOps: state.pendingSyncOps,
         studioRhythm: state.studioRhythm,
         defaultNewPieceStage: state.defaultNewPieceStage,
         setupProgress: state.setupProgress,
@@ -2326,7 +2338,10 @@ export const useAppStore = create<AppState>()(
   )
 );
 
-/** Pieces visible in the UI, excludes delete tombstones awaiting sync confirmation. */
+// ── Visible selectors ─────────────────────────────────────────────────────────
+// Synced collections keep delete tombstones in-array until a sync acks them;
+// the UI reads through these so tombstones never render.
+
 export const selectVisiblePieces = (state: AppState) =>
   state.pieces.filter((p) => !p.deleted);
 
@@ -2334,6 +2349,42 @@ export const selectVisiblePieces = (state: AppState) =>
 export function useVisiblePieces(): Piece[] {
   return useAppStore(
     useShallow((state) => state.pieces.filter((p) => !p.deleted)),
+  );
+}
+
+export const selectVisibleGlazes = (state: AppState) =>
+  state.glazes.filter((g) => !g.deleted);
+
+export function useVisibleGlazes(): GlazeLibraryItem[] {
+  return useAppStore(
+    useShallow((state) => state.glazes.filter((g) => !g.deleted)),
+  );
+}
+
+export const selectVisibleGlazeTests = (state: AppState) =>
+  state.glazeTests.filter((t) => !t.deleted);
+
+export function useVisibleGlazeTests(): GlazeTestTile[] {
+  return useAppStore(
+    useShallow((state) => state.glazeTests.filter((t) => !t.deleted)),
+  );
+}
+
+export const selectVisibleFirings = (state: AppState) =>
+  state.firings.filter((f) => !f.deleted);
+
+export function useVisibleFirings(): Firing[] {
+  return useAppStore(
+    useShallow((state) => state.firings.filter((f) => !f.deleted)),
+  );
+}
+
+export const selectVisibleKilns = (state: AppState) =>
+  state.kilns.filter((k) => !k.deleted);
+
+export function useVisibleKilns(): Kiln[] {
+  return useAppStore(
+    useShallow((state) => state.kilns.filter((k) => !k.deleted)),
   );
 }
 
@@ -2346,4 +2397,25 @@ export function setPiecesIfChanged(next: Piece[]): void {
   const current = useAppStore.getState().pieces;
   if (piecesArrayEqual(current, next)) return;
   useAppStore.getState().setPieces(next);
+}
+
+// ── Sync scheduling ───────────────────────────────────────────────────────────
+// Lazy requires: the sync modules import this store at module scope; the store
+// only calls them at action time, which breaks the genuine cycle (same trick
+// as pieceAssetSync <-> usePiecesSync).
+
+function schedulePiecesSyncSoon(): void {
+  (require('../screens/pieces/hooks/usePiecesSync') as typeof import('../screens/pieces/hooks/usePiecesSync')).schedulePiecesSync();
+}
+
+function scheduleGlazesSyncSoon(): void {
+  (require('../screens/library/useGlazesSync') as typeof import('../screens/library/useGlazesSync')).scheduleGlazesSync();
+}
+
+function scheduleFiringsSyncSoon(): void {
+  (require('../screens/kiln/hooks/useFiringsSync') as typeof import('../screens/kiln/hooks/useFiringsSync')).scheduleFiringsSync();
+}
+
+function scheduleKilnsSyncSoon(): void {
+  (require('../screens/kiln/hooks/useKilnsSync') as typeof import('../screens/kiln/hooks/useKilnsSync')).scheduleKilnsSync();
 }

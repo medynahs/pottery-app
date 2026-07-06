@@ -5,7 +5,6 @@ import { API_BASE_URL as API_BASE } from './index';
 type UploadAssetResponse = {
   asset_id: string;
   url?: string;
-  public_url?: string;
 };
 
 export class CommunityUploadError extends Error {
@@ -145,6 +144,6 @@ export async function uploadPostPhotoAsset(
 
   return {
     assetId: data.asset_id,
-    publicUrl: data.public_url ?? data.url,
+    publicUrl: data.url,
   };
 }

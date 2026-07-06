@@ -1,4 +1,4 @@
-// Glazes API, /users/me/glazes
+// Glazes API, /me/glazes
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 //
 // The backend stores a glaze's images in a child table tagged by gallery type;
@@ -20,6 +20,7 @@ import type {
   GlazeThickness,
 } from '../screens/glazes/types';
 import { API_BASE_URL } from './index';
+import { apiErrorFromResponse } from './api';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
 
@@ -33,7 +34,8 @@ export interface BackendGlazeImage {
 
 export interface BackendGlaze {
   id: string;
-  clientRef?: string;
+  client_ref?: string;
+  is_deleted?: boolean;
   name: string;
   finish: GlazeFinish;
   colorFamily: string;
@@ -63,6 +65,9 @@ export interface BackendGlaze {
   bestClayType?: GlazeLibraryItem['bestClayType'];
   bestFiringTempC?: number;
   atmosphere?: GlazeLibraryItem['atmosphere'];
+  versionNumber: number;
+  rootGlazeId?: string;
+  parentGlazeId?: string;
 }
 
 type RawBackendGlaze = BackendGlaze & {
@@ -87,7 +92,8 @@ export function normalizeBackendGlaze(raw: RawBackendGlaze): BackendGlaze {
 
 export interface BackendGlazeTest {
   id: string;
-  clientRef?: string;
+  client_ref?: string;
+  is_deleted?: boolean;
   glazeId: string;
   glazeNameSnapshot: string;
   clayBody: string;
@@ -109,7 +115,7 @@ export interface BackendGlazeTest {
 // ─── Sync payloads ──────────────────────────────────────────────────────────
 
 export interface GlazeSyncItem {
-  clientRef: string;
+  client_ref: string;
   name: string;
   finish: GlazeFinish;
   colorFamily: string;
@@ -142,16 +148,13 @@ export interface GlazeSyncItem {
   versionNumber?: number;
   rootGlazeId?: string;
   parentGlazeId?: string;
-  /** Client-side discover provenance, server may ignore until BE-10. */
-  discoverSourceRecipeId?: string;
-  discoverSavedAt?: string;
 }
 
 export interface GlazeTestSyncItem {
-  clientRef: string;
-  /** The parent glaze's device id, so the server can link a test to a glaze
-   *  created in the same sync (before it has a backend id). */
-  glazeClientRef: string;
+  client_ref: string;
+  /** The parent glaze's device-local id, so the server can link a test to a
+   *  glaze created in the same sync (before it has a backend id). */
+  glaze_client_ref: string;
   glazeNameSnapshot: string;
   clayBody: string;
   cone: string;
@@ -176,15 +179,9 @@ export interface SyncGlazesRequest {
 }
 
 export interface SyncGlazesResponse {
-  glazes: BackendGlaze[];
-  tests: BackendGlazeTest[];
-  clientRefMap: Record<string, string>;
-}
-
-export interface GlazeImageUploadResponse {
-  message: string;
-  glazeId: string;
-  image: BackendGlazeImage;
+  /** client_ref → backend UUID for every synced item, deleted ones included.
+   *  Authoritative state is pulled separately via GET /me/glazes (+ /tests). */
+  client_ref_map: Record<string, string>;
 }
 
 // ─── Mappers ──────────────────────────────────────────────────────────────────
@@ -211,9 +208,16 @@ function imagesToPhotoFields(images: BackendGlazeImage[]): Pick<
  * an existing local glaze they are preserved, because images aren't part of the
  * sync round-trip, overwriting them would wipe a freshly-picked, not-yet-
  * uploaded photo the moment the text sync returns.
+ *
+ * Lineage ids arrive as backend UUIDs (the server resolves client_refs on
+ * push); `localIdByBackendId` translates them back to device-local ids.
  */
-export function backendGlazeToLocal(b: BackendGlaze, existing?: GlazeLibraryItem): GlazeLibraryItem {
-  const id = existing?.id ?? b.clientRef ?? b.id;
+export function backendGlazeToLocal(
+  b: BackendGlaze,
+  existing: GlazeLibraryItem | undefined,
+  localIdByBackendId: Map<string, string>,
+): GlazeLibraryItem {
+  const id = existing?.id ?? b.client_ref ?? b.id;
   const photos = existing
     ? {
       bucketPhotoUri: existing.bucketPhotoUri,
@@ -256,12 +260,20 @@ export function backendGlazeToLocal(b: BackendGlaze, existing?: GlazeLibraryItem
     bestClayType: b.bestClayType,
     bestFiringTempC: b.bestFiringTempC,
     atmosphere: b.atmosphere,
+    versionNumber: b.versionNumber,
+    rootGlazeId: (b.rootGlazeId && localIdByBackendId.get(b.rootGlazeId)) || existing?.rootGlazeId,
+    parentGlazeId: (b.parentGlazeId && localIdByBackendId.get(b.parentGlazeId)) || existing?.parentGlazeId,
   });
+}
+
+function toRfc3339(d: string | undefined): string | undefined {
+  if (!d || d.includes('T')) return d;
+  return `${d}T00:00:00Z`;
 }
 
 export function localGlazeToSyncItem(g: GlazeLibraryItem, deleted = false): GlazeSyncItem {
   return {
-    clientRef: String(g.id),
+    client_ref: String(g.id),
     name: g.name,
     finish: g.finish,
     colorFamily: g.colorFamily,
@@ -281,10 +293,10 @@ export function localGlazeToSyncItem(g: GlazeLibraryItem, deleted = false): Glaz
     clayBodiesUsed: g.clayBodiesUsed ?? [],
     kilnTypesUsed: g.kilnTypesUsed ?? [],
     conesTested: g.conesTested ?? [],
-    lastTestedAt: g.lastTestedAt,
+    lastTestedAt: toRfc3339(g.lastTestedAt),
     ingredientsText: g.ingredientsText,
     batchId: g.batchId,
-    dateMixed: g.dateMixed,
+    dateMixed: toRfc3339(g.dateMixed),
     status: g.status,
     bestClayType: g.bestClayType,
     bestFiringTempC: g.bestFiringTempC,
@@ -292,8 +304,6 @@ export function localGlazeToSyncItem(g: GlazeLibraryItem, deleted = false): Glaz
     versionNumber: g.versionNumber,
     rootGlazeId: g.rootGlazeId,
     parentGlazeId: g.parentGlazeId,
-    discoverSourceRecipeId: g.discoverSourceRecipeId,
-    discoverSavedAt: g.discoverSavedAt,
     ...(deleted ? { deleted: true } : {}),
   };
 }
@@ -301,7 +311,7 @@ export function localGlazeToSyncItem(g: GlazeLibraryItem, deleted = false): Glaz
 export function backendTestToLocal(b: BackendGlazeTest, existing?: GlazeTestTile): GlazeTestTile {
   return {
     ...(existing ?? {}),
-    id: existing?.id ?? b.clientRef ?? b.id,
+    id: existing?.id ?? b.client_ref ?? b.id,
     backendId: b.id,
     syncDirty: false,
     glazeId: existing?.glazeId ?? b.glazeId,
@@ -324,7 +334,7 @@ export function backendTestToLocal(b: BackendGlazeTest, existing?: GlazeTestTile
 }
 
 /**
- * @param glazeClientRef the parent glaze's device id (its local `id`).
+ * @param glazeClientRef the parent glaze's device-local id (its local `id`).
  */
 export function localTestToSyncItem(
   t: GlazeTestTile,
@@ -332,8 +342,8 @@ export function localTestToSyncItem(
   deleted = false,
 ): GlazeTestSyncItem {
   return {
-    clientRef: String(t.id),
-    glazeClientRef,
+    client_ref: String(t.id),
+    glaze_client_ref: glazeClientRef,
     glazeNameSnapshot: t.glazeNameSnapshot,
     clayBody: t.clayBody,
     cone: t.cone,
@@ -343,7 +353,7 @@ export function localTestToSyncItem(
     thickness: t.thickness,
     layeredWith: t.layeredWith ?? [],
     shelfPosition: t.shelfPosition,
-    firingDate: t.firingDate,
+    firingDate: toRfc3339(t.firingDate) ?? '',
     photoUri: t.photoUri,
     notes: t.notes,
     resultRating: t.resultRating,
@@ -367,73 +377,69 @@ async function authedFetch(url: string, init?: RequestInit): Promise<Response> {
 
 // ─── Glaze CRUD ─────────────────────────────────────────────────────────────
 
-/** GET /users/me/glazes, list live glazes (each with its images). */
+/** GET /me/glazes, list live glazes (each with its images). */
 export async function apiListGlazes(
     ): Promise<BackendGlaze[]> {
-  const res = await authedFetch(`${API_BASE_URL}/users/me/glazes`);
-  if (!res.ok) throw new Error(`listGlazes failed (${res.status})`);
+  const res = await authedFetch(`${API_BASE_URL}/me/glazes`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'listGlazes failed');
   const rows = (await res.json()) as RawBackendGlaze[];
   return rows.map(normalizeBackendGlaze);
 }
 
-/** GET /users/me/glazes/tests, list live test tiles across all glazes. */
+/** GET /me/glazes/tests, list live test tiles across all glazes. */
 export async function apiListGlazeTests(
     ): Promise<BackendGlazeTest[]> {
-  const res = await authedFetch(`${API_BASE_URL}/users/me/glazes/tests`);
-  if (!res.ok) throw new Error(`listGlazeTests failed (${res.status})`);
+  const res = await authedFetch(`${API_BASE_URL}/me/glazes/tests`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'listGlazeTests failed');
   return res.json() as Promise<BackendGlazeTest[]>;
 }
 
 /**
- * POST /users/me/glazes/sync, push device snapshots of glazes and tests; the
- * server returns the authoritative live lists plus a client_ref → backend id map.
+ * POST /me/glazes/sync, push device snapshots of glazes and tests; the
+ * server returns a client_ref → backend id map.
  */
 export async function apiSyncGlazes(
     payload: SyncGlazesRequest,
 ): Promise<SyncGlazesResponse> {
-  const res = await authedFetch(`${API_BASE_URL}/users/me/glazes/sync`, {
+  const res = await authedFetch(`${API_BASE_URL}/me/glazes/sync`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`syncGlazes failed (${res.status})`);
-  const data = (await res.json()) as SyncGlazesResponse;
-  return {
-    ...data,
-    glazes: data.glazes.map((g) => normalizeBackendGlaze(g as RawBackendGlaze)),
-  };
+  if (!res.ok) throw await apiErrorFromResponse(res, 'syncGlazes failed');
+  return res.json() as Promise<SyncGlazesResponse>;
 }
 
-/** POST /users/me/glazes/:glaze_id/images, upload an image under a gallery type. */
+/** POST /me/glazes/:glaze_id/images, upload an image under a gallery type. */
 export async function apiUploadGlazeImage(
     glazeBackendId: string,
   file: { uri: string; name: string; type: string },
   imageType: GlazeImageType,
-): Promise<GlazeImageUploadResponse> {
+): Promise<BackendGlazeImage> {
   const form = new FormData();
   form.append('file', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
   form.append('type', imageType);
 
   const res = await authedFetch(
-    `${API_BASE_URL}/users/me/glazes/${glazeBackendId}/images`,
+    `${API_BASE_URL}/me/glazes/${glazeBackendId}/images`,
     {
       method: 'POST',
       // Do NOT set Content-Type, let fetch inject the multipart boundary.
       body: form as unknown as BodyInit_,
     },
   );
-  if (!res.ok) throw new Error(`uploadGlazeImage failed (${res.status})`);
-  return res.json() as Promise<GlazeImageUploadResponse>;
+  if (!res.ok) throw await apiErrorFromResponse(res, 'uploadGlazeImage failed');
+  return res.json() as Promise<BackendGlazeImage>;
 }
 
-/** DELETE /users/me/glazes/:glaze_id/images/:image_id, remove an image record. */
+/** DELETE /me/glazes/:glaze_id/images/:image_id, remove an image record. */
 export async function apiDeleteGlazeImage(
     glazeBackendId: string,
   imageId: string,
 ): Promise<void> {
   const res = await authedFetch(
-    `${API_BASE_URL}/users/me/glazes/${glazeBackendId}/images/${imageId}`,
+    `${API_BASE_URL}/me/glazes/${glazeBackendId}/images/${imageId}`,
     { method: 'DELETE' },
   );
-  if (!res.ok) throw new Error(`deleteGlazeImage failed (${res.status})`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'deleteGlazeImage failed');
 }

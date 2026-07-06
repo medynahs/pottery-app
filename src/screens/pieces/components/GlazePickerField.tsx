@@ -5,7 +5,7 @@ import { formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
 import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
 import { glazeSearchHaystack } from '@/src/screens/library/atlas/glazeListUtils';
 import { GlazeThumbnail } from '@/src/screens/library/atlas/GlazeThumbnail';
-import { useAppStore } from '@/src/store';
+import { useVisibleGlazes } from '@/src/store';
 import { ChevronDown } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
@@ -53,7 +53,7 @@ function GlazePickerRow({
 }
 
 export function GlazePickerField({ value, onChange }: GlazePickerFieldProps) {
-  const glazes = useAppStore((s) => s.glazes);
+  const glazes = useVisibleGlazes();
 
   const selectedGlaze = React.useMemo(
     () => glazes.find((glaze) => glaze.id === value),

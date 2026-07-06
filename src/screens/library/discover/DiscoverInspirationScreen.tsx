@@ -6,7 +6,7 @@ import { hasValidRecipeIngredients } from '@/src/screens/library/atlas/GlazeReci
 import type { GlazeDraft } from '@/src/screens/library/atlas/types';
 import { glazeDraftToItem } from '@/src/screens/glazes/glazeItemHelpers';
 import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleGlazes } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -21,7 +21,7 @@ import type { DiscoverProductRef } from './types';
 export default function DiscoverInspirationScreen({ inspirationId }: { inspirationId: string }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const glazes = useAppStore((s) => s.glazes);
+  const glazes = useVisibleGlazes();
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const defaultGlazeTemp = useAppStore((s) => s.defaultGlazeTemp);
   const addGlaze = useAppStore((s) => s.addGlaze);

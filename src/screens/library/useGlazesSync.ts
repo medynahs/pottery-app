@@ -1,16 +1,21 @@
 /**
- * useGlazesSync, React Query hooks bridging /users/me/glazes with the local
- * Zustand store, following the same offline-first model as usePiecesSync.
+ * useGlazesSync — bridge between /me/glazes (+ /tests) and the local Zustand
+ * store, built on the shared doc-sync engine primitives. Glazes stay
+ * structured (the backend queries their fields for community/discover), but
+ * the sync contract is the same as pieces: client_ref identity, syncDirty /
+ * deleted flags, dirty-wins pull merge, batched push, tombstones dropped on
+ * ack. Glazes and tests ride in one request so a new glaze and its tests can
+ * land together.
  *
- * Pull: GET /users/me/glazes (+ /tests) on sign-in, merged by client_ref /
- * backendId.
- * Push: POST /users/me/glazes/sync with device snapshots of dirty glazes/tests
- * and any parked deletions (debounced).
- * Images are uploaded separately through the image mutations.
+ * Images are uploaded separately through the image mutations; a local (non
+ * http) photo uri means "on this device only", swapped for the public URL
+ * once uploaded.
  */
 
 import type { GlazeLibraryItem, GlazeTestTile } from '@/src/screens/glazes/types';
 import { flushPiecesSync } from '@/src/screens/pieces/hooks/usePiecesSync';
+import { applySyncAck, beginSyncing, endSyncing, mergeBackendRows } from '@/src/sync/docSync';
+import { pendingRecords } from '@/src/sync/syncState';
 import { canUploadGlazeMedia } from '@/src/utils/cloudStorage';
 import {
   apiDeleteGlazeImage,
@@ -22,14 +27,11 @@ import {
   backendTestToLocal,
   localGlazeToSyncItem,
   localTestToSyncItem,
-  type BackendGlaze,
-  type BackendGlazeTest,
   type GlazeImageType,
-  type SyncGlazesResponse,
 } from '@/src/services/glazes';
 import { useAppStore } from '@/src/store';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
@@ -46,98 +48,14 @@ let syncInFlight = false;
 let initialPullMerged = false;
 let lastMergedAt = 0;
 
-// ─── Dirty selectors ──────────────────────────────────────────────────────────
-
-function glazesNeedingSync(glazes: GlazeLibraryItem[]): GlazeLibraryItem[] {
-  return glazes.filter((g) => g.syncDirty || !g.backendId);
-}
-
-function testsNeedingSync(tests: GlazeTestTile[]): GlazeTestTile[] {
-  return tests.filter((t) => t.syncDirty || !t.backendId);
-}
-
 export function hasPendingGlazesSync(): boolean {
-  const { glazes, glazeTests, pendingGlazeDeletions, pendingGlazeTestDeletions } =
-    useAppStore.getState();
-  return (
-    glazesNeedingSync(glazes).length > 0 ||
-    testsNeedingSync(glazeTests).length > 0 ||
-    pendingGlazeDeletions.length > 0 ||
-    pendingGlazeTestDeletions.length > 0
-  );
+  const { glazes, glazeTests } = useAppStore.getState();
+  return pendingRecords(glazes).length > 0 || pendingRecords(glazeTests).length > 0;
 }
 
 // ─── Pull merge ─────────────────────────────────────────────────────────────
 
-function mergeGlazes(backend: BackendGlaze[], local: GlazeLibraryItem[]): GlazeLibraryItem[] {
-  const byBackendId = new Map(local.filter((g) => g.backendId).map((g) => [g.backendId!, g]));
-  const byClientRef = new Map(local.map((g) => [String(g.id), g]));
-
-  const updatedByBackendId = new Map<string, GlazeLibraryItem>();
-  const newOnes: GlazeLibraryItem[] = [];
-
-  for (const b of backend) {
-    const existing = (b.clientRef ? byClientRef.get(b.clientRef) : undefined) ?? byBackendId.get(b.id);
-    // Don't clobber local edits that haven't been pushed yet, just stamp the id.
-    if (existing?.syncDirty) {
-      updatedByBackendId.set(b.id, { ...existing, backendId: b.id });
-      continue;
-    }
-    const merged = backendGlazeToLocal(b, existing);
-    if (existing) updatedByBackendId.set(b.id, merged);
-    else newOnes.push(merged);
-  }
-
-  const retained = local.map((g) => (g.backendId ? updatedByBackendId.get(g.backendId) ?? g : g));
-  return [...newOnes, ...retained];
-}
-
-function mergeTests(backend: BackendGlazeTest[], local: GlazeTestTile[]): GlazeTestTile[] {
-  const byBackendId = new Map(local.filter((t) => t.backendId).map((t) => [t.backendId!, t]));
-  const byClientRef = new Map(local.map((t) => [String(t.id), t]));
-
-  const updatedByBackendId = new Map<string, GlazeTestTile>();
-  const newOnes: GlazeTestTile[] = [];
-
-  for (const b of backend) {
-    const existing = (b.clientRef ? byClientRef.get(b.clientRef) : undefined) ?? byBackendId.get(b.id);
-    if (existing?.syncDirty) {
-      updatedByBackendId.set(b.id, { ...existing, backendId: b.id });
-      continue;
-    }
-    const merged = backendTestToLocal(b, existing);
-    if (existing) updatedByBackendId.set(b.id, merged);
-    else newOnes.push(merged);
-  }
-
-  const retained = local.map((t) => (t.backendId ? updatedByBackendId.get(t.backendId) ?? t : t));
-  return [...newOnes, ...retained];
-}
-
-// ─── Push apply ───────────────────────────────────────────────────────────────
-
-function applyGlazeSyncResponse(response: SyncGlazesResponse) {
-  const { clientRefMap, glazes: backendGlazes, tests: backendTests } = response;
-  const state = useAppStore.getState();
-
-  // Stamp backendId + clear dirty on items the server just acknowledged.
-  const stampedGlazes = state.glazes.map((g) => {
-    const backendId = clientRefMap[String(g.id)];
-    return backendId ? { ...g, backendId, syncDirty: false } : g;
-  });
-  const stampedTests = state.glazeTests.map((t) => {
-    const backendId = clientRefMap[String(t.id)];
-    return backendId ? { ...t, backendId, syncDirty: false } : t;
-  });
-
-  useAppStore.setState({
-    glazes: mergeGlazes(backendGlazes, stampedGlazes),
-    glazeTests: mergeTests(backendTests, stampedTests),
-    // Drop deletions the server confirmed (their client_ref came back mapped).
-    pendingGlazeDeletions: state.pendingGlazeDeletions.filter((g) => !clientRefMap[String(g.id)]),
-    pendingGlazeTestDeletions: state.pendingGlazeTestDeletions.filter((t) => !clientRefMap[String(t.id)]),
-  });
-}
+const testFromBackend = backendTestToLocal;
 
 // ─── Image reconciliation ────────────────────────────────────────────────────
 //
@@ -186,7 +104,7 @@ export async function reconcileGlazeImages(): Promise<void> {
   imageReconcileInFlight = true;
   try {
     for (const glaze of useAppStore.getState().glazes) {
-      if (!glaze.backendId) continue;
+      if (!glaze.backendId || glaze.deleted) continue;
 
       const pending: { type: GlazeImageType; uri: string }[] = [];
       if (glaze.bucketPhotoUri && isLocalUri(glaze.bucketPhotoUri)) {
@@ -203,7 +121,7 @@ export async function reconcileGlazeImages(): Promise<void> {
         }
         try {
           const res = await apiUploadGlazeImage(glaze.backendId, fileFromUri(uri, type), type);
-          replaceGlazePhotoUri(glaze.id, uri, res.image.url);
+          replaceGlazePhotoUri(glaze.id, uri, res.url);
         } catch (err) {
           if (__DEV__) console.warn(`[glazes:image] upload failed for glaze ${glaze.id}:`, err);
           // Leave the local URI in place; retried on the next reconcile pass.
@@ -225,21 +143,46 @@ export async function flushGlazesSync(): Promise<boolean> {
   if (!hasPendingGlazesSync()) return true;
 
   syncInFlight = true;
+  beginSyncing();
   try {
     const state = useAppStore.getState();
-    const glazes = [
-      ...glazesNeedingSync(state.glazes).map((g) => localGlazeToSyncItem(g)),
-      ...state.pendingGlazeDeletions.map((g) => localGlazeToSyncItem(g, true)),
-    ].slice(0, MAX_SYNC_BATCH);
-    const tests = [
-      ...testsNeedingSync(state.glazeTests).map((t) => localTestToSyncItem(t, String(t.glazeId))),
-      ...state.pendingGlazeTestDeletions.map((t) => localTestToSyncItem(t, String(t.glazeId), true)),
-    ].slice(0, MAX_SYNC_BATCH);
+    const glazesToSync = pendingRecords(state.glazes).slice(0, MAX_SYNC_BATCH);
+    const testsToSync = pendingRecords(state.glazeTests).slice(0, MAX_SYNC_BATCH);
 
-    if (__DEV__) console.log(`[glazes:sync] pushing ${glazes.length} glaze(s), ${tests.length} test(s)`);
+    if (__DEV__) console.log(`[glazes:sync] pushing ${glazesToSync.length} glaze(s), ${testsToSync.length} test(s)`);
 
-    const response = await apiSyncGlazes({ glazes, tests });
-    applyGlazeSyncResponse(response);
+    const { client_ref_map: refMap } = await apiSyncGlazes({
+      glazes: glazesToSync.map((g) => localGlazeToSyncItem(g, g.deleted === true)),
+      tests: testsToSync.map((t) => localTestToSyncItem(t, String(t.glazeId), t.deleted === true)),
+    });
+
+    const pushedGlazes = new Map(glazesToSync.map((g) => [g.id, g]));
+    const pushedTests = new Map(testsToSync.map((t) => [t.id, t]));
+    const fresh = useAppStore.getState();
+
+    // A piece synced before its glaze had a backendId pushed glaze_id = null.
+    // Now that these glazes are mapped, re-dirty their pieces so the queryable
+    // glaze_id projection catches up (the flushPiecesSync below picks it up).
+    const newlyMapped = new Set(
+      glazesToSync.filter((g) => !g.backendId && !g.deleted && refMap[String(g.id)]).map((g) => g.id),
+    );
+
+    useAppStore.setState({
+      glazes: applySyncAck(fresh.glazes, refMap, pushedGlazes),
+      glazeTests: applySyncAck(fresh.glazeTests, refMap, pushedTests),
+      ...(newlyMapped.size > 0
+        ? {
+            pieces: fresh.pieces.map((p) =>
+              p.glazeId && newlyMapped.has(p.glazeId) && !p.syncDirty && !p.deleted
+                ? { ...p, syncDirty: true }
+                : p,
+            ),
+          }
+        : {}),
+    });
+
+    useAppStore.getState().setLastSyncedAt(new Date().toISOString());
+
     // Pieces may be waiting on glaze backend IDs before glaze_id can push.
     void flushPiecesSync();
     // Fire-and-forget: glazes now have backendIds, so any local photos can upload.
@@ -251,6 +194,7 @@ export async function flushGlazesSync(): Promise<boolean> {
     return false;
   } finally {
     syncInFlight = false;
+    endSyncing();
   }
 }
 
@@ -267,17 +211,6 @@ export function scheduleGlazesSync() {
 
 export function useGlazesSync() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
-
-  
-  const prevUserId = useRef('me');
-
-  useEffect(() => {
-    if (false) {
-      prevUserId.current = 'me';
-      initialPullMerged = false;
-      lastMergedAt = 0;
-    }
-  }, ['me']);
 
   const query = useQuery({
     queryKey: glazesQueryKey('me'),
@@ -304,9 +237,14 @@ export function useGlazesSync() {
       );
     }
     const { glazes, glazeTests } = useAppStore.getState();
+    const localIdByBackendId = new Map(
+      query.data.glazes.map((g) => [g.id, String(g.client_ref ?? g.id)]),
+    );
     useAppStore.setState({
-      glazes: mergeGlazes(query.data.glazes, glazes),
-      glazeTests: mergeTests(query.data.tests, glazeTests),
+      glazes: mergeBackendRows(query.data.glazes, glazes, (row, existing) =>
+        backendGlazeToLocal(row, existing, localIdByBackendId),
+      ),
+      glazeTests: mergeBackendRows(query.data.tests, glazeTests, testFromBackend),
     });
     // Upload any photos left local from a previous session (glaze already synced).
     void reconcileGlazeImages();

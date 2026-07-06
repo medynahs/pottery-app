@@ -5,7 +5,7 @@ import { ImageLightbox } from '@/src/components/ImageLightbox';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
-import { useVisiblePieces, useAppStore } from '@/src/store';
+import { useVisibleKilns, useVisiblePieces, useAppStore } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Trash2, X } from 'lucide-react-native';
 import React from 'react';
@@ -14,10 +14,6 @@ import type { Firing, FiringResult, FiringStatusOverride } from '../../../types/
 import type { GlazeOutcome, Piece } from '../../../types/pieces';
 import { FIRING_SOURCE_STAGE, FIRING_TYPE_LABELS } from '../constants';
 import { buildFiringCostBreakdown } from '../firingEstimations';
-import {
-  useDeleteFiringMutation,
-  useUpdateFiringMutation,
-} from '../hooks/useFiringsSync';
 import { getFiringDisplayDate } from '../utils/kilnHelpers';
 import { KILN_UI } from '../utils/kilnTheme';
 import { FiringDetailContent } from './FiringDetailContent';
@@ -33,7 +29,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const router = useRouter();
   const { height } = useWindowDimensions();
 
-  const kilns = useAppStore((state) => state.kilns);
+  const kilns = useVisibleKilns();
   const isSignedIn = useAppStore((s) => s.isSignedIn);
 
   const pieces = useVisiblePieces();
@@ -49,8 +45,6 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
   const completeFiring = useAppStore((state) => state.completeFiring);
   const deleteFiring = useAppStore((state) => state.deleteFiring);
   const updateFiring = useAppStore((state) => state.updateFiring);
-  const deleteFiringMutation = useDeleteFiringMutation();
-  const updateFiringMutation = useUpdateFiringMutation();
 
   const liveFiring = useAppStore((state) =>
     state.firings.find((currentFiring) => currentFiring.id === firing?.id),
@@ -169,22 +163,12 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
     return map;
   }, [liveFiring?.pieceReceipts, pieces]);
 
-  const syncFiringMutation = React.useCallback(
-    (nextFiring: Firing) => {
-      updateFiring(nextFiring);
-      updateFiringMutation.mutate(nextFiring);
-    },
-    [updateFiring, updateFiringMutation],
-  );
-
   const persistStatusOverride = React.useCallback(
     (override: FiringStatusOverride | undefined) => {
       if (!liveFiring) return;
       setFiringStatusOverride(liveFiring.id, override);
-      const updated = useAppStore.getState().firings.find((f) => f.id === liveFiring.id);
-      if (updated) syncFiringMutation(updated);
     },
-    [liveFiring, setFiringStatusOverride, syncFiringMutation],
+    [liveFiring, setFiringStatusOverride],
   );
 
   const handleSelectResult = React.useCallback((result: FiringResult) => {
@@ -215,18 +199,6 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
         ? selectedGlazeOutcome
         : undefined;
     completeFiring(liveFiring.id, selectedResult, resultNotes, glazeOutcome);
-    const now = new Date().toISOString();
-    const updated = useAppStore.getState().firings.find((f) => f.id === liveFiring.id);
-    if (updated) {
-      updateFiringMutation.mutate({
-        ...updated,
-        state: 'completed',
-        completedAt: now,
-        notes: liveFiring.notes,
-        result: selectedResult,
-        resultNotes,
-      });
-    }
     setShowCompletionForm(false);
     if (selectedResult === 'success') {
       setFiringCeremonyName(liveFiring.name);
@@ -244,22 +216,15 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
         ? liveFiring.pieceIds.filter((id) => id !== pieceId)
         : [...liveFiring.pieceIds, pieceId];
       setCompletedFiringPieces(liveFiring.id, nextIds);
-      const updated = useAppStore.getState().firings.find((f) => f.id === liveFiring.id);
-      if (updated) syncFiringMutation(updated);
       return;
     }
 
     if (assignedPieceIdSet.has(pieceId)) {
-      const next = { ...liveFiring, pieceIds: liveFiring.pieceIds.filter((id) => id !== pieceId) };
-      syncFiringMutation(next);
+      updateFiring({ ...liveFiring, pieceIds: liveFiring.pieceIds.filter((id) => id !== pieceId) });
       return;
     }
 
     assignPiecesToFiring(liveFiring.id, [pieceId]);
-    syncFiringMutation({
-      ...liveFiring,
-      pieceIds: Array.from(new Set([...liveFiring.pieceIds, pieceId])),
-    });
   };
 
   const assignAllGlazeReady = () => {
@@ -270,15 +235,9 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
         liveFiring.id,
         Array.from(new Set([...liveFiring.pieceIds, ...ids])),
       );
-      const updated = useAppStore.getState().firings.find((f) => f.id === liveFiring.id);
-      if (updated) syncFiringMutation(updated);
       return;
     }
     assignPiecesToFiring(liveFiring.id, ids);
-    syncFiringMutation({
-      ...liveFiring,
-      pieceIds: Array.from(new Set([...liveFiring.pieceIds, ...ids])),
-    });
   };
 
   return (
@@ -291,7 +250,6 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
       destructive
       onConfirm={() => {
         deleteFiring(liveFiring.id);
-        deleteFiringMutation.mutate(liveFiring);
         setConfirmDeleteOpen(false);
         onClose();
       }}

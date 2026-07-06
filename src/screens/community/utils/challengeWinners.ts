@@ -42,11 +42,11 @@ export function hallOfFameWinnerToDisplay(
     challengeLabel: cycle?.label?.trim() || 'Past challenge',
     challengeEmoji: cycle?.emoji?.trim() || '🏆',
     heroImage: imageFromUrl(heroUrl),
-    trackId: winner.track_id,
-    trackTitle: winner.track_title,
+    trackId: winner.track_id ?? '',
+    trackTitle: winner.track_title ?? 'Challenge',
     artistName: winnerArtistLabel(winner.artist_name, userDeleted),
     studioName: userDeleted ? '' : winner.studio_name?.trim() ?? '',
-    pieceTitle: winner.piece_title,
+    pieceTitle: winner.piece_title?.trim() || 'Winning piece',
     processNote: userDeleted
       ? 'This winner\'s account was deleted. Their piece remains in the Hall of Fame archive.'
       : winner.process_note?.trim() ?? '',

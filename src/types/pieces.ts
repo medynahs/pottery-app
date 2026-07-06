@@ -1,11 +1,23 @@
 import type { PricingFiringMode, PricingSaleMode, PricingUserType } from './pricing';
 
+/**
+ * A single journal photo. `uri` is the renderable source (a local file on the
+ * owner's device, or a remote url before it's downloaded). `assetId` is the
+ * backend asset UUID: absent = not uploaded yet (sync-up will push it), present
+ * = backed up. Identity/dedup/delete key on `assetId`, never on the uri (which
+ * is device-specific and, for remote urls, short-lived).
+ */
+export type PiecePhoto = {
+  uri: string;
+  assetId?: string;
+};
+
 export type TimelineEntry = {
   stage: string;
   timestamp: string;
   notes?: string;
-  /** Ordered list of photo URIs for this stage entry. */
-  photos?: string[];
+  /** Ordered list of photos for this stage entry. */
+  photos?: PiecePhoto[];
   /** Captured when advancing into bisque. */
   bisqueTemp?: string;
   /** Captured when advancing into glaze-fired. */
@@ -31,17 +43,22 @@ export type Stage =
 /** Firing result when a piece was glazed with a linked studio glaze batch. */
 export type GlazeOutcome = 'success' | 'crawling' | 'underfired' | 'crack';
 
+/** Per-piece sharing scope. Journal-first: pieces default to private on the backend. */
+export type PieceVisibility = 'private' | 'friends' | 'public';
+
 export type Piece = {
   id: number;
   /** UUID assigned by the backend after the piece is first synced. */
   backendId?: string;
   /** Tombstone, hidden from UI until the delete is confirmed by sync. */
   deleted?: boolean;
-  /** Local edits not yet pushed via POST /users/me/pieces/sync. */
+  /** Local edits not yet pushed via POST /me/pieces/sync. */
   syncDirty?: boolean;
   name: string;
   stage: string;          // physical state (Stage)
   status?: string;        // outcome / condition (e.g. sold, gifted)
+  /** Sharing scope, authoritative on the backend. Undefined until first synced. */
+  visibility?: PieceVisibility;
   createdAt: string;
   description?: string;
   timeline: TimelineEntry[];
@@ -50,8 +67,6 @@ export type Piece = {
   imgUrl?: string;
   /** Backend asset UUID for the cover photo (when synced to cloud). */
   coverAssetId?: string;
-  /** Maps photo URI (local or remote) → backend asset UUID for timeline photos. */
-  photoAssetIds?: Record<string, string>;
   location?: string;
   formingMethod?: string;
   form?: string;

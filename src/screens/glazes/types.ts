@@ -22,8 +22,10 @@ export interface GlazeLibraryItem {
   id: string;
   /** UUID assigned by the backend after the glaze is first synced. */
   backendId?: string;
-  /** Local edits not yet pushed via POST /users/me/glazes/sync. */
+  /** Local edits not yet pushed via POST /me/glazes/sync. */
   syncDirty?: boolean;
+  /** Deleted locally, awaiting sync confirmation. */
+  deleted?: boolean;
   name: string;
   finish: GlazeFinish;
   colorFamily: string;
@@ -81,8 +83,10 @@ export interface GlazeTestTile {
   id: string;
   /** UUID assigned by the backend after the test is first synced. */
   backendId?: string;
-  /** Local edits not yet pushed via POST /users/me/glazes/sync. */
+  /** Local edits not yet pushed via POST /me/glazes/sync. */
   syncDirty?: boolean;
+  /** Deleted locally, awaiting sync confirmation. */
+  deleted?: boolean;
   glazeId: string;
   glazeNameSnapshot: string;
   clayBody: string;

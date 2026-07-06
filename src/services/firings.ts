@@ -1,94 +1,45 @@
-// Firings API, /users/me/firings
+// Firings API, /me/firings — doc-blob backup like pieces.
+// FE is the source of truth: the backend stores each firing as an opaque `doc`
+// keyed on client_ref, with no queryable projections.
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
+import type { Firing } from '../types/kiln';
 import { API_BASE_URL as API_BASE } from './index';
-
-export type BackendFiringState =
-  | 'scheduled'
-  | 'loading'
-  | 'firing'
-  | 'cooling'
-  | 'unloading'
-  | 'completed';
+import { apiErrorFromResponse } from './api';
 
 export interface BackendFiring {
-  id: string;
-  kiln_id?: string | null;
-  studio_id?: string | null;
-  name: string;
-  type: string;
-  cone: string;
-  state: BackendFiringState;
-  notes?: string | null;
-  scheduled_date?: string | null;
-  fired_date?: string | null;
-  started_at?: string | null;
-  completed_at?: string | null;
-  peak_temp_c?: number | null;
-  hold_time_minutes?: number | null;
-  photo_uri?: string | null;
+  id: string;           // UUID
+  /** Device-local firing id; sync upserts are keyed on it. */
+  client_ref?: string;
+  /** The device firing document, stored verbatim. Empty for rows that predate
+   *  doc sync; the owning device's next push fills it. */
+  doc?: Partial<Firing> | null;
+  is_deleted?: boolean;
   created_at: string;
-  updated_at?: string | null;
+  updated_at?: string;
 }
 
-export interface CreateFiringPayload {
-  kiln_id?: string;
-  studio_id?: string;
-  name: string;
-  type: string;
-  cone: string;
-  state?: BackendFiringState;
-  notes?: string;
-  scheduled_date?: string;
-  fired_date?: string;
-  started_at?: string;
-  completed_at?: string;
-  peak_temp_c?: number;
-  hold_time_minutes?: number;
-  photo_uri?: string;
+/** Snapshot sent to POST /me/firings/sync, identity is client_ref only. */
+export interface FiringSyncSnapshot {
+  client_ref: string;
+  deleted?: boolean;
+  doc?: Record<string, unknown>;
 }
 
-export interface UpdateFiringPayload {
-  kiln_id?: string;
-  studio_id?: string;
-  name?: string;
-  type?: string;
-  cone?: string;
-  state?: BackendFiringState;
-  notes?: string;
-  scheduled_date?: string;
-  fired_date?: string;
-  started_at?: string;
-  completed_at?: string;
-  peak_temp_c?: number | null;
-  hold_time_minutes?: number | null;
-  photo_uri?: string | null;
+export interface SyncFiringsRequest {
+  firings: FiringSyncSnapshot[];
 }
 
-/** Map local firing log journal fields to API snake_case payload. */
-export function firingLogFieldsForApi(firing: {
-  firedDate?: string;
-  submissionDate?: string;
-  scheduledDate?: string;
-  peakTempC?: number;
-  holdTimeMinutes?: number;
-  photoUri?: string;
-}): Pick<
-  UpdateFiringPayload,
-  'fired_date' | 'peak_temp_c' | 'hold_time_minutes' | 'photo_uri' | 'scheduled_date'
-> {
-  const payload: Pick<
-    UpdateFiringPayload,
-    'fired_date' | 'peak_temp_c' | 'hold_time_minutes' | 'photo_uri' | 'scheduled_date'
-  > = {};
+export interface SyncFiringsResponse {
+  /** client_ref → backend UUID for every synced item, deleted ones included. */
+  client_ref_map: Record<string, string>;
+}
 
-  const firedDate = firing.firedDate ?? firing.submissionDate ?? firing.scheduledDate;
-  if (firedDate) payload.fired_date = firedDate;
-  if (firing.peakTempC != null) payload.peak_temp_c = firing.peakTempC;
-  if (firing.holdTimeMinutes != null) payload.hold_time_minutes = firing.holdTimeMinutes;
-  if (firing.photoUri) payload.photo_uri = firing.photoUri;
-
-  return payload;
+/** The synced firing document: the local firing verbatim minus sync-transient fields. */
+export function docForBackend(firing: Firing): Record<string, unknown> {
+  const { backendId, syncDirty, deleted, ...doc } = firing;
+  void backendId; void syncDirty; void deleted;
+  return doc;
 }
 
 function authedFetch(url: string,
@@ -103,65 +54,29 @@ function authedFetch(url: string,
   });
 }
 
-/** GET /users/me/firings */
+/** GET /me/firings, list all firing backups for the authenticated user. */
 export async function apiListFirings(): Promise<BackendFiring[]> {
-  const res = await authedFetch(`${API_BASE}/users/me/firings`);
+  const res = await authedFetch(`${API_BASE}/me/firings`);
   if (!res.ok) {
-    throw new Error(`GET /users/me/firings -> ${res.status}`);
+    throw await apiErrorFromResponse(res, 'GET /me/firings failed');
   }
   return res.json() as Promise<BackendFiring[]>;
 }
 
-/** POST /users/me/firings */
-export async function apiCreateFiring(
-    payload: CreateFiringPayload,
-): Promise<BackendFiring> {
-  const res = await authedFetch(`${API_BASE}/users/me/firings`, {
+/**
+ * POST /me/firings/sync — the ONE push path. Full snapshots of new,
+ * edited and deleted firings, keyed on client_ref; idempotent to retry.
+ */
+export async function apiSyncFirings(
+    payload: SyncFiringsRequest,
+): Promise<SyncFiringsResponse> {
+  const res = await authedFetch(`${API_BASE}/me/firings/sync`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(`POST /users/me/firings -> ${res.status}`);
+    throw await apiErrorFromResponse(res, 'POST /me/firings/sync failed');
   }
-  return res.json() as Promise<BackendFiring>;
-}
-
-/** GET /users/me/firings/{id} */
-export async function apiGetFiring(
-    firingId: string,
-): Promise<BackendFiring> {
-  const res = await authedFetch(`${API_BASE}/users/me/firings/${firingId}`);
-  if (!res.ok) {
-    throw new Error(`GET /users/me/firings/${firingId} -> ${res.status}`);
-  }
-  return res.json() as Promise<BackendFiring>;
-}
-
-/** PATCH /users/me/firings/{id} */
-export async function apiUpdateFiring(
-    firingId: string,
-  payload: UpdateFiringPayload,
-): Promise<BackendFiring> {
-  const res = await authedFetch(`${API_BASE}/users/me/firings/${firingId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    throw new Error(`PATCH /users/me/firings/${firingId} -> ${res.status}`);
-  }
-  return res.json() as Promise<BackendFiring>;
-}
-
-/** DELETE /users/me/firings/{id} */
-export async function apiDeleteFiring(
-    firingId: string,
-): Promise<void> {
-  const res = await authedFetch(`${API_BASE}/users/me/firings/${firingId}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) {
-    throw new Error(`DELETE /users/me/firings/${firingId} -> ${res.status}`);
-  }
+  return res.json() as Promise<SyncFiringsResponse>;
 }

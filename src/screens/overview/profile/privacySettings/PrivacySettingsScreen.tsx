@@ -6,7 +6,7 @@ import { useUpdatePrivacy } from '@/src/hooks/useCurrentUser';
 import { syncAnalyticsConsent, useAnalytics } from '@/src/hooks/useAnalytics';
 import { trackExportAttempted } from '@/src/utils/productAnalytics';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleFirings, useVisibleKilns, useVisibleGlazes, useVisibleGlazeTests } from '@/src/store';
 import { buildStudioExportPayload, shareStudioExport } from '@/src/utils/exportStudioData';
 import { PremiumFeature } from '@/src/utils/premiumGate';
 import { useRouter } from 'expo-router';
@@ -14,7 +14,6 @@ import {
     BarChart2,
     ChevronDown,
     Eye,
-    Image,
     Sparkles,
 } from 'lucide-react-native';
 import React from 'react';
@@ -27,20 +26,20 @@ export default function PrivacySettingsScreen() {
   const privacyPrefs = useAppStore((s) => s.privacyPrefs);
   const setPrivacyPref = useAppStore((s) => s.setPrivacyPref);
   const pieces = useAppStore((s) => s.pieces);
-  const firings = useAppStore((s) => s.firings);
-  const kilns = useAppStore((s) => s.kilns);
-  const glazes = useAppStore((s) => s.glazes);
-  const glazeTests = useAppStore((s) => s.glazeTests);
+  const firings = useVisibleFirings();
+  const kilns = useVisibleKilns();
+  const glazes = useVisibleGlazes();
+  const glazeTests = useVisibleGlazeTests();
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const showToast = useAppStore((s) => s.showToast);
   const { requestAccess, PaywallGate } = usePremiumGate();
   const { trackPrivacyAnalyticsToggled } = useAnalytics();
   const savePrivacy = useUpdatePrivacy();
   const [exporting, setExporting] = React.useState(false);
-  const [syncingKey, setSyncingKey] = React.useState<'profilePublic' | 'piecesPublic' | null>(null);
+  const [syncingKey, setSyncingKey] = React.useState<'profilePublic' | null>(null);
 
   const syncCommunityVisibility = async (
-    key: 'profilePublic' | 'piecesPublic',
+    key: 'profilePublic',
     nextValue: boolean,
   ) => {
     const previousValue = privacyPrefs[key];
@@ -53,7 +52,6 @@ export default function PrivacySettingsScreen() {
     try {
       await savePrivacy({
         profile_public: nextPrefs.profilePublic,
-        pieces_public: nextPrefs.piecesPublic,
       });
     } catch {
       setPrivacyPref(key, previousValue);
@@ -149,22 +147,13 @@ export default function PrivacySettingsScreen() {
             value={privacyPrefs.profilePublic}
             disabled={syncingKey === 'profilePublic'}
             onToggle={() => void syncCommunityVisibility('profilePublic', !privacyPrefs.profilePublic)}
-          />
-          <ToggleRow
-            icon={Image}
-            iconColor="hsl(39 57% 51%)"
-            iconBg="bg-primary/10"
-            label="Show Pieces Publicly"
-            value={privacyPrefs.piecesPublic}
-            disabled={syncingKey === 'piecesPublic'}
-            onToggle={() => void syncCommunityVisibility('piecesPublic', !privacyPrefs.piecesPublic)}
             isLast
           />
         </View>
 
         <View className="mx-6 mb-5 rounded-2xl border border-border bg-muted/40 px-4 py-3">
           <Text className="text-xs text-muted-foreground leading-5">
-            A public profile is discoverable via your share link. Turning off piece visibility hides your posts from your public grid while keeping your profile visible.
+            A public profile is discoverable via your share link. Each piece has its own visibility (private, friends, or public) that you set when you share it, so only the pieces you choose appear on your public grid.
           </Text>
         </View>
 

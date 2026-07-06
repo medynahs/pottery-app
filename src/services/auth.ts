@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import Session from 'supertokens-react-native';
 import { API_BASE_URL as API_BASE } from './index';
+import { deregisterPushTokenFromBackend } from './pushTokens';
 
 // Native Google Sign-In ships a native module that Expo Go can't load. Gate every
 // touch of it behind this so the app still boots there (email/password, resets and
@@ -90,7 +91,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
 }
 
 export async function changePassword(newPassword: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/users/me/change-password`, {
+  const res = await fetch(`${API_BASE}/me/change-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password: newPassword }),
@@ -104,6 +105,7 @@ export async function changePassword(newPassword: string): Promise<void> {
 // ─── Session ─────────────────────────────────────────────────────────────────
 
 export async function signOut(): Promise<void> {
+  await deregisterPushTokenFromBackend();
   await Session.signOut();
 }
 

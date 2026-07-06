@@ -50,7 +50,7 @@ export function countBucket(count: number): string {
 export function buildAnalyticsPersonProperties(): Record<string, string | number | boolean | null> {
   const state = useAppStore.getState();
   const pieces = state.pieces.filter((p) => !p.deleted);
-  const firings = state.firings.filter((f) => f.state === 'completed');
+  const firings = state.firings.filter((f) => !f.deleted && f.state === 'completed');
   const snapshot = getCloudStorageSnapshot();
   const rhythm = normalizeStudioRhythm(state.studioRhythm);
   const usedMb = Math.round(snapshot.usedBytes / (1024 * 1024));
@@ -61,7 +61,7 @@ export function buildAnalyticsPersonProperties(): Record<string, string | number
     companion_element: state.kilnkinCompanion?.element ?? null,
     onboarding_completed: state.generalOnboardingCompleted,
     piece_count_bucket: countBucket(pieces.length),
-    glaze_count_bucket: countBucket(state.glazes.length),
+    glaze_count_bucket: countBucket(state.glazes.filter((g) => !g.deleted).length),
     firing_count_bucket: countBucket(firings.length),
     cloud_storage_mb_bucket: snapshot.isPremium ? 'unlimited' : countBucket(usedMb),
     studio_rhythm_configured: isStudioRhythmConfigured(rhythm),

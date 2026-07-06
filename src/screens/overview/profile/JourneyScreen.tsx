@@ -1,5 +1,5 @@
 import { DetailScreenShell } from '@/src/components/DetailScreenShell';
-import { useVisiblePieces, useAppStore } from '@/src/store/appStore';
+import { useVisibleFirings, useVisiblePieces, useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import { BookOpen, Flame, Layers, Star } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -28,7 +28,7 @@ type JourneyScreenProps = {
 export default function JourneyScreen({ initialTab = 'overview' }: JourneyScreenProps) {
   const router = useRouter();
   const pieces = useVisiblePieces();
-  const firings = useAppStore((s) => s.firings);
+  const firings = useVisibleFirings();
   const level = useProfileLevel();
   const badges = useBadgeStates();
 

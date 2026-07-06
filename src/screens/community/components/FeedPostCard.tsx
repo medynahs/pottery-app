@@ -25,9 +25,10 @@ import {
 } from '@/src/screens/library/atlas/collections';
 import { removeCommunityPostFromCaches } from '@/src/screens/community/utils/communityCacheUpdates';
 import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
-import { apiDeletePost } from '@/src/services/community';
+import { apiDeletePost, apiSavePost } from '@/src/services/community';
 import { apiSendFriendRequest } from '@/src/services/friends';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleGlazes } from '@/src/store';
+import { remoteImageSource } from '@/src/utils/imageSource';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Bookmark, Check, MoreHorizontal, Trash2, Users } from 'lucide-react-native';
@@ -59,12 +60,10 @@ export function FeedPostCard({ post, onDeleted }: Props) {
   const router = useRouter();
   const backendUserId = useAppStore((s) => s.backendUserId);
   const user = useAppStore((s) => s.user);
-  const glazes = useAppStore((s) => s.glazes);
+  const glazes = useVisibleGlazes();
   const glazeCollectionNames = useAppStore((s) => s.glazeCollectionNames);
   const addGlaze = useAppStore((s) => s.addGlaze);
   const registerGlazeCollections = useAppStore((s) => s.registerGlazeCollections);
-  const recordCommunityPostSave = useAppStore((s) => s.recordCommunityPostSave);
-  const communityPostSaveCounts = useAppStore((s) => s.communityPostSaveCounts);
   const showToast = useAppStore((s) => s.showToast);
   const queryClient = useQueryClient();
   const { trackGlazeSavedFromCommunity } = useAnalytics();
@@ -106,7 +105,8 @@ export function FeedPostCard({ post, onDeleted }: Props) {
   const initial = isOwnPost
     ? (user.avatarInitial?.trim() || user.name?.trim()?.[0]?.toUpperCase() || post.user_id.slice(0, 1).toUpperCase())
     : (post.user_name?.trim()?.[0]?.toUpperCase() || post.user_id.slice(0, 1).toUpperCase());
-  const savedFromPost = isCommunityGlazePostSaved(post.id, glazes.map((g) => g.id));
+  const savedFromPost =
+    isCommunityGlazePostSaved(post.id, glazes.map((g) => g.id)) || Boolean(post.has_saved);
   const canSaveRecipe = isSavableGlazeRecipePayload(recipePayload) && !savedFromPost;
   const collections = React.useMemo(
     () => deriveCustomCollectionNames(glazes, glazeCollectionNames),
@@ -121,7 +121,8 @@ export function FeedPostCard({ post, onDeleted }: Props) {
   const authorAvatarUri = isOwnPost
     ? (user.avatarImageUri ?? post.user_avatar_url ?? null)
     : (post.user_avatar_url ?? null);
-  const saveCount = Math.max(post.save_count ?? 0, communityPostSaveCounts[post.id] ?? 0);
+  // Optimistic +1 while the cached post predates the viewer's own save.
+  const saveCount = (post.save_count ?? 0) + (savedFromPost && !post.has_saved ? 1 : 0);
   const isGlazeRecipePost = isSavableGlazeRecipePayload(recipePayload);
   const canSendFriendRequest = Boolean(backendUserId && backendUserId !== post.user_id);
 
@@ -148,7 +149,7 @@ export function FeedPostCard({ post, onDeleted }: Props) {
       sourceStudioName: authorStudioForProvenance,
     }, customCollections);
     addGlaze(savedGlaze);
-    recordCommunityPostSave(post.id);
+    apiSavePost(post.id).catch(() => {});
     trackGlazeSavedFromCommunity({
       postId: post.id,
       glazeName: recipePayload.name,
@@ -272,7 +273,7 @@ export function FeedPostCard({ post, onDeleted }: Props) {
         {/* Image */}
         {firstAsset && (
           <Image
-            source={{ uri: firstAsset.url }}
+            source={remoteImageSource(firstAsset.url)}
             style={{ height: 200, borderRadius: 12, marginBottom: 10 }}
             contentFit="cover"
             cachePolicy="memory-disk"

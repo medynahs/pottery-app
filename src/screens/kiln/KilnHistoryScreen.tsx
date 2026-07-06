@@ -3,7 +3,7 @@ import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { useAppStore } from '@/src/store';
+import { useAppStore, useVisibleFirings, useVisibleKilns } from '@/src/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Clock3, FlameKindling, Package, Receipt, TrendingUp } from 'lucide-react-native';
 import React from 'react';
@@ -252,8 +252,8 @@ export default function KilnHistoryScreen() {
   const { kilnId: kilnIdParam } = useLocalSearchParams<{ kilnId?: string | string[] }>();
   const kilnId = Array.isArray(kilnIdParam) ? kilnIdParam[0] : kilnIdParam;
 
-  const kilns = useAppStore((s) => s.kilns);
-  const firings = useAppStore((s) => s.firings);
+  const kilns = useVisibleKilns();
+  const firings = useVisibleFirings();
   const currencySymbol = useAppStore((s) => s.pricingSettings.currencySymbol);
 
   const kiln = React.useMemo(

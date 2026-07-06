@@ -1,7 +1,9 @@
-// Community API, /users/me/feed, /users/me/posts
+// Community API, /me/feed, /me/posts
 // All endpoints require a SuperTokens session (auth header injected by the RN SDK).
 
+import type { PieceVisibility } from '../types/pieces';
 import { API_BASE_URL as API_BASE } from './index';
+import { apiErrorFromResponse } from './api';
 import { isNetworkFailure, networkFailureMessage } from '@/src/utils/networkErrors';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
@@ -16,17 +18,21 @@ export interface BackendFeedPost {
   id: string;
   user_id: string;
   content: string;
+  /** Wrapped journal piece, when the post is a shared piece rather than a standalone post. */
+  piece_id?: string | null;
+  visibility?: PieceVisibility;
   assets: BackendPostAsset[] | null;
   asset_ids: string[];
   created_at: string;
   reaction_count: number;
   comment_count: number;
   has_reacted: boolean;
-  /** Server-side save count for glaze recipe posts (BE-8.5). */
+  /** How many potters saved this recipe post to their atlas. */
   save_count?: number;
+  /** Whether the viewer has saved this post server-side. */
+  has_saved?: boolean;
   user_name?: string | null;
   user_avatar_url?: string | null;
-  user_cover_url?: string | null;
 }
 
 export interface FeedPage {
@@ -69,9 +75,14 @@ async function parseCommunityError(res: Response, endpoint: string): Promise<nev
 // ─── Request payloads ────────────────────────────────────────────────────────
 
 export interface CreatePostPayload {
-  content: string;
+  /** Optional now, a post can be a piece and/or images with no text. */
+  content?: string;
   /** UUIDs returned by POST /uploads before creating the post. */
   asset_ids?: string[];
+  /** Wrap a journal piece; the post inherits the piece's visibility. */
+  piece_id?: string;
+  /** Standalone-post visibility (ignored by the server when piece_id is set). */
+  visibility?: PieceVisibility;
 }
 
 function normalizePostAsset(raw: unknown): BackendPostAsset | null {
@@ -83,12 +94,7 @@ function normalizePostAsset(raw: unknown): BackendPostAsset | null {
       : typeof record.asset_id === 'string'
         ? record.asset_id
         : null;
-  const url =
-    typeof record.url === 'string'
-      ? record.url
-      : typeof record.public_url === 'string'
-        ? record.public_url
-        : null;
+  const url = typeof record.url === 'string' ? record.url : null;
   if (!id || !url) return null;
   return {
     id,
@@ -191,7 +197,7 @@ export async function apiGetDiscoverFeed(
 }
 
 /**
- * GET /users/me/feed
+ * GET /me/feed
  * Returns posts from friends ordered by creation date desc.
  * Supports cursor pagination: `cursor` is an RFC3339Nano|post_uuid string.
  */
@@ -202,14 +208,14 @@ export async function apiGetFeed(
   if (opts?.limit !== undefined) params.set('limit', String(opts.limit));
   if (opts?.cursor) params.set('cursor', opts.cursor);
   const qs = params.size > 0 ? `?${params.toString()}` : '';
-  const res = await authedFetch(`${API_BASE}/users/me/feed${qs}`);
-  if (!res.ok) throw new Error(`GET /users/me/feed → ${res.status}`);
+  const res = await authedFetch(`${API_BASE}/me/feed${qs}`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'GET /me/feed failed');
   const page = (await res.json()) as FeedPage;
   return normalizeFeedPage(page);
 }
 
 /**
- * GET /users/me/posts
+ * GET /me/posts
  * Lists the authenticated user's own posts, newest first.
  */
 export async function apiListMyPosts(
@@ -219,25 +225,25 @@ export async function apiListMyPosts(
   if (opts?.limit !== undefined) params.set('limit', String(opts.limit));
   if (opts?.cursor) params.set('cursor', opts.cursor);
   const qs = params.size > 0 ? `?${params.toString()}` : '';
-  const res = await authedFetch(`${API_BASE}/users/me/posts${qs}`);
-  if (!res.ok) await parseCommunityError(res, 'GET /users/me/posts');
+  const res = await authedFetch(`${API_BASE}/me/posts${qs}`);
+  if (!res.ok) await parseCommunityError(res, 'GET /me/posts');
   const page = (await res.json()) as FeedPage;
   return normalizeFeedPage(page);
 }
 
 /**
- * POST /users/me/posts
+ * POST /me/posts
  * Creates a new social post. Upload photos first via POST /uploads, then pass asset_ids.
  */
 export async function apiCreatePost(
     payload: CreatePostPayload,
 ): Promise<BackendFeedPost> {
-  const res = await authedFetch(`${API_BASE}/users/me/posts`, {
+  const res = await authedFetch(`${API_BASE}/me/posts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) await parseCommunityError(res, 'POST /users/me/posts');
+  if (!res.ok) await parseCommunityError(res, 'POST /me/posts');
   const post = (await res.json()) as BackendFeedPost;
   return normalizeFeedPost(post);
 }
@@ -270,7 +276,7 @@ export async function apiAddReaction(
   });
   // 409 means already reacted, treat as success
   if (!res.ok && res.status !== 409) {
-    throw new Error(`POST /posts/${postId}/reactions → ${res.status}`);
+    throw await apiErrorFromResponse(res, `POST /posts/${postId}/reactions failed`);
   }
 }
 
@@ -286,7 +292,37 @@ export async function apiRemoveReaction(
   });
   // 404 means reaction didn't exist, treat as success
   if (!res.ok && res.status !== 404) {
-    throw new Error(`DELETE /posts/${postId}/reactions → ${res.status}`);
+    throw await apiErrorFromResponse(res, `DELETE /posts/${postId}/reactions failed`);
+  }
+}
+
+/**
+ * POST /posts/{post_id}/save
+ * Marks the post saved by the current user. Idempotent, returns 201.
+ */
+export async function apiSavePost(
+    postId: string,
+): Promise<void> {
+  const res = await authedFetch(`${API_BASE}/posts/${postId}/save`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    throw await apiErrorFromResponse(res, `POST /posts/${postId}/save failed`);
+  }
+}
+
+/**
+ * DELETE /posts/{post_id}/save
+ * Removes the current user's save. Idempotent, returns 204.
+ */
+export async function apiUnsavePost(
+    postId: string,
+): Promise<void> {
+  const res = await authedFetch(`${API_BASE}/posts/${postId}/save`, {
+    method: 'DELETE',
+  });
+  if (!res.ok && res.status !== 404) {
+    throw await apiErrorFromResponse(res, `DELETE /posts/${postId}/save failed`);
   }
 }
 
@@ -294,11 +330,11 @@ export async function apiRemoveReaction(
 
 export interface BackendHallOfFameWinner {
   id: string;
-  track_id: string;
-  track_title: string;
+  track_id?: string | null;
+  track_title?: string | null;
   artist_name?: string | null;
   studio_name?: string | null;
-  piece_title: string;
+  piece_title?: string | null;
   process_note?: string | null;
   image_url?: string | null;
   hero_image_url?: string | null;
@@ -321,7 +357,7 @@ export interface BackendHallOfFameCycle {
   title: string;
   label?: string | null;
   emoji?: string | null;
-  closed_at: string;
+  won_at?: string;
   winners: BackendHallOfFameWinner[];
 }
 
@@ -340,15 +376,15 @@ export interface BackendHallOfFameLeaderboardEntry {
 }
 
 /**
- * GET /hall-of-fame
+ * GET /public/hall-of-fame
  * Winner archive: `{ cycles: [{ challenge_id, title, winners[] }] }`.
  * Returns null when the endpoint is missing or returns an unsupported shape.
  */
 export async function apiGetHallOfFameArchive(
   ): Promise<BackendHallOfFameResponse> {
-  const res = await authedFetch(`${API_BASE}/hall-of-fame`);
+  const res = await authedFetch(`${API_BASE}/public/hall-of-fame`);
   if (!res.ok) {
-    throw new Error(`Hall of Fame request failed (${res.status})`);
+    throw await apiErrorFromResponse(res, 'Hall of Fame request failed');
   }
 
   const data = await res.json().catch(() => null);
@@ -364,13 +400,13 @@ export async function apiGetHallOfFameArchive(
 }
 
 /**
- * GET /hall-of-fame/winners/:id
+ * GET /public/hall-of-fame/winners/:id
  * Winner detail for deep links from Hall of Fame cards.
  */
 export async function apiGetHallOfFameWinner(
     winnerId: string,
 ): Promise<BackendHallOfFameWinnerDetail | null> {
-  const res = await authedFetch(`${API_BASE}/hall-of-fame/winners/${winnerId}`);
+  const res = await authedFetch(`${API_BASE}/public/hall-of-fame/winners/${winnerId}`);
   if (res.status === 404) return null;
   if (!res.ok) return null;
 
@@ -395,17 +431,16 @@ export interface BackendPoll {
   options: BackendPollOption[];
   total_votes: number;
   voted_option_id: string | null; // null = not yet voted
-  created_at: string;
 }
 
 /**
- * GET /polls
+ * GET /public/polls
  * Returns active polls for the community.
  */
 export async function apiGetPolls(
     ): Promise<BackendPoll[]> {
-  const res = await authedFetch(`${API_BASE}/polls`);
-  if (!res.ok) throw new Error(`GET /polls → ${res.status}`);
+  const res = await authedFetch(`${API_BASE}/public/polls`);
+  if (!res.ok) throw await apiErrorFromResponse(res, 'GET /public/polls failed');
   return res.json() as Promise<BackendPoll[]>;
 }
 
@@ -424,7 +459,7 @@ export async function apiVotePoll(
     body: JSON.stringify({ option_id: optionId }),
   });
   if (!res.ok && res.status !== 409) {
-    throw new Error(`POST /polls/${pollId}/vote → ${res.status}`);
+    throw await apiErrorFromResponse(res, `POST /polls/${pollId}/vote failed`);
   }
   return res.json() as Promise<BackendPoll>;
 }

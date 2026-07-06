@@ -1,9 +1,10 @@
-import { TimelineEntry } from "./pieces";
+import { PiecePhoto, TimelineEntry } from "./pieces";
 
 export type EntryDraft = {
   notes: string;
-  /** Ordered list of photo URIs, one per polaroid slot. */
-  photos: string[];
+  /** Ordered list of photos, one per polaroid slot. Mirrors the timeline shape
+   *  so editing a slot preserves the other slots' assetIds (no orphan/re-upload). */
+  photos: PiecePhoto[];
 };
 
 export type JournalSpread =

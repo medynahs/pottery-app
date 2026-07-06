@@ -1,5 +1,6 @@
 import { useNetworkConnection } from '@/src/hooks/useNetworkConnection';
 import { useAppStore } from '@/src/store/appStore';
+import { needsPush } from '@/src/sync/syncState';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import { Text } from '@/src/components/ui/text';
@@ -13,7 +14,15 @@ export function OfflineBanner() {
   const isOnline = isConnected && isInternetReachable;
 
   const isSyncing = useAppStore((s) => s.isSyncing);
-  const pendingCount = useAppStore((s) => s.pendingSyncOps.length);
+  const pendingCount = useAppStore((s) =>
+    s.isSignedIn
+      ? s.pieces.filter(needsPush).length +
+        s.glazes.filter(needsPush).length +
+        s.glazeTests.filter(needsPush).length +
+        s.firings.filter(needsPush).length +
+        s.kilns.filter(needsPush).length
+      : 0,
+  );
 
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(-BANNER_HEIGHT)).current;

@@ -39,7 +39,7 @@ async function fetchProfilePosts(queryClient: QueryClient): Promise<BackendFeedP
     const details = e instanceof CommunityApiError ? e.details : null;
     if (__DEV__) {
       console.warn(
-        '[useProfilePosts] GET /users/me/posts failed',
+        '[useProfilePosts] GET /me/posts failed',
         e instanceof CommunityApiError ? e.message : e,
         details ? `(${details})` : '',
       );

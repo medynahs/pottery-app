@@ -11,7 +11,6 @@ import { BrandColors } from '@/src/constants/theme';
 import {
   apiAcceptJoinRequest,
   apiAcceptStudioInvite,
-  apiAddStudioMember,
   apiCreateStudio,
   apiDeleteStudio,
   apiInviteToStudio,
@@ -35,7 +34,6 @@ import {
   ChevronRight,
   Crown,
   DoorOpen,
-  Mail,
   Plus,
   Trash2,
   Users,
@@ -71,10 +69,9 @@ function MemberPreviewCard({ user }: { user: BackendUser }) {
       <UserAvatar name={user.name} size={36} shape="circle" backgroundColor="hsl(39 57% 95%)" textColor={BrandColors.primary} />
       <View className="flex-1">
         <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>{user.name || 'Unnamed user'}</Text>
-        <View className="flex-row items-center gap-1">
-          <Mail size={11} color="hsl(0 0% 50%)" />
-          <Text className="text-xs text-muted-foreground" numberOfLines={1}>{user.email || user.id}</Text>
-        </View>
+        {!!(user.studio_name || user.location) && (
+          <Text className="text-xs text-muted-foreground" numberOfLines={1}>{user.studio_name || user.location}</Text>
+        )}
       </View>
     </View>
   );
@@ -411,8 +408,6 @@ export function StudiosTab() {
   const [joiningStudio, setJoiningStudio] = useState(false);
   const [inviteUserId, setInviteUserId] = useState('');
   const [inviting, setInviting] = useState(false);
-  const [memberUserId, setMemberUserId] = useState('');
-  const [addingMember, setAddingMember] = useState(false);
   const [membersLoading, setMembersLoading] = useState(false);
   const [members, setMembers] = useState<BackendUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -541,25 +536,6 @@ export function StudiosTab() {
       setInviting(false);
     }
   }, [inviteUserId, inviting, selectedOwnedStudioId, showToast]);
-
-  const handleAddMember = useCallback(async () => {
-    const studioId = selectedOwnedStudioId.trim();
-    const userId = memberUserId.trim();
-    if (!studioId || !userId || addingMember) return;
-    setAddingMember(true);
-    try {
-      await apiAddStudioMember(studioId, userId);
-      setMemberUserId('');
-      showToast('Member added', 'success');
-      const updatedMembers = await apiListStudioMembers(studioId);
-      setMembers(updatedMembers ?? []);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to add member';
-      showToast(message, 'error');
-    } finally {
-      setAddingMember(false);
-    }
-  }, [addingMember, memberUserId, selectedOwnedStudioId, showToast]);
 
   const handleRefreshMembers = useCallback(async () => {
     const studioId = selectedOwnedStudioId.trim();
@@ -691,27 +667,6 @@ export function StudiosTab() {
             {inviting
               ? <ActivityIndicator size="small" color="#8B6A2A" />
               : <Text className="text-sm font-semibold text-foreground">Invite user</Text>
-            }
-          </TouchableOpacity>
-
-          <TextInput
-            value={memberUserId}
-            onChangeText={setMemberUserId}
-            placeholder="User ID to add directly"
-            className="border border-border rounded-xl px-4 py-3 text-sm text-foreground bg-background"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <TouchableOpacity
-            onPress={handleAddMember}
-            disabled={addingMember || !selectedOwnedStudioId.trim() || !memberUserId.trim()}
-            className="rounded-xl items-center py-2.5 bg-muted"
-            activeOpacity={0.8}
-            style={{ opacity: addingMember || !selectedOwnedStudioId.trim() || !memberUserId.trim() ? 0.6 : 1 }}
-          >
-            {addingMember
-              ? <ActivityIndicator size="small" color="#8B6A2A" />
-              : <Text className="text-sm font-semibold text-foreground">Add member directly</Text>
             }
           </TouchableOpacity>
 

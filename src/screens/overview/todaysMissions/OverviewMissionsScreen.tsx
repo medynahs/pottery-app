@@ -7,7 +7,7 @@ import {
   type StudioRhythmSuggestionType,
 } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
-import { useAppStore, useVisiblePieces } from '@/src/store';
+import { useAppStore, useVisiblePieces, useVisibleFirings } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { CalendarDays, Check, Flame, Hammer, Scissors, Sparkles, Trophy } from 'lucide-react-native';
 import React from 'react';
@@ -70,7 +70,7 @@ export default function OverviewMissionsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const pieces = useVisiblePieces();
-  const firings = useAppStore((state) => state.firings);
+  const firings = useVisibleFirings();
   const rhythm = useAppStore((state) => state.studioRhythm);
   const dailyMissionCompletion = useAppStore((state) => state.dailyMissionCompletion);
   const toggleDailyMissionCompletion = useAppStore((state) => state.toggleDailyMissionCompletion);

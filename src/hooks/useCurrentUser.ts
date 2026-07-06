@@ -58,9 +58,6 @@ function applyProfileToStore(profile: Parameters<typeof userPatchFromBackendProf
   if (profile.profile_public !== undefined) {
     setPrivacyPref('profilePublic', profile.profile_public);
   }
-  if (profile.pieces_public !== undefined) {
-    setPrivacyPref('piecesPublic', profile.pieces_public);
-  }
 }
 
 function syncDeletionGraceFromProfile(profile: BackendProfile) {
@@ -107,7 +104,7 @@ function meQueryOptions(isSignedIn: boolean) {
   } as const;
 }
 
-/** Subscribe to GET /users/me (no session side-effects). Safe to call from multiple screens. */
+/** Subscribe to GET /me (no session side-effects). Safe to call from multiple screens. */
 export function useCurrentUser() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
   return useQuery(meQueryOptions(isSignedIn));
@@ -186,7 +183,7 @@ export function useMeSessionEffects() {
         if (stillValid) {
           if (__DEV__) {
             console.warn(
-              '[session] GET /users/me returned 401 but SuperTokens session OK — keeping session',
+              '[session] GET /me returned 401 but SuperTokens session OK — keeping session',
             );
           }
           return;
@@ -201,7 +198,7 @@ export function useMeSessionEffects() {
       const scheduledAt = useAppStore.getState().accountDeletionScheduledAt;
       signedOutRef.current = true;
       if (__DEV__) {
-        console.warn('[session] GET /users/me returned 401 — clearing session');
+        console.warn('[session] GET /me returned 401 — clearing session');
       }
       clearSession();
       resetMeQueryCache(queryClient);
@@ -244,7 +241,7 @@ export function useMeSessionEffects() {
   }, [query.data, setBackendUserId]);
 }
 
-/** Persist profile text fields via PUT /users/me and refresh the me cache + store. */
+/** Persist profile text fields via PUT /me and refresh the me cache + store. */
 export function useUpdateProfile() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
   const queryClient = useQueryClient();
@@ -259,7 +256,7 @@ export function useUpdateProfile() {
   };
 }
 
-/** Persist community visibility toggles via PUT /users/me/privacy. */
+/** Persist community visibility toggles via PUT /me/privacy. */
 export function useUpdatePrivacy() {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
   const queryClient = useQueryClient();
