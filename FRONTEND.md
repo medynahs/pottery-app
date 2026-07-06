@@ -75,8 +75,8 @@
 - Photo grid, posts archive, journey screen, share URLs (`potterynook.app/user/{id}`)
 - Public profile route `app/user/[id].tsx` — wired; verify privacy + friends in prod
 - Feed author tap → `/user/{id}`
-- Edit Profile modal: name, studio, location, bio — **`PUT /users/me` wired** (`useUpdateProfile`, #91 ✅)
-- Privacy toggles — **`PUT /users/me/privacy` wired** (#14 ✅)
+- Edit Profile modal: name, studio, location, bio — **`PATCH /users/me` wired** (`useUpdateProfile`, #91 ✅)
+- Privacy toggles — **`PATCH /users/me` (`profile_public` field) wired** (#14 ✅)
 - Post creation — **multipart `POST /uploads` + `POST /users/me/posts`** (#24 ✅)
 
 ---

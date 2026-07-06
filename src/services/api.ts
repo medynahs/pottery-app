@@ -82,6 +82,7 @@ export interface UpdateProfilePayload {
   studio_name?: string;
   location?: string;
   bio?: string;
+  profile_public?: boolean;
 }
 
 /** @deprecated Use UpdateProfilePayload */
@@ -155,10 +156,10 @@ export async function fetchMe(): Promise<BackendProfile> {
   return res.json() as Promise<BackendProfile>;
 }
 
-/** PUT /me — partial update of name, studio, location, bio. */
+/** PATCH /me — partial update of name, studio, location, bio, profile_public. */
 export async function updateProfile(payload: UpdateProfilePayload): Promise<BackendProfile> {
   const res = await authedJson('/me', {
-    method: 'PUT',
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
@@ -175,21 +176,9 @@ export async function updateProfile(payload: UpdateProfilePayload): Promise<Back
 /** @deprecated Use updateProfile */
 export const updateMe = updateProfile;
 
-/** PUT /me/privacy — profile_public toggle (whole-profile discoverability). */
-export async function updatePrivacy(payload: UpdatePrivacyPayload): Promise<BackendProfile> {
-  const res = await authedJson('/me/privacy', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new ApiError(
-      body ? `updatePrivacy failed (${res.status}): ${body}` : `updatePrivacy failed (${res.status})`,
-      res.status,
-    );
-  }
-  return res.json() as Promise<BackendProfile>;
+/** profile_public is a profile field now; PATCH /me carries it. */
+export function updatePrivacy(payload: UpdatePrivacyPayload): Promise<BackendProfile> {
+  return updateProfile(payload);
 }
 
 export async function deleteAccount(): Promise<void> {
