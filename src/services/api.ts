@@ -228,6 +228,15 @@ export async function registerPushToken(token: string, platform: 'ios' | 'androi
   if (!res.ok) throw new ApiError(`registerPushToken failed (${res.status})`, res.status);
 }
 
+export async function deregisterPushToken(token: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/me/push-tokens`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) throw new ApiError(`deregisterPushToken failed (${res.status})`, res.status);
+}
+
 export async function reviveAccount(): Promise<void> {
   const res = await fetch(`${API_BASE}/me/revive`, { method: 'POST' });
   if (!res.ok) throw new ApiError(`reviveAccount failed (${res.status})`, res.status);

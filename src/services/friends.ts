@@ -5,20 +5,15 @@ import { API_BASE_URL as API_BASE } from './index';
 
 // ─── Backend types ────────────────────────────────────────────────────────────
 
+// Cross-user projection: the API's PublicUser. Email/auth_id/role only exist
+// on the /me payload (BackendProfile).
 export interface BackendUser {
   id: string;
-  auth_id: string;
-  email: string;
   name: string;
-  avatar_url: string | null;
-  cover_url?: string | null;
+  avatar_url?: string | null;
   studio_name?: string | null;
   location?: string | null;
   bio?: string | null;
-  profile_public?: boolean;
-  role: 'admin' | 'user';
-  created_at: string;
-  updated_at: string | null;
 }
 
 // A request only exists while pending: responding (accept/decline/cancel)

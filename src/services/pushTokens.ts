@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import type { NotificationPrefs } from '../store/appStore';
-import { registerPushToken } from './api';
+import { deregisterPushToken, registerPushToken } from './api';
 import { configureNotificationRuntime } from './notifications';
 
 /** Set true once verified on device — sync is deduped to prevent registration loops. */
@@ -69,5 +69,23 @@ export async function syncPushTokenWithBackend(
     lastRegisteredToken = token;
   } finally {
     syncInFlight = false;
+  }
+}
+
+/**
+ * Unregister this device's token before sign-out (needs the still-valid
+ * session). Best-effort: a failure must never block signing out.
+ */
+export async function deregisterPushTokenFromBackend(): Promise<void> {
+  if (!PUSH_NOTIFICATIONS_ENABLED) return;
+
+  try {
+    const token = lastRegisteredToken ?? await resolveExpoPushToken();
+    if (!token) return;
+    await deregisterPushToken(token);
+  } catch {
+    // ignore: the API prunes dead tokens on Expo receipt errors anyway
+  } finally {
+    lastRegisteredToken = null;
   }
 }

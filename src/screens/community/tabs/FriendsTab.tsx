@@ -67,7 +67,9 @@ function FriendRow({
       <UserAvatar name={user.name} imageUri={user.avatar_url} size={40} />
       <View className="flex-1">
         <Text className="text-sm font-semibold text-foreground">{user.name}</Text>
-        <Text className="text-xs text-muted-foreground">{user.email}</Text>
+        {!!(user.studio_name || user.location) && (
+          <Text className="text-xs text-muted-foreground">{user.studio_name || user.location}</Text>
+        )}
       </View>
       <TouchableOpacity
         onPress={handleRemove}

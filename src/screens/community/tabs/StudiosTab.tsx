@@ -35,7 +35,6 @@ import {
   ChevronRight,
   Crown,
   DoorOpen,
-  Mail,
   Plus,
   Trash2,
   Users,
@@ -71,10 +70,9 @@ function MemberPreviewCard({ user }: { user: BackendUser }) {
       <UserAvatar name={user.name} size={36} shape="circle" backgroundColor="hsl(39 57% 95%)" textColor={BrandColors.primary} />
       <View className="flex-1">
         <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>{user.name || 'Unnamed user'}</Text>
-        <View className="flex-row items-center gap-1">
-          <Mail size={11} color="hsl(0 0% 50%)" />
-          <Text className="text-xs text-muted-foreground" numberOfLines={1}>{user.email || user.id}</Text>
-        </View>
+        {!!(user.studio_name || user.location) && (
+          <Text className="text-xs text-muted-foreground" numberOfLines={1}>{user.studio_name || user.location}</Text>
+        )}
       </View>
     </View>
   );
