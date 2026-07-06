@@ -162,25 +162,6 @@ export async function apiListStudioMembers(
   return res.json() as Promise<import('./friends').BackendUser[]>;
 }
 
-/**
- * POST /me/studios/{studio_id}/members
- * Adds a member directly (owner only). Returns 204.
- */
-export async function apiAddStudioMember(
-    studioId: string,
-  userId: string,
-): Promise<void> {
-  const res = await authedFetch(
-    `${API_BASE}/me/studios/${studioId}/members`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId }),
-    },
-  );
-  if (!res.ok) return parseError(res, `POST /me/studios/${studioId}/members`);
-}
-
 // ─── Studio invites ───────────────────────────────────────────────────────────
 
 /**

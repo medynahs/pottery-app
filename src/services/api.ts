@@ -83,6 +83,7 @@ export interface UpdateProfilePayload {
   location?: string;
   bio?: string;
   profile_public?: boolean;
+  push_notifications_enabled?: boolean;
 }
 
 /** @deprecated Use UpdateProfilePayload */

@@ -42,6 +42,22 @@ Six dropped keys, all falling back to placeholders (`services/community.ts` type
 
 ---
 
+## BE shipped, FE missing (moved from pottery-api risk audit, 2026-07-06)
+
+The API side of these is live in prod; the app never calls it.
+
+- **Block/report UI (Apple guideline 1.2 — blocks App Store review).** The
+  moderation surface exists: `GET/POST /me/blocks`, `DELETE /me/blocks/:user_id`,
+  `POST /reports`. The app ships no report buttons and no blocked-users screen;
+  guideline 1.2 stays open until it does. (The admin-panel half — cyberdeck
+  consuming `GET /admin/reports` — is tracked in `pottery-api/notes/TODO.md`.)
+- **`client_ref` on the post composer.** `POST /me/posts` dedupes on
+  `client_ref` when present; the composer doesn't send one yet, so a retried
+  submit can double-post. Wire a stable per-compose ref on the next posts touch.
+- **Wrap timezone.** `GET /me/wrap/:year` now takes `?tz=<IANA name>` (defaults
+  UTC). If wrap ever ships in the app, send the device zone or Dec 31 evening
+  work lands in the wrong year. (Endpoint is currently orphaned — see below.)
+
 ## Lower-priority / latent
 
 - **`comment_count`** typed as non-optional `number` on `BackendFeedPost` (`src/services/community.ts:28`), BE never sends it. Consumed at `src/screens/overview/profile/components/ProfilePostCard.tsx:140,211`, so profile always shows "0 comments". The type is lying (a `number` that's actually `undefined` at runtime). Make it optional or cut it.
