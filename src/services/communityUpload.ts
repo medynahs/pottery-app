@@ -1,5 +1,5 @@
 import { isRemoteMediaUri } from '@/src/utils/cloudStorage';
-import { isNetworkFailure, networkFailureMessage } from '@/src/utils/networkErrors';
+import { networkFailureMessage } from '@/src/utils/networkErrors';
 import { API_BASE_URL as API_BASE } from './index';
 
 type UploadAssetResponse = {
@@ -87,7 +87,7 @@ async function postMultipartUpload(
       headers: { Accept: 'application/json' },
       body: form as unknown as BodyInit_,
     });
-  } catch (error) {
+  } catch {
     throw new CommunityUploadError(networkFailureMessage('upload'), undefined, undefined);
   }
 

@@ -1,14 +1,14 @@
 import {
-  DialogCard,
-  DialogHeader,
-  DialogShell,
-  ModalSheetActions,
-  SheetButton,
-  useDialogMaxHeight,
+    DialogCard,
+    DialogHeader,
+    DialogShell,
+    ModalSheetActions,
+    SheetButton,
+    useDialogMaxHeight,
 } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
-import { BrandColors } from '@/src/constants/theme';
 import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
+import { BrandColors } from '@/src/constants/theme';
 import { useAppStore, type OnboardingUserType } from '@/src/store/appStore';
 import { applyPricingUserTypePreset } from '@/src/types/pricing';
 import { pricingUserTypeForArchetype } from '@/src/utils/roleBasedUx';
@@ -95,7 +95,7 @@ export function PracticeTypePickerSheet({ visible, onClose }: PracticeTypePicker
         {pending ? (
           <View className="px-6 pt-2 pb-6 justify-between" style={{ minHeight: 0 }}>
             <Text className="text-sm text-muted-foreground leading-5">
-              Switch to "{USER_TYPE_CONFIG[pending].label}"? Tab defaults and pricing presets will
+              Switch to &ldquo;{USER_TYPE_CONFIG[pending].label}&rdquo;? Tab defaults and pricing presets will
               update.
             </Text>
             <View className="mt-6">

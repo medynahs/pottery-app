@@ -120,6 +120,7 @@ export async function googleSignIn(): Promise<string> {
     throw new AuthError('Google sign-in needs a development build; it is not available in Expo Go.');
   }
   const { GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes } =
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     require('@react-native-google-signin/google-signin') as typeof import('@react-native-google-signin/google-signin');
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });

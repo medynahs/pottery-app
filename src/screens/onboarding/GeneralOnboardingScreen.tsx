@@ -1,4 +1,4 @@
-﻿import { Pressable } from '@/src/components/ui/pressable';
+import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
 import { Image } from 'expo-image';

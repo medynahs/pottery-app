@@ -1,19 +1,18 @@
+import { Menu, X } from "lucide-react-native";
 import * as React from "react";
 import {
-  View,
-  Pressable,
-  Modal,
-  Animated,
-  useWindowDimensions,
-  Platform,
-  ScrollView,
+    Animated,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { cn } from "./utils/cn";
-import { Menu, X } from "lucide-react-native";
 import { iconWithClassName } from "./lib/icons/icon-with-classname";
 import { SafeAreaView } from "./safe-area-view";
-import { Text } from "./text";
+import { cn } from "./utils/cn";
 
 const MenuIcon = iconWithClassName(Menu);
 const XIcon = iconWithClassName(X);
@@ -282,12 +281,7 @@ const HamburgerMenu = React.forwardRef<
 HamburgerMenu.displayName = "HamburgerMenu";
 
 export {
-  Drawer,
-  DrawerTrigger,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerItem,
-  DrawerSeparator,
-  HamburgerMenu,
+    Drawer, DrawerContent,
+    DrawerHeader, DrawerItem,
+    DrawerSeparator, DrawerTitle, DrawerTrigger, HamburgerMenu
 };

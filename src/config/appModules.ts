@@ -12,14 +12,14 @@ export const APP_MODULE_LABELS: Record<AppModule, string> = {
   community: 'Community',
 };
 
-export const CUSTOMIZABLE_MODULE_OPTIONS: Array<{
+export const CUSTOMIZABLE_MODULE_OPTIONS: {
   id: AppModule;
   label: string;
   description: string;
   icon: typeof Box;
   iconColor: string;
   iconBg: string;
-}> = [
+}[] = [
   {
     id: 'pieces',
     label: 'Pieces',

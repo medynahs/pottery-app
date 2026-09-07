@@ -24,6 +24,7 @@ export async function resetLocalDataForTesting(): Promise<void> {
     const Updates = await import('expo-updates');
     await Updates.reloadAsync();
   } catch {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { DevSettings } = require('react-native') as typeof import('react-native');
     DevSettings.reload();
   }

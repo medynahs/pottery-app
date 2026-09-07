@@ -1,20 +1,20 @@
 import { InlineErrorCard } from '@/src/components/InlineErrorCard';
-import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
 import { Text } from '@/src/components/ui/text';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
-import { ChallengeTrackTabs } from '@/src/screens/community/components/challenge/ChallengePhaseUI';
 import { ChallengeEntryCard } from '@/src/screens/community/components/challenge/ChallengeEntryCard';
+import { ChallengeTrackTabs } from '@/src/screens/community/components/challenge/ChallengePhaseUI';
 import { ACTIVE_FESTIVAL } from '@/src/screens/community/data';
 import { useMockChallengeStore } from '@/src/screens/community/mock/mockChallengeStore';
 import type { ChallengeEntryDisplay } from '@/src/screens/community/types';
 import { resolveChallengePhase } from '@/src/screens/community/utils/challengePhase';
-import { backendEntryToDisplay } from '@/src/screens/community/utils/challengeWinners';
 import {
   fallbackFestivalTrackTitle,
   resolveChallengeTracks,
   trackTitleFromChallenge,
 } from '@/src/screens/community/utils/challengeTracks';
+import { backendEntryToDisplay } from '@/src/screens/community/utils/challengeWinners';
 import {
   isMockChallengeId,
   MOCK_UNDERWATER_CHALLENGE,
@@ -137,7 +137,7 @@ export default function ChallengeGalleryScreen() {
     } finally {
       setLoading(false);
     }
-  }, [isMock, challengeId, activeTrackId]);
+  }, [isMock, challengeId, activeTrackId, isSignedIn]);
 
   useEffect(() => {
     void loadApiGallery();

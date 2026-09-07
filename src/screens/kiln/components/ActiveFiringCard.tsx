@@ -1,4 +1,4 @@
-﻿// src/screens/kiln/components/ActiveFiringCard.tsx
+// src/screens/kiln/components/ActiveFiringCard.tsx
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import { useAppStore } from '@/src/store';

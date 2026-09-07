@@ -1,23 +1,23 @@
 import { DetailScreenShell } from '@/src/components/DetailScreenShell';
-import { useVisibleFirings, useVisiblePieces, useAppStore } from '@/src/store/appStore';
-import { useRouter } from 'expo-router';
-import { BookOpen, Flame, Layers, Star } from 'lucide-react-native';
-import React, { useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
-import { useBadgeContext, useBadgeStates } from './hooks/useBadgeStates';
-import { useProfileLevel } from './hooks/useProfileLevel';
-import { buildJourneyMilestones } from './utils/buildJourneyMilestones';
-import { getJourneyTagline, getStudioTenure } from './utils/journeyNarrative';
-import { AchievementsPanel } from './components/badges/AchievementsPanel';
+import { ChronicleSectionLabel } from '@/src/screens/overview/profile/components/chronicle/ChronicleSectionLabel';
 import { JourneyChronicleHero } from '@/src/screens/overview/profile/components/chronicle/JourneyChronicleHero';
 import { JourneyChronicleTimeline } from '@/src/screens/overview/profile/components/chronicle/JourneyChronicleTimeline';
 import { JourneyEmptyChronicle } from '@/src/screens/overview/profile/components/chronicle/JourneyEmptyChronicle';
 import { JourneyPathStats } from '@/src/screens/overview/profile/components/chronicle/JourneyPathStats';
 import {
-  JourneyTabBar,
-  type JourneyTab,
+    JourneyTabBar,
+    type JourneyTab,
 } from '@/src/screens/overview/profile/components/chronicle/JourneyTabBar';
-import { ChronicleSectionLabel } from '@/src/screens/overview/profile/components/chronicle/ChronicleSectionLabel';
+import { useVisibleFirings, useVisiblePieces } from '@/src/store/appStore';
+import { useRouter } from 'expo-router';
+import { BookOpen, Flame, Layers, Star } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View } from 'react-native';
+import { AchievementsPanel } from './components/badges/AchievementsPanel';
+import { useBadgeContext, useBadgeStates } from './hooks/useBadgeStates';
+import { useProfileLevel } from './hooks/useProfileLevel';
+import { buildJourneyMilestones } from './utils/buildJourneyMilestones';
+import { getJourneyTagline, getStudioTenure } from './utils/journeyNarrative';
 
 const TIMELINE_PREVIEW = 12;
 

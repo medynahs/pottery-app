@@ -15,8 +15,8 @@ import { PackageCheck } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import {
   Modal,
-  View,
   useWindowDimensions,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Piece, PiecePhoto } from '../../../types/pieces';
@@ -24,13 +24,13 @@ import { parseNumericInput, type PricingSaleMode } from '../../../types/pricing'
 import { JournalBook, type JournalBookHandle } from '../components/JournalBook';
 import { JournalBookShell } from '../components/JournalBookShell';
 import { JournalHeader } from '../components/JournalHeader';
+import { JournalStageRail } from '../components/JournalStageRail';
 import { useJournalDrafts } from '../hooks/useJournalDrafts';
 import { useJournalSpreads } from '../hooks/useJournalSpreads';
+import { PiecePhotoGalleryModal } from '../modals/PiecePhotoGalleryModal';
 import { formatDuration } from '../utils/journal';
 import { JournalTheme } from '../utils/journalTheme';
 import { collectPiecePhotos } from '../utils/piecePhotos';
-import { JournalStageRail } from '../components/JournalStageRail';
-import { PiecePhotoGalleryModal } from '../modals/PiecePhotoGalleryModal';
 import { resolveStageIcon } from '../utils/stageIconUtils';
 
 const CONTENTS_THRESHOLD = 6;

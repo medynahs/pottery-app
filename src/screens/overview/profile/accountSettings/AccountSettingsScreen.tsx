@@ -1,7 +1,6 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
-import { ProfileDeletionGraceBanner } from '@/src/screens/overview/profile/components/ProfileDeletionGraceBanner';
-import { NotificationDebugPanel } from '@/src/components/dev/NotificationDebugPanel';
 import { DevPremiumPanel } from '@/src/components/dev/DevPremiumPanel';
+import { NotificationDebugPanel } from '@/src/components/dev/NotificationDebugPanel';
 import { KilnkinCompanionPickerSheet } from '@/src/components/KilnkinCompanionPickerSheet';
 import { PracticeTypePickerSheet } from '@/src/components/PracticeTypePickerSheet';
 import { SectionLabel } from '@/src/components/SectionLabel';
@@ -14,32 +13,32 @@ import { USER_TYPE_CONFIG } from '@/src/config/onboardingOptions';
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from '@/src/constants/legal';
 import { ME_QUERY_KEY } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { deleteAccount, ApiError } from '@/src/services/api';
+import { ProfileDeletionGraceBanner } from '@/src/screens/overview/profile/components/ProfileDeletionGraceBanner';
+import { ApiError, deleteAccount } from '@/src/services/api';
 import { ensureNotificationPermission } from '@/src/services/notifications';
 import { syncPushTokenWithBackend } from '@/src/services/pushTokens';
 import { useAppStore } from '@/src/store';
-import { PremiumFeature } from '@/src/utils/premiumGate';
 import { getDevPremiumOverride } from '@/src/utils/forcePremium';
+import { PremiumFeature } from '@/src/utils/premiumGate';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Linking } from 'react-native';
 import {
-  Bell,
-  Clock,
-  Crown,
-  Flame,
-  FileText,
-  Hammer,
-  Lock,
-  LogOut,
-  Mail,
-  PawPrint,
-  Shield,
-  Skull,
-  Trophy
+    Bell,
+    Clock,
+    Crown,
+    FileText,
+    Flame,
+    Hammer,
+    Lock,
+    LogOut,
+    Mail,
+    PawPrint,
+    Shield,
+    Skull,
+    Trophy
 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 
 export default function AccountSettingsScreen() {
   const router = useRouter();

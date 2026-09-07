@@ -1,7 +1,7 @@
 // src/screens/community/CommunityScreen.tsx
-import { UnauthenticatedGate } from '@/src/components/UnauthenticatedGate';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { StudioTabScreen } from '@/src/components/StudioTabScreen';
+import { UnauthenticatedGate } from '@/src/components/UnauthenticatedGate';
 import {
   TAB_FLOATING_ACTION_BOTTOM,
   TAB_SCROLL_BOTTOM_PADDING_WITH_FAB,
@@ -19,8 +19,8 @@ import { MainTabHeader } from '../../components/MainTabHeader';
 import { CreatePostSheet } from './components/CreatePostSheet';
 import { FilterBar } from './components/FilterBar';
 import { ChallengesTab } from './tabs/ChallengesTab';
-import { HallOfFameTab } from './tabs/HallOfFameTab';
 import { ForYouFeed } from './tabs/ForYouFeed';
+import { HallOfFameTab } from './tabs/HallOfFameTab';
 import type { FilterTab } from './types';
 
 function CommunityUnauthenticatedGate() {
@@ -70,7 +70,7 @@ export default function CommunityScreen() {
       setActiveFilter('Challenges');
     }
     markCommunityTabOpened();
-  }, [hasOpenedCommunityTab, hasCreatedPost, markCommunityTabOpened]);
+  }, [isSignedIn, hasOpenedCommunityTab, hasCreatedPost, markCommunityTabOpened]);
 
   const handleRefresh = useCallback(() => {
     const now = Date.now();

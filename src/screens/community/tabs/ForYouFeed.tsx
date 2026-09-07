@@ -8,16 +8,16 @@ import { CommunityWelcomeHub } from '@/src/screens/community/components/Communit
 import { POTTERY_NOOK_SEED_TIPS } from '@/src/screens/community/data/communitySeedContent';
 import { useCommunityPolls } from '@/src/screens/community/hooks/useCommunityPolls';
 import {
-  FOR_YOU_FEED_QUERY_KEY,
-  fetchFriendsFeedPage,
-  useForYouFeed,
-  type ForYouFeedSnapshot,
+    FOR_YOU_FEED_QUERY_KEY,
+    fetchFriendsFeedPage,
+    useForYouFeed,
+    type ForYouFeedSnapshot,
 } from '@/src/screens/community/hooks/useForYouFeed';
 import { useAppStore, useVisiblePieces } from '@/src/store';
 import { isSparseCommunityFeed } from '@/src/utils/communityFeedMerge';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, TouchableOpacity } from 'react-native';
 import type { BackendFeedPost } from '../../../services/community';
 import { FeedPostCard } from '../components/FeedPostCard';
 

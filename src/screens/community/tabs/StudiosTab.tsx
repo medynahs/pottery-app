@@ -9,44 +9,44 @@ import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { BrandColors } from '@/src/constants/theme';
 import {
-  apiAcceptJoinRequest,
-  apiAcceptStudioInvite,
-  apiCreateStudio,
-  apiDeleteStudio,
-  apiInviteToStudio,
-  apiLeaveStudio,
-  apiListIncomingJoinRequests,
-  apiListIncomingStudioInvites,
-  apiListMemberStudios,
-  apiListOwnedStudios,
-  apiListStudioMembers,
-  apiRejectJoinRequest,
-  apiRejectStudioInvite,
-  apiRequestToJoinStudio,
-  type BackendStudio,
-  type BackendStudioInvite,
-  type BackendStudioJoinRequest,
-  type BackendUser
+    apiAcceptJoinRequest,
+    apiAcceptStudioInvite,
+    apiCreateStudio,
+    apiDeleteStudio,
+    apiInviteToStudio,
+    apiLeaveStudio,
+    apiListIncomingJoinRequests,
+    apiListIncomingStudioInvites,
+    apiListMemberStudios,
+    apiListOwnedStudios,
+    apiListStudioMembers,
+    apiRejectJoinRequest,
+    apiRejectStudioInvite,
+    apiRequestToJoinStudio,
+    type BackendStudio,
+    type BackendStudioInvite,
+    type BackendStudioJoinRequest,
+    type BackendUser
 } from '@/src/services/studios';
 import { useAppStore } from '@/src/store';
 import {
-  Check,
-  ChevronRight,
-  Crown,
-  DoorOpen,
-  Plus,
-  Trash2,
-  Users,
-  X,
+    Check,
+    ChevronRight,
+    Crown,
+    DoorOpen,
+    Plus,
+    Trash2,
+    Users,
+    X,
 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Modal,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 // ─── Studio avatar ────────────────────────────────────────────────────────────
@@ -396,6 +396,7 @@ function CreateStudioModal({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function StudiosTab() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isSignedIn = useAppStore((s) => s.isSignedIn);
   const showToast = useAppStore((s) => s.showToast);
 
@@ -433,7 +434,7 @@ export function StudiosTab() {
     } finally {
       setIsLoading(false);
     }
-  }, [isSignedIn]);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -451,7 +452,7 @@ export function StudiosTab() {
       const studio = await apiCreateStudio({ name });
       setOwned((prev) => [studio, ...prev]);
     },
-    [isSignedIn],
+    [],
   );
 
   const handleDeleteOwned = useCallback(
@@ -459,7 +460,7 @@ export function StudiosTab() {
       await apiDeleteStudio(studioId);
       setOwned((prev) => prev.filter((s) => s.id !== studioId));
     },
-    [isSignedIn],
+    [],
   );
 
   const handleLeave = useCallback(
@@ -467,7 +468,7 @@ export function StudiosTab() {
       await apiLeaveStudio(studioId);
       setMember((prev) => prev.filter((s) => s.id !== studioId));
     },
-    [isSignedIn],
+    [],
   );
 
   const handleAcceptInvite = useCallback(
@@ -477,7 +478,7 @@ export function StudiosTab() {
       const updated = await apiListMemberStudios();
       setMember(updated ?? []);
     },
-    [isSignedIn],
+    [],
   );
 
   const handleRejectInvite = useCallback(
@@ -485,7 +486,7 @@ export function StudiosTab() {
       await apiRejectStudioInvite(inviteId);
       setInvites((prev) => prev.filter((i) => i.id !== inviteId));
     },
-    [isSignedIn],
+    [],
   );
 
   const handleAcceptJoinRequest = useCallback(
@@ -493,7 +494,7 @@ export function StudiosTab() {
       await apiAcceptJoinRequest(requestId);
       setJoinRequests((prev) => prev.filter((r) => r.id !== requestId));
     },
-    [isSignedIn],
+    [],
   );
 
   const handleRejectJoinRequest = useCallback(
@@ -501,7 +502,7 @@ export function StudiosTab() {
       await apiRejectJoinRequest(requestId);
       setJoinRequests((prev) => prev.filter((r) => r.id !== requestId));
     },
-    [isSignedIn],
+    [],
   );
 
   const handleRequestToJoin = useCallback(async () => {

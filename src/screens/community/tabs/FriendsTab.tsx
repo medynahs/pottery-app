@@ -6,26 +6,26 @@ import { SkeletonListRow } from '@/src/components/Skeleton';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { Text } from '@/src/components/ui/text';
 import {
-  apiAcceptFriendRequest,
-  apiCancelFriendRequest,
-  apiDeclineFriendRequest,
-  apiListFriends,
-  apiListIncomingFriendRequests,
-  apiListOutgoingFriendRequests,
-  apiRemoveFriend,
-  type BackendFriendRequest,
-  type BackendUser,
+    apiAcceptFriendRequest,
+    apiCancelFriendRequest,
+    apiDeclineFriendRequest,
+    apiListFriends,
+    apiListIncomingFriendRequests,
+    apiListOutgoingFriendRequests,
+    apiRemoveFriend,
+    type BackendFriendRequest,
+    type BackendUser,
 } from '@/src/services/friends';
 import { useAppStore } from '@/src/store';
 import { Check, UserMinus, UserPlus, Users, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  RefreshControl,
-  ScrollView,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    RefreshControl,
+    ScrollView,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 
@@ -183,6 +183,7 @@ function OutgoingRequestRow({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function FriendsTab() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isSignedIn = useAppStore((s) => s.isSignedIn);
 
   const [friends, setFriends] = useState<BackendUser[]>([]);
@@ -213,7 +214,7 @@ export function FriendsTab() {
         setRefreshing(false);
       }
     },
-    [isSignedIn],
+    [],
   );
 
   useEffect(() => { load(); }, [load]);
@@ -223,7 +224,7 @@ export function FriendsTab() {
       await apiRemoveFriend(friendId);
       setFriends((prev) => prev.filter((f) => f.id !== friendId));
     },
-    [isSignedIn],
+    [],
   );
 
   const handleAccept = useCallback(
@@ -234,7 +235,7 @@ export function FriendsTab() {
       const updated = await apiListFriends();
       setFriends(updated ?? []);
     },
-    [isSignedIn],
+    [],
   );
 
   const handleDecline = useCallback(
@@ -242,7 +243,7 @@ export function FriendsTab() {
       await apiDeclineFriendRequest(requestId);
       setIncoming((prev) => prev.filter((r) => r.id !== requestId));
     },
-    [isSignedIn],
+    [],
   );
 
   const handleCancel = useCallback(
@@ -250,7 +251,7 @@ export function FriendsTab() {
       await apiCancelFriendRequest(requestId);
       setOutgoing((prev) => prev.filter((r) => r.id !== requestId));
     },
-    [isSignedIn],
+    [],
   );
 
   if (isLoading) {

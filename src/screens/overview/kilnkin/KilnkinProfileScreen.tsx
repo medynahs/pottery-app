@@ -1,6 +1,6 @@
 import { Text } from '@/src/components/ui/text';
 import { getKilnkinProfilePreviews } from '@/src/screens/overview/kilnkin/kilnkinVoice';
-import { useVisiblePieces, useAppStore } from '@/src/store';
+import { useAppStore, useVisiblePieces } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { BellRing, FlaskConical, MoonStar, PawPrint, Scroll, Soup } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
@@ -205,7 +205,7 @@ export default function KilnkinProfileScreen() {
             </View>
             {notificationPreviews.map((preview, index) => (
               <View key={`${companion.id}-${index}`} style={{ backgroundColor: PANEL, borderWidth: 1, borderColor: BORDER, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8 }}>
-                <Text style={{ color: TEXT_CREAM, fontSize: 12, lineHeight: 20 }}>"{preview}"</Text>
+                <Text style={{ color: TEXT_CREAM, fontSize: 12, lineHeight: 20 }}>&ldquo;{preview}&rdquo;</Text>
               </View>
             ))}
           </View>

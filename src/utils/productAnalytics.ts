@@ -2,14 +2,14 @@
  * Product analytics helpers — milestones, person properties, monetization signals.
  * No PII: never pass emails, names, post text, or media URLs.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AnalyticsEvents } from '@/src/constants/analytics';
 import { captureAnalyticsEvent } from '@/src/hooks/useAnalytics';
 import {
-  isStudioRhythmConfigured,
-  normalizeStudioRhythm,
+    isStudioRhythmConfigured,
+    normalizeStudioRhythm,
 } from '@/src/screens/overview/studioRythm/studioRhythm';
 import { useAppStore } from '@/src/store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCloudStorageSnapshot } from './cloudStorage';
 import { pieceHasPendingLocalPhotos, scheduleAllPendingPiecePhotoSync } from './pieceAssetSync';
 
@@ -82,7 +82,7 @@ export function trackSetupQuestCompleted(questId: string) {
 }
 
 export function trackPiecesAdded(
-  newPieces: Array<{ formingMethod?: string }>,
+  newPieces: { formingMethod?: string }[],
   previousActiveCount: number,
 ) {
   if (newPieces.length === 0) return;

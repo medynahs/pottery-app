@@ -1,23 +1,23 @@
+import { collapseToLatestGlazeVersions, formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
 import {
-  GLAZE_ATMOSPHERE_LABELS,
-  GLAZE_CLAY_TYPE_LABELS,
-  GLAZE_FINISH_LABELS,
-  GLAZE_SOURCE_LABELS,
-  GLAZE_STATUS_LABELS,
-  GLAZE_ATMOSPHERE_OPTIONS,
-  GLAZE_FINISH_OPTIONS,
-  GLAZE_SOURCE_OPTIONS,
-  type GlazeAtmosphere,
-  type GlazeClayType,
-  type GlazeFinish,
-  type GlazeLibraryItem,
-  type GlazeSource,
-  type GlazeStatus,
+    GLAZE_ATMOSPHERE_LABELS,
+    GLAZE_ATMOSPHERE_OPTIONS,
+    GLAZE_CLAY_TYPE_LABELS,
+    GLAZE_FINISH_LABELS,
+    GLAZE_FINISH_OPTIONS,
+    GLAZE_SOURCE_LABELS,
+    GLAZE_SOURCE_OPTIONS,
+    GLAZE_STATUS_LABELS,
+    type GlazeAtmosphere,
+    type GlazeClayType,
+    type GlazeFinish,
+    type GlazeLibraryItem,
+    type GlazeSource,
+    type GlazeStatus,
 } from '@/src/screens/glazes/types';
 import { normalizeCone } from '@/src/screens/library/discover/types';
 import { formatDateShort, parseIsoDate } from '@/src/utils/dates';
 import { filterGlazesByCollection } from './collections';
-import { collapseToLatestGlazeVersions, formatGlazeDisplayName } from '@/src/screens/glazes/glazeVersionUtils';
 
 export { formatGlazeDisplayName };
 
@@ -49,21 +49,21 @@ export const DEFAULT_GLAZE_FILTERS: GlazeFilters = {
   matchesMyCone: false,
 };
 
-export const GLAZE_STATUS_FILTER_OPTIONS: Array<{ key: GlazeStatusFilter; label: string }> = [
+export const GLAZE_STATUS_FILTER_OPTIONS: { key: GlazeStatusFilter; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'works_great', label: GLAZE_STATUS_LABELS.works_great },
   { key: 'experimental', label: GLAZE_STATUS_LABELS.experimental },
   { key: 'failed', label: GLAZE_STATUS_LABELS.failed },
 ];
 
-export const GLAZE_CLAY_FILTER_OPTIONS: Array<{ key: GlazeClayFilter; label: string }> = [
+export const GLAZE_CLAY_FILTER_OPTIONS: { key: GlazeClayFilter; label: string }[] = [
   { key: 'all', label: 'All clay' },
   { key: 'stoneware', label: GLAZE_CLAY_TYPE_LABELS.stoneware },
   { key: 'earthenware', label: GLAZE_CLAY_TYPE_LABELS.earthenware },
   { key: 'porcelain', label: GLAZE_CLAY_TYPE_LABELS.porcelain },
 ];
 
-export const GLAZE_FINISH_FILTER_OPTIONS: Array<{ key: GlazeFinishFilter; label: string }> = [
+export const GLAZE_FINISH_FILTER_OPTIONS: { key: GlazeFinishFilter; label: string }[] = [
   { key: 'all', label: 'All finishes' },
   ...GLAZE_FINISH_OPTIONS.map((finish) => ({
     key: finish as GlazeFinishFilter,
@@ -71,7 +71,7 @@ export const GLAZE_FINISH_FILTER_OPTIONS: Array<{ key: GlazeFinishFilter; label:
   })),
 ];
 
-export const GLAZE_ATMOSPHERE_FILTER_OPTIONS: Array<{ key: GlazeAtmosphereFilter; label: string }> = [
+export const GLAZE_ATMOSPHERE_FILTER_OPTIONS: { key: GlazeAtmosphereFilter; label: string }[] = [
   { key: 'all', label: 'Any atmosphere' },
   ...GLAZE_ATMOSPHERE_OPTIONS.map((atmosphere) => ({
     key: atmosphere as GlazeAtmosphereFilter,
@@ -79,7 +79,7 @@ export const GLAZE_ATMOSPHERE_FILTER_OPTIONS: Array<{ key: GlazeAtmosphereFilter
   })),
 ];
 
-export const GLAZE_SOURCE_FILTER_OPTIONS: Array<{ key: GlazeSourceFilter; label: string }> = [
+export const GLAZE_SOURCE_FILTER_OPTIONS: { key: GlazeSourceFilter; label: string }[] = [
   { key: 'all', label: 'All sources' },
   ...GLAZE_SOURCE_OPTIONS.map((source) => ({
     key: source as GlazeSourceFilter,
@@ -263,8 +263,8 @@ export function buildActiveGlazeFilterTags(
   filters: GlazeFilters,
   userConeLabel: string | null,
   onPatch: (patch: Partial<GlazeFilters>) => void,
-): Array<{ key: string; label: string; onClear: () => void }> {
-  const tags: Array<{ key: string; label: string; onClear: () => void }> = [];
+): { key: string; label: string; onClear: () => void }[] {
+  const tags: { key: string; label: string; onClear: () => void }[] = [];
 
   const statusLabel = labelForStatusFilter(filters.status);
   if (statusLabel) {

@@ -18,27 +18,27 @@ import Animated, { Easing, FadeInDown, FadeOutUp, LinearTransition } from 'react
 import { MainTabHeader } from '../../components/MainTabHeader';
 import type { Piece, PieceVisibility } from '../../types/pieces';
 import {
-  CEMETERY_ACCENT,
-  CEMETERY_BORDER_SUBTLE,
-  CEMETERY_PILL_ACTIVE,
-  CEMETERY_PILL_ACTIVE_BORDER,
-  CEMETERY_PILL_INACTIVE_BG,
-  CEMETERY_TEXT,
-  CEMETERY_TEXT_SUBTLE
+    CEMETERY_ACCENT,
+    CEMETERY_BORDER_SUBTLE,
+    CEMETERY_PILL_ACTIVE,
+    CEMETERY_PILL_ACTIVE_BORDER,
+    CEMETERY_PILL_INACTIVE_BG,
+    CEMETERY_TEXT,
+    CEMETERY_TEXT_SUBTLE
 } from './cemeteryTheme';
 import { BatchCard } from './components/BatchCard';
 import {
-  CemeteryGardenEmpty,
-  CemeteryGardenView,
-  useCemeteryHeadstoneWidth,
+    CemeteryGardenEmpty,
+    CemeteryGardenView,
+    useCemeteryHeadstoneWidth,
 } from './components/CemeteryGardenView';
 import { CemeteryPieceCard } from './components/CemeteryPieceCard';
 import { CemeteryScrollAtmosphere } from './components/CemeteryScrollAtmosphere';
 import { FilterSortSheet } from './components/FilterSortSheet';
 import { PieceCard } from './components/PieceCard';
 import { PieceSelectionBar } from './components/PieceSelectionBar';
-import { usePiecesScreen } from './hooks/usePiecesScreen';
 import { useLazyPieceAssetsHydration } from './hooks/useLazyPieceAssetsHydration';
+import { usePiecesScreen } from './hooks/usePiecesScreen';
 import { AddPieceModal } from './modals/AddPieceModal';
 import { CemeterySacrificeModal } from './modals/CemeterySacrificeModal';
 import { PieceJournalModal } from './modals/PieceJournalModal';
@@ -378,6 +378,7 @@ export default function PiecesScreen() {
     return options;
   }, [
     actionSheetPiece,
+    isSignedIn,
     pieceStageLabels,
     openJournal,
     setEditPiece,

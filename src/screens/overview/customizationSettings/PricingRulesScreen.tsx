@@ -55,13 +55,13 @@ type PricingDraft = {
 
 type SectionId = 'studio' | 'costs' | 'bisque' | 'bisque-glaze';
 
-const CONFIDENCE_CHECKS: Array<{
+const CONFIDENCE_CHECKS: {
   label: string;
   heightCm: number;
   widthCm: number;
   weightGrams: number;
   mode: PricingFiringMode;
-}> = [
+}[] = [
   { label: 'Small cup', heightCm: 10, widthCm: 8, weightGrams: 320, mode: 'bisque' },
   { label: 'Serving bowl', heightCm: 12, widthCm: 18, weightGrams: 780, mode: 'bisque-glaze' },
   { label: 'Large vessel', heightCm: 20, widthCm: 20, weightGrams: 1400, mode: 'bisque-glaze' },

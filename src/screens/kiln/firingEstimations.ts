@@ -236,9 +236,9 @@ export function getExpectedReadyAt(firing: Firing, kiln?: Kiln) {
 }
 
 export function getKilnTimingSummary(kiln?: Kiln) {
-  if (!kiln) return [] as Array<{ label: string; value: number }>;
+  if (!kiln) return [] as { label: string; value: number }[];
 
-  const summary: Array<{ label: string; value: number }> = [];
+  const summary: { label: string; value: number }[] = [];
 
   if (kiln.queueDelayDays != null || kiln.studioDelayDays != null) {
     summary.push({ label: 'Queue', value: kiln.queueDelayDays ?? kiln.studioDelayDays ?? 0 });

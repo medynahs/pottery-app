@@ -5,7 +5,7 @@ import { ImageLightbox } from '@/src/components/ImageLightbox';
 import { Pressable } from '@/src/components/ui/pressable';
 import { Text } from '@/src/components/ui/text';
 import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
-import { useVisibleKilns, useVisiblePieces, useAppStore } from '@/src/store';
+import { useAppStore, useVisibleKilns, useVisiblePieces } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { Trash2, X } from 'lucide-react-native';
 import React from 'react';
@@ -189,7 +189,7 @@ export function FiringDetailModal({ firing, visible, onClose }: FiringDetailModa
       pieceIds: liveFiring.pieceIds,
       caption: liveFiring.resultNotes ?? '',
     });
-  }, [liveFiring, shareToCommunity]);
+  }, [isSignedIn, liveFiring, shareToCommunity]);
 
   if (!firing || !liveFiring) return null;
 

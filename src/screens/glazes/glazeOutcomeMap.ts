@@ -1,5 +1,5 @@
-import type { GlazeOutcome, Piece } from '@/src/types/pieces';
 import { GLAZE_OUTCOME_LABELS } from '@/src/screens/pieces/utils/constants';
+import type { GlazeOutcome, Piece } from '@/src/types/pieces';
 import type { GlazeDefect, GlazeResultRating, GlazeTestTile } from './types';
 
 /** Studio-facing firing outcomes, shared by pieces, stats, and glaze detail. */
@@ -120,7 +120,7 @@ export function formatUnifiedOutcomeStatsLine(
     parts.push(`${summary.success} successful`);
   }
 
-  const issueCounts: Array<{ label: string; count: number }> = [
+  const issueCounts: { label: string; count: number }[] = [
     { label: STUDIO_GLAZE_OUTCOME_LABELS.crawling.toLowerCase(), count: summary.crawling },
     { label: STUDIO_GLAZE_OUTCOME_LABELS.underfired.toLowerCase(), count: summary.underfired },
     { label: STUDIO_GLAZE_OUTCOME_LABELS.crack.toLowerCase(), count: summary.crack },

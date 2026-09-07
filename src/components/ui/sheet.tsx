@@ -1,22 +1,15 @@
-import * as React from "react";
-import BottomSheet, {
-  BottomSheetModal,
-  BottomSheetModalProvider,
-  BottomSheetView,
-  BottomSheetBackdrop,
+import {
+    BottomSheetBackdrop,
+    BottomSheetModal,
+    BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import { View, Pressable, useWindowDimensions, Modal, Platform } from "react-native";
-import { cn } from "./utils/cn";
 import { X } from "lucide-react-native";
+import * as React from "react";
+import { Platform, Pressable, useWindowDimensions, View } from "react-native";
 import { iconWithClassName } from "./lib/icons/icon-with-classname";
+import { cn } from "./utils/cn";
 
 const XIcon = iconWithClassName(X);
-
-interface SheetProps {
-  children: React.ReactNode;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-}
 
 const Sheet = ({ children, open = false, onOpenChange = () => {} }: { 
   children: React.ReactNode;
@@ -201,10 +194,6 @@ const SheetDescription = React.forwardRef<
 SheetDescription.displayName = "SheetDescription";
 
 export {
-  Sheet,
-  SheetTrigger,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
+    Sheet, SheetContent, SheetDescription, SheetHeader,
+    SheetTitle, SheetTrigger
 };

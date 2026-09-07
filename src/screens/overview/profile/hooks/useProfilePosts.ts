@@ -1,19 +1,19 @@
-import {
-  apiListMyPosts,
-  CommunityApiError,
-  type BackendFeedPost,
-} from '@/src/services/community';
 import { defaultQueryRetry, STABLE_QUERY_OPTIONS } from '@/src/lib/queryRetry';
+import type { ForYouFeedSnapshot } from '@/src/screens/community/hooks/useForYouFeed';
+import { FOR_YOU_FEED_QUERY_KEY, PROFILE_POSTS_QUERY_KEY } from '@/src/screens/community/queryKeys';
+import {
+    apiListMyPosts,
+    CommunityApiError,
+    type BackendFeedPost,
+} from '@/src/services/community';
 import { useAppStore } from '@/src/store/appStore';
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import {
-  getCachedProfilePosts,
-  mergeProfilePosts,
-  removeCachedProfilePost,
+    getCachedProfilePosts,
+    mergeProfilePosts,
+    removeCachedProfilePost,
 } from '../utils/profilePostCache';
-import { FOR_YOU_FEED_QUERY_KEY, PROFILE_POSTS_QUERY_KEY } from '@/src/screens/community/queryKeys';
-import type { ForYouFeedSnapshot } from '@/src/screens/community/hooks/useForYouFeed';
 
 export { PROFILE_POSTS_QUERY_KEY } from '@/src/screens/community/queryKeys';
 
@@ -64,8 +64,8 @@ export function useProfilePosts() {
   });
 
   const reload = useCallback(() => {
-    void query.refetch();
-  }, [query.refetch]);
+    void queryClient.refetchQueries({ queryKey: PROFILE_POSTS_QUERY_KEY });
+  }, [queryClient]);
 
   const removePost = useCallback(
     (postId: string) => {

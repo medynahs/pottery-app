@@ -1,4 +1,4 @@
-﻿import { useCurrentUser } from '@/src/hooks/useCurrentUser';
+import { useCurrentUser } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
@@ -17,7 +17,7 @@ export default function ProfileScreen() {
 
   const onRefresh = useCallback(async () => {
     await Promise.all([meQuery.refetch(), reload()]);
-  }, [meQuery.refetch, reload]);
+  }, [meQuery, reload]);
 
   const refreshing = meQuery.isFetching || isReloading;
 

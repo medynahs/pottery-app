@@ -58,7 +58,7 @@ export function KilnProfileHeader({
 
       {showNotes && kiln.notes?.trim() ? (
         <Text className="text-sm text-muted-foreground italic mt-3 leading-5" numberOfLines={4}>
-          "{kiln.notes.trim()}"
+          &ldquo;{kiln.notes.trim()}&rdquo;
         </Text>
       ) : null}
     </View>

@@ -1,11 +1,11 @@
-﻿import Constants from 'expo-constants';
+import { Text } from '@/src/components/ui/text';
+import Constants from 'expo-constants';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Check, Droplets, Flame, Leaf, Moon, Sparkle, Sparkles, Wind } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, View } from 'react-native';
-import { Text } from '@/src/components/ui/text';
 import type { DimensionValue } from 'react-native';
+import { Animated, Easing, Pressable, View } from 'react-native';
 import type { KilnkinPersonality } from '../../overview/kilnkin/kilnkinCompanion';
 import { AVAILABLE_KILNKIN_COMPANIONS } from '../../overview/kilnkin/kilnkinCompanion';
 
@@ -19,6 +19,7 @@ let RiveView: React.ComponentType<any> | null = null;
 let RiveFit: any = null;
 if (!isExpoGo) {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const riveModule = require('rive-react-native');
     RiveView = riveModule.default;
     RiveFit = riveModule.Fit;

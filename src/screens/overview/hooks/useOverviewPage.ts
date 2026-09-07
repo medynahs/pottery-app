@@ -1,35 +1,35 @@
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useStudioLinkStatus } from '@/src/hooks/useStudioLinkStatus';
-import { generateSetupQuests } from '@/src/screens/overview/setupQuests/generateSetupQuests';
 import { GLAZES_QUERY_KEY } from '@/src/screens/library/useGlazesSync';
-import { PIECES_QUERY_KEY } from '@/src/screens/pieces/hooks/usePiecesSync';
+import { generateSetupQuests } from '@/src/screens/overview/setupQuests/generateSetupQuests';
 import { generateStudioRhythmSuggestions } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import { getDateKey, isStudioRhythmConfigured, normalizeStudioRhythm } from '@/src/screens/overview/studioRythm/studioRhythm';
 import { buildActivityFeed } from '@/src/screens/overview/utils/activityFeed';
-import { getStudioSignals } from '@/src/screens/overview/utils/getStudioSignals';
-import { getKilnkinNudge } from '@/src/screens/overview/utils/kilnkinNudge';
-import { mapPiecesToStudioPositions } from '@/src/screens/overview/utils/mapPiecesToStudioPositions';
-import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
 import { buildQueuePreview } from '@/src/screens/overview/utils/buildQueuePreview';
 import {
-  hasEstablishedStudio,
-  isSetupProgressComplete,
-} from '@/src/screens/overview/utils/setupMode';
+    buildFiringQueueSnapshot,
+    shouldShowFiringQueueWidget,
+} from '@/src/screens/overview/utils/firingQueueUtils';
+import { getStudioSignals } from '@/src/screens/overview/utils/getStudioSignals';
+import { getKilnkinNudge } from '@/src/screens/overview/utils/kilnkinNudge';
+import { resolveKilnDestination } from '@/src/screens/overview/utils/kilnNavigation';
+import { mapPiecesToStudioPositions } from '@/src/screens/overview/utils/mapPiecesToStudioPositions';
+import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
 import { ACTIVE_FIRING_STATES } from '@/src/screens/overview/utils/oneThingCard';
 import { buildPersonaOneThingCard } from '@/src/screens/overview/utils/personaPulseCard';
 import { getPetMood, PAT_REACTIONS } from '@/src/screens/overview/utils/petMood';
-import { useAppStore, useVisiblePieces, useVisibleFirings, useVisibleKilns, useVisibleGlazes, useVisibleGlazeTests } from '@/src/store';
-import { DEFAULT_SETUP_PROGRESS, useNormalizedEnabledModules } from '@/src/store/appStore';
-import { resolveKilnDestination } from '@/src/screens/overview/utils/kilnNavigation';
 import {
-  buildFiringQueueSnapshot,
-  shouldShowFiringQueueWidget,
-} from '@/src/screens/overview/utils/firingQueueUtils';
+    hasEstablishedStudio,
+    isSetupProgressComplete,
+} from '@/src/screens/overview/utils/setupMode';
+import { PIECES_QUERY_KEY } from '@/src/screens/pieces/hooks/usePiecesSync';
+import { useAppStore, useVisibleFirings, useVisibleGlazes, useVisibleGlazeTests, useVisibleKilns, useVisiblePieces } from '@/src/store';
+import { DEFAULT_SETUP_PROGRESS, useNormalizedEnabledModules } from '@/src/store/appStore';
 import { computeStudioStats } from '@/src/utils/computeStudioStats';
+import { useIsFetching } from '@tanstack/react-query';
 import { useRouter, type Href } from 'expo-router';
 import React from 'react';
 import { Animated, Easing } from 'react-native';
-import { useIsFetching } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type CustomTodo = {
@@ -40,6 +40,10 @@ type CustomTodo = {
 
 const DOW_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+// Stable empty array fallback — prevents useMemo deps from changing on every render
+// when a Zustand selector returns null/undefined on first render.
+const EMPTY_ARR: never[] = [];
+
 export function useOverviewPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -48,20 +52,20 @@ export function useOverviewPage() {
   const isSignedIn = useAppStore((state) => state.isSignedIn);
   const isPremium = useAppStore((state) => state.isPremium);
   const kilnkinCompanion = useAppStore((state) => state.kilnkinCompanion);
-  const kilns = useVisibleKilns() ?? [];
+  const kilns = useVisibleKilns() ?? EMPTY_ARR;
   const onboardingProfile = useAppStore((state) => state.onboardingProfile);
   const { hasLinkedStudio, loading: studioLinkLoading } = useStudioLinkStatus();
   const userType = onboardingProfile.userType;
   const setupProgress = useAppStore((state) => state.setupProgress) ?? DEFAULT_SETUP_PROGRESS;
   const completeSetupChecklist = useAppStore((state) => state.completeSetupChecklist);
   const pricingOnboardingCompleted = useAppStore((state) => state.pricingOnboardingCompleted);
-  const glazes = useVisibleGlazes() ?? [];
-  const glazeTests = useVisibleGlazeTests() ?? [];
-  const pieces = useVisiblePieces() ?? [];
+  const glazes = useVisibleGlazes() ?? EMPTY_ARR;
+  const glazeTests = useVisibleGlazeTests() ?? EMPTY_ARR;
+  const pieces = useVisiblePieces() ?? EMPTY_ARR;
   const enabledModules = useNormalizedEnabledModules();
   const hasKilnTab = enabledModules.includes('kiln');
   const hasCommunityTab = enabledModules.includes('community');
-  const firings = useVisibleFirings() ?? [];
+  const firings = useVisibleFirings() ?? EMPTY_ARR;
   const rhythm = normalizeStudioRhythm(useAppStore((state) => state.studioRhythm));
   const studioDataFetching = useIsFetching({
     predicate: (query) =>
@@ -274,6 +278,7 @@ export function useOverviewPage() {
         }
       }
     }
+  // Intentionally runs once on screen mount to avoid replaying ceremonies after store updates.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

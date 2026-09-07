@@ -1,42 +1,42 @@
-import { NotesInput } from '@/src/components/NotesInput';
+import {
+    MODAL_SHEET_RADIUS,
+    ModalCard,
+    ModalFormScrollView,
+    ModalSheetFooter,
+    ModalSheetHeader,
+    ModalShell,
+    useModalSheetHeight,
+} from '@/src/components/AppSheets';
 import { FormField } from '@/src/components/form/FormField';
 import { FormSectionCard } from '@/src/components/form/FormSectionCard';
-import {
-  ModalCard,
-  ModalFormScrollView,
-  ModalShell,
-  ModalSheetFooter,
-  ModalSheetHeader,
-  MODAL_SHEET_RADIUS,
-  useModalSheetHeight,
-} from '@/src/components/AppSheets';
+import { NotesInput } from '@/src/components/NotesInput';
 import { Text } from '@/src/components/ui/text';
-import { FORM_FIELD_GAP } from '@/src/screens/library/atlas/FormField';
-import { glazeCardColor } from '@/src/screens/library/atlas/helpers';
-import { GlazeThumbnail } from '@/src/screens/library/atlas/GlazeThumbnail';
-import { stripGlazeVersionSuffix } from '@/src/screens/glazes/glazeVersionUtils';
-import { GLAZE_FINISH_LABELS, type GlazeLibraryItem } from '@/src/screens/glazes/types';
-import {
-  buildDefaultShareDraft,
-  clearShareDraft,
-  composeShareCaption,
-  loadShareDraft,
-  MAX_SHARE_POST_LENGTH,
-  resolveSharePhotoUri,
-  saveShareDraft,
-  SHARE_INTRO_PRESETS,
-  type ShareGlazeDraft,
-} from '@/src/screens/glazes/shareGlazeRecipe/shareGlazeDraft';
-import {
-  buildGlazePostPayload,
-  embedGlazePayloadInContent,
-} from '@/src/screens/glazes/shareGlazeRecipe/glazePostPayload';
-import { ShareGlazeFeedPreview } from '@/src/screens/glazes/shareGlazeRecipe/ShareGlazeFeedPreview';
-import { resolveCommunityPostError } from '@/src/screens/community/utils/postErrorMessage';
+import { useAnalytics } from '@/src/hooks/useAnalytics';
 import { prependCommunityPost } from '@/src/screens/community/utils/communityCacheUpdates';
+import { resolveCommunityPostError } from '@/src/screens/community/utils/postErrorMessage';
+import { stripGlazeVersionSuffix } from '@/src/screens/glazes/glazeVersionUtils';
+import {
+    buildGlazePostPayload,
+    embedGlazePayloadInContent,
+} from '@/src/screens/glazes/shareGlazeRecipe/glazePostPayload';
+import {
+    buildDefaultShareDraft,
+    clearShareDraft,
+    composeShareCaption,
+    loadShareDraft,
+    MAX_SHARE_POST_LENGTH,
+    resolveSharePhotoUri,
+    saveShareDraft,
+    SHARE_INTRO_PRESETS,
+    type ShareGlazeDraft,
+} from '@/src/screens/glazes/shareGlazeRecipe/shareGlazeDraft';
+import { ShareGlazeFeedPreview } from '@/src/screens/glazes/shareGlazeRecipe/ShareGlazeFeedPreview';
+import { GLAZE_FINISH_LABELS, type GlazeLibraryItem } from '@/src/screens/glazes/types';
+import { FORM_FIELD_GAP } from '@/src/screens/library/atlas/FormField';
+import { GlazeThumbnail } from '@/src/screens/library/atlas/GlazeThumbnail';
+import { glazeCardColor } from '@/src/screens/library/atlas/helpers';
 import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
 import { uploadPostPhotoAsset } from '@/src/services/communityUpload';
-import { useAnalytics } from '@/src/hooks/useAnalytics';
 import { useAppStore } from '@/src/store';
 import type { Piece } from '@/src/types/pieces';
 import { useQueryClient } from '@tanstack/react-query';
@@ -44,17 +44,17 @@ import * as Clipboard from 'expo-clipboard';
 import { Bookmark, Copy, RotateCcw } from 'lucide-react-native';
 import React from 'react';
 import {
-  ActivityIndicator,
-  ScrollView,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
-export type { ShareGlazeDraft } from '@/src/screens/glazes/shareGlazeRecipe/shareGlazeDraft';
 export {
-  buildDefaultShareDraft,
-  composeShareCaption,
+    buildDefaultShareDraft,
+    composeShareCaption
 } from '@/src/screens/glazes/shareGlazeRecipe/shareGlazeDraft';
+export type { ShareGlazeDraft } from '@/src/screens/glazes/shareGlazeRecipe/shareGlazeDraft';
 
 function ToggleChip({
   label,
@@ -101,6 +101,8 @@ export function ShareGlazeRecipeSheet({
   onShared,
 }: ShareGlazeRecipeSheetProps) {
   const isSignedIn = useAppStore((s) => s.isSignedIn);
+  const linkedPiecesRef = React.useRef(linkedPieces);
+  const glazeRef = React.useRef(glaze);
 
   const showToast = useAppStore((s) => s.showToast);
   const markPostCreated = useAppStore((s) => s.markPostCreated);
@@ -112,20 +114,28 @@ export function ShareGlazeRecipeSheet({
   const sheetHeight = useModalSheetHeight(0.84);
 
   React.useEffect(() => {
-    if (!visible || !glaze) return;
+    linkedPiecesRef.current = linkedPieces;
+  }, [linkedPieces]);
+
+  React.useEffect(() => {
+    glazeRef.current = glaze;
+  }, [glaze]);
+
+  React.useEffect(() => {
+    const currentGlaze = glazeRef.current;
+    if (!visible || !currentGlaze) return;
 
     let mounted = true;
     (async () => {
-      const saved = await loadShareDraft(glaze.id);
+      const saved = await loadShareDraft(currentGlaze.id);
       if (!mounted) return;
-      setDraft(saved ?? buildDefaultShareDraft(glaze, linkedPieces));
+      setDraft(saved ?? buildDefaultShareDraft(currentGlaze, linkedPiecesRef.current));
       setShowPreview(true);
     })();
 
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, glaze?.id]);
 
   const caption =

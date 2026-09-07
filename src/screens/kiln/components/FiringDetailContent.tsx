@@ -20,26 +20,15 @@ import { GLAZE_OUTCOME_LABELS, GLAZE_OUTCOME_OPTIONS } from '../../pieces/utils/
 import { Pill } from '../../library/atlas/Pill';
 
 import {
+    FIRING_LOCATION_LABELS,
 
-  FIRING_LOCATION_LABELS,
+    FIRING_TYPE_LABELS,
 
-  FIRING_TYPE_LABELS,
-
-  KILN_TYPE_LABELS,
-
+    KILN_TYPE_LABELS,
 } from '../constants';
 
-import type { FiringCostLineItem } from '../firingEstimations';
-
-import {
-
-  type AutoFiringStatus,
-
-  getAutoFiringStatus,
-
-  getCalculatedTimeline,
-
-} from '../firingEstimations';
+import type { AutoFiringStatus, FiringCostLineItem } from '../firingEstimations';
+import { getAutoFiringStatus, getCalculatedTimeline } from '../firingEstimations';
 
 import { formatHoldTime, getKilnMaxTempLabel } from '../utils/kilnHelpers';
 

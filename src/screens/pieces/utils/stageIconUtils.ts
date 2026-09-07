@@ -1,26 +1,26 @@
 import type { StageConfig } from '@/src/hooks/useStageConfig';
 import {
-  ArchiveX,
-  Bell,
-  Clock,
-  Database,
-  Droplets,
-  Flame,
-  Globe,
-  Hammer,
-  Layers,
-  Lightbulb,
-  Moon,
-  PackageCheck,
-  Palette,
-  Scissors,
-  Shield,
-  Sparkles,
-  Star,
-  Thermometer,
-  Trophy,
-  Wind,
-  Zap,
+    ArchiveX,
+    Bell,
+    Clock,
+    Database,
+    Droplets,
+    Flame,
+    Globe,
+    Hammer,
+    Layers,
+    Lightbulb,
+    Moon,
+    PackageCheck,
+    Palette,
+    Scissors,
+    Shield,
+    Sparkles,
+    Star,
+    Thermometer,
+    Trophy,
+    Wind,
+    Zap,
 } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 
@@ -43,7 +43,7 @@ export const STAGE_ICONS: Record<string, IconComp> = {
 };
 
 /** Full icon palette available for custom stage picking */
-export const PICKABLE_ICONS: Array<{ key: string; Icon: IconComp }> = [
+export const PICKABLE_ICONS: { key: string; Icon: IconComp }[] = [
   { key: 'lightbulb',   Icon: Lightbulb   },
   { key: 'hammer',      Icon: Hammer      },
   { key: 'droplets',    Icon: Droplets    },

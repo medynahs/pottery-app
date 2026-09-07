@@ -1,10 +1,10 @@
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { StudioTabScreen } from '@/src/components/StudioTabScreen';
-import {
-  TAB_FLOATING_ACTION_BOTTOM,
-  TAB_SCROLL_BOTTOM_PADDING,
-} from '@/src/constants/tabScreenLayout';
 import { Text } from '@/src/components/ui/text';
+import {
+    TAB_FLOATING_ACTION_BOTTOM,
+    TAB_SCROLL_BOTTOM_PADDING,
+} from '@/src/constants/tabScreenLayout';
 import { ChallengeBanner } from '@/src/screens/overview/components/ChallengeBanner';
 import { FeedbackModal } from '@/src/screens/overview/components/FeedbackModal';
 import { FiringQueueWidget } from '@/src/screens/overview/components/FiringQueueWidget';
@@ -19,7 +19,7 @@ import { useOverviewPage } from '@/src/screens/overview/hooks/useOverviewPage';
 import { resetLocalDataForTesting } from '@/src/store/clearLocalData';
 import { MessageSquarePlus } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity } from 'react-native';
 
 export function OverviewPage() {
   const [resettingLocalData, setResettingLocalData] = useState(false);

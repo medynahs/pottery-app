@@ -13,19 +13,19 @@ import type { Firing } from '../../types/kiln';
 import { ActiveFiringCard } from './components/ActiveFiringCard';
 import { FiringDetailModal } from './components/FiringDetailModal';
 import { FiringLogHistoryCard } from './components/FiringLogHistoryCard';
+import { ScheduledFiringRow } from './components/FiringRows';
 import {
-  KilnEmergencyNotesCard,
+    KilnEmergencyNotesCard,
 } from './components/KilnMaintenanceSection';
 import { KilnSubScreenHeader } from './components/KilnSubScreenHeader';
-import { LogFiringModal } from './components/LogFiringModal';
 import { LogFiringButton } from './components/LogFiringButton';
-import { ScheduledFiringRow } from './components/FiringRows';
+import { LogFiringModal } from './components/LogFiringModal';
 import { FIRING_TYPE_LABELS, KILN_TYPE_LABELS } from './constants';
 import { formatReadyDate, getAutoFiringStatus, getExpectedReadyAt } from './firingEstimations';
 import {
-  getFiringSortTimestamp,
-  getKilnMaxTempLabel,
-  getKilnPerformanceStats,
+    getFiringSortTimestamp,
+    getKilnMaxTempLabel,
+    getKilnPerformanceStats,
 } from './utils/kilnHelpers';
 
 function ResultBadge({ result }: { result?: string }) {
@@ -181,7 +181,7 @@ function FiringHistoryCard({
         {/* result notes */}
         {firing.resultNotes ? (
           <Text className="text-xs text-muted-foreground italic mt-0.5 mb-2" numberOfLines={2}>
-            "{firing.resultNotes}"
+            &ldquo;{firing.resultNotes}&rdquo;
           </Text>
         ) : null}
 

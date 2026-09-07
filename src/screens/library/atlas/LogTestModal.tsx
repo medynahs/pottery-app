@@ -1,42 +1,42 @@
 import {
-  ModalCard,
-  ModalFormScrollView,
-  ModalSheetFooter,
-  ModalSheetHeader,
-  ModalShell,
-  MODAL_SHEET_RADIUS,
-  useModalSheetHeight,
+    MODAL_SHEET_RADIUS,
+    ModalCard,
+    ModalFormScrollView,
+    ModalSheetFooter,
+    ModalSheetHeader,
+    ModalShell,
+    useModalSheetHeight,
 } from '@/src/components/AppSheets';
+import { DatePickerField } from '@/src/components/DatePickerField';
 import { CollapsibleFormSection, FormSectionCard } from '@/src/components/form/FormSectionCard';
 import { NotesInput } from '@/src/components/NotesInput';
-import { DatePickerField } from '@/src/components/DatePickerField';
 import { PhotoPickField } from '@/src/components/PhotoPickField';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
 import {
-  GLAZE_APPLICATION_METHOD_LABELS,
-  GLAZE_APPLICATION_METHOD_OPTIONS,
-  GLAZE_DEFECT_LABELS,
-  GLAZE_DEFECT_OPTIONS,
-  GLAZE_KILN_TYPE_LABELS,
-  GLAZE_KILN_TYPE_OPTIONS,
-  GLAZE_RESULT_LABELS,
-  GLAZE_RESULT_OPTIONS,
-  GLAZE_THICKNESS_LABELS,
-  GLAZE_THICKNESS_OPTIONS,
-  type GlazeLibraryItem,
+    labelForMappedOutcome,
+    previewTestTileOutcome,
+} from '@/src/screens/glazes/glazeOutcomeMap';
+import {
+    GLAZE_APPLICATION_METHOD_LABELS,
+    GLAZE_APPLICATION_METHOD_OPTIONS,
+    GLAZE_DEFECT_LABELS,
+    GLAZE_DEFECT_OPTIONS,
+    GLAZE_KILN_TYPE_LABELS,
+    GLAZE_KILN_TYPE_OPTIONS,
+    GLAZE_RESULT_LABELS,
+    GLAZE_RESULT_OPTIONS,
+    GLAZE_THICKNESS_LABELS,
+    GLAZE_THICKNESS_OPTIONS,
+    type GlazeLibraryItem,
 } from '@/src/screens/glazes/types';
 import { GLAZE_TEMPS } from '@/src/screens/pieces/utils/constants';
-import {
-  labelForMappedOutcome,
-  previewTestTileOutcome,
-} from '@/src/screens/glazes/glazeOutcomeMap';
 import { useAppStore } from '@/src/store';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { FormField } from './FormField';
+import { isValidTestDraft, kilnTypeFromStudioKiln } from './glazeTestDraft';
 import { createEmptyTestDraft } from './helpers';
-import { isValidTestDraft, buildGlazeTestFromDraft, kilnTypeFromStudioKiln } from './glazeTestDraft';
 import { KilnPickerField } from './KilnPickerField';
 import { Pill } from './Pill';
 import type { TestDraft } from './types';
@@ -54,7 +54,7 @@ export function LogTestModal({
   onClose: () => void;
   onSave: (draft: TestDraft) => void;
   glazes: GlazeLibraryItem[];
-  clayBodies: Array<{ id: string; name: string }>;
+  clayBodies: { id: string; name: string }[];
   defaultGlazeTemp: string | null;
   preselectedGlazeId?: string;
 }) {

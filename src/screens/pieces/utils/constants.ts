@@ -1,4 +1,5 @@
 import { ArchiveX, Droplets, Flame, Hammer, Lightbulb, PackageCheck, Scissors, Sparkles, Star, Wind, Zap } from 'lucide-react-native';
+import type { GlazeOutcome } from '../../../types/pieces';
 import { JournalTheme } from './journalTheme';
 
 export const LIFECYCLE_ORDER = [
@@ -160,8 +161,6 @@ export const FIRING_TYPES = [
   'Wood',
   'Other',
 ];
-
-import type { GlazeOutcome } from '../../../types/pieces';
 
 export const GLAZE_OUTCOME_OPTIONS: GlazeOutcome[] = ['success', 'crawling', 'underfired', 'crack'];
 

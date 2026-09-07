@@ -1,36 +1,17 @@
 import { ConfirmSheet } from '@/src/components/AppSheets';
 import { ImageLightbox } from '@/src/components/ImageLightbox';
 import { Text } from '@/src/components/ui/text';
-import { AddGlazeModal } from '@/src/screens/library/atlas/AddGlazeModal';
-import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
-import { buildGlazeTestFromDraft } from '@/src/screens/library/atlas/glazeTestDraft';
+import { CompareVersionsModal } from '@/src/screens/glazes/CompareVersionsModal';
 import { CommunityProvenanceBanner } from '@/src/screens/glazes/components/CommunityProvenanceBanner';
 import { DiscoverProvenanceBanner } from '@/src/screens/glazes/components/DiscoverProvenanceBanner';
 import { GlazeBatchScalerCard } from '@/src/screens/glazes/components/GlazeBatchScalerCard';
+import { GlazeStatusOrb } from '@/src/screens/glazes/components/GlazeStatusOrb';
 import { GlazeStatusPill, GlazeStatusPillRow } from '@/src/screens/glazes/components/GlazeStatusPill';
-import { ShareGlazeRecipeSheet } from '@/src/screens/glazes/ShareGlazeRecipeSheet';
-import {
-  formatShortDate,
-  glazeCardColor,
-  glazeToEditDraft,
-} from '@/src/screens/library/atlas/helpers';
-import {
-  formatDaysSinceMixed,
-  resolveGlazeStatus,
-} from '@/src/screens/library/atlas/glazeListUtils';
-import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
-import { GlazeThumbnail } from '@/src/screens/library/atlas/GlazeThumbnail';
-import type { GlazeDraft, TestDraft } from '@/src/screens/library/atlas/types';
-import { sanitizeCustomCollections, deriveCustomCollectionNames } from '@/src/screens/library/atlas/collections';
-import { hasValidRecipeIngredients } from '@/src/screens/library/atlas/GlazeRecipeBuilder';
-import { GlazeRecipeSummary } from '@/src/screens/library/atlas/GlazeRecipeSummary';
 import { glazeDraftToItem, normalizeGlazeItem } from '@/src/screens/glazes/glazeItemHelpers';
+import { glazeCardColorForItem, resolveGlazePhotoUri, selectPiecesByGlazeId } from '@/src/screens/glazes/glazePieceLink';
 import {
   buildGlazeTestInsight,
 } from '@/src/screens/glazes/glazeTestStats';
-import { glazeCardColorForItem, resolveGlazePhotoUri, selectPiecesByGlazeId } from '@/src/screens/glazes/glazePieceLink';
-import { CompareVersionsModal } from '@/src/screens/glazes/CompareVersionsModal';
-import { GlazeStatusOrb } from '@/src/screens/glazes/components/GlazeStatusOrb';
 import {
   buildNewVersionDraft,
   computeNextVersionNumber,
@@ -39,12 +20,31 @@ import {
   getGlazeRootId,
   getGlazeVersions,
 } from '@/src/screens/glazes/glazeVersionUtils';
+import { ShareGlazeRecipeSheet } from '@/src/screens/glazes/ShareGlazeRecipeSheet';
+import { AddGlazeModal } from '@/src/screens/library/atlas/AddGlazeModal';
+import { deriveCustomCollectionNames, sanitizeCustomCollections } from '@/src/screens/library/atlas/collections';
+import {
+  formatDaysSinceMixed,
+  resolveGlazeStatus,
+} from '@/src/screens/library/atlas/glazeListUtils';
+import { hasValidRecipeIngredients } from '@/src/screens/library/atlas/GlazeRecipeBuilder';
+import { GlazeRecipeSummary } from '@/src/screens/library/atlas/GlazeRecipeSummary';
+import { buildGlazeTestFromDraft } from '@/src/screens/library/atlas/glazeTestDraft';
+import { GlazeThumbnail } from '@/src/screens/library/atlas/GlazeThumbnail';
+import {
+  formatShortDate,
+  glazeCardColor,
+  glazeToEditDraft,
+} from '@/src/screens/library/atlas/helpers';
+import { LogTestModal } from '@/src/screens/library/atlas/LogTestModal';
+import type { GlazeDraft, TestDraft } from '@/src/screens/library/atlas/types';
+import { scheduleGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { GLAZE_OUTCOME_LABELS } from '@/src/screens/pieces/utils/constants';
+import { useAppStore, useVisibleGlazes, useVisibleGlazeTests, useVisiblePieces } from '@/src/store';
 import { formatDateShort } from '@/src/utils/dates';
-import { useAppStore, useVisiblePieces, useVisibleGlazes, useVisibleGlazeTests } from '@/src/store';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, GitBranchPlus, Pencil, Share2, Sparkles, Star, Trash2, ArrowLeftRight } from 'lucide-react-native';
+import { ArrowLeftRight, ChevronLeft, GitBranchPlus, Pencil, Share2, Sparkles, Star, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -76,7 +76,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 function BatchDetailsCard({ glaze }: { glaze: GlazeLibraryItem }) {
-  const rows: Array<{ label: string; value: string }> = [];
+  const rows: { label: string; value: string }[] = [];
 
   rows.push({ label: 'Finish', value: GLAZE_FINISH_LABELS[glaze.finish] });
 
@@ -159,8 +159,7 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
 
   const editDraft = React.useMemo(
     () => (glaze ? glazeToEditDraft(glaze) : undefined),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [editOpen],
+    [glaze],
   );
 
   const versionFamily = React.useMemo(
@@ -175,8 +174,7 @@ export default function GlazeDetailScreen({ glazeId }: { glazeId: string }) {
 
   const newVersionDraft = React.useMemo(
     () => (glaze ? buildNewVersionDraft(glaze) : undefined),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [newVersionOpen],
+    [glaze],
   );
 
   const displayName = React.useMemo(

@@ -1,22 +1,16 @@
-import * as React from "react";
-import { 
-  Modal,
-  View,
-  Pressable,
-  type ModalProps,
-  Platform,
-  KeyboardAvoidingView,
-} from "react-native";
-import { cn } from "./utils/cn";
 import { X } from "lucide-react-native";
+import * as React from "react";
+import {
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    View,
+} from "react-native";
 import { iconWithClassName } from "./lib/icons/icon-with-classname";
+import { cn } from "./utils/cn";
 
 const XIcon = iconWithClassName(X);
-
-interface DialogProps extends Omit<ModalProps, "visible"> {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-}
 
 const DialogContext = React.createContext<{
   open: boolean;
@@ -174,11 +168,5 @@ const DialogDescription = React.forwardRef<
 DialogDescription.displayName = "DialogDescription";
 
 export {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger
 };

@@ -161,7 +161,7 @@ export const RoleStep: React.FC<RoleStepProps> = ({ draft, updateDraft, USER_TYP
         }}
       />
       <Text style={{ fontSize: 11, color: 'hsl(24 14% 48%)', marginTop: 8, lineHeight: 15 }}>
-        We'll send a join request when you finish setup (if you're signed in). The owner approves before you're linked.
+        We&apos;ll send a join request when you finish setup (if you&apos;re signed in). The owner approves before you&apos;re linked.
       </Text>
     </View>
   );

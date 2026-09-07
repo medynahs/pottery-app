@@ -2,8 +2,8 @@ import { Banner } from '@/src/components/Banner';
 import { LabeledInput } from '@/src/components/LabeledInput';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { Text } from '@/src/components/ui/text';
-import { markSessionBootstrap, refreshMeAfterSignIn } from '@/src/hooks/useCurrentUser';
 import { useAnalytics } from '@/src/hooks/useAnalytics';
+import { markSessionBootstrap, refreshMeAfterSignIn } from '@/src/hooks/useCurrentUser';
 import { detectAccountDeletionGrace } from '@/src/services/accountGrace';
 import { googleSignIn, isExpoGo, signIn, UserCancelledError } from '@/src/services/auth';
 import { useAppStore } from '@/src/store';
@@ -12,11 +12,11 @@ import { useRouter } from 'expo-router';
 import { Mail } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -179,7 +179,7 @@ export default function LoginScreen({ onSuccess }: Props) {
           />
 
           <View className="flex-row items-center justify-center gap-1 mt-6">
-            <Text className="text-sm text-muted-foreground">Don't have an account?</Text>
+            <Text className="text-sm text-muted-foreground">Don&apos;t have an account?</Text>
             <TouchableOpacity onPress={() => router.push('/register')} hitSlop={8}>
               <Text className="text-sm font-semibold text-primary">Sign up</Text>
             </TouchableOpacity>

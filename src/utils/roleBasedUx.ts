@@ -1,5 +1,5 @@
-import type { OnboardingUserType } from '@/src/store/appStore';
 import type { AnalyticsTabId } from '@/src/screens/analytics/components/AnalyticsTabBar';
+import type { OnboardingUserType } from '@/src/store/appStore';
 import type { PricingUserType } from '@/src/types/pricing';
 
 export type KilnSectionMode = 'kilns' | 'sessions' | 'queue';
@@ -87,11 +87,11 @@ export function pricingUserTypeForArchetype(userType: OnboardingUserType): Prici
 
 export type PieceDetailLevel = 'quick' | 'standard' | 'full';
 
-export const PIECE_DETAIL_LEVEL_OPTIONS: Array<{
+export const PIECE_DETAIL_LEVEL_OPTIONS: {
   value: PieceDetailLevel;
   label: string;
   hint: string;
-}> = [
+}[] = [
   { value: 'quick', label: 'Essentials', hint: 'Photo, name, clay, and notes.' },
   { value: 'standard', label: 'Studio', hint: 'Stage, location, and size.' },
   { value: 'full', label: 'Full details', hint: 'Pricing, glaze, workshop, and listing.' },

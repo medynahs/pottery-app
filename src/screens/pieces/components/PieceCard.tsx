@@ -1,7 +1,7 @@
+import { PiecePlaceholderArt } from '@/src/components/PiecePlaceholderArt';
 import { Badge } from '@/src/components/ui/badge';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
-import { PiecePlaceholderArt } from '@/src/components/PiecePlaceholderArt';
 import { BookOpen, Check, Heart, Layers, MoreHorizontal } from 'lucide-react-native';
 import React from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
@@ -163,7 +163,7 @@ export function PieceCard({
           ) : null}
           {piece.stage === 'cemetery' && piece.epitaph ? (
             <Text className="text-[11px] font-display italic text-muted-foreground mt-2" numberOfLines={2}>
-              "{piece.epitaph}"
+              &ldquo;{piece.epitaph}&rdquo;
             </Text>
           ) : null}
           <View className="flex-row items-center justify-between mt-2">

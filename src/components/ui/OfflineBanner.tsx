@@ -1,9 +1,9 @@
+import { Text } from '@/src/components/ui/text';
 import { useNetworkConnection } from '@/src/hooks/useNetworkConnection';
 import { useAppStore } from '@/src/store/appStore';
 import { needsPush } from '@/src/sync/syncState';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
-import { Text } from '@/src/components/ui/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BANNER_HEIGHT = 36;
@@ -34,21 +34,21 @@ export function OfflineBanner() {
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevOnline = useRef(isOnline);
 
-  const slideIn = () =>
+  const slideIn = useCallback(() =>
     Animated.spring(translateY, {
       toValue: 0,
       useNativeDriver: true,
       bounciness: 0,
-    }).start();
+    }).start(), [translateY]);
 
-  const slideOut = (onDone?: () => void) =>
+  const slideOut = useCallback((onDone?: () => void) =>
     Animated.timing(translateY, {
       toValue: -BANNER_HEIGHT,
       duration: 250,
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) onDone?.();
-    });
+    }), [translateY]);
 
   useEffect(() => {
     const wentOffline = prevOnline.current && !isOnline;
@@ -78,7 +78,7 @@ export function OfflineBanner() {
       setRendered(true);
       slideIn();
     }
-  }, [isOnline]);
+  }, [isOnline, slideIn, slideOut]);
 
   if (!rendered) return null;
 

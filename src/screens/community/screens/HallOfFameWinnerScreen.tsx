@@ -3,17 +3,17 @@ import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
 import { Text } from '@/src/components/ui/text';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
+import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
 import { hallOfFameWinnerDetailToDisplay } from '@/src/screens/community/utils/challengeWinners';
 import { apiGetHallOfFameWinner } from '@/src/services/community';
 import { useAppStore } from '@/src/store';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Calendar, ChevronLeft, Heart, Trophy } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
 
 export default function HallOfFameWinnerScreen() {
   const router = useRouter();
@@ -53,7 +53,7 @@ export default function HallOfFameWinnerScreen() {
     } finally {
       setLoading(false);
     }
-  }, [winnerId]);
+  }, [winnerId, isSignedIn]);
 
   useEffect(() => {
     void load();

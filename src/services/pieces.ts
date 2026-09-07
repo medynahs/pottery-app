@@ -92,7 +92,7 @@ export function docForBackend(piece: Piece): Record<string, unknown> {
  */
 export function resolvePieceGlazeBackendId(
   localGlazeId: string | undefined,
-  glazes: ReadonlyArray<{ id: string; backendId?: string }>,
+  glazes: readonly { id: string; backendId?: string }[],
 ): string | null {
   if (!localGlazeId?.trim()) return null;
   return glazes.find((g) => g.id === localGlazeId)?.backendId ?? null;

@@ -1,13 +1,13 @@
 import { getGlazeRootId, stripGlazeVersionSuffix } from '@/src/screens/glazes/glazeVersionUtils';
 import type { GlazeLibraryItem, GlazeTestTile } from '@/src/screens/glazes/types';
 import type { Piece } from '@/src/types/pieces';
-import type { RankedUsage } from '@/src/utils/computeStudioStats';
 import {
-  isWithinPeriod,
-  resolvePeriod,
-  type AnalyticsPeriod,
-  type AnalyticsPeriodId,
+    isWithinPeriod,
+    resolvePeriod,
+    type AnalyticsPeriod,
+    type AnalyticsPeriodId,
 } from '@/src/utils/analyticsPeriods';
+import type { RankedUsage } from '@/src/utils/computeStudioStats';
 import { formatDateShort } from '@/src/utils/dates';
 
 type FamilyUsage = {
@@ -21,19 +21,19 @@ export type GlazeFamilyDrillDown = {
   familyKey: string;
   pieceCount: number;
   testCount: number;
-  pieces: Array<{
+  pieces: {
     pieceId: number;
     name: string;
     stageLabel: string;
     dateLabel: string;
-  }>;
-  tests: Array<{
+  }[];
+  tests: {
     testId: string;
     glazeId: string;
     glazeVersionLabel: string;
     resultRating: GlazeTestTile['resultRating'];
     dateLabel: string;
-  }>;
+  }[];
 };
 
 function resolveFamilyLabel(

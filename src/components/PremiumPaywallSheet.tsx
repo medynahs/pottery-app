@@ -1,6 +1,6 @@
 import { premiumRouteForFeature, type PremiumFeature } from '@/src/utils/premiumGate';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export interface PremiumPaywallSheetProps {
   featureName: PremiumFeature;
@@ -11,13 +11,17 @@ export interface PremiumPaywallSheetProps {
 
 export function PremiumPaywallSheet({ visible, onClose, featureName }: PremiumPaywallSheetProps) {
   const router = useRouter();
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!visible) return;
     router.push(premiumRouteForFeature(featureName) as never);
-    onClose();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, featureName]);
+    onCloseRef.current();
+  }, [visible, featureName, router]);
 
   return null;
 }

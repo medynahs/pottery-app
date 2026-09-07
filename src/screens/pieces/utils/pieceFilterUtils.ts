@@ -3,10 +3,10 @@ import type { GlazeLibraryItem } from '@/src/screens/glazes/types';
 import type { GlazeOutcome, Piece } from '@/src/types/pieces';
 import { countPiecePhotos } from '@/src/utils/premiumGate';
 import {
-  GLAZE_OUTCOME_LABELS,
-  GLAZE_OUTCOME_OPTIONS,
-  isConditionStatus,
-  PIECE_STATUSES,
+    GLAZE_OUTCOME_LABELS,
+    GLAZE_OUTCOME_OPTIONS,
+    isConditionStatus,
+    PIECE_STATUSES,
 } from './constants';
 import { isPieceForSale } from './pieceListing';
 
@@ -88,7 +88,7 @@ function uniqueSorted(values: Iterable<string>): string[] {
 
 export function buildClayFilterOptions(
   pieces: Piece[],
-  clayBodies: Array<{ name: string }>,
+  clayBodies: { name: string }[],
 ): string[] {
   const names: string[] = [];
   for (const body of clayBodies) {

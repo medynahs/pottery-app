@@ -1,13 +1,12 @@
+import { stripGlazeVersionSuffix } from '@/src/screens/glazes/glazeVersionUtils';
 import type {
   GlazeFinish,
   GlazeIngredient,
   GlazeLibraryItem,
   GlazeStatus,
 } from '@/src/screens/glazes/types';
-import { stripGlazeVersionSuffix } from '@/src/screens/glazes/glazeVersionUtils';
 import type { ShareGlazeDraft } from './shareGlazeDraft';
 
-/** Plain-text delimiters, avoid HTML comments (often stripped server-side). */
 export const GLAZE_POST_PAYLOAD_START = '---pottery-life-glaze:v1---';
 export const GLAZE_POST_PAYLOAD_END = '---end-pottery-life-glaze---';
 
@@ -22,7 +21,7 @@ export type CommunityGlazeRecipePayload = {
   coneRange: string;
   status?: GlazeStatus;
   batchSize?: string;
-  ingredients: Array<Pick<GlazeIngredient, 'material' | 'percentage' | 'isAddition'>>;
+  ingredients: Pick<GlazeIngredient, 'material' | 'percentage' | 'isAddition'>[];
   ingredientsText?: string;
   notes?: string;
   teaserShared?: boolean;

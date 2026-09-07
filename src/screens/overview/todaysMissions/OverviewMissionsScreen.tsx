@@ -2,12 +2,12 @@ import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Text } from '@/src/components/ui/text';
 import {
-  generateStudioRhythmSuggestions,
-  type StudioRhythmSuggestion,
-  type StudioRhythmSuggestionType,
+    generateStudioRhythmSuggestions,
+    type StudioRhythmSuggestion,
+    type StudioRhythmSuggestionType,
 } from '@/src/screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import { getTodayMissionKey } from '@/src/screens/overview/utils/missionDate';
-import { useAppStore, useVisiblePieces, useVisibleFirings } from '@/src/store';
+import { useAppStore, useVisibleFirings, useVisiblePieces } from '@/src/store';
 import { useRouter } from 'expo-router';
 import { CalendarDays, Check, Flame, Hammer, Scissors, Sparkles, Trophy } from 'lucide-react-native';
 import React from 'react';
@@ -66,6 +66,8 @@ function getProgressPct(current: number, total: number) {
   return Math.round((current / total) * 100);
 }
 
+const EMPTY_COMPLETED: never[] = [];
+
 export default function OverviewMissionsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -86,7 +88,7 @@ export default function OverviewMissionsScreen() {
     [firings, pieces, rhythm]
   );
 
-  const completedTypes = dailyMissionCompletion[todayMissionKey] ?? [];
+  const completedTypes = dailyMissionCompletion[todayMissionKey] ?? EMPTY_COMPLETED;
   const missions = React.useMemo(
     () =>
       suggestions.map((suggestion) => ({
@@ -106,7 +108,7 @@ export default function OverviewMissionsScreen() {
       <View className="flex-row items-center justify-between px-6 pt-4 pb-2">
         <View>
           <Text className="text-xl font-bold text-foreground" style={{ fontFamily: 'Fraunces_700Bold' }}>
-            Today's Missions
+            Today&apos;s Missions
           </Text>
           <Text className="text-sm text-muted-foreground mt-0.5">Today&apos;s checklist shaped by your Studio Rhythm.</Text>
         </View>

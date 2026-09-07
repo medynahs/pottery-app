@@ -38,7 +38,7 @@ export function InviteStudioCard({ onOpenStudios }: InviteStudioCardProps) {
               Shared studio
             </Text>
             <Text className="text-base font-serif font-bold text-foreground leading-5">
-              Your studio isn't on Pottery Nook yet
+              Your studio isn&apos;t on Pottery Nook yet
             </Text>
             <Text className="text-sm text-muted-foreground mt-1.5 leading-5">
               Keep logging your own pieces — when the owner joins, you can link for firing schedules and queue

@@ -14,14 +14,14 @@ const TONES = {
 export function JourneyStatGrid({
   stats,
 }: {
-  stats: Array<{
+  stats: {
     key: string;
     label: string;
     value: string;
     sub?: string;
     tone: keyof typeof TONES;
     icon: LucideIcon;
-  }>;
+  }[];
 }) {
   return (
     <View className="mx-6 flex-row flex-wrap gap-2.5 mb-4">

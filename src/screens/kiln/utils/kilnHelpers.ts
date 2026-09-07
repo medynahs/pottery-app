@@ -1,6 +1,6 @@
 import type { Firing, FiringResult, Kiln, KilnPerformanceStats, PieceFireReceipt } from '../../../types/kiln';
 import type { GlazeOutcome, Piece } from '../../../types/pieces';
-import { FIRING_SOURCE_STAGE, FIRING_TARGET_STAGE } from '../constants';
+import { FIRING_TARGET_STAGE } from '../constants';
 import { buildFiringCostBreakdown } from '../firingEstimations';
 
 export const DEFAULT_KILN_MAX_TEMP_C = 1300;

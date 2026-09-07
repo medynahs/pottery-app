@@ -1,9 +1,6 @@
-import type { BackendChallengeWinner } from '@/src/services/challenges';
-import type { BackendHallOfFameWinner, BackendHallOfFameWinnerDetail } from '@/src/services/community';
-import type { ChallengeEntryDisplay, ChallengeWinnerDisplay } from '@/src/screens/community/types';
-import type { BackendChallengeEntry } from '@/src/services/challenges';
 import type { MockHallOfFameCycle, MockHallOfFameWinner } from '@/src/screens/community/mock/challengeMockTypes';
 import { UNDERWATER_HERO_IMAGE } from '@/src/screens/community/utils/mockUnderwaterChallenge';
+import type { BackendChallengeEntry, BackendChallengeWinner } from '@/src/services/challenges';
 
 const DELETED_WINNER_LABEL = 'Former member';
 

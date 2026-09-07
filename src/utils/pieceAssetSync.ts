@@ -20,10 +20,10 @@
  */
 import * as FileSystem from 'expo-file-system/legacy';
 import {
-  apiDeletePieceAsset,
-  apiListAllPieceAssets,
-  apiUploadPieceAsset,
-  type BackendPieceAsset,
+    apiDeletePieceAsset,
+    apiListAllPieceAssets,
+    apiUploadPieceAsset,
+    type BackendPieceAsset,
 } from '../services/pieces';
 import { setPiecesIfChanged, useAppStore } from '../store/appStore';
 import type { Piece } from '../types/pieces';
@@ -237,6 +237,7 @@ export async function flushPiecePhotoSync(pieceId: number): Promise<void> {
       // cycle (push sync schedules photo sync and vice-versa). A static import
       // would trip Metro's require-cycle warning.
       const { schedulePiecesSync } =
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         require('../screens/pieces/hooks/usePiecesSync') as typeof import('../screens/pieces/hooks/usePiecesSync');
       schedulePiecesSync();
     }

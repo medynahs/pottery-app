@@ -1,13 +1,13 @@
-import { Text } from '@/src/components/ui/text';
 import { MODAL_SHEET_BORDER, MODAL_SHEET_SURFACE } from '@/src/components/ModalShell';
+import { Text } from '@/src/components/ui/text';
 import { Check, FolderPlus } from 'lucide-react-native';
 import React from 'react';
 import {
-  Modal,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Modal,
+    ScrollView,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { DiscoverRecipe } from './types';
@@ -35,7 +35,7 @@ export function SaveCollectionSheet({
       setNewInput('');
       setShowNewInput(false);
     }
-  }, [recipe?.id]);
+  }, [recipe]);
 
   function toggle(name: string) {
     setSelected((prev) =>

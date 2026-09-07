@@ -4,13 +4,13 @@ import { Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, View, type DimensionValue } from 'react-native';
 import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withTiming,
+    Easing,
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withRepeat,
+    withSequence,
+    withTiming,
 } from 'react-native-reanimated';
 import Svg, { Line, Path, Rect } from 'react-native-svg';
 
@@ -364,7 +364,7 @@ export function CemeteryGardenEmpty() {
         The garden is quiet
       </Text>
       <Text className="text-xs text-center leading-5" style={styles.emptyBody}>
-        When a piece doesn't survive the kiln, send it here to record its epitaph.
+        When a piece doesn&apos;t survive the kiln, send it here to record its epitaph.
       </Text>
     </View>
   );
@@ -396,9 +396,9 @@ export function CemeteryGardenView({ count, children }: CemeteryGardenViewProps)
             <Text style={styles.eyebrow}>Rite of Passage</Text>
           </View>
 
-          <Text style={styles.title}>The Kiln Gods' Garden</Text>
+          <Text style={styles.title}>The Kiln Gods&apos; Garden</Text>
           <Text style={styles.quote}>
-            Every crack is a lesson, every explosion a story. We honor the pieces that didn't make it.
+            Every crack is a lesson, every explosion a story. We honor the pieces that didn&apos;t make it.
           </Text>
 
           <View style={styles.statsRow}>

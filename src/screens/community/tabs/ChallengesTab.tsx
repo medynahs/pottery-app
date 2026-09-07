@@ -1,74 +1,73 @@
-﻿// Challenges tab — monthly community challenge hub
-import { InlineErrorCard } from '@/src/components/InlineErrorCard';
-import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
+// Challenges tab — monthly community challenge hub
 import { ConfirmSheet } from '@/src/components/AppSheets';
+import { InlineErrorCard } from '@/src/components/InlineErrorCard';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { SkeletonLeaderboardRow } from '@/src/components/Skeleton';
 import { Text } from '@/src/components/ui/text';
 import { COMMUNITY_THEME } from '@/src/screens/community/communityTheme';
-import { ACTIVE_FESTIVAL } from '@/src/screens/community/data';
 import { ChallengeSignUpSheet } from '@/src/screens/community/components/ChallengeSignUpSheet';
 import { SubmitPieceSheet, type SubmitPiecePayload } from '@/src/screens/community/components/SubmitPieceSheet';
 import {
-  ChallengePhaseChip,
-  ChallengePhaseDevBar,
+    ChallengePhaseChip,
+    ChallengePhaseDevBar,
 } from '@/src/screens/community/components/challenge/ChallengePhaseUI';
 import { HallOfFameWinnerCard } from '@/src/screens/community/components/challenge/HallOfFameWinnerCard';
-import {
-  challengeEntryId,
-  challengeHasSubmitted,
-  challengeIsJoined,
-  pickPrimaryChallenge,
-  toChallengeDisplay,
-  type ChallengeDisplay,
-} from '@/src/screens/community/utils/challengeDisplay';
-import {
-  getPhaseSubtitle,
-  getPrimaryCtaLabel,
-  getSecondaryCtaLabel,
-  resolveChallengePhase,
-} from '@/src/screens/community/utils/challengePhase';
-import {
-  backendWinnerToDisplay,
-  mockWinnerToDisplay,
-} from '@/src/screens/community/utils/challengeWinners';
-import { buildPreviewChallengeDisplay } from '@/src/screens/community/utils/challengePreviewDisplay';
-import { challengeToFestival } from '@/src/screens/community/utils/challengeFestival';
-import { trackTitleFromChallenge } from '@/src/screens/community/utils/challengeTracks';
-import { MOCK_UNDERWATER_CHALLENGE } from '@/src/screens/community/utils/mockUnderwaterChallenge';
-import { useMockChallengeStore } from '@/src/screens/community/mock/mockChallengeStore';
-import type { ChallengePhase } from '@/src/screens/community/types';
-import type { ChallengeWinnerDisplay } from '@/src/screens/community/types';
-import { buildCommunityPostMeta, embedCommunityPostMeta } from '@/src/screens/community/utils/communityPostPayload';
-import { prependCommunityPost } from '@/src/screens/community/utils/communityCacheUpdates';
+import { ACTIVE_FESTIVAL } from '@/src/screens/community/data';
 import { useChallengesQuery, usePatchChallengesCache, useRefreshChallenges } from '@/src/screens/community/hooks/useChallengesQuery';
+import { useMockChallengeStore } from '@/src/screens/community/mock/mockChallengeStore';
+import type { ChallengePhase, ChallengeWinnerDisplay } from '@/src/screens/community/types';
 import {
-  apiSubmitChallengeEntry,
-  apiWithdrawChallengeEntry,
-  challengeJoinErrorMessage,
+    challengeEntryId,
+    challengeHasSubmitted,
+    challengeIsJoined,
+    pickPrimaryChallenge,
+    toChallengeDisplay,
+    type ChallengeDisplay,
+} from '@/src/screens/community/utils/challengeDisplay';
+import { challengeToFestival } from '@/src/screens/community/utils/challengeFestival';
+import {
+    getPhaseSubtitle,
+    getPrimaryCtaLabel,
+    getSecondaryCtaLabel,
+    resolveChallengePhase,
+} from '@/src/screens/community/utils/challengePhase';
+import { buildPreviewChallengeDisplay } from '@/src/screens/community/utils/challengePreviewDisplay';
+import { trackTitleFromChallenge } from '@/src/screens/community/utils/challengeTracks';
+import {
+    backendWinnerToDisplay,
+    mockWinnerToDisplay,
+} from '@/src/screens/community/utils/challengeWinners';
+import { prependCommunityPost } from '@/src/screens/community/utils/communityCacheUpdates';
+import { buildCommunityPostMeta, embedCommunityPostMeta } from '@/src/screens/community/utils/communityPostPayload';
+import { MOCK_UNDERWATER_CHALLENGE } from '@/src/screens/community/utils/mockUnderwaterChallenge';
+import {
+    apiSubmitChallengeEntry,
+    apiWithdrawChallengeEntry,
+    challengeJoinErrorMessage,
 } from '@/src/services/challenges';
 import { apiCreatePost, hydrateCreatedPost } from '@/src/services/community';
 import { CommunityUploadError, uploadPostPhotoAsset } from '@/src/services/communityUpload';
 import { useAppStore } from '@/src/store';
 import {
-  trackChallengeEntrySubmitted,
-  trackChallengeJoined,
+    trackChallengeEntrySubmitted,
+    trackChallengeJoined,
 } from '@/src/utils/productAnalytics';
 import { useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
-  Calendar,
-  CheckCircle2,
-  Circle,
-  Flame,
-  Share2,
-  Sparkles,
-  Trophy,
-  Users,
+    Calendar,
+    CheckCircle2,
+    Circle,
+    Flame,
+    Share2,
+    Sparkles,
+    Trophy,
+    Users,
 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
-import { Image } from 'expo-image';
 
 const HOW_IT_WORKS = [
   {

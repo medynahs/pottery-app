@@ -1,4 +1,3 @@
-import { Text } from '@/src/components/ui/text';
 import React from 'react';
 import { View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';

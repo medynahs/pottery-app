@@ -1,42 +1,42 @@
-import { CollapsibleFormSection, FormSectionCard } from '@/src/components/form/FormSectionCard';
 import {
-  ModalCard,
-  ModalFormScrollView,
-  ModalSheetFooter,
-  ModalSheetHeader,
-  ModalShell,
-  MODAL_SHEET_RADIUS,
-  useModalSheetHeight,
+    MODAL_SHEET_RADIUS,
+    ModalCard,
+    ModalFormScrollView,
+    ModalSheetFooter,
+    ModalSheetHeader,
+    ModalShell,
+    useModalSheetHeight,
 } from '@/src/components/AppSheets';
 import { DatePickerField } from '@/src/components/DatePickerField';
-import { PhotoPickField } from '@/src/components/PhotoPickField';
+import { FormField } from '@/src/components/form/FormField';
+import { CollapsibleFormSection, FormSectionCard } from '@/src/components/form/FormSectionCard';
 import { NotesInput } from '@/src/components/NotesInput';
+import { PhotoPickField } from '@/src/components/PhotoPickField';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
-import { FormField } from '@/src/components/form/FormField';
-import {
-  GLAZE_ATMOSPHERE_LABELS,
-  GLAZE_ATMOSPHERE_OPTIONS,
-  GLAZE_CLAY_TYPE_LABELS,
-  GLAZE_CLAY_TYPE_OPTIONS,
-  GLAZE_FINISH_LABELS,
-  GLAZE_FINISH_OPTIONS,
-  GLAZE_SOURCE_LABELS,
-  GLAZE_STATUS_LABELS,
-  GLAZE_STATUS_OPTIONS,
-  type GlazeSource,
-} from '@/src/screens/glazes/types';
 import { GlazeStatusPill, GlazeStatusPillRow } from '@/src/screens/glazes/components/GlazeStatusPill';
+import {
+    GLAZE_ATMOSPHERE_LABELS,
+    GLAZE_ATMOSPHERE_OPTIONS,
+    GLAZE_CLAY_TYPE_LABELS,
+    GLAZE_CLAY_TYPE_OPTIONS,
+    GLAZE_FINISH_LABELS,
+    GLAZE_FINISH_OPTIONS,
+    GLAZE_SOURCE_LABELS,
+    GLAZE_STATUS_LABELS,
+    GLAZE_STATUS_OPTIONS,
+    type GlazeSource,
+} from '@/src/screens/glazes/types';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { CollectionPicker } from './CollectionPicker';
 import {
-  GLAZE_BRAND_OPTIONS,
-  glazeBrandChipSelection,
-  isKnownGlazeBrand,
+    GLAZE_BRAND_OPTIONS,
+    glazeBrandChipSelection,
+    isKnownGlazeBrand,
 } from './glazeFormConstants';
-import { createEmptyGlazeDraft } from './helpers';
 import { GlazeRecipeBuilder, hasValidRecipeIngredients } from './GlazeRecipeBuilder';
+import { createEmptyGlazeDraft } from './helpers';
 import { Pill } from './Pill';
 import type { GlazeDraft } from './types';
 
@@ -98,18 +98,20 @@ export function AddGlazeModal({
   );
   const [showAdvanced, setShowAdvanced] = React.useState(false);
   const sheetHeight = useModalSheetHeight();
+  const wasVisibleRef = React.useRef(visible);
 
   React.useEffect(() => {
-    if (visible) {
-      setDraft(initialDraft ?? createEmptyGlazeDraft(defaultCone, collections));
-      setShowAdvanced(Boolean(
-        initialDraft?.bestClayType
-        || initialDraft?.atmosphere
-        || initialDraft?.bestFiringTempC,
-      ));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
+    const wasVisible = wasVisibleRef.current;
+    wasVisibleRef.current = visible;
+    if (!visible || wasVisible) return;
+
+    setDraft(initialDraft ?? createEmptyGlazeDraft(defaultCone, collections));
+    setShowAdvanced(Boolean(
+      initialDraft?.bestClayType
+      || initialDraft?.atmosphere
+      || initialDraft?.bestFiringTempC,
+    ));
+  }, [visible, initialDraft, defaultCone, collections]);
 
   const isStoreBought = draft.source === 'store-bought';
   const brandChip = glazeBrandChipSelection(draft.supplier);

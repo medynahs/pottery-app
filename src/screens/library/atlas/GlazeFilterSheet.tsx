@@ -1,25 +1,25 @@
 import {
-  ModalCard,
-  ModalSheetFooter,
-  ModalSheetHeader,
-  ModalShell,
-  MODAL_SHEET_RADIUS,
-  useModalSheetHeight,
+    MODAL_SHEET_RADIUS,
+    ModalCard,
+    ModalSheetFooter,
+    ModalSheetHeader,
+    ModalShell,
+    useModalSheetHeight,
 } from '@/src/components/AppSheets';
 import { Text } from '@/src/components/ui/text';
+import { GlazeFilterPill, GlazeStatusPill } from '@/src/screens/glazes/components/GlazeStatusPill';
 import { FolderPlus } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { FORM_FIELD_GAP } from './FormField';
 import {
-  GLAZE_ATMOSPHERE_FILTER_OPTIONS,
-  GLAZE_CLAY_FILTER_OPTIONS,
-  GLAZE_FINISH_FILTER_OPTIONS,
-  GLAZE_SOURCE_FILTER_OPTIONS,
-  GLAZE_STATUS_FILTER_OPTIONS,
-  type GlazeFilters,
+    GLAZE_ATMOSPHERE_FILTER_OPTIONS,
+    GLAZE_CLAY_FILTER_OPTIONS,
+    GLAZE_FINISH_FILTER_OPTIONS,
+    GLAZE_SOURCE_FILTER_OPTIONS,
+    GLAZE_STATUS_FILTER_OPTIONS,
+    type GlazeFilters,
 } from './glazeListUtils';
-import { GlazeFilterPill, GlazeStatusPill } from '@/src/screens/glazes/components/GlazeStatusPill';
 import { Pill } from './Pill';
 
 const SECTION_GAP = 24;
@@ -28,7 +28,7 @@ type GlazeFilterSheetProps = {
   visible: boolean;
   onClose: () => void;
   filters: GlazeFilters;
-  collectionOptions: Array<{ key: string; label: string }>;
+  collectionOptions: { key: string; label: string }[];
   resultCount: number;
   userConeLabel: string | null;
   onPatchFilters: (patch: Partial<GlazeFilters>) => void;

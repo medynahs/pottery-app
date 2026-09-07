@@ -1,24 +1,22 @@
 import { useCommunityComposer } from '@/src/hooks/useCommunityComposer';
 import { useStageConfig } from '@/src/hooks/useStageConfig';
-import { useVisiblePieces, useAppStore } from '@/src/store';
+import { isGlazeOutcome } from '@/src/screens/glazes/glazePieceLink';
 import { apiSetPieceVisibility } from '@/src/services/pieces';
-import type { PieceVisibility, PiecePhoto } from '../../../types/pieces';
-import { buildPieceSharePreset } from '../utils/sharePieceToCommunity';
+import { useAppStore, useVisiblePieces } from '@/src/store';
+import { schedulePiecePhotoSync } from '@/src/utils/pieceAssetSync';
 import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import type { ScrollView as ScrollViewType } from 'react-native';
 import { LayoutAnimation, Platform, UIManager } from 'react-native';
-import type { DisplayItem, Piece } from '../../../types/pieces';
-import { ActiveFilters, EMPTY_FILTERS, SortKey, countActiveFilters } from '../utils/pieceFilterUtils';
+import type { DisplayItem, Piece, PiecePhoto, PieceVisibility } from '../../../types/pieces';
 import type { StageAdvanceCelebration } from '../modals/StageAdvanceCelebrationModal';
 import type { StageAdvanceCapture, StageAdvanceRequest } from '../modals/StageAdvanceFlowModal';
-import { isGlazeOutcome } from '@/src/screens/glazes/glazePieceLink';
+import { ActiveFilters, EMPTY_FILTERS, SortKey, countActiveFilters, pieceMatchesFilters } from '../utils/pieceFilterUtils';
 import { pieceMatchesSearch } from '../utils/pieceSearch';
-import { pieceMatchesFilters } from '../utils/pieceFilterUtils';
-import { FINISHED_STAGE_ID, CEMETERY_STAGE_ID, getAdvanceOrder, getConfiguredNextStage, isExpectedStageAdvance } from '../utils/stageFlow';
+import { buildPieceSharePreset } from '../utils/sharePieceToCommunity';
+import { CEMETERY_STAGE_ID, FINISHED_STAGE_ID, getAdvanceOrder, getConfiguredNextStage, isExpectedStageAdvance } from '../utils/stageFlow';
 import { STAGE_ICONS, resolveStageIcon } from '../utils/stageIconUtils';
 import { schedulePiecesSync, usePiecesSyncStatus } from './usePiecesSync';
-import { schedulePiecePhotoSync } from '@/src/utils/pieceAssetSync';
 
 function getSetName(name: string) {
   return name.replace(/\s+\d+$/, '');
@@ -438,7 +436,7 @@ export function usePiecesScreen() {
   const handleSharePiece = React.useCallback((piece: Piece) => {
     if (!isSignedIn) return;
     shareToCommunity(buildPieceSharePreset(piece));
-  }, [shareToCommunity]);
+  }, [isSignedIn, shareToCommunity]);
 
   const handleSetPieceVisibility = React.useCallback(async (piece: Piece, visibility: PieceVisibility) => {
     // Visibility is server-authoritative (the backend reconciles storage buckets), so it

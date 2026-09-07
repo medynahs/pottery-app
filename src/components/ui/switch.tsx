@@ -1,11 +1,10 @@
 import * as React from "react";
-import { 
-  Platform, 
-  Switch as RNSwitch, 
-  type SwitchProps as RNSwitchProps,
-  Pressable,
-  View,
-  type PressableProps 
+import {
+    Platform,
+    Pressable,
+    Switch as RNSwitch,
+    View,
+    type PressableProps
 } from "react-native";
 import { cn } from "./utils/cn";
 import { useColorScheme } from "./utils/use-color-scheme";
@@ -33,6 +32,7 @@ const Switch = React.forwardRef<
   // Use native Switch on Android, custom on Web
   if (Platform.OS === "android") {
     // Extract only valid Switch props
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { style, ...validSwitchProps } = props as any;
     return (
       <RNSwitch

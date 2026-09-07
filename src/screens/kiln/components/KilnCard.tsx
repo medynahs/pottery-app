@@ -75,7 +75,7 @@ export function KilnCard({
 
       {kiln.notes ? (
         <Text className="text-xs text-muted-foreground italic mt-2" numberOfLines={2}>
-          "{kiln.notes}"
+          &ldquo;{kiln.notes}&rdquo;
         </Text>
       ) : null}
 

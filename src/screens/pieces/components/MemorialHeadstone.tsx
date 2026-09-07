@@ -188,7 +188,7 @@ export function MemorialHeadstone({
             style={[styles.ground, { top: PLINTH_BOTTOM - 1, height: GROUND_HEIGHT + 1 }]}
           >
             {preview ? (
-              <Text style={styles.groundLabel}>Kiln Gods' Garden</Text>
+              <Text style={styles.groundLabel}>Kiln Gods&apos; Garden</Text>
             ) : (
               <View style={styles.groundTufts}>
                 <View style={styles.tuft} />

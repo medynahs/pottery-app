@@ -1,9 +1,9 @@
 import { resolveGlazePhotoUri } from '@/src/screens/glazes/glazePieceLink';
 import { stripGlazeVersionSuffix } from '@/src/screens/glazes/glazeVersionUtils';
 import {
-  GLAZE_FINISH_LABELS,
-  GLAZE_STATUS_LABELS,
-  type GlazeLibraryItem,
+    GLAZE_FINISH_LABELS,
+    GLAZE_STATUS_LABELS,
+    type GlazeLibraryItem,
 } from '@/src/screens/glazes/types';
 import type { Piece } from '@/src/types/pieces';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,7 +23,7 @@ export type ShareGlazeDraft = {
   linkedPieceId: number | null;
 };
 
-export const SHARE_INTRO_PRESETS: Array<{ id: string; label: string; text: string }> = [
+export const SHARE_INTRO_PRESETS: { id: string; label: string; text: string }[] = [
   {
     id: 'tested',
     label: 'Just tested this',

@@ -45,8 +45,10 @@ export function Kilnkin({ pieces, signals }: KilnkinProps) {
   const wanderX = useRef(new Animated.Value(0)).current;
   const wanderY = useRef(new Animated.Value(0)).current;
   const hintOpacity = useRef(new Animated.Value(0)).current;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [hintText, setHintText] = useState<string | null>(null);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const idleTranslateY = useMemo(
     () => idleLift.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }),
     [idleLift]

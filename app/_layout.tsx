@@ -1,29 +1,8 @@
-import SuperTokens from 'supertokens-react-native';
+import { createAppQueryClient } from '@/src/lib/queryClient';
 import { API_BASE_URL } from '@/src/services';
-SuperTokens.init({ apiDomain: API_BASE_URL, apiBasePath: '/auth' });
-
-if (__DEV__) {
-  console.log('[config] API_BASE_URL =', API_BASE_URL);
-}
-
 import { isExpoGo } from '@/src/services/auth';
-// Native Google Sign-In is a native module Expo Go can't load, so configure it only
-// outside Expo Go (the app still boots there for email/password). webClientId MUST
-// equal the backend GOOGLE_CLIENT_ID (serverAuthCode is minted for the Web client,
-// exchanged server-side); offlineAccess is required to obtain that code.
-if (!isExpoGo) {
-  const { GoogleSignin } =
-    require('@react-native-google-signin/google-signin') as typeof import('@react-native-google-signin/google-signin');
-  GoogleSignin.configure({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '',
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '',
-    offlineAccess: true,
-  });
-}
-
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { createAppQueryClient } from '@/src/lib/queryClient';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -33,39 +12,61 @@ import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import 'react-native-reanimated';
+import SuperTokens from 'supertokens-react-native';
 import '../global.css';
 
-import { TextScaleRoot } from '@/src/components/TextScaleRoot';
+import { AccountDeletedGate } from '@/src/components/AccountDeletedGate';
 import { AnimatedSplashScreen } from '@/src/components/AnimatedSplashScreen';
 import { ErrorBoundary } from '@/src/components/error-boundary';
 import { PhotoPickerProvider } from '@/src/components/PhotoPickerProvider';
+import { PostHogAppProvider } from '@/src/components/PostHogBridge';
+import { TextScaleRoot } from '@/src/components/TextScaleRoot';
 import { ThemeProvider as UIThemeProvider } from '@/src/components/ui';
 import { OfflineBanner } from '@/src/components/ui/OfflineBanner';
 import { ToastOverlay } from '@/src/components/ui/toast-overlay';
-import { AccountDeletedGate } from '@/src/components/AccountDeletedGate';
-import { PostHogAppProvider } from '@/src/components/PostHogBridge';
-import { configureRevenueCat } from '@/src/hooks/useEntitlements';
-import { usePremiumAnalyticsEffects } from '@/src/hooks/usePremiumAnalyticsEffects';
 import { useMeSessionEffects } from '@/src/hooks/useCurrentUser';
+import { configureRevenueCat } from '@/src/hooks/useEntitlements';
 import { useEntitlementSync } from '@/src/hooks/useEntitlementSync';
-import { usePreferencesSync } from '@/src/hooks/usePreferencesSync';
-import { useRhythmSync } from '@/src/hooks/useRhythmSync';
 import { useOfflineSync } from '@/src/hooks/useOfflineSync';
+import { usePreferencesSync } from '@/src/hooks/usePreferencesSync';
+import { usePremiumAnalyticsEffects } from '@/src/hooks/usePremiumAnalyticsEffects';
+import { useRhythmSync } from '@/src/hooks/useRhythmSync';
+import { StageConfigProvider } from '@/src/hooks/useStageConfig';
 import { useFiringsSync } from '@/src/screens/kiln/hooks/useFiringsSync';
 import { useKilnsSync } from '@/src/screens/kiln/hooks/useKilnsSync';
 import { useGlazesSync } from '@/src/screens/library/useGlazesSync';
 import { usePiecesSync } from '@/src/screens/pieces/hooks/usePiecesSync';
-import { StageConfigProvider } from '@/src/hooks/useStageConfig';
-import { resetLocalDataForTesting } from '@/src/store/clearLocalData';
 import { useAppStore } from '@/src/store/appStore';
+import { resetLocalDataForTesting } from '@/src/store/clearLocalData';
 import {
-    DMSans_400Regular,
-    DMSans_500Medium,
+  DMSans_400Regular,
+  DMSans_500Medium,
 } from '@expo-google-fonts/dm-sans';
 import {
-    Fraunces_600SemiBold,
-    Fraunces_700Bold,
+  Fraunces_600SemiBold,
+  Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
+
+SuperTokens.init({ apiDomain: API_BASE_URL, apiBasePath: '/auth' });
+
+if (__DEV__) {
+  console.log('[config] API_BASE_URL =', API_BASE_URL);
+}
+
+// Native Google Sign-In is a native module Expo Go can't load, so configure it only
+// outside Expo Go (the app still boots there for email/password). webClientId MUST
+// equal the backend GOOGLE_CLIENT_ID (serverAuthCode is minted for the Web client,
+// exchanged server-side); offlineAccess is required to obtain that code.
+if (!isExpoGo) {
+  const { GoogleSignin } =
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('@react-native-google-signin/google-signin') as typeof import('@react-native-google-signin/google-signin');
+  GoogleSignin.configure({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '',
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '',
+    offlineAccess: true,
+  });
+}
 
 // Prevent the splash screen from auto-hiding
 void SplashScreen.preventAutoHideAsync().catch(() => {
@@ -112,7 +113,7 @@ function useStoreHydration() {
     // Guard: may have hydrated between the useState init and this effect
     if (useAppStore.persist.hasHydrated()) setHydrated(true);
     return unsub;
-  }, []);
+  }, [hydrated]);
   return hydrated;
 }
 

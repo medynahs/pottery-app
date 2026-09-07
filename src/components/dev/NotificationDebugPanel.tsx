@@ -1,13 +1,13 @@
 import { Text } from '@/src/components/ui/text';
 import { AVAILABLE_KILNKIN_COMPANIONS, type KilnkinCompanion } from '@/src/screens/overview/kilnkin/kilnkinCompanion';
 import {
-  buildKilnkinNotificationMessage,
-  countKilnkinNotificationVariants,
-  type KilnkinVoiceEventKind,
+    buildKilnkinNotificationMessage,
+    countKilnkinNotificationVariants,
+    type KilnkinVoiceEventKind,
 } from '@/src/screens/overview/kilnkin/kilnkinVoice';
 import {
-  formatNotificationDebugLabel,
-  NOTIFICATION_DEBUG_EVENTS,
+    formatNotificationDebugLabel,
+    NOTIFICATION_DEBUG_EVENTS,
 } from '@/src/services/notificationDebug';
 import { previewKilnkinNotification } from '@/src/services/notifications';
 import { useAppStore } from '@/src/store';
@@ -133,7 +133,7 @@ export function NotificationDebugPanel() {
         <Text className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
           {formatNotificationDebugLabel(companion, eventKind)}
         </Text>
-        <Text className="text-sm text-foreground leading-5">"{previewLine}"</Text>
+        <Text className="text-sm text-foreground leading-5">&ldquo;{previewLine}&rdquo;</Text>
       </View>
 
       <View className="flex-row flex-wrap gap-2">

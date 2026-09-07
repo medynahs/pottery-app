@@ -4,16 +4,15 @@ import { Text } from '@/src/components/ui/text';
 import { DEFAULT_PIECE_FORM_OPTIONS, type PieceFormOption, useAppStore } from '@/src/store/appStore';
 import { useRouter } from 'expo-router';
 import {
-    Pencil,
-    Plus,
-    RotateCcw,
-    Trash2,
+  Pencil,
+  Plus,
+  Trash2
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-    TextInput,
-    TouchableOpacity,
-    View,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 // ─── Form Option Row ──────────────────────────────────────────────────────────
@@ -56,9 +55,7 @@ function FormOptionRow({
         onCancel={() => setConfirmOpen(false)}
       />
       <View className="flex-row items-center gap-3 px-4 py-3.5">
-        <View className="w-9 h-9 rounded-xl items-center justify-center bg-stone-100">
-          <Text className="text-base">🫙</Text>
-        </View>
+       
 
         <View className="flex-1">
           {editing ? (
@@ -132,9 +129,6 @@ function AddFormOptionRow({ onAdd }: { onAdd: (name: string) => void }) {
 
   return (
     <View className="mt-3 bg-card rounded-2xl border border-border px-4 py-3 flex-row items-center gap-3">
-      <View className="w-9 h-9 rounded-xl items-center justify-center bg-stone-100">
-        <Text className="text-base">🫙</Text>
-      </View>
       <TextInput
         value={value}
         onChangeText={setValue}
@@ -214,7 +208,6 @@ export default function PieceFormsScreen() {
           activeOpacity={0.7}
           className="flex-row items-center justify-center gap-2 mt-4 mb-2 py-3.5 rounded-2xl border border-border bg-card"
         >
-          <RotateCcw size={15} color="hsl(0 55% 50%)" />
           <Text className="text-sm font-medium text-destructive">Restore Defaults</Text>
         </TouchableOpacity>
     </CustomizationSettingsShell>

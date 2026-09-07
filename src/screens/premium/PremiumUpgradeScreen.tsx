@@ -4,54 +4,54 @@
 import { AnimatedLogoHero } from '@/src/components/AnimatedLogoHero';
 import { Banner } from '@/src/components/Banner';
 import { Text } from '@/src/components/ui/text';
-import {
-  PREMIUM_ANNUAL_PRICE_EUR,
-  PREMIUM_ANNUAL_SAVINGS_LABEL,
-  PREMIUM_MONTHLY_PRICE_EUR,
-  premiumDisplayPrice,
-} from '@/src/constants/premium';
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from '@/src/constants/legal';
-import { openSubscriptionManagement, useEntitlements } from '@/src/hooks/useEntitlements';
+import {
+    PREMIUM_ANNUAL_PRICE_EUR,
+    PREMIUM_ANNUAL_SAVINGS_LABEL,
+    PREMIUM_MONTHLY_PRICE_EUR,
+    premiumDisplayPrice,
+} from '@/src/constants/premium';
 import { useAnalytics } from '@/src/hooks/useAnalytics';
-import { trackPaywallDismissed } from '@/src/utils/productAnalytics';
-import { openPlatformSubscriptionSettings } from '@/src/utils/subscriptionSettings';
+import { openSubscriptionManagement, useEntitlements } from '@/src/hooks/useEntitlements';
 import { useAppStore } from '@/src/store';
 import {
-  getPremiumContextualTitle,
-  getPremiumFeatureDescription,
-  getPremiumLimitLine,
-  getPremiumUpgradeHeadline,
-  getStudioOwnerPaywallFootnote,
-  paywallItemForFeature,
-  PAYWALL_COMING_SOON_FEATURES,
-  PAYWALL_INCLUDED_FEATURES,
-  PAYWALL_LOCAL_CLOUD_EXPLAINER,
-  PREMIUM_COMPARISON_ROWS,
-  type PaywallFeatureItem,
-  type PremiumFeature,
+    getPremiumContextualTitle,
+    getPremiumFeatureDescription,
+    getPremiumLimitLine,
+    getPremiumUpgradeHeadline,
+    getStudioOwnerPaywallFootnote,
+    PAYWALL_COMING_SOON_FEATURES,
+    PAYWALL_INCLUDED_FEATURES,
+    PAYWALL_LOCAL_CLOUD_EXPLAINER,
+    paywallItemForFeature,
+    PREMIUM_COMPARISON_ROWS,
+    type PaywallFeatureItem,
+    type PremiumFeature,
 } from '@/src/utils/premiumGate';
+import { trackPaywallDismissed } from '@/src/utils/productAnalytics';
+import { openPlatformSubscriptionSettings } from '@/src/utils/subscriptionSettings';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
-  BarChart3,
-  Camera,
-  Clock,
-  Cloud,
-  Download,
-  MessageSquare,
-  Palette,
-  Sparkles,
-  Target,
+    BarChart3,
+    Camera,
+    Clock,
+    Cloud,
+    Download,
+    MessageSquare,
+    Palette,
+    Sparkles,
+    Target,
 } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
-  Linking,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Linking,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -242,7 +242,7 @@ export default function PremiumUpgradeScreen({
     : null;
   const contextualLimit = triggerFeature ? getPremiumLimitLine(triggerFeature) : null;
 
-  const plans: Array<{
+  const plans: {
     key: PlanKey;
     label: string;
     badge: string | null;
@@ -250,7 +250,7 @@ export default function PremiumUpgradeScreen({
     pkg: PurchasesPackage | undefined;
     price: string;
     perPeriod: string;
-  }> = [
+  }[] = [
     {
       key: 'annual',
       label: 'Yearly',

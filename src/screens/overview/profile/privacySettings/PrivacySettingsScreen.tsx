@@ -2,13 +2,13 @@ import { SectionLabel } from '@/src/components/SectionLabel';
 import { SettingsGroup } from '@/src/components/SettingsGroup';
 import { ToggleRow } from '@/src/components/ToggleRow';
 import { Text } from '@/src/components/ui/text';
-import { useUpdatePrivacy } from '@/src/hooks/useCurrentUser';
 import { syncAnalyticsConsent, useAnalytics } from '@/src/hooks/useAnalytics';
-import { trackExportAttempted } from '@/src/utils/productAnalytics';
+import { useUpdatePrivacy } from '@/src/hooks/useCurrentUser';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
-import { useAppStore, useVisibleFirings, useVisibleKilns, useVisibleGlazes, useVisibleGlazeTests } from '@/src/store';
+import { useAppStore, useVisibleFirings, useVisibleGlazes, useVisibleGlazeTests, useVisibleKilns } from '@/src/store';
 import { buildStudioExportPayload, shareStudioExport } from '@/src/utils/exportStudioData';
 import { PremiumFeature } from '@/src/utils/premiumGate';
+import { trackExportAttempted } from '@/src/utils/productAnalytics';
 import { useRouter } from 'expo-router';
 import {
     BarChart2,
@@ -184,7 +184,7 @@ export default function PrivacySettingsScreen() {
 
         <View className="px-6 mt-6 mb-8">
           <Text className="text-xs text-muted-foreground text-center leading-5">
-            For questions about your data, use the Feedback button on the home screen and select "Need Help".
+            For questions about your data, use the Feedback button on the home screen and select &ldquo;Need Help&rdquo;.
           </Text>
         </View>
       </ScrollView>

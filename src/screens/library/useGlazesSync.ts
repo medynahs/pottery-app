@@ -12,24 +12,23 @@
  * once uploaded.
  */
 
-import type { GlazeLibraryItem, GlazeTestTile } from '@/src/screens/glazes/types';
 import { flushPiecesSync } from '@/src/screens/pieces/hooks/usePiecesSync';
+import {
+    apiDeleteGlazeImage,
+    apiListGlazeTests,
+    apiListGlazes,
+    apiSyncGlazes,
+    apiUploadGlazeImage,
+    backendGlazeToLocal,
+    backendTestToLocal,
+    localGlazeToSyncItem,
+    localTestToSyncItem,
+    type GlazeImageType,
+} from '@/src/services/glazes';
+import { useAppStore } from '@/src/store';
 import { applySyncAck, beginSyncing, endSyncing, mergeBackendRows } from '@/src/sync/docSync';
 import { pendingRecords } from '@/src/sync/syncState';
 import { canUploadGlazeMedia } from '@/src/utils/cloudStorage';
-import {
-  apiDeleteGlazeImage,
-  apiListGlazeTests,
-  apiListGlazes,
-  apiSyncGlazes,
-  apiUploadGlazeImage,
-  backendGlazeToLocal,
-  backendTestToLocal,
-  localGlazeToSyncItem,
-  localTestToSyncItem,
-  type GlazeImageType,
-} from '@/src/services/glazes';
-import { useAppStore } from '@/src/store';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 

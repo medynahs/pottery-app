@@ -1,10 +1,10 @@
-import { BrandColors } from '@/src/constants/theme';
 import { Text } from '@/src/components/ui/text';
+import { BrandColors } from '@/src/constants/theme';
 import type { ComponentType } from 'react';
-
-type ChipIcon = ComponentType<{ size: number; color: string }>;
 import React from 'react';
 import { Pressable, View } from 'react-native';
+
+type ChipIcon = ComponentType<{ size: number; color: string }>;
 
 type SelectChipVariant = 'accent' | 'inverted';
 

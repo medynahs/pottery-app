@@ -7,14 +7,14 @@ import { STAT_STAMP_STYLES } from '../../journeyTheme';
 export function JourneyPathStats({
   stats,
 }: {
-  stats: Array<{
+  stats: {
     key: string;
     label: string;
     value: string;
     sub?: string;
     tone: keyof typeof STAT_STAMP_STYLES;
     icon: LucideIcon;
-  }>;
+  }[];
 }) {
   return (
     <View className="mb-6">

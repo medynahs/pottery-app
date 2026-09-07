@@ -1,13 +1,13 @@
-﻿import { Text } from '@/src/components/ui/text';
+import { Text } from '@/src/components/ui/text';
 import type { Piece } from '@/src/types/pieces';
 import { Pencil, Shuffle, Zap } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import type { Ritual, StageKey, StudioRhythm } from '../studioRhythm';
+import { RHYTHM_BROWN } from '../rhythmTheme';
+import type { Ritual, StageKey, StudioEvent, StudioRhythm } from '../studioRhythm';
 import { EVENT_CATEGORIES, STAGE_CONFIG, getDateKey } from '../studioRhythm';
 import { EVENT_CATEGORY_ICONS, STAGE_RHYTHM_ICONS, resolveRitualIcon } from '../studioRhythmIcons';
-import { RHYTHM_BROWN } from '../rhythmTheme';
 import { RhythmIconBadge } from './RhythmIconBadge';
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -62,7 +62,7 @@ export function WeekGridCard({ rhythm, onEditPress, pieces = [], rituals = [], h
   }, [pieces, rhythm.type, rhythm.sprintStartDate]);
 
   const eventsByDate = useMemo(() => {
-    const map: Record<string, typeof rhythm.events> = {};
+    const map: Record<string, StudioEvent[]> = {};
     for (const event of rhythm.events) {
       const key = event.date.slice(0, 10);
       if (!map[key]) map[key] = [];

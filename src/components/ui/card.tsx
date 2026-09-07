@@ -1,7 +1,7 @@
 import * as React from "react";
 import { View, type ViewProps } from "react-native";
-import { TextClassContext } from "./utils/text-context";
 import { cn } from "./utils/cn";
+import { TextClassContext } from "./utils/text-context";
 
 /**
  * Card Components
@@ -32,7 +32,7 @@ import { cn } from "./utils/cn";
  * ```
  */
 
-interface CardProps extends ViewProps {}
+type CardProps = ViewProps
 
 const Card = React.forwardRef<React.ElementRef<typeof View>, CardProps>(
   ({ className, ...props }, ref) => (
@@ -114,5 +114,5 @@ const CardFooter = React.forwardRef<
 ));
 CardFooter.displayName = "CardFooter";
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle };
 export type { CardProps };

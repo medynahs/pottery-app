@@ -1,12 +1,13 @@
+import { useAppStore, useVisibleGlazes } from '@/src/store';
 import {
-  formatCloudStorageMb,
-  FREE_CLOUD_STORAGE_MB,
-  getCloudStorageSnapshot,
+    FREE_CLOUD_STORAGE_BYTES,
+    FREE_CLOUD_STORAGE_MB,
+    estimateCloudBytesUsedFromState,
+    formatCloudStorageMb,
 } from '@/src/utils/cloudStorage';
 import { PremiumFeature, premiumRouteForFeature, profilePremiumTeaser } from '@/src/utils/premiumGate';
-import { useAppStore, useVisibleGlazes } from '@/src/store';
-import { Cloud, Crown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { Cloud, Crown } from 'lucide-react-native';
 import React from 'react';
 import { ProfilePromoCard, ProfilePromoProgressBar } from './ProfilePromoCard';
 
@@ -23,10 +24,16 @@ export function ProfileFreeTierPromo() {
   const avatarImageUri = useAppStore((s) => s.user.avatarImageUri);
   const coverImageUri = useAppStore((s) => s.user.coverImageUri);
 
-  const snapshot = React.useMemo(
-    () => getCloudStorageSnapshot(),
-    [pieces, glazes, avatarImageUri, coverImageUri, isPremium],
+  const usedBytes = React.useMemo(
+    () => estimateCloudBytesUsedFromState({ pieces, glazes, avatarImageUri, coverImageUri }),
+    [pieces, glazes, avatarImageUri, coverImageUri],
   );
+  const snapshot = React.useMemo(() => {
+    const limitBytes = isPremium ? null : FREE_CLOUD_STORAGE_BYTES;
+    const atLimit = limitBytes != null && usedBytes >= limitBytes;
+    const nearLimit = limitBytes != null && usedBytes >= limitBytes * 0.85;
+    return { usedBytes, limitBytes, isPremium, atLimit, nearLimit };
+  }, [isPremium, usedBytes]);
 
   if (isPremium) return null;
 

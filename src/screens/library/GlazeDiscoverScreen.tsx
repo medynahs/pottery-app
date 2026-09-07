@@ -8,25 +8,25 @@ import { useRouter } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
-import {
-  collectDiscoverBrands,
-  itemMatchesFilters,
-  itemMatchesSearch,
-} from './discover/discoverSearch';
 import { DevAddDiscoverSheet } from './discover/DevAddDiscoverSheet';
 import { DiscoverGrid } from './discover/DiscoverGrid';
-import { FilterPanel, SearchBar } from './discover/FilterPanel';
-import { isDiscoverRecipeSaved } from './discover/recipeLookup';
-import { comboUsesOwnedGlaze } from './discover/products';
-import { useDiscoverCatalog } from './discover/useDiscoverCatalog';
 import {
-  type BrandFilter,
-  type ColorFilter,
-  type ConeFilter,
-  type ContentTypeFilter,
-  type DiscoverItem,
-  type FinishFilter,
+    collectDiscoverBrands,
+    itemMatchesFilters,
+    itemMatchesSearch,
+} from './discover/discoverSearch';
+import { FilterPanel, SearchBar } from './discover/FilterPanel';
+import { comboUsesOwnedGlaze } from './discover/products';
+import { isDiscoverRecipeSaved } from './discover/recipeLookup';
+import {
+    type BrandFilter,
+    type ColorFilter,
+    type ConeFilter,
+    type ContentTypeFilter,
+    type DiscoverItem,
+    type FinishFilter,
 } from './discover/types';
+import { useDiscoverCatalog } from './discover/useDiscoverCatalog';
 
 export default function GlazeDiscoverScreen() {
   const router = useRouter();
@@ -43,7 +43,7 @@ export default function GlazeDiscoverScreen() {
   });
 
   const catalog = catalogQuery.data;
-  const catalogItems = catalog?.items ?? [];
+  const catalogItems = React.useMemo(() => catalog?.items ?? [], [catalog]);
 
   const brandOptions = React.useMemo(() => collectDiscoverBrands(catalogItems), [catalogItems]);
 

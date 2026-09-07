@@ -1,20 +1,20 @@
 import {
-  ModalCard,
-  ModalFormScrollView,
-  ModalSheetFooter,
-  ModalSheetHeader,
-  ModalShell,
-  MODAL_SHEET_RADIUS,
-  useModalSheetHeight,
+    MODAL_SHEET_RADIUS,
+    ModalCard,
+    ModalFormScrollView,
+    ModalSheetFooter,
+    ModalSheetHeader,
+    ModalShell,
+    useModalSheetHeight,
 } from '@/src/components/AppSheets';
 import { Banner } from '@/src/components/Banner';
-import { UserAvatar } from '@/src/components/UserAvatar';
 import { FormSectionCard } from '@/src/components/form/FormSectionCard';
 import { NotesInput } from '@/src/components/NotesInput';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Text } from '@/src/components/ui/text';
-import { useUploadAvatar, useUploadCover, useUpdateProfile } from '@/src/hooks/useCurrentUser';
+import { UserAvatar } from '@/src/components/UserAvatar';
+import { useUpdateProfile, useUploadAvatar, useUploadCover } from '@/src/hooks/useCurrentUser';
 import { usePhotoPicker } from '@/src/hooks/usePhotoPicker';
 import { usePremiumGate } from '@/src/hooks/usePremiumGate';
 import { useAppStore } from '@/src/store/appStore';
@@ -23,9 +23,9 @@ import { PremiumFeature } from '@/src/utils/premiumGate';
 import { Camera, ImageIcon } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Image,
-  TouchableOpacity,
-  View,
+    Image,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 interface EditProfileModalProps {
@@ -56,26 +56,29 @@ export function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   // Track whether a new local image was picked (so we only upload when there's a change)
   const avatarChanged = useRef(false);
   const coverChanged = useRef(false);
+  const wasVisibleRef = useRef(visible);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   // Sync form state when modal opens
   useEffect(() => {
-    if (visible) {
-      setName(user.name ?? '');
-      setStudioName(user.studioName ?? '');
-      setLocation(user.location ?? '');
-      setBio(user.bio ?? '');
-      setAvatarImageUri(user.avatarImageUri);
-      setCoverImageUri(user.coverImageUri);
-      avatarChanged.current = false;
-      coverChanged.current = false;
-      setUploadError(null);
-      setUploadSuccess(false);
-      setIsSaving(false);
-    }
-  }, [visible]);
+    const wasVisible = wasVisibleRef.current;
+    wasVisibleRef.current = visible;
+    if (!visible || wasVisible) return;
+
+    setName(user.name ?? '');
+    setStudioName(user.studioName ?? '');
+    setLocation(user.location ?? '');
+    setBio(user.bio ?? '');
+    setAvatarImageUri(user.avatarImageUri);
+    setCoverImageUri(user.coverImageUri);
+    avatarChanged.current = false;
+    coverChanged.current = false;
+    setUploadError(null);
+    setUploadSuccess(false);
+    setIsSaving(false);
+  }, [visible, user]);
 
   const pickAvatar = () => {
     if (!canUploadProfileMedia()) {

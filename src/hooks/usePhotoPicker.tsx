@@ -21,7 +21,7 @@ export function usePhotoPicker(options: UsePhotoPickerOptions = {}) {
     (onPick: (uri: string) => void, onDelete?: () => void) => {
       openGlobalPickSheet(onPick, onDelete, options);
     },
-    [openGlobalPickSheet, options.aspect, options.quality],
+    [openGlobalPickSheet, options],
   );
 
   return { openPickSheet };

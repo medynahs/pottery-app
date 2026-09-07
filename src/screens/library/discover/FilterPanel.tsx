@@ -1,18 +1,18 @@
 import { SearchField } from '@/src/components/SearchField';
 import { Text } from '@/src/components/ui/text';
-import { SlidersHorizontal, X } from 'lucide-react-native';
+import { SlidersHorizontal } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import {
-  COLOR_OPTIONS,
-  CONE_OPTIONS,
-  CONTENT_TYPE_OPTIONS,
-  FINISH_OPTIONS,
-  type BrandFilter,
-  type ColorFilter,
-  type ConeFilter,
-  type ContentTypeFilter,
-  type FinishFilter,
+    COLOR_OPTIONS,
+    CONE_OPTIONS,
+    CONTENT_TYPE_OPTIONS,
+    FINISH_OPTIONS,
+    type BrandFilter,
+    type ColorFilter,
+    type ConeFilter,
+    type ContentTypeFilter,
+    type FinishFilter,
 } from './types';
 
 function FilterPill({

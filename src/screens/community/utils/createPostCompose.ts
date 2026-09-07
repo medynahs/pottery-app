@@ -9,12 +9,12 @@ export type CommunityPostKind =
 
 export type AskTopic = 'glaze' | 'firing' | 'general';
 
-export const COMMUNITY_POST_KINDS: Array<{
+export const COMMUNITY_POST_KINDS: {
   id: CommunityPostKind;
   label: string;
   hint: string;
   emoji: string;
-}> = [
+}[] = [
   {
     id: 'update',
     label: 'Update',
@@ -47,7 +47,7 @@ export const COMMUNITY_POST_KINDS: Array<{
   },
 ];
 
-export const ASK_TOPIC_OPTIONS: Array<{ id: AskTopic; label: string }> = [
+export const ASK_TOPIC_OPTIONS: { id: AskTopic; label: string }[] = [
   { id: 'glaze', label: 'Glaze / surface' },
   { id: 'firing', label: 'Firing / kiln' },
   { id: 'general', label: 'General' },

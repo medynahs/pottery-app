@@ -25,7 +25,7 @@ export function shouldShowFiringQueueWidget(input: {
 }
 
 export function buildFiringQueueSnapshot(
-  pieces: Array<{ stage: string }>,
+  pieces: { stage: string }[],
   bisqueReadyCount: number,
 ): FiringQueueSnapshot {
   let boneDryCount = 0;

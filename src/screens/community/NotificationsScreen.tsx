@@ -108,6 +108,7 @@ function Section({ label, count, children }: { label: string; count: number; chi
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isSignedIn = useAppStore((s) => s.isSignedIn);
 
   const [friendRequests, setFriendRequests] = useState<BackendFriendRequest[]>([]);
@@ -133,7 +134,7 @@ export default function NotificationsScreen() {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [isSignedIn]);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 

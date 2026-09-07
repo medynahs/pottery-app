@@ -1,5 +1,4 @@
-import type { StudioRhythm } from './studioRhythm';
-import { STAGE_CONFIG, getDateKey, isStudioRhythmConfigured, type StageKey } from './studioRhythm';
+import { STAGE_CONFIG, getDateKey, isStudioRhythmConfigured, type StageKey, type StudioRhythm } from './studioRhythm';
 
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -7,8 +6,8 @@ export type TodayRhythmPreview = {
   configured: boolean;
   isRestDay: boolean;
   dayName: string;
-  stages: Array<{ key: string; label: string }>;
-  events: Array<{ id: string; name: string }>;
+  stages: { key: string; label: string }[];
+  events: { id: string; name: string }[];
   enabledRitualCount: number;
 };
 

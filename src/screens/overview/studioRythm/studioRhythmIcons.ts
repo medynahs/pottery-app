@@ -1,25 +1,25 @@
-import type { EventCategoryId, Ritual, StageKey } from './studioRhythm';
 import {
-  Camera,
-  Clock,
-  DoorOpen,
-  Droplets,
-  Flame,
-  GraduationCap,
-  Hammer,
-  Layers,
-  Lightbulb,
-  Package,
-  Palette,
-  RefreshCw,
-  Scissors,
-  Sparkles,
-  Star,
-  Store,
-  Thermometer,
-  Wind,
+    Camera,
+    Clock,
+    DoorOpen,
+    Droplets,
+    Flame,
+    GraduationCap,
+    Hammer,
+    Layers,
+    Lightbulb,
+    Package,
+    Palette,
+    RefreshCw,
+    Scissors,
+    Sparkles,
+    Star,
+    Store,
+    Thermometer,
+    Wind,
 } from 'lucide-react-native';
 import type { ComponentType } from 'react';
+import type { EventCategoryId, Ritual, StageKey } from './studioRhythm';
 
 export type RhythmIconComponent = ComponentType<{ size: number; color: string }>;
 
@@ -48,7 +48,7 @@ export const DRYING_TIMER_ICONS = {
   bisqueCool: Thermometer,
 } as const;
 
-export const RITUAL_PICKABLE_ICONS: Array<{ key: string; Icon: RhythmIconComponent }> = [
+export const RITUAL_PICKABLE_ICONS: { key: string; Icon: RhythmIconComponent }[] = [
   { key: 'palette', Icon: Palette },
   { key: 'sparkles', Icon: Sparkles },
   { key: 'camera', Icon: Camera },
@@ -89,7 +89,7 @@ const DEFAULT_RITUAL_ICON_KEYS: Record<string, string> = {
   'ritual-test-tiles': 'layers',
 };
 
-export function migrateStudioRituals(rituals: Array<Ritual & { emoji?: string }>): Ritual[] {
+export function migrateStudioRituals(rituals: (Ritual & { emoji?: string })[]): Ritual[] {
   return rituals.map(({ emoji, ...ritual }) => {
     if (ritual.iconKey && RITUAL_PICKABLE_ICONS_MAP[ritual.iconKey]) {
       return ritual;

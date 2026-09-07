@@ -1,25 +1,25 @@
+import { isGlazeOutcome } from '@/src/screens/glazes/glazePieceLink';
 import { useAppStore } from '@/src/store/appStore';
 import {
-  getDefaultPieceDetailLevel,
-  nextDetailLevel,
-  prevDetailLevel,
-  type PieceDetailLevel,
+    getDefaultPieceDetailLevel,
+    nextDetailLevel,
+    prevDetailLevel,
+    type PieceDetailLevel,
 } from '@/src/utils/roleBasedUx';
 import React from 'react';
 import type { Piece, PieceForm } from '../../../types/pieces';
 import {
-  calculatePiecePricingSnapshot,
-  getActivePricingSettings,
-  normalizePricingSettings,
-  parseNumericInput,
-  parseWeightToForm,
-  parseWeightToGrams,
-  type PricingFiringMode,
-  weightFormToGrams,
-  weightFormToString,
+    calculatePiecePricingSnapshot,
+    getActivePricingSettings,
+    normalizePricingSettings,
+    parseNumericInput,
+    parseWeightToForm,
+    parseWeightToGrams,
+    weightFormToGrams,
+    weightFormToString,
+    type PricingFiringMode,
 } from '../../../types/pricing';
 import { EMPTY_FORM } from '../utils/constants';
-import { isGlazeOutcome } from '@/src/screens/glazes/glazePieceLink';
 
 function formatInputNumber(value?: number | null): string {
   if (value == null || !Number.isFinite(value)) return '';
@@ -122,6 +122,8 @@ export function useAddPieceForm(
     }
     setForm(buildEmptyForm());
     setDetailLevel(getDefaultPieceDetailLevel(userType));
+    // Intentionally keyed by piece identity so unrelated object changes do not reset typed form state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buildEmptyForm, editingPieceId, userType]);
 
   const set = React.useCallback(<K extends keyof PieceForm>(key: K, value: PieceForm[K]) => {
@@ -209,6 +211,7 @@ export function useAddPieceForm(
       clayCostOverride,
       glazeCostOverride,
       energyCostOverride,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       otherCost,
       workHours,
       adminHours,

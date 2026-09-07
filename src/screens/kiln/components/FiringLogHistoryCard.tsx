@@ -6,10 +6,10 @@ import { Image, TouchableOpacity, View } from 'react-native';
 import type { Firing } from '../../../types/kiln';
 import { FIRING_TYPE_LABELS } from '../constants';
 import {
-  formatFiringLogDate,
-  formatHoldTime,
-  getFiringDisplayDate,
-  getFiringOutcomeEmoji,
+    formatFiringLogDate,
+    formatHoldTime,
+    getFiringDisplayDate,
+    getFiringOutcomeEmoji,
 } from '../utils/kilnHelpers';
 import { formatMoney } from '../utils/kilnUtils';
 
@@ -108,7 +108,7 @@ export function FiringLogHistoryCard({
             ) : null}
             {firing.resultNotes ? (
               <Text className="text-xs text-muted-foreground italic mt-1">
-                "{firing.resultNotes}"
+                &ldquo;{firing.resultNotes}&rdquo;
               </Text>
             ) : null}
           </View>

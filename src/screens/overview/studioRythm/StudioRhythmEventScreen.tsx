@@ -4,12 +4,12 @@ import { useAppStore } from '@/src/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -71,6 +71,8 @@ export default function StudioRhythmEventScreen() {
   useEffect(() => {
     setForm(editEvent ? { ...editEvent } : blank());
     setShowCalendar(false);
+    // Intentionally keyed by event id so background store updates do not wipe in-progress edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editEvent?.id]);
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>

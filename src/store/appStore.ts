@@ -1,3 +1,4 @@
+import { isForcePremiumEnabled, resolvePremiumFromEntitlement, setDevPremiumOverride } from '@/src/utils/forcePremium';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
@@ -7,37 +8,37 @@ import { normalizeGlazeItem } from '../screens/glazes/glazeItemHelpers';
 import type { GlazeLibraryItem, GlazeTestTile } from '../screens/glazes/types';
 import { DEFAULT_CHECKLIST, FIRING_SOURCE_STAGE, FIRING_TARGET_STAGE } from '../screens/kiln/constants';
 import {
-  applyGlazeOutcomeToPiece,
-  buildFiringEconomics,
-  DEFAULT_KILN_MAX_TEMP_C,
-  deriveLastFiredAt,
-  getGlazeOutcomeForFiringResult,
-  normalizeKiln,
+    applyGlazeOutcomeToPiece,
+    buildFiringEconomics,
+    DEFAULT_KILN_MAX_TEMP_C,
+    deriveLastFiredAt,
+    getGlazeOutcomeForFiringResult,
+    normalizeKiln,
 } from '../screens/kiln/utils/kilnHelpers';
 import {
-  deriveCustomCollectionNames,
-  LEGACY_SEED_GLAZE_IDS,
-  LEGACY_SEED_TEST_IDS,
-  sanitizeCustomCollections,
+    deriveCustomCollectionNames,
+    LEGACY_SEED_GLAZE_IDS,
+    LEGACY_SEED_TEST_IDS,
+    sanitizeCustomCollections,
 } from '../screens/library/atlas/collections';
 import {
-  DEFAULT_KILNKIN_COMPANION,
-  type KilnkinCompanion,
+    DEFAULT_KILNKIN_COMPANION,
+    type KilnkinCompanion,
 } from '../screens/overview/kilnkin/kilnkinCompanion';
 import type { StudioRhythmSuggestionType } from '../screens/overview/studioRythm/generateStudioRhythmSuggestions';
 import {
-  DEFAULT_STUDIO_RHYTHM,
-  getDateKey,
-  normalizeStudioRhythm,
-  normalizeStudioRhythmStageDays,
-  type DryingTimers,
-  type Ritual,
-  type StageDay,
-  type StudioEvent,
-  type StudioRhythm,
-  type StudioRhythmConfig,
-  type StudioRhythmEvent,
-  type StudioRhythmGoal,
+    DEFAULT_STUDIO_RHYTHM,
+    getDateKey,
+    normalizeStudioRhythm,
+    normalizeStudioRhythmStageDays,
+    type DryingTimers,
+    type Ritual,
+    type StageDay,
+    type StudioEvent,
+    type StudioRhythm,
+    type StudioRhythmConfig,
+    type StudioRhythmEvent,
+    type StudioRhythmGoal,
 } from '../screens/overview/studioRythm/studioRhythm';
 import { migrateStudioRituals } from '../screens/overview/studioRythm/studioRhythmIcons';
 import { STAGES } from '../screens/pieces/utils/constants';
@@ -48,29 +49,28 @@ import { markSessionBootstrap } from '../services/sessionBootstrap';
 import type { Firing, FiringState, FiringStatusOverride, Kiln, KilnChecklist, KilnType, LogFiringPayload } from '../types/kiln';
 import type { GlazeOutcome, Piece, PiecePhoto, TimelineEntry } from '../types/pieces';
 import {
-  applyPricingUserTypePreset,
-  buildDefaultPricingSettings,
-  createPricingTemplate,
-  normalizePricingSettings,
-  type PricingFiringMode,
-  type PricingSettings,
-  type PricingTemplate,
-  type PricingTier,
-  type PricingUserType
+    applyPricingUserTypePreset,
+    buildDefaultPricingSettings,
+    createPricingTemplate,
+    normalizePricingSettings,
+    type PricingFiringMode,
+    type PricingSettings,
+    type PricingTemplate,
+    type PricingTier,
+    type PricingUserType
 } from '../types/pricing';
 import type { AppNotification, Studio, StudioMember } from '../types/studio';
+import {
+    trackDailyMissionCompleted,
+    trackFiringCompleted,
+    trackOnboardingCompleted,
+    trackPiecesAdded,
+    trackPieceStageAdvanced,
+    trackSetupQuestCompleted,
+    trackStudioRhythmConfiguredIfNeeded,
+} from '../utils/productAnalytics';
 import { clearSecureEmail, loadSecureEmail, saveSecureEmail } from './secureStorage';
 import { zustandStorage } from './storage';
-import { isForcePremiumEnabled, resolvePremiumFromEntitlement, setDevPremiumOverride } from '@/src/utils/forcePremium';
-import {
-  trackDailyMissionCompleted,
-  trackFiringCompleted,
-  trackOnboardingCompleted,
-  trackPieceStageAdvanced,
-  trackPiecesAdded,
-  trackSetupQuestCompleted,
-  trackStudioRhythmConfiguredIfNeeded,
-} from '../utils/productAnalytics';
 
 export type PracticeMode = 'home' | 'studio' | 'both';
 export type UserRole = 'owner' | 'member';
@@ -2116,6 +2116,7 @@ export const useAppStore = create<AppState>()(
         };
 
         const onboardingProfile = normalizeOnboardingProfile(state.onboardingProfile);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const enabledModules = normalizeModuleList(state.enabledModules);
         const notificationPrefs = normalizeNotificationPrefs(state.notificationPrefs);
 
@@ -2405,17 +2406,21 @@ export function setPiecesIfChanged(next: Piece[]): void {
 // as pieceAssetSync <-> usePiecesSync).
 
 function schedulePiecesSyncSoon(): void {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   (require('../screens/pieces/hooks/usePiecesSync') as typeof import('../screens/pieces/hooks/usePiecesSync')).schedulePiecesSync();
 }
 
 function scheduleGlazesSyncSoon(): void {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   (require('../screens/library/useGlazesSync') as typeof import('../screens/library/useGlazesSync')).scheduleGlazesSync();
 }
 
 function scheduleFiringsSyncSoon(): void {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   (require('../screens/kiln/hooks/useFiringsSync') as typeof import('../screens/kiln/hooks/useFiringsSync')).scheduleFiringsSync();
 }
 
 function scheduleKilnsSyncSoon(): void {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   (require('../screens/kiln/hooks/useKilnsSync') as typeof import('../screens/kiln/hooks/useKilnsSync')).scheduleKilnsSync();
 }

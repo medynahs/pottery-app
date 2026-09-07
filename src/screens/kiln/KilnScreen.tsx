@@ -1,4 +1,4 @@
-﻿// src/screens/KilnScreen.tsx
+// src/screens/KilnScreen.tsx
 import { ConfirmSheet } from '@/src/components/AppSheets';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { EmptyState } from '@/src/components/EmptyState';
@@ -37,7 +37,6 @@ export default function KilnScreen() {
     kilns,
     activeFirings,
     scheduledFirings,
-    completedFirings: _completedFirings,
     waitingForBisque,
     waitingForGlaze,
     kilnFiringCounts,

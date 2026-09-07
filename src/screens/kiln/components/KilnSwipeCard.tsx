@@ -1,6 +1,6 @@
 import { Trash2 } from 'lucide-react-native';
 import React from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
 type KilnSwipeCardProps = {

@@ -9,7 +9,8 @@ export function StageConfigProvider({ children }: { children: React.ReactNode })
 }
 
 export function useStageConfig() {
-  const stageConfig = useAppStore((s) => s.stageConfig) ?? [];
+  const _rawStageConfig = useAppStore((s) => s.stageConfig);
+  const stageConfig = React.useMemo(() => _rawStageConfig ?? [], [_rawStageConfig]);
   const toggleStage = useAppStore((s) => s.toggleStage);
   const renameStage = useAppStore((s) => s.renameStage);
   const addStage = useAppStore((s) => s.addStage);

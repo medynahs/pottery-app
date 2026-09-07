@@ -1,13 +1,12 @@
 import {
+  MODAL_SHEET_RADIUS,
   ModalCard,
   ModalFormScrollView,
   ModalSheetFooter,
-  MODAL_SHEET_RADIUS,
+  ModalShell,
   SheetButton,
   useModalSheetHeight,
-  ModalShell,
 } from '@/src/components/AppSheets';
-import { MemorialHeadstone } from '../components/MemorialHeadstone';
 import { CeremonyOverlay } from '@/src/components/CeremonyOverlay';
 import { NotesInput } from '@/src/components/NotesInput';
 import { Text } from '@/src/components/ui/text';
@@ -16,6 +15,7 @@ import { Sparkles, X } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import type { Piece } from '../../../types/pieces';
+import { MemorialHeadstone } from '../components/MemorialHeadstone';
 
 const CEMETERY_BACKDROP = 'rgba(14, 9, 6, 0.88)';
 const HEADER_GRADIENT = ['#1A1210', '#2A1C16', '#3D2B22', '#6B4A32'] as const;
@@ -135,7 +135,7 @@ export function CemeterySacrificeModal({
                 className="text-lg leading-6 text-white"
                 style={{ fontFamily: 'Fraunces_700Bold' }}
               >
-                Shall this piece join the Kiln Gods' Garden?
+                Shall this piece join the Kiln Gods&apos; Garden?
               </Text>
               {(piece.clay || piece.status) ? (
                 <Text className="text-xs text-white/55 mt-1 leading-[18px]" numberOfLines={1}>

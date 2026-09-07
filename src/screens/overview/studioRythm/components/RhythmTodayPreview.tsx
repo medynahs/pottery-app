@@ -2,11 +2,10 @@ import { Text } from '@/src/components/ui/text';
 import { CalendarDays, ChevronRight } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
+import { RHYTHM_BROWN } from '../rhythmTheme';
+import type { TodayRhythmPreview } from '../rhythmUtils';
 import { STAGE_CONFIG, type StageKey } from '../studioRhythm';
 import { STAGE_RHYTHM_ICONS } from '../studioRhythmIcons';
-import type { TodayRhythmPreview } from '../rhythmUtils';
-import { RHYTHM_BROWN } from '../rhythmTheme';
-import { RhythmIconBadge } from './RhythmIconBadge';
 
 interface RhythmTodayPreviewProps {
   preview: TodayRhythmPreview;
